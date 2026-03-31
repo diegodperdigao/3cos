@@ -1615,13 +1615,35 @@ function bDash(el){
         const textColor = isLight ? '#475569' : '#9898b8';
         const gridColor = isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)';
 
+        // Build dynamic chart from STATE data
+        const monthNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        const chartData={};
+        STATE.reports.forEach(r=>{
+          const d=new Date(r.date);const key=monthNames[d.getMonth()]+' '+d.getFullYear();
+          if(!chartData[key])chartData[key]={dep:0,comm:0};
+          chartData[key].dep+=r.deposits||0;
+        });
+        STATE.payments.filter(p=>p.status==='pago').forEach(p=>{
+          const d=new Date(p.dueDate);const key=monthNames[d.getMonth()]+' '+d.getFullYear();
+          if(!chartData[key])chartData[key]={dep:0,comm:0};
+          chartData[key].comm+=p.amount||0;
+        });
+        const sortedKeys=Object.keys(chartData).sort((a,b)=>{
+          const pa=a.split(' '),pb=b.split(' ');
+          const ma=monthNames.indexOf(pa[0]),mb=monthNames.indexOf(pb[0]);
+          return (parseInt(pa[1])-parseInt(pb[1]))*12+(ma-mb);
+        });
+        const labels=sortedKeys.length?sortedKeys:['Mar 2026'];
+        const depData=labels.map(k=>chartData[k]?.dep||0);
+        const commData=labels.map(k=>chartData[k]?.comm||0);
+
         window.mainChartInstance = new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: {
-                labels: ['Nov', 'Dez', 'Jan', 'Fev', 'Mar', 'Abr (Proj)'],
+                labels: labels,
                 datasets: [
-                    { label: 'Depósitos', data: [120000, 190000, 150000, 220000, 280000, 310000], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4, borderWidth: 2 },
-                    { label: 'Comissão Paga', data: [45000, 60000, 50000, 80000, 95000, 110000], borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4, borderWidth: 2 }
+                    { label: 'Depósitos', data: depData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4, borderWidth: 2 },
+                    { label: 'Comissão Paga', data: commData, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4, borderWidth: 2 }
                 ]
             },
             options: {
@@ -1711,6 +1733,7 @@ function bAffs(el){
         <div class="sec-lbl">Todos os afiliados</div>
         <div class="sec-actions">
           <div class="srch"><i data-lucide="search"></i><input type="text" placeholder="Buscar..." oninput="filterAff(this.value)"></div>
+          <button class="btn btn-outline" onclick="exportCSV('affiliates')"><i data-lucide="download"></i>CSV</button>
           <button class="btn btn-theme" onclick="openNewAff()"><i data-lucide="plus"></i>Novo Afiliado</button>
         </div>
       </div>
@@ -1819,9 +1842,9 @@ window.openAffDetail=id=>{
       </div>
     </div>
 
-    ${cts.length?`<div style="margin-top:14px"><div class="dtl" style="margin-bottom:8px">Contratos (${cts.length})</div>
-      <div class="mini-list">${cts.map(c=>`<div class="mini"><div class="mini-info"><span class="mini-n">${c.name}</span><span class="mini-s">${c.brand} · ${c.type}</span></div>
-        <div class="mini-r"><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span><span class="mini-v">${fc(c.value)}</span></div></div>`).join('')}</div></div>`:''}
+    <div style="margin-top:14px"><div class="dtl" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">Contratos (${cts.length}) <button onclick="closeModal();openNewContract('${a.id}')" style="background:none;border:none;color:var(--theme);cursor:pointer;font-size:9px;font-weight:700;text-transform:uppercase"><i data-lucide="plus" style="width:10px;height:10px;margin-right:2px"></i>Novo</button></div>
+      ${cts.length?`<div class="mini-list">${cts.map(c=>`<div class="mini" onclick="openEditContract('${c.id}')"><div class="mini-info"><span class="mini-n">${c.name}</span><span class="mini-s">${c.brand} · ${c.type}</span></div>
+        <div class="mini-r"><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span><span class="mini-v">${fc(c.value)}</span></div></div>`).join('')}</div>`:'<span style="font-size:10px;color:var(--text3)">Nenhum contrato.</span>'}</div>
     ${pys.length?`<div style="margin-top:14px"><div class="dtl" style="margin-bottom:8px">Pagamentos (${pys.length})</div>
       <div class="mini-list">${pys.map(p=>`<div class="mini"><div class="mini-info"><span class="mini-n">${p.contract}</span><span class="mini-s">${p.type} · ${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):''}</span></div>
         <div class="mini-r"><span class="pb pb-${p.status}">${pl(p.status)}</span><span class="mini-v">${fc(p.amount)}</span></div></div>`).join('')}</div></div>`:''}
@@ -1829,6 +1852,7 @@ window.openAffDetail=id=>{
       <div class="mini-list">${tks.map(t=>`<div class="mini"><div class="mini-info"><span class="mini-n">${t.title}</span><span class="mini-s">${t.assignee}</span></div>
         <div class="mini-r"><span class="pri pri-${t.priority[0]==='a'?'a':t.priority[0]==='m'?'m':'b'}">${t.priority.toUpperCase()}</span></div></div>`).join('')}</div></div>`:''}`,
     `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+     <button class="btn btn-outline" onclick="closeModal();openEditAff('${a.id}')"><i data-lucide="edit-3"></i> Editar</button>
      <button class="btn btn-theme" onclick="closeModal();openMod('payments')">Ver pagamentos</button>`);
 };
 
@@ -1856,8 +1880,91 @@ window.openNewAff=()=>openModal('Novo Afiliado',`<div class="fg">
   </div></div>
   <div class="fgp ff"><label>Observações</label><textarea class="fi" id="na-notes" rows="2"></textarea></div>
 </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-  <button class="btn btn-theme" onclick="closeModal();logAction('Afiliado cadastrado','');toast('Afiliado cadastrado!')">Salvar</button>`);
+  <button class="btn btn-theme" onclick="saveNewAff()"><i data-lucide="save"></i> Salvar</button>`);
 
+window.saveNewAff=()=>{
+  const name=document.getElementById('na-name')?.value.trim();
+  if(!name){toast('Nome é obrigatório','e');return;}
+  const email=document.getElementById('na-email')?.value.trim()||'';
+  const ct=document.getElementById('na-ct')?.value||'cpa';
+  const notes=document.getElementById('na-notes')?.value.trim()||'';
+  const checkedBrands=[...document.querySelectorAll('#mbd input[type="checkbox"]:checked')].map(c=>c.value);
+  const deals={};
+  checkedBrands.forEach(b=>{
+    const br=STATE.brands[b];if(!br)return;
+    if(ct==='tiered'){deals[b]={levels:[{key:'l1',cpa:br.cpa||0,baseline:10}],rs:br.rs||0};}
+    else if(ct==='deposit'){deals[b]={cpa:0,rs:0,depositTarget:50000};}
+    else if(ct==='rs'){deals[b]={cpa:0,rs:br.rs||0};}
+    else{deals[b]={cpa:br.cpa||0,rs:br.rs||0};}
+  });
+  const newAff={id:'a'+Date.now(),name,type:'afiliado',status:'ativo',contactName:name,contactEmail:email,contractType:ct,deals,ftds:0,qftds:0,deposits:0,netRev:0,commission:0,profit:0,notes};
+  STATE.affiliates.push(newAff);logAction('Afiliado cadastrado',name);saveToLocal();closeModal();
+  renderAffs(_affTypeF?STATE.affiliates.filter(a=>a.contractType===_affTypeF):STATE.affiliates);
+  toast('Afiliado cadastrado!');
+};
+
+window.openEditAff=id=>{
+  const a=STATE.affiliates.find(x=>x.id===id);if(!a)return;
+  openModal('Editar Afiliado',`<div class="fg">
+    <div class="fgp ff"><label>Nome *</label><input class="fi" id="ea-name" value="${a.name}"></div>
+    <div class="fgp"><label>Email</label><input class="fi" id="ea-email" value="${a.contactEmail||''}"></div>
+    <div class="fgp"><label>Tipo de contrato</label><select class="fi" id="ea-ct">
+      <option value="cpa" ${a.contractType==='cpa'?'selected':''}>CPA + Rev Share</option>
+      <option value="deposit" ${a.contractType==='deposit'?'selected':''}>Meta de Depósitos</option>
+      <option value="rs" ${a.contractType==='rs'?'selected':''}>Revenue Share</option>
+      <option value="tiered" ${a.contractType==='tiered'?'selected':''}>CPA Escalonado</option>
+    </select></div>
+    <div class="fgp"><label>Status</label><select class="fi" id="ea-st">
+      <option value="ativo" ${a.status==='ativo'?'selected':''}>Ativo</option>
+      <option value="negociação" ${a.status==='negociação'?'selected':''}>Negociação</option>
+      <option value="encerrado" ${a.status==='encerrado'?'selected':''}>Encerrado</option>
+    </select></div>
+    <div class="fgp"><label>FTDs</label><input type="number" class="fi" id="ea-ftds" value="${a.ftds}"></div>
+    <div class="fgp"><label>QFTDs</label><input type="number" class="fi" id="ea-qftds" value="${a.qftds}"></div>
+    <div class="fgp"><label>Depósitos (R$)</label><input type="number" class="fi" id="ea-dep" value="${a.deposits}"></div>
+    <div class="fgp"><label>Net Revenue (R$)</label><input type="number" class="fi" id="ea-rev" value="${a.netRev||0}"></div>
+    <div class="fgp"><label>Comissão (R$)</label><input type="number" class="fi" id="ea-comm" value="${a.commission}"></div>
+    <div class="fgp"><label>Lucro 3C (R$)</label><input type="number" class="fi" id="ea-profit" value="${a.profit}"></div>
+    <div class="fgp ff"><label>Observações</label><textarea class="fi" id="ea-notes" rows="2">${a.notes||''}</textarea></div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-danger" onclick="confirmDeleteAff('${a.id}')"><i data-lucide="trash-2"></i> Excluir</button>
+    <button class="btn btn-theme" onclick="saveEditAff('${a.id}')"><i data-lucide="save"></i> Salvar</button>`);
+};
+
+window.saveEditAff=id=>{
+  const a=STATE.affiliates.find(x=>x.id===id);if(!a)return;
+  const name=document.getElementById('ea-name')?.value.trim();
+  if(!name){toast('Nome é obrigatório','e');return;}
+  a.name=name;a.contactName=name;
+  a.contactEmail=document.getElementById('ea-email')?.value.trim()||'';
+  a.contractType=document.getElementById('ea-ct')?.value||a.contractType;
+  a.status=document.getElementById('ea-st')?.value||a.status;
+  a.ftds=parseInt(document.getElementById('ea-ftds')?.value)||0;
+  a.qftds=parseInt(document.getElementById('ea-qftds')?.value)||0;
+  a.deposits=parseFloat(document.getElementById('ea-dep')?.value)||0;
+  a.netRev=parseFloat(document.getElementById('ea-rev')?.value)||0;
+  a.commission=parseFloat(document.getElementById('ea-comm')?.value)||0;
+  a.profit=parseFloat(document.getElementById('ea-profit')?.value)||0;
+  a.notes=document.getElementById('ea-notes')?.value.trim()||'';
+  logAction('Afiliado editado',name);saveToLocal();closeModal();
+  renderAffs(_affTypeF?STATE.affiliates.filter(x=>x.contractType===_affTypeF):STATE.affiliates);
+  toast('Afiliado atualizado!');
+};
+
+window.confirmDeleteAff=id=>{
+  const a=STATE.affiliates.find(x=>x.id===id);if(!a)return;
+  openModal('Excluir Afiliado',`<p style="color:var(--text2);font-size:13px">Tem certeza que deseja excluir <strong>${a.name}</strong>? Contratos e pagamentos vinculados serão mantidos.</p>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+   <button class="btn btn-danger" onclick="deleteAff('${id}')"><i data-lucide="trash-2"></i> Excluir</button>`);
+};
+
+window.deleteAff=id=>{
+  const idx=STATE.affiliates.findIndex(x=>x.id===id);
+  if(idx>-1){const name=STATE.affiliates[idx].name;STATE.affiliates.splice(idx,1);
+    logAction('Afiliado excluído',name);saveToLocal();closeModal();
+    renderAffs(_affTypeF?STATE.affiliates.filter(x=>x.contractType===_affTypeF):STATE.affiliates);
+    toast('Afiliado excluído!');}
+};
 
 // ══════════════════════════════════════════════════════════
 // NOVO: ADICIONAR MARCA PARCEIRA
@@ -1927,6 +2034,215 @@ window.saveNewBrand = () => {
   if(document.getElementById('mod-brands').classList.contains('active')) {
      bBrands(document.getElementById('mod-brands'));
   }
+};
+
+window.openEditBrand=(name)=>{
+  const br=STATE.brands[name];if(!br)return;
+  openModal('Editar Marca: '+name,`<div class="fg">
+    <div class="fgp ff"><label>Nome (não editável)</label><input class="fi" value="${name}" disabled></div>
+    <div class="fgp ff"><label>URL da Logo</label><input type="text" class="fi" id="eb-logo" value="${br.logo||''}"></div>
+    <div class="fgp"><label>Cor (Hex)</label><input type="text" class="fi" id="eb-color" value="${br.color}"></div>
+    <div class="fgp"><label>CPA Padrão (R$)</label><input type="number" class="fi" id="eb-cpa" value="${br.cpa||0}"></div>
+    <div class="fgp"><label>RevShare Padrão (%)</label><input type="number" class="fi" id="eb-rs" value="${br.rs||0}"></div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-danger" onclick="confirmDeleteBrand('${name}')"><i data-lucide="trash-2"></i> Excluir</button>
+    <button class="btn btn-theme" onclick="saveEditBrand('${name}')"><i data-lucide="save"></i> Salvar</button>`);
+};
+
+window.saveEditBrand=name=>{
+  const br=STATE.brands[name];if(!br)return;
+  const hexToRgb=hex=>{const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return r?`${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)}`:'255,255,255';};
+  br.color=document.getElementById('eb-color')?.value||br.color;
+  br.rgb=hexToRgb(br.color);
+  br.cpa=parseFloat(document.getElementById('eb-cpa')?.value)||0;
+  br.rs=parseFloat(document.getElementById('eb-rs')?.value)||0;
+  br.logo=document.getElementById('eb-logo')?.value.trim()||br.logo;
+  logAction('Marca editada',name);saveToLocal();closeModal();
+  if(document.getElementById('mod-brands').classList.contains('active'))bBrands(document.getElementById('mod-brands'));
+  toast('Marca atualizada!');
+};
+
+window.confirmDeleteBrand=name=>{
+  openModal('Excluir Marca',`<p style="color:var(--text2);font-size:13px">Excluir <strong>${name}</strong>? Dados de relatórios e contratos vinculados serão mantidos.</p>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+   <button class="btn btn-danger" onclick="deleteBrand('${name}')">Excluir</button>`);
+};
+
+window.deleteBrand=name=>{
+  delete STATE.brands[name];logAction('Marca excluída',name);saveToLocal();closeModal();
+  if(document.getElementById('mod-brands').classList.contains('active'))bBrands(document.getElementById('mod-brands'));
+  toast('Marca excluída!');
+};
+
+// ══════════════════════════════════════════════════════════
+// CONTRACTS CRUD
+// ══════════════════════════════════════════════════════════
+window.openNewContract=(affId)=>{
+  const affOptions=STATE.affiliates.map(a=>`<option value="${a.id}" ${a.id===affId?'selected':''}>${a.name}</option>`).join('');
+  const brandOptions=Object.keys(STATE.brands).map(b=>`<option value="${b}">${b}</option>`).join('');
+  openModal('Novo Contrato',`<div class="fg">
+    <div class="fgp"><label>Afiliado *</label><select class="fi" id="nc-aff">${affOptions}</select></div>
+    <div class="fgp"><label>Marca *</label><select class="fi" id="nc-brand">${brandOptions}</select></div>
+    <div class="fgp ff"><label>Nome do Contrato *</label><input class="fi" id="nc-name" placeholder="Ex: Deal Vupi Q2 2026"></div>
+    <div class="fgp"><label>Tipo</label><select class="fi" id="nc-type">
+      <option value="cpa">CPA</option><option value="deposit">Meta Depósitos</option>
+      <option value="rs">Revenue Share</option><option value="tiered">CPA Escalonado</option>
+    </select></div>
+    <div class="fgp"><label>Valor Total (R$)</label><input type="number" class="fi" id="nc-value" placeholder="0"></div>
+    <div class="fgp"><label>Status</label><select class="fi" id="nc-status">
+      <option value="ativo">Ativo</option><option value="negociação">Negociação</option><option value="encerrado">Encerrado</option>
+    </select></div>
+    <div class="fgp"><label>Início</label><input type="date" class="fi" id="nc-start"></div>
+    <div class="fgp"><label>Fim</label><input type="date" class="fi" id="nc-end"></div>
+    <div class="fgp ff"><label>Descrição</label><textarea class="fi" id="nc-desc" rows="2"></textarea></div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveNewContract()"><i data-lucide="save"></i> Criar Contrato</button>`);
+};
+
+window.saveNewContract=()=>{
+  const name=document.getElementById('nc-name')?.value.trim();
+  if(!name)return toast('Nome do contrato é obrigatório','e');
+  const affId=document.getElementById('nc-aff')?.value;
+  const aff=STATE.affiliates.find(a=>a.id===affId);
+  const ct={id:'ct'+Date.now(),affiliateId:affId,affiliate:aff?.name||'',brand:document.getElementById('nc-brand')?.value,
+    name,type:document.getElementById('nc-type')?.value||'cpa',
+    value:parseFloat(document.getElementById('nc-value')?.value)||0,
+    status:document.getElementById('nc-status')?.value||'ativo',
+    startDate:document.getElementById('nc-start')?.value||'',
+    endDate:document.getElementById('nc-end')?.value||'',
+    description:document.getElementById('nc-desc')?.value.trim()||'',
+    paymentStatus:'pendente',paid:0};
+  STATE.contracts.push(ct);logAction('Contrato criado',name);saveToLocal();closeModal();
+  toast('Contrato criado!');
+};
+
+window.openEditContract=id=>{
+  const c=STATE.contracts.find(x=>x.id===id);if(!c)return;
+  openModal('Editar Contrato',`<div class="fg">
+    <div class="fgp ff"><label>Nome *</label><input class="fi" id="ec-name" value="${c.name}"></div>
+    <div class="fgp"><label>Valor (R$)</label><input type="number" class="fi" id="ec-value" value="${c.value}"></div>
+    <div class="fgp"><label>Status Contrato</label><select class="fi" id="ec-status">
+      <option value="ativo" ${c.status==='ativo'?'selected':''}>Ativo</option>
+      <option value="negociação" ${c.status==='negociação'?'selected':''}>Negociação</option>
+      <option value="encerrado" ${c.status==='encerrado'?'selected':''}>Encerrado</option>
+    </select></div>
+    <div class="fgp"><label>Status Pagamento</label><select class="fi" id="ec-pstatus">
+      <option value="pendente" ${c.paymentStatus==='pendente'?'selected':''}>Pendente</option>
+      <option value="parcial" ${c.paymentStatus==='parcial'?'selected':''}>Parcial</option>
+      <option value="pago" ${c.paymentStatus==='pago'?'selected':''}>Pago</option>
+    </select></div>
+    <div class="fgp"><label>Início</label><input type="date" class="fi" id="ec-start" value="${c.startDate||''}"></div>
+    <div class="fgp"><label>Fim</label><input type="date" class="fi" id="ec-end" value="${c.endDate||''}"></div>
+    <div class="fgp ff"><label>Descrição</label><textarea class="fi" id="ec-desc" rows="2">${c.description||''}</textarea></div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-danger" onclick="deleteContract('${id}')"><i data-lucide="trash-2"></i> Excluir</button>
+    <button class="btn btn-theme" onclick="saveEditContract('${id}')"><i data-lucide="save"></i> Salvar</button>`);
+};
+
+window.saveEditContract=id=>{
+  const c=STATE.contracts.find(x=>x.id===id);if(!c)return;
+  c.name=document.getElementById('ec-name')?.value.trim()||c.name;
+  c.value=parseFloat(document.getElementById('ec-value')?.value)||c.value;
+  c.status=document.getElementById('ec-status')?.value||c.status;
+  c.paymentStatus=document.getElementById('ec-pstatus')?.value||c.paymentStatus;
+  c.startDate=document.getElementById('ec-start')?.value||c.startDate;
+  c.endDate=document.getElementById('ec-end')?.value||c.endDate;
+  c.description=document.getElementById('ec-desc')?.value.trim()||'';
+  logAction('Contrato editado',c.name);saveToLocal();closeModal();toast('Contrato atualizado!');
+};
+
+window.deleteContract=id=>{
+  const idx=STATE.contracts.findIndex(x=>x.id===id);
+  if(idx>-1){logAction('Contrato excluído',STATE.contracts[idx].name);STATE.contracts.splice(idx,1);saveToLocal();closeModal();toast('Contrato excluído!');}
+};
+
+// ══════════════════════════════════════════════════════════
+// USERS CRUD
+// ══════════════════════════════════════════════════════════
+window.openNewUser=()=>{
+  openModal('Novo Usuário',`<div class="fg">
+    <div class="fgp ff"><label>Nome *</label><input class="fi" id="nu-name" placeholder="Nome completo"></div>
+    <div class="fgp"><label>Email *</label><input class="fi" id="nu-email" placeholder="user@3c.gg"></div>
+    <div class="fgp"><label>Cargo</label><select class="fi" id="nu-role">
+      <option value="admin">Admin</option><option value="financeiro">Financeiro</option>
+      <option value="operacao">Operação</option><option value="viewer">Viewer</option>
+    </select></div>
+    <div class="fgp ff"><label>Módulos de Acesso</label>
+      <div class="mod-checks">${ALL_MODS.map(m=>`<label class="mod-check"><input type="checkbox" value="${m}" checked><span>${m}</span></label>`).join('')}</div>
+    </div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveNewUser()"><i data-lucide="save"></i> Criar Usuário</button>`);
+};
+
+window.saveNewUser=()=>{
+  const name=document.getElementById('nu-name')?.value.trim();
+  const email=document.getElementById('nu-email')?.value.trim();
+  if(!name||!email)return toast('Nome e email são obrigatórios','e');
+  if(STATE.users.find(u=>u.email===email))return toast('Email já existe','e');
+  const role=document.getElementById('nu-role')?.value||'viewer';
+  const modules=[...document.querySelectorAll('#mbd .mod-check input:checked')].map(c=>c.value);
+  STATE.users.push({id:'u'+Date.now(),name,email,role,status:'ativo',modules,createdAt:new Date().toISOString().split('T')[0]});
+  logAction('Usuário criado',name);saveToLocal();closeModal();
+  bUsers(document.getElementById('mod-users'));toast('Usuário criado!');
+};
+
+window.openEditUser=id=>{
+  const u=STATE.users.find(x=>x.id===id);if(!u)return;
+  openModal('Editar Usuário',`<div class="fg">
+    <div class="fgp ff"><label>Nome *</label><input class="fi" id="eu-name" value="${u.name}"></div>
+    <div class="fgp"><label>Email</label><input class="fi" id="eu-email" value="${u.email}" disabled></div>
+    <div class="fgp"><label>Cargo</label><select class="fi" id="eu-role">
+      <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+      <option value="financeiro" ${u.role==='financeiro'?'selected':''}>Financeiro</option>
+      <option value="operacao" ${u.role==='operacao'?'selected':''}>Operação</option>
+      <option value="viewer" ${u.role==='viewer'?'selected':''}>Viewer</option>
+    </select></div>
+    <div class="fgp ff"><label>Módulos de Acesso</label>
+      <div class="mod-checks">${ALL_MODS.map(m=>`<label class="mod-check ${u.modules.includes(m)?'active':''}"><input type="checkbox" value="${m}" ${u.modules.includes(m)?'checked':''}><span>${m}</span></label>`).join('')}</div>
+    </div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveEditUser('${id}')"><i data-lucide="save"></i> Salvar</button>`);
+};
+
+window.saveEditUser=id=>{
+  const u=STATE.users.find(x=>x.id===id);if(!u)return;
+  u.name=document.getElementById('eu-name')?.value.trim()||u.name;
+  u.role=document.getElementById('eu-role')?.value||u.role;
+  u.modules=[...document.querySelectorAll('#mbd .mod-check input:checked')].map(c=>c.value);
+  logAction('Usuário editado',u.name);saveToLocal();closeModal();
+  bUsers(document.getElementById('mod-users'));toast('Usuário atualizado!');
+};
+
+window.toggleUserStatus=id=>{
+  const u=STATE.users.find(x=>x.id===id);if(!u)return;
+  u.status=u.status==='ativo'?'bloqueado':'ativo';
+  logAction('Usuário '+(u.status==='ativo'?'desbloqueado':'bloqueado'),u.name);saveToLocal();
+  bUsers(document.getElementById('mod-users'));toast(u.status==='ativo'?'Usuário desbloqueado':'Usuário bloqueado');
+};
+
+// ══════════════════════════════════════════════════════════
+// CSV EXPORT
+// ══════════════════════════════════════════════════════════
+window.exportCSV=(type)=>{
+  let csv='',filename='export.csv';
+  if(type==='audit'){
+    csv='Ação,Detalhe,Usuário,Data\n';
+    STATE.auditLog.forEach(a=>{csv+=`"${a.action}","${a.detail}","${a.user}","${a.time}"\n`;});
+    filename='auditoria_3cos.csv';
+  }else if(type==='payments'){
+    csv='Afiliado,Marca,Contrato,Valor,Vencimento,Status,NF\n';
+    STATE.payments.forEach(p=>{csv+=`"${p.affiliate}","${p.brand}","${p.contract}",${p.amount},"${p.dueDate||''}","${p.status}","${p.nfName||''}"\n`;});
+    filename='pagamentos_3cos.csv';
+  }else if(type==='affiliates'){
+    csv='Nome,Email,Tipo,Status,FTDs,QFTDs,Depósitos,Comissão,Lucro\n';
+    STATE.affiliates.forEach(a=>{csv+=`"${a.name}","${a.contactEmail}","${a.contractType}","${a.status}",${a.ftds},${a.qftds},${a.deposits},${a.commission},${a.profit}\n`;});
+    filename='afiliados_3cos.csv';
+  }
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');link.href=url;link.download=filename;
+  document.body.appendChild(link);link.click();document.body.removeChild(link);
+  URL.revokeObjectURL(url);toast('CSV exportado!');
 };
 
 // ══════════════════════════════════════════════════════════
@@ -2126,6 +2442,7 @@ function bPayments(el){
       </div>
       <div class="sec-hdr"><div class="sec-lbl">Fila de pagamentos</div>
         <div class="sec-actions">
+          <button class="btn btn-outline" onclick="exportCSV('payments')"><i data-lucide="download"></i>CSV</button>
           <button class="btn btn-outline" onclick="openBatch()"><i data-lucide="send"></i>Remessa NFs</button>
           <button class="btn btn-theme" onclick="openNewPay()"><i data-lucide="plus"></i>Novo</button>
         </div></div>
@@ -2293,13 +2610,24 @@ window.openBatch=()=>{
       ${p.nfName?`<span style="font-size:10px;color:var(--blue)">📎 ${p.nfName}</span>`:'<span style="font-size:10px;color:var(--text3)">Sem NF</span>'}
     </label>`).join(''):'<div class="empty"><p>Nenhum aguardando envio</p></div>'}
   </div>`,appr.length?`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-theme" onclick="closeModal();logAction('Remessa enviada','');toast('Enviado!')"><i data-lucide="send"></i>Enviar Remessa</button>`:
+    <button class="btn btn-theme" onclick="sendBatch()"><i data-lucide="send"></i>Enviar Remessa</button>`:
     `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
   lucide.createIcons();
 };
 
+window.sendBatch=()=>{
+  const checked=[...document.querySelectorAll('#mbd input[type="checkbox"]:checked')];
+  const appr=STATE.payments.filter(p=>p.status==='aprovado');
+  let sent=0;
+  appr.forEach((p,i)=>{if(checked[i]?.checked){p.status='pago';sent++;}});
+  if(sent>0){logAction('Remessa enviada',`${sent} pagamento(s) confirmado(s)`);saveToLocal();}
+  closeModal();
+  renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);
+  toast(sent>0?`${sent} pagamento(s) confirmado(s)!`:'Nenhum selecionado');
+};
+
 // ══════════════════════════════════════════════════════════
-// 5. TASKS 
+// 5. TASKS
 // ══════════════════════════════════════════════════════════
 let _tkF=null;
 function bTasks(el){
@@ -2354,7 +2682,7 @@ function renderTasks(list){
   }).join('');
   lucide.createIcons();
 }
-window.toggleTask=id=>{const t=STATE.tasks.find(x=>x.id===id);if(!t)return;t.status=t.status==='concluída'?'pendente':'concluída';logAction('Tarefa '+(t.status==='concluída'?'concluída':'reaberta'),t.title);renderTasks(_tkF?STATE.tasks.filter(x=>x.status===_tkF):STATE.tasks);toast(t.status==='concluída'?'Concluída!':'Reaberta');};
+window.toggleTask=id=>{const t=STATE.tasks.find(x=>x.id===id);if(!t)return;t.status=t.status==='concluída'?'pendente':'concluída';logAction('Tarefa '+(t.status==='concluída'?'concluída':'reaberta'),t.title);saveToLocal();renderTasks(_tkF?STATE.tasks.filter(x=>x.status===_tkF):STATE.tasks);toast(t.status==='concluída'?'Concluída!':'Reaberta');};
 window.pilTk=(s,btn)=>{_tkF=s;btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderTasks(s?STATE.tasks.filter(t=>t.status===s):STATE.tasks);};
 
 window.openNewTask=()=>openModal('Nova Tarefa',`<div class="fg">
@@ -2394,9 +2722,9 @@ window.saveTask=()=>{
     dueDate:document.getElementById('nt-d')?.value||'',
     status:'pendente'
   };
-  STATE.tasks.unshift(t);logAction('Tarefa criada',title);
+  STATE.tasks.unshift(t);logAction('Tarefa criada',title);saveToLocal();
   closeModal();renderTasks(STATE.tasks);toast('Tarefa criada!');
-  updateActionCenter(); 
+  updateActionCenter();
 };
 
 window.openEditTask = id => {
@@ -2471,7 +2799,7 @@ function bAudit(el){
     ${heroHTML('audit','Segurança','Log de Auditoria','Registro imutável de ações do sistema')}
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Últimas ações no sistema</div>
-        <button class="btn btn-outline" onclick="toast('Exportação CSV iniciada','i')"><i data-lucide="download"></i>Exportar CSV</button>
+        <button class="btn btn-outline" onclick="exportCSV('audit')"><i data-lucide="download"></i>Exportar CSV</button>
       </div>
       <div style="background:rgba(0,0,0,0.2);border:1px solid var(--gb);border-radius:16px;padding:12px 24px">
         ${STATE.auditLog.length?STATE.auditLog.map(a=>`
@@ -2499,7 +2827,7 @@ function bUsers(el){
     ${heroHTML('users','Admin','Gestão de Usuários','Controle de permissões e acessos')}
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Usuários ativos</div>
-        <button class="btn btn-theme" onclick="toast('Função disponível na versão Enterprise','i')"><i data-lucide="user-plus"></i>Novo Usuário</button>
+        <button class="btn btn-theme" onclick="openNewUser()"><i data-lucide="user-plus"></i>Novo Usuário</button>
       </div>
       <div class="user-grid">
         ${STATE.users.map(u=>`<div class="user-card" style="border:1px solid var(--gb)">
@@ -2510,8 +2838,8 @@ function bUsers(el){
             <div class="user-mods">${u.modules.map(m=>`<span class="mod-chip">${MODS.find(x=>x.id===m)?.label||m}</span>`).join('')}</div>
           </div>
           <div style="display:flex;gap:4px">
-            <button class="ibt" onclick="toast('Editar usuário em breve','i')" title="Editar"><i data-lucide="edit-3"></i></button>
-            <button class="ibt ${u.status==='ativo'?'danger':'green'}" onclick="toast('Alterar status em breve','i')" title="${u.status==='ativo'?'Bloquear':'Desbloquear'}">
+            <button class="ibt" onclick="openEditUser('${u.id}')" title="Editar"><i data-lucide="edit-3"></i></button>
+            <button class="ibt ${u.status==='ativo'?'danger':'green'}" onclick="toggleUserStatus('${u.id}')" title="${u.status==='ativo'?'Bloquear':'Desbloquear'}">
               <i data-lucide="${u.status==='ativo'?'lock':'unlock'}"></i>
             </button>
           </div>
