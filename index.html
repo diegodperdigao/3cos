@@ -825,6 +825,32 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-theme="light"] .hub-hamburger { background: rgba(255,255,255,0.5); border-color: rgba(255,255,255,0.8); }
 
 /* ══════════════════════════════════════════════════════════
+   MOBILE HUB HOME (replaces grid on mobile)
+══════════════════════════════════════════════════════════ */
+.hub-mobile-home { display: none; width: 100%; max-width: 900px; }
+@media (max-width: 768px) {
+  .hub-desktop-only { display: none !important; }
+  .hub-mobile-home { display: flex; flex-direction: column; gap: 16px; }
+}
+.mob-home-section { margin-bottom: 4px; }
+.mob-home-title {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.mob-home-title i { width: 12px; height: 12px; }
+.mob-home-card {
+  background: var(--bg2); border: 1px solid var(--glass-border); border-radius: 14px;
+  padding: 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+[data-theme="light"] .mob-home-card {
+  background: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.8);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+.mob-home-card:active { transform: scale(0.98); }
+.mob-home-empty { font-size: 11px; color: var(--text3); text-align: center; padding: 20px; }
+
+/* ══════════════════════════════════════════════════════════
    MOBILE SAFE AREAS & TOUCH IMPROVEMENTS
 ══════════════════════════════════════════════════════════ */
 @supports (padding: env(safe-area-inset-top)) {
@@ -1041,6 +1067,9 @@ textarea.fi{resize:vertical;min-height:60px;}
     <div class="lock-hint">Acesso seguro via Firebase Auth</div>
     <div id="lerr" class="lock-err"></div>
     <div class="lock-reset" onclick="toast('Email enviado!','i')">Esqueci minha senha</div>
+    <button onclick="toggleTheme()" style="margin-top:16px;background:transparent;border:1px solid var(--gb2);border-radius:9px;padding:8px 16px;cursor:pointer;color:var(--text3);font-family:var(--fb);font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px">
+      <i data-lucide="sun" style="width:13px;height:13px"></i> Alternar Tema
+    </button>
   </div>
 </div>
 
@@ -1077,8 +1106,10 @@ textarea.fi{resize:vertical;min-height:60px;}
       <div class="hub-id-tagline">CRM & Gestão</div>
       <div class="hub-greeting" id="hub-greeting">Selecione o módulo de trabalho</div>
     </div>
-    <div class="hub-apps-label">Módulos disponíveis</div>
-    <div class="hub-apps" id="hub-cards"></div>
+    <div class="hub-apps-label hub-desktop-only">Módulos disponíveis</div>
+    <div class="hub-apps hub-desktop-only" id="hub-cards"></div>
+    <!-- Mobile Home: Tasks + Notifications -->
+    <div class="hub-mobile-home" id="hub-mobile-home"></div>
   </div>
 </div>
 
@@ -1137,6 +1168,7 @@ const CONTRACT_TYPES={
   deposit:{label:'Meta de Depósitos',css:'deposit'},
   rs:{label:'Revenue Share',css:'rs'},
   tiered:{label:'CPA Escalonado',css:'tiered'},
+  pct_deposit:{label:'% de Depósitos',css:'deposit'},
 };
 const ALL_MODS=['dashboard','affiliates','brands','payments','tasks','audit','users'];
 const ROLES={
@@ -1523,7 +1555,7 @@ function showHub(){
     document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
     const hub=document.getElementById('hub');hub.style.display='flex';
     setTimeout(()=>hub.style.opacity='1',50);
-    buildHubCards(); updateNotifBadge();
+    buildHubCards(); buildMobileHome(); updateNotifBadge();
     initMosaics();lucide.createIcons();
   },650);
 }
@@ -1551,6 +1583,60 @@ function buildHubCards(){
     </div>`).join('');
   const count=visible.length;
   document.getElementById('hub-cards').style.gridTemplateColumns=`repeat(${Math.min(count,6)},1fr)`;
+  lucide.createIcons();
+}
+
+// ── MOBILE HOME (tasks + notifications) ──
+function buildMobileHome(){
+  const el=document.getElementById('hub-mobile-home');if(!el)return;
+  const myTasks=STATE.tasks.filter(t=>t.status!=='concluída').sort((a,b)=>{
+    const pr={alta:0,média:1,baixa:2};return(pr[a.priority]||2)-(pr[b.priority]||2);
+  }).slice(0,6);
+  const notifs=STATE.notifications.filter(n=>!n.read).slice(0,4);
+  const pendPay=STATE.payments.filter(p=>p.status==='pendente'||p.status==='ajuste').slice(0,3);
+
+  el.innerHTML=`
+    ${notifs.length?`<div class="mob-home-section">
+      <div class="mob-home-title"><i data-lucide="bell"></i> Alertas</div>
+      ${notifs.map(n=>`<div class="mob-home-card" onclick="toggleActionCenter()" style="display:flex;gap:10px;align-items:flex-start">
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--${n.type});margin-top:6px;flex-shrink:0"></div>
+        <div><div style="font-size:12px;font-weight:500;color:var(--text);line-height:1.4">${n.text}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:3px">${n.time}</div></div>
+      </div>`).join('')}
+    </div>`:''}
+
+    <div class="mob-home-section">
+      <div class="mob-home-title"><i data-lucide="check-square"></i> Tarefas Pendentes (${myTasks.length})</div>
+      ${myTasks.length?myTasks.map(t=>{
+        const priCol=t.priority==='alta'?'var(--red)':t.priority==='média'?'var(--amber)':'var(--text3)';
+        return `<div class="mob-home-card" onclick="openMod('tasks')" style="border-left:3px solid ${priCol}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div style="font-size:12px;font-weight:600;color:var(--text);line-height:1.3;flex:1">${t.title}</div>
+            <span class="pri pri-${t.priority[0]==='a'?'a':t.priority[0]==='m'?'m':'b'}" style="flex-shrink:0">${t.priority.toUpperCase()}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text2)">
+            <span>${t.assignee||'Sem responsável'}</span>
+            ${t.dueDate?`<span style="${new Date(t.dueDate)<new Date()?'color:var(--red)':''}">${new Date(t.dueDate).toLocaleDateString('pt-BR')}</span>`:''}
+          </div>
+        </div>`;
+      }).join(''):`<div class="mob-home-empty">Nenhuma tarefa pendente</div>`}
+    </div>
+
+    ${pendPay.length?`<div class="mob-home-section">
+      <div class="mob-home-title"><i data-lucide="banknote"></i> Pagamentos Pendentes</div>
+      ${pendPay.map(p=>`<div class="mob-home-card" onclick="openMod('payments')" style="display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:12px;font-weight:600;color:var(--text)">${p.affiliate}</div>
+        <div style="font-size:10px;color:var(--text2)">${p.contract}</div></div>
+        <div style="text-align:right"><div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--theme)">${fc(p.amount)}</div>
+        <div style="font-size:9px;color:var(--text3)">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):''}</div></div>
+      </div>`).join('')}
+    </div>`:''}
+
+    <div class="mob-home-section" style="margin-top:8px">
+      <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openMobSidebar()">
+        <i data-lucide="grid"></i> Abrir Módulos
+      </button>
+    </div>`;
   lucide.createIcons();
 }
 
@@ -1828,6 +1914,7 @@ function bAffs(el){
         <button class="pill" onclick="filterAffType('deposit',this)">Meta Depósitos</button>
         <button class="pill" onclick="filterAffType('rs',this)">Revenue Share</button>
         <button class="pill" onclick="filterAffType('tiered',this)">CPA Escalonado</button>
+        <button class="pill" onclick="filterAffType('pct_deposit',this)">% de Depósitos</button>
       </div>
       <div class="aff-grid" id="aff-grid"></div>
     </div></div>`;
@@ -1898,8 +1985,9 @@ window.openAffDetail=id=>{
         <div class="dtl" style="margin-bottom:10px">Deals por Marca</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           ${brands.map(brand=>{const deal=a.deals[brand];const br=STATE.brands[brand]||{color:'#888',rgb:'136,136,136'};
-            let info=a.contractType==='tiered'?`CPA Escalonado: ${(deal.levels||[]).map(l=>`${l.name} R$${l.cpa}`).join(' | ')} + RS ${deal.rs||br.rs}%`:
+            let info=a.contractType==='tiered'?`CPA Escalonado: ${(deal.levels||[]).map(l=>`${l.name} R$${l.cpa} (base ${l.baseline})`).join(' | ')} + RS ${deal.rs||br.rs}%`:
               a.contractType==='deposit'?`Meta Depósitos: R$${(deal.depositTarget||0).toLocaleString('pt-BR')}/mês`:
+              a.contractType==='pct_deposit'?`% de Depósitos: ${deal.pctDeposit||0}% + CPA R$${deal.cpa||0}`:
               a.contractType==='rs'?`Revenue Share: ${deal.rs||br.rs}%`:`CPA: R$${deal.cpa||br.cpa} + RS: ${deal.rs||br.rs}%`;
             return `<div style="padding:10px 13px;background:rgba(${br.rgb},0.08);border:1px solid rgba(${br.rgb},0.2);border-radius:10px">
               <div style="font-size:11px;font-weight:600;color:${br.color};margin-bottom:3px">${brand}</div>
@@ -1952,20 +2040,81 @@ window.addCRMNote = (affiliateId) => {
   }
 }
 
-window.openNewAff=()=>openModal('Novo Afiliado',`<div class="fg">
-  <div class="fgp ff"><label>Nome *</label><input class="fi" id="na-name" placeholder="Ex: Agência FMG"></div>
-  <div class="fgp"><label>Email</label><input class="fi" id="na-email" placeholder="afiliado@3c.gg"></div>
-  <div class="fgp"><label>Tipo de contrato</label><select class="fi" id="na-ct">
-    <option value="cpa">CPA + Rev Share</option><option value="deposit">Meta de Depósitos</option>
-    <option value="rs">Revenue Share</option><option value="tiered">CPA Escalonado</option>
-  </select></div>
-  <div class="fgp"><label>Marcas Parceiras</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
-    ${Object.entries(STATE.brands).map(([n,br])=>`<label style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;border:1px solid rgba(${br.rgb},0.25);background:rgba(${br.rgb},0.07);cursor:pointer;font-size:11px;font-weight:600;color:${br.color}">
-      <input type="checkbox" value="${n}" style="accent-color:${br.color}"> ${n}</label>`).join('')}
-  </div></div>
-  <div class="fgp ff"><label>Observações</label><textarea class="fi" id="na-notes" rows="2"></textarea></div>
-</div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-  <button class="btn btn-theme" onclick="saveNewAff()"><i data-lucide="save"></i> Salvar</button>`);
+window.openNewAff=()=>{
+  const brandsList=Object.entries(STATE.brands);
+  openModal('Novo Afiliado',`<div class="fg">
+    <div class="fgp ff"><label>Nome *</label><input class="fi" id="na-name" placeholder="Ex: Agência FMG"></div>
+    <div class="fgp"><label>Email</label><input class="fi" id="na-email" placeholder="afiliado@3c.gg"></div>
+    <div class="fgp"><label>Tipo de comissão principal</label><select class="fi" id="na-ct" onchange="updateDealFields()">
+      <option value="cpa">CPA + Rev Share</option><option value="deposit">Meta de Depósitos</option>
+      <option value="rs">Revenue Share</option><option value="tiered">CPA Escalonado</option>
+      <option value="pct_deposit">% de Depósitos</option>
+    </select></div>
+    <div class="fgp ff"><label>Marcas e Comissões</label>
+      <div id="na-deals" style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+        ${brandsList.map(([n,br])=>`
+          <div class="na-brand-deal" style="padding:12px;background:rgba(${br.rgb},0.06);border:1px solid rgba(${br.rgb},0.2);border-radius:12px">
+            <label style="display:flex;align-items:center;gap:7px;margin-bottom:8px;cursor:pointer">
+              <input type="checkbox" class="na-brand-chk" value="${n}" style="accent-color:${br.color}">
+              <span style="font-size:12px;font-weight:700;color:${br.color}">${n}</span>
+            </label>
+            <div class="na-deal-fields" data-brand="${n}" style="display:none;gap:8px;flex-wrap:wrap">
+              <div class="na-deal-std" style="display:flex;gap:6px;flex-wrap:wrap">
+                <div style="flex:1;min-width:100px"><label style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">CPA (R$)</label>
+                  <input type="number" class="fi" data-field="cpa" value="${br.cpa||0}" style="padding:8px;font-size:12px"></div>
+                <div style="flex:1;min-width:100px"><label style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Rev Share (%)</label>
+                  <input type="number" class="fi" data-field="rs" value="${br.rs||0}" style="padding:8px;font-size:12px"></div>
+                <div style="flex:1;min-width:100px" class="na-deal-dep"><label style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Meta Dep. (R$)</label>
+                  <input type="number" class="fi" data-field="depositTarget" value="50000" style="padding:8px;font-size:12px"></div>
+                <div style="flex:1;min-width:100px" class="na-deal-pct"><label style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">% Depósitos</label>
+                  <input type="number" class="fi" data-field="pctDeposit" value="5" step="0.1" style="padding:8px;font-size:12px"></div>
+              </div>
+              <div class="na-deal-tiered" style="display:none;margin-top:8px;width:100%">
+                <label style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;display:block">Níveis CPA Escalonado</label>
+                <div class="na-tiers" data-brand="${n}" style="display:flex;flex-direction:column;gap:4px">
+                  <div style="display:flex;gap:4px;align-items:center">
+                    <input class="fi" data-tier="name" value="L1" style="width:50px;padding:6px;font-size:11px" placeholder="Nível">
+                    <input type="number" class="fi" data-tier="cpa" value="${br.cpa||0}" style="flex:1;padding:6px;font-size:11px" placeholder="CPA R$">
+                    <input type="number" class="fi" data-tier="baseline" value="30" style="flex:1;padding:6px;font-size:11px" placeholder="Baseline">
+                  </div>
+                </div>
+                <button onclick="addTier('${n}')" style="margin-top:4px;background:transparent;border:1px dashed var(--gb2);border-radius:6px;padding:4px 10px;font-size:9px;color:var(--text3);cursor:pointer;width:100%">+ Nível</button>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="fgp ff"><label>Observações</label><textarea class="fi" id="na-notes" rows="2"></textarea></div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveNewAff()"><i data-lucide="save"></i> Salvar</button>`);
+  // Toggle deal fields on checkbox
+  document.querySelectorAll('.na-brand-chk').forEach(chk=>{
+    chk.addEventListener('change',()=>{
+      const fields=document.querySelector(`.na-deal-fields[data-brand="${chk.value}"]`);
+      if(fields)fields.style.display=chk.checked?'flex':'none';
+    });
+  });
+  updateDealFields();
+};
+
+window.updateDealFields=()=>{
+  const ct=document.getElementById('na-ct')?.value||'cpa';
+  document.querySelectorAll('.na-deal-std').forEach(el=>el.style.display='flex');
+  document.querySelectorAll('.na-deal-tiered').forEach(el=>el.style.display=ct==='tiered'?'block':'none');
+  document.querySelectorAll('.na-deal-dep').forEach(el=>el.style.display=(ct==='deposit')?'block':'none');
+  document.querySelectorAll('.na-deal-pct').forEach(el=>el.style.display=(ct==='pct_deposit')?'block':'none');
+};
+
+window.addTier=(brand)=>{
+  const container=document.querySelector(`.na-tiers[data-brand="${brand}"]`);if(!container)return;
+  const n=container.children.length+1;
+  const div=document.createElement('div');div.style.cssText='display:flex;gap:4px;align-items:center';
+  div.innerHTML=`<input class="fi" data-tier="name" value="L${n}" style="width:50px;padding:6px;font-size:11px">
+    <input type="number" class="fi" data-tier="cpa" value="0" style="flex:1;padding:6px;font-size:11px" placeholder="CPA R$">
+    <input type="number" class="fi" data-tier="baseline" value="0" style="flex:1;padding:6px;font-size:11px" placeholder="Baseline">
+    <button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px">×</button>`;
+  container.appendChild(div);
+};
 
 window.saveNewAff=()=>{
   const name=document.getElementById('na-name')?.value.trim();
@@ -1973,15 +2122,29 @@ window.saveNewAff=()=>{
   const email=document.getElementById('na-email')?.value.trim()||'';
   const ct=document.getElementById('na-ct')?.value||'cpa';
   const notes=document.getElementById('na-notes')?.value.trim()||'';
-  const checkedBrands=[...document.querySelectorAll('#mbd input[type="checkbox"]:checked')].map(c=>c.value);
   const deals={};
-  checkedBrands.forEach(b=>{
-    const br=STATE.brands[b];if(!br)return;
-    if(ct==='tiered'){deals[b]={levels:[{key:'l1',cpa:br.cpa||0,baseline:10}],rs:br.rs||0};}
-    else if(ct==='deposit'){deals[b]={cpa:0,rs:0,depositTarget:50000};}
-    else if(ct==='rs'){deals[b]={cpa:0,rs:br.rs||0};}
-    else{deals[b]={cpa:br.cpa||0,rs:br.rs||0};}
+  document.querySelectorAll('.na-brand-chk:checked').forEach(chk=>{
+    const b=chk.value;const fields=document.querySelector(`.na-deal-fields[data-brand="${b}"]`);
+    if(!fields)return;
+    const deal={};
+    deal.cpa=parseFloat(fields.querySelector('[data-field="cpa"]')?.value)||0;
+    deal.rs=parseFloat(fields.querySelector('[data-field="rs"]')?.value)||0;
+    if(ct==='deposit')deal.depositTarget=parseFloat(fields.querySelector('[data-field="depositTarget"]')?.value)||0;
+    if(ct==='pct_deposit')deal.pctDeposit=parseFloat(fields.querySelector('[data-field="pctDeposit"]')?.value)||0;
+    if(ct==='tiered'){
+      const tiers=fields.querySelector(`.na-tiers[data-brand="${b}"]`);
+      if(tiers){deal.levels=[];
+        tiers.querySelectorAll('div').forEach(row=>{
+          const tn=row.querySelector('[data-tier="name"]')?.value||'L1';
+          const tc=parseFloat(row.querySelector('[data-tier="cpa"]')?.value)||0;
+          const tb=parseFloat(row.querySelector('[data-tier="baseline"]')?.value)||0;
+          deal.levels.push({key:tn.toLowerCase(),name:tn,cpa:tc,baseline:tb});
+        });
+      }
+    }
+    deals[b]=deal;
   });
+  if(!Object.keys(deals).length){toast('Selecione pelo menos uma marca','e');return;}
   const newAff={id:'a'+Date.now(),name,type:'afiliado',status:'ativo',contactName:name,contactEmail:email,contractType:ct,deals,ftds:0,qftds:0,deposits:0,netRev:0,commission:0,profit:0,notes};
   STATE.affiliates.push(newAff);logAction('Afiliado cadastrado',name);saveToLocal();closeModal();
   renderAffs(_affTypeF?STATE.affiliates.filter(a=>a.contractType===_affTypeF):STATE.affiliates);
