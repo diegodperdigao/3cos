@@ -1275,17 +1275,41 @@ const DEFAULT_STATE={
 // ── PERSISTENCE (LOCALSTORAGE) ──
 const STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
 // ── PERSISTENCE: localStorage (cache) + Firestore (cloud) ──
+// ── PERSISTENCE: localStorage (cache) + Firestore (cloud) ──
 let _saveTimeout = null;
+let _dailyWrites = parseInt(localStorage.getItem('3cos_writes_today')||'0');
+let _writesDate = localStorage.getItem('3cos_writes_date')||'';
+const WRITE_LIMIT_WARNING = 15000; // avisa com 75% do limite
+const WRITE_LIMIT_BLOCK = 19000;   // bloqueia com 95%
+
+const resetWriteCounter = () => {
+  const today = new Date().toISOString().split('T')[0];
+  if (_writesDate !== today) { _dailyWrites = 0; _writesDate = today; }
+};
+
 const saveToLocal = () => {
   localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
-  // Debounce cloud save (avoid excessive writes)
   clearTimeout(_saveTimeout);
-  _saveTimeout = setTimeout(saveToCloud, 1500);
+  _saveTimeout = setTimeout(saveToCloud, 2000);
 };
 
 const saveToCloud = async () => {
   if (!fbAuth.currentUser) return;
+  resetWriteCounter();
+
+  if (_dailyWrites >= WRITE_LIMIT_BLOCK) {
+    console.warn('Cloud save blocked: daily write limit reached');
+    return;
+  }
+  if (_dailyWrites === WRITE_LIMIT_WARNING) {
+    toast('Atenção: 75% do limite diário de escritas na nuvem','w');
+  }
+
   try {
+    // Limpar dados antigos para economizar espaço
+    if (STATE.auditLog.length > 200) STATE.auditLog = STATE.auditLog.slice(0, 200);
+    if (STATE.notifications.length > 50) STATE.notifications = STATE.notifications.slice(0, 50);
+
     const data = {
       brands: STATE.brands,
       users: STATE.users,
@@ -1294,15 +1318,21 @@ const saveToCloud = async () => {
       payments: STATE.payments,
       reports: STATE.reports,
       tasks: STATE.tasks,
-      auditLog: STATE.auditLog.slice(0, 100),
-      notifications: STATE.notifications.slice(0, 50),
+      auditLog: STATE.auditLog,
+      notifications: STATE.notifications,
       deadlines: STATE.deadlines || {},
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: STATE.user?.email || 'unknown'
     };
     await FB_DOC.set(data, { merge: true });
+    _dailyWrites++;
+    localStorage.setItem('3cos_writes_today', String(_dailyWrites));
+    localStorage.setItem('3cos_writes_date', _writesDate);
   } catch (e) {
     console.warn('Cloud save failed:', e.message);
+    if (e.code === 'resource-exhausted') {
+      toast('Limite do Firebase atingido. Dados salvos localmente.', 'w');
+    }
   }
 };
 
