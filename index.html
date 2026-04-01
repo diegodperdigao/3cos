@@ -1055,13 +1055,6 @@ textarea.fi{resize:vertical;min-height:60px;}
 </div>
 
 <!-- LOCK -->
-<!-- LOADING SPLASH (hides login flash on reload) -->
-<div id="splash" style="position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;transition:opacity 0.4s">
-  <img src="https://i.ibb.co/TDvNpKbv/285535120-111261434935979-5560566145880188190-n.jpg" style="width:52px;height:52px;border-radius:50%;border:2px solid var(--gb3);box-shadow:0 0 22px var(--theme-glow)">
-  <div style="font-family:var(--fd);font-size:20px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:var(--text)">3C<span style="color:var(--theme)">OS</span></div>
-  <div style="font-size:9px;color:var(--text3);letter-spacing:0.2em;text-transform:uppercase">Carregando...</div>
-</div>
-
 <div id="lock" style="display:none">
   <div class="mosaic-wrapper"><div class="mosaic-container"><div class="mosaic-pattern" id="lock-mosaic"></div></div></div>
   <div class="lock-box">
@@ -3421,36 +3414,55 @@ window.toggleTheme = _wrapToggleTheme;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'light' ? '#f8fafc' : '#030008');
 })();
 
-// ── AUTO SESSION RESTORE (Firebase Auth State) ──
-const hideSplash=()=>{const sp=document.getElementById('splash');if(sp){sp.style.opacity='0';setTimeout(()=>sp.remove(),400);}};
-const showLockScreen=()=>{const lock=document.getElementById('lock');if(lock){lock.style.display='flex';lock.style.opacity='1';}hideSplash();};
-const directShowHub=()=>{
-  document.getElementById('lock').style.display='none';
-  const fn=STATE.user.name.split(' ')[0];
-  document.getElementById('hub-uname').textContent=STATE.user.name;
-  document.getElementById('hub-urole').textContent=ROLES[STATE.user.role]?.label||STATE.user.role;
-  document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
-  const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
-  buildHubCards();buildMobileHome();updateNotifBadge();initMosaics();lucide.createIcons();
-  hideSplash();
-};
+// ── AUTO SESSION RESTORE ──
+// 1) Instantly restore from localStorage (no flash, no delay)
+(function(){
+  const sess=localStorage.getItem('3cos_sess');
+  if(sess){
+    try{
+      const d=JSON.parse(sess);
+      if(d.user && d.exp > Date.now()){
+        STATE.user=d.user;
+        fixBrandLogos();
+        // Show hub immediately
+        document.getElementById('lock').style.display='none';
+        const fn=STATE.user.name.split(' ')[0];
+        document.getElementById('hub-uname').textContent=STATE.user.name;
+        document.getElementById('hub-urole').textContent=ROLES[STATE.user.role]?.label||STATE.user.role;
+        document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
+        const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
+        buildHubCards();buildMobileHome();updateNotifBadge();initMosaics();lucide.createIcons();
+        return;
+      }
+    }catch(e){}
+  }
+  // No valid session — show login
+  document.getElementById('lock').style.display='flex';
+  document.getElementById('lock').style.opacity='1';
+})();
 
+// 2) Firebase validates in background and syncs cloud data
 fbAuth.onAuthStateChanged(async (firebaseUser) => {
-  if (firebaseUser) {
-    const sess=localStorage.getItem('3cos_sess');
-    if(sess){
-      try{
-        const d=JSON.parse(sess);
-        if(d.user){STATE.user=d.user;await loadFromCloud();fixBrandLogos();directShowHub();return;}
-      }catch(e){}
-    }
+  if (firebaseUser && STATE.user) {
+    // Session valid — sync cloud data silently
+    await loadFromCloud();
+    fixBrandLogos();
+  } else if (!firebaseUser && STATE.user) {
+    // Firebase says not authenticated but we have local session — force logout
+    STATE.user=null;localStorage.removeItem('3cos_sess');
+    document.getElementById('hub').style.display='none';
+    document.getElementById('hub').style.opacity='0';
+    document.getElementById('lock').style.display='flex';
+    document.getElementById('lock').style.opacity='1';
+  } else if (firebaseUser && !STATE.user) {
+    // Firebase authenticated but no local session — restore
     const found=STATE.users.find(u=>u.email===firebaseUser.email&&u.status==='ativo');
     if(found){
       STATE.user=found;await loadFromCloud();fixBrandLogos();
       localStorage.setItem('3cos_sess',JSON.stringify({user:STATE.user,exp:Date.now()+7*86400000}));
-      directShowHub();
-    } else { showLockScreen(); }
-  } else { showLockScreen(); }
+      showHub();
+    }
+  }
 });
 </script>
 </body>
