@@ -1362,13 +1362,15 @@ const loadFromCloud = async () => {
 };
 
 const fixBrandLogos = () => {
+  // Força logos corretas (sobrescreve cache antigo)
+  const correctLogos = {
+    'Vupi': 'https://iili.io/Bq3Hck7.png',
+    'Novibet': 'https://i.ibb.co/1fCKT0kq/logonovibet.png',
+    'Superbet': 'https://i.ibb.co/qL0KMg8k/logosuperbet.webp'
+  };
   Object.keys(STATE.brands).forEach(b => {
-    if (!STATE.brands[b].logo || STATE.brands[b].logo.includes('ui-avatars')) {
-      if (b === 'Vupi') STATE.brands[b].logo = 'https://iili.io/Bq3Hck7.png';
-      else if (b === 'Novibet') STATE.brands[b].logo = 'https://i.ibb.co/1fCKT0kq/logonovibet.png';
-      else if (b === 'Superbet') STATE.brands[b].logo = 'https://i.ibb.co/qL0KMg8k/logosuperbet.webp';
-      else STATE.brands[b].logo = LOGO;
-    }
+    if (correctLogos[b]) STATE.brands[b].logo = correctLogos[b];
+    else if (!STATE.brands[b].logo) STATE.brands[b].logo = LOGO;
   });
 };
 
@@ -1687,6 +1689,7 @@ function buildMobileHome(){
 
 // ── MODULE OPEN/CLOSE ──
 window.openMod=id=>{
+  sessionStorage.setItem('3cos_activeMod',id);
   const hub=document.getElementById('hub');hub.style.opacity='0';
   setTimeout(()=>{
     hub.style.display='none';
@@ -1698,6 +1701,7 @@ window.openMod=id=>{
   },320);
 };
 window.goBack=()=>{
+  sessionStorage.removeItem('3cos_activeMod');
   document.querySelectorAll('.mod.active').forEach(a=>{a.style.opacity='0';setTimeout(()=>{a.style.display='none';a.classList.remove('active');},320);});
   const hub=document.getElementById('hub');hub.style.display='flex';setTimeout(()=>hub.style.opacity='1',50);
   if(window.mainChartInstance) { window.mainChartInstance.destroy(); window.mainChartInstance = null; }
@@ -3462,8 +3466,17 @@ window.toggleTheme = _wrapToggleTheme;
         document.getElementById('hub-uname').textContent=STATE.user.name;
         document.getElementById('hub-urole').textContent=ROLES[STATE.user.role]?.label||STATE.user.role;
         document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
-        const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
-        buildHubCards();buildMobileHome();updateNotifBadge();initMosaics();lucide.createIcons();
+        // Restaurar módulo ativo ou mostrar hub
+        const savedMod=sessionStorage.getItem('3cos_activeMod');
+        if(savedMod){
+          const modEl=document.getElementById('mod-'+savedMod);
+          if(modEl){buildMod(savedMod,modEl);modEl.style.display='flex';modEl.classList.add('active');modEl.style.opacity='1';initMosaics();lucide.createIcons();}
+          else{const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';buildHubCards();buildMobileHome();}
+        }else{
+          const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
+          buildHubCards();buildMobileHome();
+        }
+        updateNotifBadge();initMosaics();lucide.createIcons();
         return;
       }
     }catch(e){}
