@@ -2914,18 +2914,176 @@ window.saveNewPay=()=>{
 };
 
 window.openBatch=()=>{
-  const appr=STATE.payments.filter(p=>p.status==='aprovado');
-  openModal('Remessa de NFs',`<div style="display:flex;flex-direction:column;gap:7px">
-    ${appr.length?appr.map(p=>`<label style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:rgba(0,0,0,0.2);border-radius:9px">
-      <input type="checkbox" checked style="accent-color:var(--theme);flex-shrink:0">
-      <div style="flex:1"><span style="font-size:12px;font-weight:600;color:var(--text);display:block">${p.affiliate} — ${p.contract}</span>
-        <span style="font-size:10px;color:var(--text2)">${p.brand} · ${fc(p.amount)}</span></div>
-      ${p.nfName?`<span style="font-size:10px;color:var(--blue)">📎 ${p.nfName}</span>`:'<span style="font-size:10px;color:var(--text3)">Sem NF</span>'}
-    </label>`).join(''):'<div class="empty"><p>Nenhum aguardando envio</p></div>'}
-  </div>`,appr.length?`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-theme" onclick="sendBatch()"><i data-lucide="send"></i>Enviar Remessa</button>`:
-    `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+  const now=new Date();
+  const mesRef=now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const affs=STATE.affiliates.filter(a=>a.status==='ativo'&&Object.keys(a.deals||{}).length>0);
+  openModal('Relatório de Fechamento — '+mesRef,`
+    <div style="margin-bottom:12px">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Selecione os afiliados para gerar o relatório de fechamento em PDF:</p>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button class="btn btn-outline" style="font-size:9px" onclick="document.querySelectorAll('.batch-chk').forEach(c=>c.checked=true)">Selecionar Todos</button>
+        <button class="btn btn-outline" style="font-size:9px" onclick="document.querySelectorAll('.batch-chk').forEach(c=>c.checked=false)">Nenhum</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      ${affs.map(a=>{
+        const brands=Object.keys(a.deals||{});
+        return `<label style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:rgba(0,0,0,0.2);border-radius:9px;cursor:pointer">
+          <input type="checkbox" class="batch-chk" value="${a.id}" checked style="accent-color:var(--theme);flex-shrink:0">
+          <div style="flex:1">
+            <span style="font-size:12px;font-weight:600;color:var(--text);display:block">${a.name}</span>
+            <span style="font-size:10px;color:var(--text2)">${brands.join(', ')} · ${CONTRACT_TYPES[a.contractType]?.label||a.contractType}</span>
+          </div>
+          <span style="font-family:var(--fd);font-size:13px;font-weight:700;color:var(--theme)">${fc(a.commission)}</span>
+        </label>`;
+      }).join('')}
+    </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-outline" onclick="generateAllReports()"><i data-lucide="file-text"></i> Gerar PDFs individuais</button>
+    <button class="btn btn-theme" onclick="generateConsolidatedReport()"><i data-lucide="printer"></i> Relatório Consolidado</button>`);
   lucide.createIcons();
+};
+
+window.generateAllReports=()=>{
+  const checked=[...document.querySelectorAll('.batch-chk:checked')].map(c=>c.value);
+  if(!checked.length)return toast('Selecione pelo menos um afiliado','e');
+  checked.forEach(id=>{const a=STATE.affiliates.find(x=>x.id===id);if(a)generateClosingPDF(a);});
+  logAction('Relatórios gerados',`${checked.length} afiliado(s)`);
+  closeModal();toast(`${checked.length} relatório(s) gerado(s)!`);
+};
+
+window.generateConsolidatedReport=()=>{
+  const checked=[...document.querySelectorAll('.batch-chk:checked')].map(c=>c.value);
+  if(!checked.length)return toast('Selecione pelo menos um afiliado','e');
+  const affs=checked.map(id=>STATE.affiliates.find(x=>x.id===id)).filter(Boolean);
+  generateClosingPDF(null,affs);
+  logAction('Relatório consolidado gerado',`${affs.length} afiliado(s)`);
+  closeModal();toast('Relatório consolidado gerado!');
+};
+
+window.generateClosingPDF=(affiliate,affiliatesList)=>{
+  const now=new Date();
+  const mesRef=now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const dataEmissao=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const isConsolidated=!affiliate&&affiliatesList;
+  const affs=isConsolidated?affiliatesList:[affiliate];
+  const title=isConsolidated?'Relatório Consolidado de Fechamento':`Relatório de Fechamento — ${affiliate.name}`;
+
+  let sections='';
+  let totalComm=0,totalProfit=0,totalDep=0;
+
+  affs.forEach(a=>{
+    const brands=Object.keys(a.deals||{});
+    const ct=CONTRACT_TYPES[a.contractType]||{label:'CPA'};
+    totalComm+=a.commission;totalProfit+=a.profit;totalDep+=a.deposits;
+
+    let brandRows='';
+    brands.forEach(b=>{
+      const deal=a.deals[b];const br=STATE.brands[b]||{color:'#888'};
+      let dealDesc='';
+      if(a.contractType==='tiered')dealDesc=(deal.levels||[]).map(l=>`${l.name}: R$ ${l.cpa} (base ${l.baseline})`).join(' | ')+` + RS ${deal.rs||0}%`;
+      else if(a.contractType==='deposit')dealDesc=`Meta: R$ ${(deal.depositTarget||0).toLocaleString('pt-BR')}/mês`;
+      else if(a.contractType==='pct_deposit')dealDesc=`${deal.pctDeposit||0}% dos depósitos + CPA R$ ${deal.cpa||0}`;
+      else if(a.contractType==='rs')dealDesc=`Revenue Share: ${deal.rs||0}%`;
+      else dealDesc=`CPA: R$ ${deal.cpa||0} + RS: ${deal.rs||0}%`;
+
+      brandRows+=`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;color:${br.color}">${b}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:11px;color:#666">${dealDesc}</td></tr>`;
+    });
+
+    sections+=`
+      ${isConsolidated?`<div style="page-break-inside:avoid;margin-bottom:28px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">`:''}
+      <div style="background:#f8fafc;padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:18px;font-weight:800;color:#0f172a">${a.name}</div>
+          <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;margin-top:2px">${ct.label} · ${a.contactEmail||''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Comissão Total</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#ec4899">R$ ${a.commission.toLocaleString('pt-BR')}</div>
+        </div>
+      </div>
+
+      <div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div style="background:#f1f5f9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">FTDs</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:24px;font-weight:800;color:#0f172a">${a.ftds}</div>
+        </div>
+        <div style="background:#f1f5f9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">QFTDs</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:24px;font-weight:800;color:#ec4899">${a.qftds}</div>
+        </div>
+        <div style="background:#f1f5f9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Depósitos</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:18px;font-weight:800;color:#0f172a">R$ ${a.deposits.toLocaleString('pt-BR')}</div>
+        </div>
+      </div>
+
+      <div style="padding:0 20px 16px">
+        <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-bottom:8px">Deals por Marca</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">${brandRows}</table>
+      </div>
+
+      <div style="padding:0 20px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Net Revenue</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:16px;font-weight:700;color:${(a.netRev||0)>=0?'#10b981':'#ef4444'}">R$ ${(a.netRev||0).toLocaleString('pt-BR')}</div></div>
+        <div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Lucro 3C</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:16px;font-weight:700;color:#10b981">R$ ${a.profit.toLocaleString('pt-BR')}</div></div>
+      </div>
+
+      ${a.notes?`<div style="padding:0 20px 20px"><div style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;padding:12px"><div style="font-size:9px;color:#a16207;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:4px">Observações</div><div style="font-size:11px;color:#713f12;line-height:1.5">${a.notes}</div></div></div>`:''}
+      ${isConsolidated?'</div>':''}`;
+  });
+
+  // Totais consolidados
+  let totalsHTML='';
+  if(isConsolidated){
+    totalsHTML=`<div style="margin-top:24px;padding:20px;background:linear-gradient(135deg,#fdf2f8,#f5f3ff);border-radius:12px;border:1px solid #f0abfc">
+      <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-bottom:12px">Totais Consolidados — ${affs.length} afiliado(s)</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        <div><div style="font-size:9px;color:#64748b;text-transform:uppercase">Total Comissões</div><div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#ec4899">R$ ${totalComm.toLocaleString('pt-BR')}</div></div>
+        <div><div style="font-size:9px;color:#64748b;text-transform:uppercase">Total Depósitos</div><div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#3b82f6">R$ ${totalDep.toLocaleString('pt-BR')}</div></div>
+        <div><div style="font-size:9px;color:#64748b;text-transform:uppercase">Lucro 3C Total</div><div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#10b981">R$ ${totalProfit.toLocaleString('pt-BR')}</div></div>
+      </div>
+    </div>`;
+  }
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório de Fechamento — ${mesRef}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Inter',sans-serif;color:#0f172a;font-size:13px;line-height:1.6;background:#fff}
+      @page{size:A4;margin:20mm 15mm}
+      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+      .page{max-width:800px;margin:0 auto;padding:40px}
+    </style></head><body>
+    <div class="page">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:28px;font-weight:900;letter-spacing:0.04em">
+            <span style="color:#0f172a">3C</span><span style="color:#ec4899">·</span><span style="color:#64748b;font-size:16px;font-weight:600;margin-left:4px">gg</span>
+            <span style="font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:0.05em;margin-left:8px;vertical-align:middle">YOUR GAMING PARTNER</span>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#64748b">Relatório de Fechamento</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px">${dataEmissao}</div>
+        </div>
+      </div>
+      <div style="height:3px;background:linear-gradient(to right,#ec4899,#a855f7);border-radius:2px;margin-bottom:28px"></div>
+
+      <div style="font-family:'Montserrat',sans-serif;font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">${title}</div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:24px">Referência: ${mesRef.charAt(0).toUpperCase()+mesRef.slice(1)}</div>
+
+      ${sections}
+      ${totalsHTML}
+
+      <div style="margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center">
+        <div style="font-size:9px;color:#cbd5e1;letter-spacing:0.15em;text-transform:uppercase">Confidencial · 3C Gaming BizDev · ${now.getFullYear()}</div>
+      </div>
+    </div></body></html>`;
+
+  const w=window.open('','_blank');
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),500);
 };
 
 window.sendBatch=()=>{
