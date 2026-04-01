@@ -1185,7 +1185,7 @@ const ROLES={
 const DEFAULT_STATE={
   user:null,
   brands: {
-    Vupi:{color:'#6901c7',rgb:'105,1,199',cpa:50,rs:20,type:'standard', logo: 'https://i.ibb.co/PGG7sNnz/Screenshot-2026-03-25-at-15-28-52.png'},
+    Vupi:{color:'#6901c7',rgb:'105,1,199',cpa:50,rs:20,type:'standard', logo: 'https://iili.io/Bq3Hck7.png'},
     Novibet:{color:'#3a5fd9',rgb:'58,95,217',rs:30,type:'tiered',levels:[{key:'l1',name:'L1',cpa:180,baseline:30},{key:'l2',name:'L2',cpa:100,baseline:300},{key:'l3',name:'L3',cpa:100,baseline:1200}], logo: 'https://i.ibb.co/1fCKT0kq/logonovibet.png'},
     Superbet:{color:'#e80104',rgb:'232,1,4',cpa:60,rs:25,type:'standard', logo: 'https://i.ibb.co/qL0KMg8k/logosuperbet.webp'},
   },
@@ -1334,7 +1334,7 @@ const loadFromCloud = async () => {
 const fixBrandLogos = () => {
   Object.keys(STATE.brands).forEach(b => {
     if (!STATE.brands[b].logo || STATE.brands[b].logo.includes('ui-avatars')) {
-      if (b === 'Vupi') STATE.brands[b].logo = 'https://i.ibb.co/PGG7sNnz/Screenshot-2026-03-25-at-15-28-52.png';
+      if (b === 'Vupi') STATE.brands[b].logo = 'https://iili.io/Bq3Hck7.png';
       else if (b === 'Novibet') STATE.brands[b].logo = 'https://i.ibb.co/1fCKT0kq/logonovibet.png';
       else if (b === 'Superbet') STATE.brands[b].logo = 'https://i.ibb.co/qL0KMg8k/logosuperbet.webp';
       else STATE.brands[b].logo = LOGO;
