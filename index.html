@@ -59,6 +59,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   -webkit-mask-image:linear-gradient(transparent 0%,black 14%,black 86%,transparent 100%);}
 .mosaic-container{position:absolute;top:-25%;left:-25%;width:150%;height:150%;
   transform:perspective(1000px) rotateX(15deg) rotateY(-5deg) rotateZ(2deg);}
+@media (max-width: 768px) {
+  .mosaic-container{top:-10%;left:-10%;width:120%;height:120%;transform:perspective(800px) rotateX(8deg) rotateY(-3deg) rotateZ(1deg);}
+  .mosaic-pattern{background-size:100px !important;}
+}
 .mosaic-pattern{width:100%;height:100%;background-size:150px;background-repeat:repeat;
   animation:panMosaic 60s linear infinite;transition:background-image 0.4s;}
 @keyframes panMosaic{to{background-position:150px 150px}}
@@ -1672,13 +1676,22 @@ window.goBack=()=>{
 
 function initMosaics(){
   document.querySelectorAll('.mosaic-pattern').forEach(el=>{
-    if(!el.style.backgroundImage||el.style.backgroundImage.includes(LOGO)||el.id==='hub-mosaic'||el.id==='lock-mosaic')
+    if(!el.style.backgroundImage||el.style.backgroundImage==='none'||el.id==='hub-mosaic'||el.id==='lock-mosaic')
       el.style.backgroundImage=`url('${LOGO}')`;
   });
   const hm=document.getElementById('hub-mosaic');
   const lm=document.getElementById('lock-mosaic');
   if(hm)hm.style.backgroundImage=`url('${LOGO}')`;
   if(lm)lm.style.backgroundImage=`url('${LOGO}')`;
+  // Validate brand logos — fallback to LOGO if broken
+  Object.keys(STATE.brands).forEach(b=>{
+    const br=STATE.brands[b];
+    if(br.logo && br.logo !== LOGO){
+      const img=new Image();
+      img.onerror=()=>{br.logo=LOGO;};
+      img.src=br.logo;
+    }
+  });
 }
 
 function modHdr(label){
