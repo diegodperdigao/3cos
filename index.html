@@ -1002,6 +1002,7 @@ textarea.fi{resize:vertical;min-height:60px;}
   /* Inputs: 16px prevents iOS zoom */
   .fi { font-size: 16px !important; padding: 12px 14px; min-height: 44px; border-radius: 10px; }
   select.fi { font-size: 16px !important; }
+  input[type="date"].fi { font-size: 16px !important; -webkit-appearance: none; appearance: none; min-height: 44px; }
   .lock-field { font-size: 16px !important; padding: 14px 16px; }
 
   /* User cards */
@@ -1168,8 +1169,6 @@ const FB_DOC = fbDb.collection('3cos').doc('appState');
 const LOGO='https://i.ibb.co/TDvNpKbv/285535120-111261434935979-5560566145880188190-n.jpg';
 const CONTRACT_TYPES={
   cpa:{label:'CPA + Rev Share',css:'cpa'},
-  deposit:{label:'Meta de Depósitos',css:'deposit'},
-  rs:{label:'Revenue Share',css:'rs'},
   tiered:{label:'CPA Escalonado',css:'tiered'},
   pct_deposit:{label:'% de Depósitos',css:'deposit'},
 };
@@ -1321,6 +1320,7 @@ const saveToCloud = async () => {
       auditLog: STATE.auditLog,
       notifications: STATE.notifications,
       deadlines: STATE.deadlines || {},
+      closings: STATE.closings || [],
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: STATE.user?.email || 'unknown'
     };
@@ -1351,6 +1351,7 @@ const loadFromCloud = async () => {
       if (cloud.auditLog) STATE.auditLog = cloud.auditLog;
       if (cloud.notifications) STATE.notifications = cloud.notifications;
       if (cloud.deadlines) STATE.deadlines = cloud.deadlines;
+      if (cloud.closings) STATE.closings = cloud.closings;
       localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
     } else {
       // Primeiro acesso: salva dados iniciais na nuvem
@@ -1626,7 +1627,6 @@ function buildHubCards(){
       style="--app-border:${m.color};--app-glow:${m.glow};--app-bg:${m.bg};--app-stroke:${m.stroke}">
       <div class="hub-app-icon"><i data-lucide="${m.icon}"></i></div>
       <div class="hub-app-name">${m.label}</div>
-      <div class="hub-app-sub">${m.sub}</div>
     </div>`).join('');
   const count=visible.length;
   document.getElementById('hub-cards').style.gridTemplateColumns=`repeat(${Math.min(count,6)},1fr)`;
@@ -1789,15 +1789,7 @@ function bDash(el){
       </div>
       
       <!-- INTEGRAÇÃO CHART.JS -->
-      <div class="intel-wrap chart-wrap" style="padding: 24px;">
-        <div style="font-family:var(--fd);font-weight:700;font-size:16px;margin-bottom:16px;color:var(--text); display:flex; justify-content:space-between; align-items:center;">
-            Projeção e Histórico (Depósitos vs Comissões)
-            <button class="btn btn-theme" onclick="openDailyDataModal()"><i data-lucide="database"></i> Lançar Dados</button>
-        </div>
-        <div style="height: 250px; position: relative;">
-          <canvas id="mainChart" style="width:100%; height:100%;"></canvas>
-        </div>
-      </div>
+
 
       <div class="intel-wrap">
         <div class="intel-hdr">
@@ -1820,7 +1812,7 @@ function bDash(el){
           }).join('')}
         </div>
       </div>
-      <div class="sec-hdr"><div class="sec-lbl">Top Ranking por Comissão</div></div>
+      <div class="sec-hdr"><div class="sec-lbl">Top Ranking</div></div>
       <div class="tbl-wrap"><table><thead><tr>
         <th>Afiliado</th><th>Tipo</th><th style="text-align:center">FTDs</th>
         <th style="text-align:center" class="col-theme">QFTDs</th>
@@ -1836,52 +1828,6 @@ function bDash(el){
       </tbody></table></div>
     </div></div>`;
 
-  setTimeout(() => {
-    const ctx = document.getElementById('mainChart');
-    if(ctx) {
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-        const textColor = isLight ? '#475569' : '#9898b8';
-        const gridColor = isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)';
-
-        // Build dynamic chart from STATE data
-        const monthNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-        const chartData={};
-        STATE.reports.forEach(r=>{
-          const d=new Date(r.date);const key=monthNames[d.getMonth()]+' '+d.getFullYear();
-          if(!chartData[key])chartData[key]={dep:0,comm:0};
-          chartData[key].dep+=r.deposits||0;
-        });
-        STATE.payments.filter(p=>p.status==='pago').forEach(p=>{
-          const d=new Date(p.dueDate);const key=monthNames[d.getMonth()]+' '+d.getFullYear();
-          if(!chartData[key])chartData[key]={dep:0,comm:0};
-          chartData[key].comm+=p.amount||0;
-        });
-        const sortedKeys=Object.keys(chartData).sort((a,b)=>{
-          const pa=a.split(' '),pb=b.split(' ');
-          const ma=monthNames.indexOf(pa[0]),mb=monthNames.indexOf(pb[0]);
-          return (parseInt(pa[1])-parseInt(pb[1]))*12+(ma-mb);
-        });
-        const labels=sortedKeys.length?sortedKeys:['Mar 2026'];
-        const depData=labels.map(k=>chartData[k]?.dep||0);
-        const commData=labels.map(k=>chartData[k]?.comm||0);
-
-        window.mainChartInstance = new Chart(ctx.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    { label: 'Depósitos', data: depData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4, borderWidth: 2 },
-                    { label: 'Comissão Paga', data: commData, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4, borderWidth: 2 }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: textColor, font: { family: "'Inter', sans-serif" } } }, tooltip: { mode: 'index', intersect: false } },
-                scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { grid: { color: gridColor }, ticks: { color: textColor } } }
-            }
-        });
-    }
-  }, 100);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1968,8 +1914,6 @@ function bAffs(el){
       <div class="pills">
         <button class="pill on" onclick="filterAffType(null,this)">Todos</button>
         <button class="pill" onclick="filterAffType('cpa',this)">CPA+RS</button>
-        <button class="pill" onclick="filterAffType('deposit',this)">Meta Depósitos</button>
-        <button class="pill" onclick="filterAffType('rs',this)">Revenue Share</button>
         <button class="pill" onclick="filterAffType('tiered',this)">CPA Escalonado</button>
         <button class="pill" onclick="filterAffType('pct_deposit',this)">% de Depósitos</button>
       </div>
@@ -2103,8 +2047,8 @@ window.openNewAff=()=>{
     <div class="fgp ff"><label>Nome *</label><input class="fi" id="na-name" placeholder="Ex: Agência FMG"></div>
     <div class="fgp"><label>Email</label><input class="fi" id="na-email" placeholder="afiliado@3c.gg"></div>
     <div class="fgp"><label>Tipo de comissão principal</label><select class="fi" id="na-ct" onchange="updateDealFields()">
-      <option value="cpa">CPA + Rev Share</option><option value="deposit">Meta de Depósitos</option>
-      <option value="rs">Revenue Share</option><option value="tiered">CPA Escalonado</option>
+      <option value="cpa">CPA + Rev Share</option>
+      <option value="tiered">CPA Escalonado</option>
       <option value="pct_deposit">% de Depósitos</option>
     </select></div>
     <div class="fgp ff"><label>Marcas e Comissões</label>
@@ -2215,9 +2159,8 @@ window.openEditAff=id=>{
     <div class="fgp"><label>Email</label><input class="fi" id="ea-email" value="${a.contactEmail||''}"></div>
     <div class="fgp"><label>Tipo de contrato</label><select class="fi" id="ea-ct">
       <option value="cpa" ${a.contractType==='cpa'?'selected':''}>CPA + Rev Share</option>
-      <option value="deposit" ${a.contractType==='deposit'?'selected':''}>Meta de Depósitos</option>
-      <option value="rs" ${a.contractType==='rs'?'selected':''}>Revenue Share</option>
       <option value="tiered" ${a.contractType==='tiered'?'selected':''}>CPA Escalonado</option>
+      <option value="pct_deposit" ${a.contractType==='pct_deposit'?'selected':''}>% de Depósitos</option>
     </select></div>
     <div class="fgp"><label>Status</label><select class="fi" id="ea-st">
       <option value="ativo" ${a.status==='ativo'?'selected':''}>Ativo</option>
@@ -2390,8 +2333,9 @@ window.openNewContract=(affId)=>{
     <div class="fgp"><label>Marca *</label><select class="fi" id="nc-brand">${brandOptions}</select></div>
     <div class="fgp ff"><label>Nome do Contrato *</label><input class="fi" id="nc-name" placeholder="Ex: Deal Vupi Q2 2026"></div>
     <div class="fgp"><label>Tipo</label><select class="fi" id="nc-type">
-      <option value="cpa">CPA</option><option value="deposit">Meta Depósitos</option>
-      <option value="rs">Revenue Share</option><option value="tiered">CPA Escalonado</option>
+      <option value="cpa">CPA + Rev Share</option>
+      <option value="tiered">CPA Escalonado</option>
+      <option value="pct_deposit">% de Depósitos</option>
     </select></div>
     <div class="fgp"><label>Valor Total (R$)</label><input type="number" class="fi" id="nc-value" placeholder="0"></div>
     <div class="fgp"><label>Status</label><select class="fi" id="nc-status">
@@ -2683,38 +2627,21 @@ function renderBrandTab(brand){
         }).join('')}
       </div>
     </div>`:`
-    <div class="sec-hdr"><div class="sec-lbl">Resultado por Marca</div></div>
-    <div class="brands-kpi-grid">
+    <div class="sec-hdr"><div class="sec-lbl">Selecione uma Marca</div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
       ${Object.keys(STATE.brands).map(b=>{const br2=STATE.brands[b];const d=agg[b];const p2=pct(d.qftd,d.ftd);
-        return `<div class="kpi" style="--kpi-c:${br2.color};--kpi-glow:rgba(${br2.rgb},0.1);cursor:pointer" onclick="setBrandTab('${b}',document.querySelectorAll('.tab')[${Object.keys(STATE.brands).indexOf(b)+1}], document.getElementById('mod-brands'))">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-            <div style="width:8px;height:8px;border-radius:50%;background:${br2.color}"></div>
-            <span style="font-size:11px;font-weight:700;color:${br2.color};text-transform:uppercase;letter-spacing:0.08em">${b}</span>
+        return `<div class="aff-card" style="border-left:3px solid ${br2.color};cursor:pointer" onclick="setBrandTab('${b}',document.querySelectorAll('#brand-tabs .tab')[${Object.keys(STATE.brands).indexOf(b)+1}], document.getElementById('mod-brands'))">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${br2.color}"></div>
+            <span style="font-family:var(--fd);font-size:15px;font-weight:800;color:${br2.color};text-transform:uppercase;letter-spacing:0.06em">${b}</span>
+            <span style="margin-left:auto;font-size:9px;color:var(--text3)">${d.affCount.size} afiliados</span>
           </div>
-          <div class="kpi-val" style="font-size:32px;color:${br2.color}">${d.qftd}</div>
-          <div class="kpi-sub">QFTDs · ${d.ftd} FTDs · ${p2}%</div>
-          <div style="margin-top:8px;font-family:var(--fd);font-size:14px;font-weight:600;color:var(--text)">${fc(d.dep)}</div>
-          <div style="font-size:9px;color:var(--text3)">${d.affCount.size} afiliados</div>
+          <div style="display:flex;gap:12px">
+            <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">QFTDs</div><div style="font-family:var(--fd);font-size:20px;font-weight:800;color:${br2.color}">${d.qftd}</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">FTDs</div><div style="font-family:var(--fd);font-size:20px;font-weight:800;color:var(--text)">${d.ftd}</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Depósitos</div><div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text)">${fc(d.dep)}</div></div>
+          </div>
         </div>`;}).join('')}
-    </div>
-    <div class="intel-wrap">
-      <div class="intel-hdr"><div><div class="intel-eye">Intelligence — Visão Geral</div>
-        <div class="intel-title">Base de Jogadores por Afiliado</div>
-        <div class="intel-sub">Todas as marcas · FTD→QFTD · Tendência</div></div></div>
-      <div class="intel-grid">
-        ${activeAffs.sort((a,b2)=>pct(b2.qftds,b2.ftds)-pct(a.qftds,a.ftds)).map(a=>{
-          const p2=pct(a.qftds,a.ftds);const col=cvC(p2);
-          return `<div class="intel-card" onclick="openAffDetail('${a.id}')">
-            <div class="intel-name">${a.name}</div>
-            <div class="intel-meta">${a.ftds} FTDs · ${a.qftds} QFTDs</div>
-            <div class="conv-row"><span class="conv-label">Conversão FTD→QFTD</span><span class="conv-pct" style="color:${col}">${p2}%</span></div>
-            <div class="conv-bg"><div class="conv-fill" style="width:${Math.min(p2,100)}%;background:${col}"></div></div>
-            <div class="conv-ft"><span style="color:var(--text3)">${a.ftds} FTDs</span><span style="color:${col}">${a.qftds} QFTDs</span></div>
-            <div class="intel-sep"><div><div class="dep-lbl">Dep/dia</div><div class="dep-val">R$${Math.round(a.deposits/30).toLocaleString('pt-BR')}/dia</div><div style="font-size:9px;color:var(--text3)">${fc(a.deposits)}</div></div>
-              <svg width="60" height="20"><polyline points="0,18 15,14 30,10 45,8 60,5" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/><circle cx="60" cy="5" r="2" fill="var(--green)"/></svg>
-            </div></div>`;
-        }).join('')}
-      </div>
     </div>`}`;
   lucide.createIcons();
 }
@@ -2746,14 +2673,15 @@ function bPayments(el){
           <div class="kpi-val sm col" style="--kpi-c:var(--red)">${fc(pend)}</div></div>
       </div>
       <div class="tabs" id="pay-tabs">
-        <button class="tab on" style="--tab-color:var(--blue)" onclick="showPayTab('queue',this)"><div class="tab-dot" style="background:var(--blue)"></div>Fila de Pagamentos</button>
+        <button class="tab on" style="--tab-color:var(--pink)" onclick="showPayTab('closing',this)"><div class="tab-dot" style="background:var(--pink)"></div>Fechamento</button>
+        <button class="tab" style="--tab-color:var(--blue)" onclick="showPayTab('queue',this)"><div class="tab-dot" style="background:var(--blue)"></div>Fila de Pagamentos</button>
         <button class="tab" style="--tab-color:var(--amber)" onclick="showPayTab('deadlines',this)"><div class="tab-dot" style="background:var(--amber)"></div>Prazos & Calendário</button>
       </div>
-      <div id="pay-tab-queue">
+      <div id="pay-tab-closing"></div>
+      <div id="pay-tab-queue" style="display:none">
       <div class="sec-hdr"><div class="sec-lbl">Fila de pagamentos</div>
         <div class="sec-actions">
           <button class="btn btn-outline" onclick="exportCSV('payments')"><i data-lucide="download"></i>CSV</button>
-          <button class="btn btn-outline" onclick="openBatch()"><i data-lucide="send"></i>Remessa NFs</button>
           <button class="btn btn-theme" onclick="openNewPay()"><i data-lucide="plus"></i>Novo</button>
         </div></div>
       <div class="pills">
@@ -2768,6 +2696,7 @@ function bPayments(el){
       <div id="pay-tab-deadlines" style="display:none"></div>
     </div></div>`;
   renderPyTbl(STATE.payments);
+  renderClosingTab();
   renderDeadlinesTab();
 }
 function renderPyTbl(list){
@@ -2788,13 +2717,50 @@ function renderPyTbl(list){
         <button class="ibt danger" onclick="event.stopPropagation();promptPayAction('${p.id}', 'recusado')" title="Recusar"><i data-lucide="x" style="width:13px;height:13px"></i></button>
       `:''}
       ${p.status==='aprovado'?`<button class="ibt" onclick="event.stopPropagation();markPaid('${p.id}')" title="Confirmar pagamento"><i data-lucide="banknote" style="width:13px;height:13px;stroke:var(--green)"></i></button>`:''}
+      <button class="ibt" onclick="event.stopPropagation();openEditPay('${p.id}')" title="Editar"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
     </td>
   </tr>`).join('')}</tbody></table>`;
   lucide.createIcons();
 }
 window.pilPy=(s,btn)=>{_pyF=s;btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderPyTbl(s?STATE.payments.filter(p=>p.status===s):STATE.payments);};
 window.approvePay=id=>{const p=STATE.payments.find(x=>x.id===id);if(!p)return;p.status='aprovado';logAction('Pagamento aprovado',`${p.affiliate} ${fc(p.amount)}`);renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);toast('Aprovado!');};
-window.markPaid=id=>{const p=STATE.payments.find(x=>x.id===id);if(!p)return;p.status='pago';logAction('Pagamento confirmado',`${p.affiliate} ${fc(p.amount)}`);renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);toast('Marcado como pago!');};
+window.markPaid=id=>{const p=STATE.payments.find(x=>x.id===id);if(!p)return;p.status='pago';logAction('Pagamento confirmado',`${p.affiliate} ${fc(p.amount)}`);saveToLocal();renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);toast('Marcado como pago!');};
+
+window.openEditPay=id=>{
+  const p=STATE.payments.find(x=>x.id===id);if(!p)return;
+  openModal('Editar Pagamento',`<div class="fg">
+    <div class="fgp ff"><label>Afiliado</label><input class="fi" value="${p.affiliate}" disabled></div>
+    <div class="fgp"><label>Marca</label><input class="fi" value="${p.brand}" disabled></div>
+    <div class="fgp"><label>Contrato / Referência</label><input class="fi" id="ep-contract" value="${p.contract||''}"></div>
+    <div class="fgp"><label>Valor (R$) *</label><input type="number" class="fi" id="ep-amount" value="${p.amount}"></div>
+    <div class="fgp"><label>Data de Vencimento</label><input type="date" class="fi" id="ep-date" value="${p.dueDate||''}"></div>
+    <div class="fgp"><label>Status</label><select class="fi" id="ep-status">
+      <option value="pendente" ${p.status==='pendente'?'selected':''}>Pendente</option>
+      <option value="aprovado" ${p.status==='aprovado'?'selected':''}>Aprovado</option>
+      <option value="ajuste" ${p.status==='ajuste'?'selected':''}>Em Ajuste</option>
+      <option value="pago" ${p.status==='pago'?'selected':''}>Pago</option>
+      <option value="recusado" ${p.status==='recusado'?'selected':''}>Recusado</option>
+    </select></div>
+    <div class="fgp ff"><label>Substituir NF (opcional)</label>
+      <input type="file" class="fi" id="ep-nf" accept=".pdf,.jpg,.png" style="padding:7px 10px;cursor:pointer">
+      ${p.nfName?`<div style="font-size:10px;color:var(--blue);margin-top:4px">Atual: ${p.nfName}</div>`:''}
+    </div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveEditPay('${id}')"><i data-lucide="save"></i> Salvar</button>`);
+};
+
+window.saveEditPay=id=>{
+  const p=STATE.payments.find(x=>x.id===id);if(!p)return;
+  p.contract=document.getElementById('ep-contract')?.value.trim()||p.contract;
+  p.amount=parseFloat(document.getElementById('ep-amount')?.value)||p.amount;
+  p.dueDate=document.getElementById('ep-date')?.value||p.dueDate;
+  p.status=document.getElementById('ep-status')?.value||p.status;
+  const nf=document.getElementById('ep-nf')?.files[0];
+  if(nf)p.nfName=nf.name;
+  logAction('Pagamento editado',`${p.affiliate} ${fc(p.amount)}`);saveToLocal();closeModal();
+  renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);
+  toast('Pagamento atualizado!');
+};
 
 window.promptPayAction = (id, action) => {
   const p = STATE.payments.find(x => x.id === id);
@@ -2960,9 +2926,9 @@ window.generateConsolidatedReport=()=>{
   closeModal();toast('Relatório consolidado gerado!');
 };
 
-window.generateClosingPDF=(affiliate,affiliatesList)=>{
+window.generateClosingPDF=(affiliate,affiliatesList,filterBrand,filterMonth,closingData)=>{
   const now=new Date();
-  const mesRef=now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const mesRef=filterMonth||now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const dataEmissao=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
   const isConsolidated=!affiliate&&affiliatesList;
   const affs=isConsolidated?affiliatesList:[affiliate];
@@ -3102,9 +3068,187 @@ window.sendBatch=()=>{
 // ══════════════════════════════════════════════════════════
 window.showPayTab=(tab,btn)=>{
   btn.closest('.tabs').querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  document.getElementById('pay-tab-closing').style.display=tab==='closing'?'block':'none';
   document.getElementById('pay-tab-queue').style.display=tab==='queue'?'block':'none';
   document.getElementById('pay-tab-deadlines').style.display=tab==='deadlines'?'block':'none';
+  if(tab==='closing')renderClosingTab();
   if(tab==='deadlines')renderDeadlinesTab();
+};
+
+function renderClosingTab(){
+  const el=document.getElementById('pay-tab-closing');if(!el)return;
+  const now=new Date();
+  const months=[];
+  for(let i=0;i<6;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({value:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,label:d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})});}
+
+  // Histórico de fechamentos
+  const closings=STATE.closings||[];
+
+  el.innerHTML=`
+    <div class="intel-wrap" style="margin-bottom:20px">
+      <div class="intel-hdr"><div>
+        <div class="intel-eye">Executar Fechamento</div>
+        <div class="intel-title">Novo Fechamento de Período</div>
+        <div class="intel-sub">Gera relatório PDF e cria ticket de pagamento na fila</div>
+      </div></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+          <div class="fgp"><label>Afiliado *</label>
+            <select class="fi" id="cl-aff" onchange="updateClosingDeals()">
+              <option value="">Selecione...</option>
+              ${STATE.affiliates.filter(a=>a.status==='ativo').map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="fgp"><label>Mês de Referência *</label>
+            <select class="fi" id="cl-month">
+              ${months.map((m,i)=>`<option value="${m.value}" ${i===0?'selected':''}>${m.label}</option>`).join('')}
+            </select>
+          </div>
+          <div class="fgp"><label>Marca *</label>
+            <select class="fi" id="cl-brand" onchange="updateClosingDeals()">
+              <option value="">Selecione...</option>
+              ${Object.keys(STATE.brands).map(b=>`<option value="${b}">${b}</option>`).join('')}
+            </select>
+          </div>
+          <div class="fgp"><label>Deal / Contrato</label>
+            <select class="fi" id="cl-deal"><option value="">Automático</option></select>
+          </div>
+        </div>
+
+        <div id="cl-preview" style="display:none;padding:16px;background:var(--bg3);border:1px solid var(--gb);border-radius:12px">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:10px">Preview do Fechamento</div>
+          <div id="cl-preview-content"></div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="previewClosing()"><i data-lucide="eye"></i> Preview</button>
+          <button class="btn btn-theme" onclick="executeClosing()"><i data-lucide="zap"></i> Executar Fechamento</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-hdr"><div class="sec-lbl">Fechamentos Realizados</div></div>
+    ${closings.length?`<div class="tbl-wrap"><table><thead><tr>
+      <th>Afiliado</th><th>Marca</th><th>Referência</th><th>Comissão</th><th>Status</th><th>Data</th><th>Ações</th>
+    </tr></thead><tbody>
+      ${closings.slice().reverse().map(c=>`<tr class="tr">
+        <td class="td-name">${c.affiliateName}</td>
+        <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[c.brand]?.color||'#888'}">${c.brand}</span></td>
+        <td style="font-size:11px;color:var(--text2)">${c.monthLabel}</td>
+        <td class="td-money">${fc(c.commission)}</td>
+        <td><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span></td>
+        <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
+        <td class="td-acts">
+          <button class="ibt" onclick="regenerateClosingPDF('${c.id}')" title="Gerar PDF"><i data-lucide="file-text"></i></button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
+  lucide.createIcons();
+}
+
+window.updateClosingDeals=()=>{
+  const affId=document.getElementById('cl-aff')?.value;
+  const brand=document.getElementById('cl-brand')?.value;
+  const dealSelect=document.getElementById('cl-deal');
+  dealSelect.innerHTML='<option value="">Automático</option>';
+  if(affId&&brand){
+    const cts=STATE.contracts.filter(c=>c.affiliateId===affId&&c.brand===brand&&c.status==='ativo');
+    cts.forEach(c=>{dealSelect.innerHTML+=`<option value="${c.id}">${c.name} (${fc(c.value)})</option>`;});
+  }
+};
+
+window.previewClosing=()=>{
+  const affId=document.getElementById('cl-aff')?.value;
+  const brand=document.getElementById('cl-brand')?.value;
+  const month=document.getElementById('cl-month')?.value;
+  if(!affId||!brand||!month)return toast('Selecione afiliado, marca e mês','e');
+
+  const a=STATE.affiliates.find(x=>x.id===affId);if(!a)return;
+  const deal=a.deals?.[brand];
+  const ct=CONTRACT_TYPES[a.contractType]||{label:'CPA'};
+  const br=STATE.brands[brand]||{color:'#888'};
+
+  let dealInfo='';
+  if(a.contractType==='tiered')dealInfo=(deal?.levels||[]).map(l=>`${l.name}: R$ ${l.cpa} (base ${l.baseline})`).join(' | ')+` + RS ${deal?.rs||0}%`;
+  else if(a.contractType==='deposit')dealInfo=`Meta: R$ ${(deal?.depositTarget||0).toLocaleString('pt-BR')}/mês`;
+  else if(a.contractType==='pct_deposit')dealInfo=`${deal?.pctDeposit||0}% dos depósitos + CPA R$ ${deal?.cpa||0}`;
+  else if(a.contractType==='rs')dealInfo=`RS: ${deal?.rs||0}%`;
+  else dealInfo=`CPA: R$ ${deal?.cpa||0} + RS: ${deal?.rs||0}%`;
+
+  const preview=document.getElementById('cl-preview');
+  const content=document.getElementById('cl-preview-content');
+  preview.style.display='block';
+  content.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="dr"><span>Afiliado</span><strong>${a.name}</strong></div>
+      <div class="dr"><span>Marca</span><strong style="color:${br.color}">${brand}</strong></div>
+      <div class="dr"><span>Tipo</span><strong>${ct.label}</strong></div>
+      <div class="dr"><span>Deal</span><strong style="font-size:10px">${dealInfo}</strong></div>
+      <div class="dr"><span>FTDs</span><strong>${a.ftds}</strong></div>
+      <div class="dr"><span>QFTDs</span><strong style="color:var(--pink)">${a.qftds}</strong></div>
+      <div class="dr"><span>Depósitos</span><strong>${fc(a.deposits)}</strong></div>
+      <div class="dr"><span>Comissão</span><strong style="color:var(--red)">${fc(a.commission)}</strong></div>
+    </div>`;
+};
+
+window.executeClosing=()=>{
+  const affId=document.getElementById('cl-aff')?.value;
+  const brand=document.getElementById('cl-brand')?.value;
+  const month=document.getElementById('cl-month')?.value;
+  const dealId=document.getElementById('cl-deal')?.value;
+  if(!affId||!brand||!month)return toast('Selecione afiliado, marca e mês','e');
+
+  const a=STATE.affiliates.find(x=>x.id===affId);if(!a)return;
+  const monthLabel=document.getElementById('cl-month').selectedOptions[0]?.text||month;
+  const br=STATE.brands[brand]||{};
+  const ct=CONTRACT_TYPES[a.contractType]||{label:'CPA'};
+  const deal=a.deals?.[brand]||{};
+
+  // Criar registro de fechamento
+  if(!STATE.closings)STATE.closings=[];
+  const closingId='cl'+Date.now();
+  const closing={
+    id:closingId,affiliateId:affId,affiliateName:a.name,
+    brand,monthRef:month,monthLabel,dealId:dealId||'',
+    contractType:a.contractType,deal:JSON.parse(JSON.stringify(deal)),
+    ftds:a.ftds,qftds:a.qftds,deposits:a.deposits,
+    netRev:a.netRev||0,commission:a.commission,profit:a.profit,
+    paymentStatus:'pendente',
+    createdAt:new Date().toLocaleDateString('pt-BR'),
+    createdBy:STATE.user?.name||''
+  };
+  STATE.closings.push(closing);
+
+  // Criar ticket na fila de pagamentos
+  const contract=dealId?STATE.contracts.find(c=>c.id===dealId):null;
+  STATE.payments.unshift({
+    id:'py'+Date.now(),affiliateId:affId,affiliate:a.name,brand,
+    contract:contract?.name||`Fechamento ${brand} — ${monthLabel}`,
+    contractId:dealId||'',amount:a.commission,
+    dueDate:'',status:'pendente',type:`Fechamento ${monthLabel}`,nfName:''
+  });
+
+  // Notificação
+  STATE.notifications.unshift({
+    id:'n'+Date.now(),type:'blue',
+    text:`Fechamento ${a.name} (${brand}) — ${monthLabel}: ${fc(a.commission)}`,
+    time:'agora',read:false
+  });
+
+  logAction('Fechamento executado',`${a.name} · ${brand} · ${monthLabel}`);
+  saveToLocal();updateNotifBadge();
+
+  // Gerar PDF
+  generateClosingPDF(a,null,brand,monthLabel,closing);
+
+  toast('Fechamento executado! Ticket criado na fila.');
+  renderClosingTab();
+};
+
+window.regenerateClosingPDF=(closingId)=>{
+  const c=(STATE.closings||[]).find(x=>x.id===closingId);if(!c)return toast('Fechamento não encontrado','e');
+  const a=STATE.affiliates.find(x=>x.id===c.affiliateId)||{name:c.affiliateName,ftds:c.ftds,qftds:c.qftds,deposits:c.deposits,netRev:c.netRev,commission:c.commission,profit:c.profit,contractType:c.contractType,deals:{[c.brand]:c.deal},notes:''};
+  generateClosingPDF(a,null,c.brand,c.monthLabel,c);
 };
 
 function renderDeadlinesTab(){
@@ -3450,7 +3594,7 @@ function bAudit(el){
       <div class="sec-hdr"><div class="sec-lbl">Últimas ações no sistema</div>
         <button class="btn btn-outline" onclick="exportCSV('audit')"><i data-lucide="download"></i>Exportar CSV</button>
       </div>
-      <div style="background:rgba(0,0,0,0.2);border:1px solid var(--gb);border-radius:16px;padding:12px 24px">
+      <div style="background:var(--bg2);border:1px solid var(--glass-border);border-radius:16px;padding:12px 24px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)">
         ${STATE.auditLog.length?STATE.auditLog.map(a=>`
           <div class="audit-item">
             <div class="audit-icon"><i data-lucide="shield-check"></i></div>
