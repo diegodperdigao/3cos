@@ -14,6 +14,10 @@
 <!-- Integração com Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
 /* ══════════════════════════════════════════════════════════
    3C OS PRO — Dark/Light · Glassmorphism · Chart.js
@@ -1034,7 +1038,7 @@ textarea.fi{resize:vertical;min-height:60px;}
     <input type="email" id="le" class="lock-field" placeholder="nome@3c.gg" autocomplete="email" onkeydown="if(event.key==='Enter') doLogin()">
     <input type="password" id="lp" class="lock-field" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
     <button class="lock-btn" id="lbtn" onclick="doLogin()">ACESSAR O SISTEMA</button>
-    <div class="lock-hint">Dica de Acesso: use a senha <strong>3c2026</strong></div>
+    <div class="lock-hint">Acesso seguro via Firebase Auth</div>
     <div id="lerr" class="lock-err"></div>
     <div class="lock-reset" onclick="toast('Email enviado!','i')">Esqueci minha senha</div>
   </div>
@@ -1111,6 +1115,22 @@ textarea.fi{resize:vertical;min-height:60px;}
 <div id="toasts"></div>
 
 <script>
+// ══════════════════════════════════════════════════════════
+// FIREBASE INITIALIZATION
+// ══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyDuiup15ELAcm78GFJ0w7pdeYu2DHy-6Zk",
+  authDomain: "hub-3c.firebaseapp.com",
+  projectId: "hub-3c",
+  storageBucket: "hub-3c.firebasestorage.app",
+  messagingSenderId: "340842089459",
+  appId: "1:340842089459:web:c2072752324c52f998a086"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const fbDb = firebase.firestore();
+const FB_DOC = fbDb.collection('3cos').doc('appState');
+
 const LOGO='https://i.ibb.co/TDvNpKbv/285535120-111261434935979-5560566145880188190-n.jpg';
 const CONTRACT_TYPES={
   cpa:{label:'CPA + Rev Share',css:'cpa'},
@@ -1209,24 +1229,78 @@ const DEFAULT_STATE={
 
 // ── PERSISTENCE (LOCALSTORAGE) ──
 const STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
+// ── PERSISTENCE: localStorage (cache) + Firestore (cloud) ──
+let _saveTimeout = null;
 const saveToLocal = () => {
   localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
+  // Debounce cloud save (avoid excessive writes)
+  clearTimeout(_saveTimeout);
+  _saveTimeout = setTimeout(saveToCloud, 1500);
 };
+
+const saveToCloud = async () => {
+  if (!fbAuth.currentUser) return;
+  try {
+    const data = {
+      brands: STATE.brands,
+      users: STATE.users,
+      affiliates: STATE.affiliates,
+      contracts: STATE.contracts,
+      payments: STATE.payments,
+      reports: STATE.reports,
+      tasks: STATE.tasks,
+      auditLog: STATE.auditLog.slice(0, 100),
+      notifications: STATE.notifications.slice(0, 50),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: STATE.user?.email || 'unknown'
+    };
+    await FB_DOC.set(data, { merge: true });
+  } catch (e) {
+    console.warn('Cloud save failed:', e.message);
+  }
+};
+
+const loadFromCloud = async () => {
+  try {
+    const snap = await FB_DOC.get();
+    if (snap.exists) {
+      const cloud = snap.data();
+      if (cloud.brands) STATE.brands = cloud.brands;
+      if (cloud.users) STATE.users = cloud.users;
+      if (cloud.affiliates) STATE.affiliates = cloud.affiliates;
+      if (cloud.contracts) STATE.contracts = cloud.contracts;
+      if (cloud.payments) STATE.payments = cloud.payments;
+      if (cloud.reports) STATE.reports = cloud.reports;
+      if (cloud.tasks) STATE.tasks = cloud.tasks;
+      if (cloud.auditLog) STATE.auditLog = cloud.auditLog;
+      if (cloud.notifications) STATE.notifications = cloud.notifications;
+      localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
+    } else {
+      // Primeiro acesso: salva dados iniciais na nuvem
+      await saveToCloud();
+    }
+  } catch (e) {
+    console.warn('Cloud load failed, using local cache:', e.message);
+  }
+};
+
+const fixBrandLogos = () => {
+  Object.keys(STATE.brands).forEach(b => {
+    if (!STATE.brands[b].logo || STATE.brands[b].logo.includes('ui-avatars')) {
+      if (b === 'Vupi') STATE.brands[b].logo = 'https://i.ibb.co/PGG7sNnz/Screenshot-2026-03-25-at-15-28-52.png';
+      else if (b === 'Novibet') STATE.brands[b].logo = 'https://i.ibb.co/1fCKT0kq/logonovibet.png';
+      else if (b === 'Superbet') STATE.brands[b].logo = 'https://i.ibb.co/qL0KMg8k/logosuperbet.webp';
+      else STATE.brands[b].logo = LOGO;
+    }
+  });
+};
+
 const loadFromLocal = () => {
   const data = localStorage.getItem('3C_OS_DATA');
   if (data) {
     const parsed = JSON.parse(data);
     Object.assign(STATE, parsed);
-    
-    // Injeta logos corretas se o cache do utilizador tiver a versão gerada antiga
-    Object.keys(STATE.brands).forEach(b => {
-      if (!STATE.brands[b].logo || STATE.brands[b].logo.includes('ui-avatars')) {
-         if (b === 'Vupi') STATE.brands[b].logo = 'https://i.ibb.co/PGG7sNnz/Screenshot-2026-03-25-at-15-28-52.png';
-         else if (b === 'Novibet') STATE.brands[b].logo = 'https://i.ibb.co/1fCKT0kq/logonovibet.png';
-         else if (b === 'Superbet') STATE.brands[b].logo = 'https://i.ibb.co/qL0KMg8k/logosuperbet.webp';
-         else STATE.brands[b].logo = LOGO;
-      }
-    });
+    fixBrandLogos();
   }
 };
 loadFromLocal(); 
@@ -1403,24 +1477,35 @@ window.doLogin=async()=>{
   err.style.display='none';
   if(!email||!pass){err.textContent='Preencha email e senha.';err.style.display='block';return;}
   btn.disabled=true;btn.textContent='VERIFICANDO...';
-  
-  await new Promise(r=>setTimeout(r,700));
-  
-  const found=STATE.users.find(u=>u.email===email&&u.status==='ativo');
-  
-  if(found && pass === '3c2026') {
-    STATE.user=found;
+
+  try {
+    await fbAuth.signInWithEmailAndPassword(email, pass);
+    const found=STATE.users.find(u=>u.email===email&&u.status==='ativo');
+    if(!found){
+      // Usuário existe no Firebase Auth mas não no STATE — cria perfil básico
+      const newUser={id:'u'+Date.now(),name:email.split('@')[0],email,role:'viewer',status:'ativo',modules:['dashboard'],createdAt:new Date().toISOString().split('T')[0]};
+      STATE.users.push(newUser);
+      STATE.user=newUser;
+    } else {
+      STATE.user=found;
+    }
+    await loadFromCloud();
     localStorage.setItem('3cos_sess',JSON.stringify({user:STATE.user,exp:Date.now()+7*86400000}));
     btn.disabled=false;btn.textContent='ACESSAR O SISTEMA';
     logAction('Login',email);
     showHub();
-  } else {
-    err.textContent='Credenciais inválidas. (Dica: a senha é 3c2026)';
+  } catch(e) {
+    let msg='Credenciais inválidas.';
+    if(e.code==='auth/user-not-found')msg='Usuário não encontrado no sistema.';
+    else if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential')msg='Senha incorreta.';
+    else if(e.code==='auth/too-many-requests')msg='Muitas tentativas. Aguarde um momento.';
+    err.textContent=msg;
     err.style.display='block';
     btn.disabled=false;btn.textContent='ACESSAR O SISTEMA';
   }
 };
 window.doLogout=()=>{
+  fbAuth.signOut();
   STATE.user=null;localStorage.removeItem('3cos_sess');
   const hub=document.getElementById('hub');hub.style.opacity='0';
   setTimeout(()=>{hub.style.display='none';
@@ -2968,16 +3053,34 @@ window.toggleTheme = _wrapToggleTheme;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'light' ? '#f8fafc' : '#030008');
 })();
 
-// ── AUTO SESSION RESTORE ──
-(function(){
-  const sess=localStorage.getItem('3cos_sess');
-  if(sess){
-    try{
-      const d=JSON.parse(sess);
-      if(d.exp>Date.now()&&d.user){STATE.user=d.user;showHub();}
-    }catch(e){}
+// ── AUTO SESSION RESTORE (Firebase Auth State) ──
+fbAuth.onAuthStateChanged(async (firebaseUser) => {
+  if (firebaseUser) {
+    // Usuário autenticado no Firebase
+    const sess = localStorage.getItem('3cos_sess');
+    if (sess) {
+      try {
+        const d = JSON.parse(sess);
+        if (d.user) {
+          STATE.user = d.user;
+          await loadFromCloud();
+          fixBrandLogos();
+          showHub();
+          return;
+        }
+      } catch(e) {}
+    }
+    // Fallback: busca no STATE.users pelo email
+    const found = STATE.users.find(u => u.email === firebaseUser.email && u.status === 'ativo');
+    if (found) {
+      STATE.user = found;
+      await loadFromCloud();
+      fixBrandLogos();
+      localStorage.setItem('3cos_sess', JSON.stringify({user: STATE.user, exp: Date.now()+7*86400000}));
+      showHub();
+    }
   }
-})();
+});
 </script>
 </body>
 </html>
