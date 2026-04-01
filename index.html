@@ -1257,6 +1257,16 @@ const DEFAULT_STATE={
     {id:'n3',type:'red',text:'Pagamento Igor Lima (Superbet) vence amanhã — R$ 30.000',time:'há 5h',read:false},
     {id:'n4',type:'green',text:'Parcela 1/2 Vupi FMG confirmada: R$ 90.000',time:'há 2d',read:true},
   ],
+  deadlines:{
+    // Dia do mês que cada marca repassa o valor de apuração para a 3C
+    brandPayDays:{Vupi:15,Novibet:20,Superbet:25},
+    // Dias após recebimento da marca para pagar o afiliado
+    affiliatePayDays:10,
+    // Dias antes do vencimento para gerar tarefa de envio de NF
+    nfReminderDays:5,
+    // Mês de referência atual (para controle)
+    lastGenerated:''
+  },
 };
 
 // ── PERSISTENCE (LOCALSTORAGE) ──
@@ -1283,6 +1293,7 @@ const saveToCloud = async () => {
       tasks: STATE.tasks,
       auditLog: STATE.auditLog.slice(0, 100),
       notifications: STATE.notifications.slice(0, 50),
+      deadlines: STATE.deadlines || {},
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: STATE.user?.email || 'unknown'
     };
@@ -1306,6 +1317,7 @@ const loadFromCloud = async () => {
       if (cloud.tasks) STATE.tasks = cloud.tasks;
       if (cloud.auditLog) STATE.auditLog = cloud.auditLog;
       if (cloud.notifications) STATE.notifications = cloud.notifications;
+      if (cloud.deadlines) STATE.deadlines = cloud.deadlines;
       localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
     } else {
       // Primeiro acesso: salva dados iniciais na nuvem
@@ -2688,6 +2700,11 @@ function bPayments(el){
           <div class="kpi-icon-row"><i data-lucide="alert-circle" style="width:14px;height:14px;stroke:var(--red)"></i><span class="kpi-lbl">Pendente</span></div>
           <div class="kpi-val sm col" style="--kpi-c:var(--red)">${fc(pend)}</div></div>
       </div>
+      <div class="tabs" id="pay-tabs">
+        <button class="tab on" style="--tab-color:var(--blue)" onclick="showPayTab('queue',this)"><div class="tab-dot" style="background:var(--blue)"></div>Fila de Pagamentos</button>
+        <button class="tab" style="--tab-color:var(--amber)" onclick="showPayTab('deadlines',this)"><div class="tab-dot" style="background:var(--amber)"></div>Prazos & Calendário</button>
+      </div>
+      <div id="pay-tab-queue">
       <div class="sec-hdr"><div class="sec-lbl">Fila de pagamentos</div>
         <div class="sec-actions">
           <button class="btn btn-outline" onclick="exportCSV('payments')"><i data-lucide="download"></i>CSV</button>
@@ -2702,8 +2719,11 @@ function bPayments(el){
         <button class="pill" onclick="pilPy('pago',this)">Pagos</button>
       </div>
       <div class="tbl-wrap" id="py-tbl"></div>
+      </div>
+      <div id="pay-tab-deadlines" style="display:none"></div>
     </div></div>`;
   renderPyTbl(STATE.payments);
+  renderDeadlinesTab();
 }
 function renderPyTbl(list){
   const el=document.getElementById('py-tbl');if(!el)return;
@@ -2872,6 +2892,184 @@ window.sendBatch=()=>{
   closeModal();
   renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);
   toast(sent>0?`${sent} pagamento(s) confirmado(s)!`:'Nenhum selecionado');
+};
+
+// ══════════════════════════════════════════════════════════
+// PRAZOS & CALENDÁRIO + AUTO-TASK GENERATOR
+// ══════════════════════════════════════════════════════════
+window.showPayTab=(tab,btn)=>{
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  document.getElementById('pay-tab-queue').style.display=tab==='queue'?'block':'none';
+  document.getElementById('pay-tab-deadlines').style.display=tab==='deadlines'?'block':'none';
+  if(tab==='deadlines')renderDeadlinesTab();
+};
+
+function renderDeadlinesTab(){
+  const el=document.getElementById('pay-tab-deadlines');if(!el)return;
+  const dl=STATE.deadlines||{brandPayDays:{},affiliatePayDays:10,nfReminderDays:5,lastGenerated:''};
+  const brands=Object.keys(STATE.brands);
+
+  el.innerHTML=`
+    <div class="intel-wrap" style="margin-bottom:20px">
+      <div class="intel-hdr"><div>
+        <div class="intel-eye">Configuração de Prazos</div>
+        <div class="intel-title">Calendário de Pagamentos</div>
+        <div class="intel-sub">Define quando cada marca repassa e o prazo para pagar afiliados</div>
+      </div></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+        <div class="dtl">Dia de Repasse por Marca (dia do mês)</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+          ${brands.map(b=>{
+            const br=STATE.brands[b];
+            return `<div style="padding:12px;background:rgba(${br.rgb},0.06);border:1px solid rgba(${br.rgb},0.2);border-radius:12px;display:flex;align-items:center;gap:10px">
+              <div style="width:8px;height:8px;border-radius:50%;background:${br.color};flex-shrink:0"></div>
+              <span style="font-size:12px;font-weight:700;color:${br.color};flex:1">${b}</span>
+              <input type="number" min="1" max="31" class="fi dl-brand-day" data-brand="${b}" value="${dl.brandPayDays[b]||15}" style="width:60px;padding:6px;font-size:13px;text-align:center">
+            </div>`;
+          }).join('')}
+        </div>
+
+        <div class="dtl" style="margin-top:8px">Prazos Gerais</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">
+          <div style="padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:12px">
+            <label style="font-size:9px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:6px">Dias após repasse da marca para pagar afiliado</label>
+            <input type="number" min="1" max="60" class="fi" id="dl-aff-days" value="${dl.affiliatePayDays||10}" style="padding:8px;font-size:13px">
+          </div>
+          <div style="padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:12px">
+            <label style="font-size:9px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:6px">Dias antes do vencimento para lembrete de NF</label>
+            <input type="number" min="1" max="30" class="fi" id="dl-nf-days" value="${dl.nfReminderDays||5}" style="padding:8px;font-size:13px">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-theme" onclick="saveDeadlines()"><i data-lucide="save"></i> Salvar Prazos</button>
+          <button class="btn btn-outline" onclick="generatePaymentTasks()"><i data-lucide="zap"></i> Gerar Tarefas do Mês</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="intel-wrap">
+      <div class="intel-hdr"><div>
+        <div class="intel-eye">Calendário Visual</div>
+        <div class="intel-title">Próximos Vencimentos</div>
+      </div></div>
+      <div style="padding:20px" id="dl-calendar"></div>
+    </div>`;
+  renderDeadlineCalendar();
+  lucide.createIcons();
+}
+
+window.saveDeadlines=()=>{
+  if(!STATE.deadlines)STATE.deadlines={brandPayDays:{},affiliatePayDays:10,nfReminderDays:5,lastGenerated:''};
+  document.querySelectorAll('.dl-brand-day').forEach(inp=>{
+    STATE.deadlines.brandPayDays[inp.dataset.brand]=parseInt(inp.value)||15;
+  });
+  STATE.deadlines.affiliatePayDays=parseInt(document.getElementById('dl-aff-days')?.value)||10;
+  STATE.deadlines.nfReminderDays=parseInt(document.getElementById('dl-nf-days')?.value)||5;
+  logAction('Prazos atualizados','Calendário financeiro');saveToLocal();toast('Prazos salvos!');
+  renderDeadlineCalendar();
+};
+
+function renderDeadlineCalendar(){
+  const el=document.getElementById('dl-calendar');if(!el)return;
+  const dl=STATE.deadlines||{brandPayDays:{},affiliatePayDays:10,nfReminderDays:5};
+  const now=new Date();
+  const events=[];
+
+  Object.entries(dl.brandPayDays).forEach(([brand,day])=>{
+    const br=STATE.brands[brand];if(!br)return;
+    // Repasse da marca (este mês ou próximo)
+    let brandDate=new Date(now.getFullYear(),now.getMonth(),day);
+    if(brandDate<now)brandDate=new Date(now.getFullYear(),now.getMonth()+1,day);
+    events.push({date:brandDate,type:'brand',label:`${brand} repassa para 3C`,color:br.color,icon:'building-2'});
+
+    // NF reminder
+    const nfDate=new Date(brandDate);nfDate.setDate(nfDate.getDate()-(dl.nfReminderDays||5));
+    if(nfDate>now)events.push({date:nfDate,type:'nf',label:`Lembrete NF — ${brand}`,color:'#f59e0b',icon:'file-text'});
+
+    // Pagamento dos afiliados
+    const affDate=new Date(brandDate);affDate.setDate(affDate.getDate()+(dl.affiliatePayDays||10));
+    events.push({date:affDate,type:'aff',label:`Pagar afiliados ${brand}`,color:'#10b981',icon:'banknote'});
+  });
+
+  events.sort((a,b)=>a.date-b.date);
+  const upcoming=events.filter(e=>e.date>=now).slice(0,12);
+
+  el.innerHTML=upcoming.length?`<div style="display:flex;flex-direction:column;gap:8px">
+    ${upcoming.map(e=>{
+      const days=Math.ceil((e.date-now)/(1000*60*60*24));
+      const dateStr=e.date.toLocaleDateString('pt-BR');
+      const urgency=days<=3?'var(--red)':days<=7?'var(--amber)':'var(--text2)';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;border-left:3px solid ${e.color}">
+        <i data-lucide="${e.icon}" style="width:16px;height:16px;stroke:${e.color};flex-shrink:0"></i>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:var(--text)">${e.label}</div>
+          <div style="font-size:10px;color:var(--text3)">${dateStr}</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;color:${urgency}">${days===0?'Hoje':days===1?'Amanhã':`${days} dias`}</span>
+      </div>`;
+    }).join('')}
+  </div>`:'<div class="mob-home-empty">Configure os prazos acima para ver o calendário.</div>';
+  lucide.createIcons();
+}
+
+window.generatePaymentTasks=()=>{
+  const dl=STATE.deadlines||{brandPayDays:{},affiliatePayDays:10,nfReminderDays:5};
+  const now=new Date();
+  const monthKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  if(dl.lastGenerated===monthKey){
+    if(!confirm('Tarefas deste mês já foram geradas. Gerar novamente?'))return;
+  }
+
+  let count=0;
+  const monthName=now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  Object.entries(dl.brandPayDays).forEach(([brand,day])=>{
+    const br=STATE.brands[brand];if(!br)return;
+    const brandDate=new Date(now.getFullYear(),now.getMonth(),day);
+    const nfDate=new Date(brandDate);nfDate.setDate(nfDate.getDate()-(dl.nfReminderDays||5));
+    const affPayDate=new Date(brandDate);affPayDate.setDate(affPayDate.getDate()+(dl.affiliatePayDays||10));
+
+    // Afiliados ativos com deals nessa marca
+    const affsWithBrand=STATE.affiliates.filter(a=>a.status==='ativo'&&a.deals&&a.deals[brand]);
+
+    if(affsWithBrand.length>0){
+      // Tarefa: Enviar NFs para o financeiro
+      STATE.tasks.unshift({
+        id:'tk'+Date.now()+count,title:`Enviar NFs ${brand} — ${monthName}`,
+        description:`Cobrar NFs dos afiliados: ${affsWithBrand.map(a=>a.name).join(', ')}.\nPrazo de repasse da ${brand}: dia ${day}.`,
+        linkedModule:'payments',affiliateId:'',contractId:'',
+        priority:'alta',status:'pendente',
+        assignee:STATE.users.find(u=>u.role==='financeiro')?.name||STATE.user?.name||'',
+        dueDate:nfDate.toISOString().split('T')[0]
+      });count++;
+
+      // Tarefa: Pagamento dos afiliados
+      affsWithBrand.forEach(aff=>{
+        STATE.tasks.unshift({
+          id:'tk'+Date.now()+count,title:`Pagar ${aff.name} — ${brand} ${monthName}`,
+          description:`Pagamento ref. ${monthName}.\nTipo: ${CONTRACT_TYPES[aff.contractType]?.label||aff.contractType}.\nPrazo: ${affPayDate.toLocaleDateString('pt-BR')}.`,
+          linkedModule:'payments',affiliateId:aff.id,contractId:'',
+          priority:'alta',status:'pendente',
+          assignee:STATE.users.find(u=>u.role==='financeiro')?.name||STATE.user?.name||'',
+          dueDate:affPayDate.toISOString().split('T')[0]
+        });count++;
+      });
+    }
+  });
+
+  STATE.deadlines.lastGenerated=monthKey;
+  logAction('Tarefas financeiras geradas',`${count} tarefa(s) — ${monthName}`);
+  saveToLocal();toast(`${count} tarefa(s) gerada(s) para ${monthName}!`);
+
+  // Gerar notificação
+  STATE.notifications.unshift({
+    id:'n'+Date.now(),type:'green',
+    text:`${count} tarefas financeiras geradas para ${monthName}`,
+    time:'agora',read:false
+  });
+  updateNotifBadge();
 };
 
 // ══════════════════════════════════════════════════════════
