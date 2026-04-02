@@ -3799,9 +3799,11 @@ window.toggleTheme = _wrapToggleTheme;
 // 2) Firebase validates in background and syncs cloud data
 fbAuth.onAuthStateChanged(async (firebaseUser) => {
   if (firebaseUser && STATE.user) {
-    // Session valid — sync cloud data silently
+    // Session valid — sync cloud data silently and refresh UI
     await loadFromCloud();
     fixBrandLogos();
+    const hub=document.getElementById('hub');
+    if(hub && hub.style.display==='flex'){buildHubCards();buildMobileHome();updateNotifBadge();lucide.createIcons();}
   } else if (!firebaseUser && STATE.user) {
     // Firebase says not authenticated but we have local session — force logout
     STATE.user=null;localStorage.removeItem('3cos_sess');
