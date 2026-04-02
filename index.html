@@ -1773,6 +1773,9 @@ function bDash(el){
   el.innerHTML=modHdr('Dashboard')+`<div class="mod-body">
     ${heroHTML('dashboard','Dashboard — Operação 3C','Visão Geral 3C','Resultado consolidado por afiliado')}
     <div class="mod-main">
+      <div class="sec-hdr" style="margin-bottom:16px"><div class="sec-lbl">Painel de Controle</div>
+        <button class="btn btn-theme" onclick="openDailyDataModal()"><i data-lucide="database"></i> Lançar Dados</button>
+      </div>
       <div class="kpi-row">
         <div class="kpi" style="--kpi-c:#ec4899;--kpi-glow:rgba(236,72,153,0.1)">
           <div class="kpi-icon-row"><i data-lucide="users" style="width:14px;height:14px;stroke:#ec4899"></i><span class="kpi-lbl">QFTDs</span></div>
@@ -1835,35 +1838,76 @@ function bDash(el){
 // ══════════════════════════════════════════════════════════
 window.openDailyDataModal = () => {
   const brandOptions = Object.keys(STATE.brands).map(b => `<option value="${b}">${b}</option>`).join('');
-  const affOptions = STATE.affiliates.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  const affOptions = STATE.affiliates.filter(a=>a.status==='ativo').map(a => `<option value="${a.id}">${a.name}</option>`).join('');
   const today = new Date().toISOString().split('T')[0];
 
   openModal('Lançar Dados de Performance', `
     <div class="fg">
       <div class="fgp"><label>Marca Parceira *</label>
-        <select class="fi" id="dd-brand">${brandOptions}</select>
+        <select class="fi" id="dd-brand" onchange="updateDailyFields()">${brandOptions}</select>
       </div>
       <div class="fgp"><label>Afiliado *</label>
-        <select class="fi" id="dd-aff">${affOptions}</select>
+        <select class="fi" id="dd-aff" onchange="updateDailyFields()">${affOptions}</select>
       </div>
       <div class="fgp"><label>Data de Referência *</label>
         <input type="date" class="fi" id="dd-date" value="${today}">
       </div>
-      <div class="fgp"><label>FTDs *</label>
+      <div class="fgp"><label>FTDs</label>
         <input type="number" class="fi" id="dd-ftd" placeholder="0">
       </div>
-      <div class="fgp"><label>QFTDs *</label>
-        <input type="number" class="fi" id="dd-qftd" placeholder="0">
+      <div id="dd-qftd-section">
+        <div class="fgp"><label>QFTDs</label>
+          <input type="number" class="fi" id="dd-qftd" placeholder="0">
+        </div>
       </div>
-      <div class="fgp"><label>Depósitos (R$) *</label>
+      <div class="fgp"><label>Depósitos (R$)</label>
         <input type="number" step="0.01" class="fi" id="dd-dep" placeholder="0.00">
       </div>
-      <div class="fgp"><label>Net Revenue (R$) *</label>
+      <div class="fgp"><label>Net Revenue (R$)</label>
         <input type="number" step="0.01" class="fi" id="dd-rev" placeholder="0.00">
       </div>
     </div>
+    <div id="dd-history" style="margin-top:14px"></div>
   `, `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-theme" onclick="saveDailyData()"><i data-lucide="save"></i> Lançar</button>`);
+  updateDailyFields();
+};
+
+window.updateDailyFields = () => {
+  const brand = document.getElementById('dd-brand')?.value;
+  const affId = document.getElementById('dd-aff')?.value;
+  const section = document.getElementById('dd-qftd-section');
+  const histEl = document.getElementById('dd-history');
+  if(!section) return;
+
+  // Check if brand is tiered for this affiliate
+  const aff = STATE.affiliates.find(a=>a.id===affId);
+  const br = STATE.brands[brand];
+  const isTiered = aff?.contractType==='tiered' && aff?.deals?.[brand]?.levels;
+
+  if(isTiered) {
+    const levels = aff.deals[brand].levels;
+    section.innerHTML = levels.map(l => `
+      <div class="fgp"><label>QFTDs ${l.name} (base ${l.baseline})</label>
+        <input type="number" class="fi dd-qftd-tier" data-tier="${l.key}" placeholder="0">
+      </div>`).join('');
+  } else {
+    section.innerHTML = `<div class="fgp"><label>QFTDs</label>
+      <input type="number" class="fi" id="dd-qftd" placeholder="0">
+    </div>`;
+  }
+
+  // Show recent entries for this affiliate+brand
+  if(affId && brand && histEl) {
+    const recent = STATE.reports.filter(r=>r.affiliateId===affId && r.brand===brand).slice(-5).reverse();
+    histEl.innerHTML = recent.length ? `
+      <div class="dtl" style="margin-bottom:6px">Últimos lançamentos — ${aff?.name||''} · ${brand}</div>
+      ${recent.map(r=>{
+        const q = typeof r.qftd==='object' ? Object.values(r.qftd).reduce((s,v)=>s+v,0) : (r.qftd||0);
+        return `<div class="dr"><span>${new Date(r.date).toLocaleDateString('pt-BR')}</span>
+          <span style="font-size:10px;color:var(--text2)">${r.ftd} FTD · ${q} QFTD · ${fc(r.deposits)}</span></div>`;
+      }).join('')}` : '';
+  }
 };
 
 window.saveDailyData = () => {
@@ -1871,26 +1915,37 @@ window.saveDailyData = () => {
   const a = document.getElementById('dd-aff').value;
   const dt = document.getElementById('dd-date').value;
   const ftd = parseInt(document.getElementById('dd-ftd').value)||0;
-  const qftd = parseInt(document.getElementById('dd-qftd').value)||0;
   const dep = parseFloat(document.getElementById('dd-dep').value)||0;
   const rev = parseFloat(document.getElementById('dd-rev').value)||0;
 
   if(!b || !a || !dt) return toast("Preencha Marca, Afiliado e Data", "e");
 
-  STATE.reports.push({
-    brand: b,
-    affiliateId: a,
-    date: dt,
-    ftd: ftd,
-    qftd: qftd,
-    deposits: dep,
-    netRev: rev
-  });
-  logAction('Lançamento de Dados', `${b} - ${dt}`);
+  // Handle tiered or simple QFTDs
+  let qftd;
+  const tierInputs = document.querySelectorAll('.dd-qftd-tier');
+  if(tierInputs.length) {
+    qftd = {};
+    tierInputs.forEach(inp => { qftd[inp.dataset.tier] = parseInt(inp.value)||0; });
+  } else {
+    qftd = parseInt(document.getElementById('dd-qftd')?.value)||0;
+  }
+
+  STATE.reports.push({ brand:b, affiliateId:a, date:dt, ftd, qftd, deposits:dep, netRev:rev });
+
+  // Auto-update affiliate totals
+  const aff = STATE.affiliates.find(x=>x.id===a);
+  if(aff) {
+    aff.ftds += ftd;
+    aff.qftds += typeof qftd==='object' ? Object.values(qftd).reduce((s,v)=>s+v,0) : qftd;
+    aff.deposits += dep;
+    aff.netRev = (aff.netRev||0) + rev;
+  }
+
+  logAction('Lançamento de Dados', `${b} - ${STATE.affiliates.find(x=>x.id===a)?.name||''} - ${dt}`);
   saveToLocal();
   closeModal();
   toast('Dados lançados com sucesso!');
-  
+
   if(document.getElementById('mod-dashboard').classList.contains('active')) bDash(document.getElementById('mod-dashboard'));
   if(document.getElementById('mod-brands').classList.contains('active')) bBrands(document.getElementById('mod-brands'));
 };
@@ -2745,25 +2800,88 @@ function bPayments(el){
 }
 function renderPyTbl(list){
   const el=document.getElementById('py-tbl');if(!el)return;
-  el.innerHTML=`<table><thead><tr><th>Afiliado</th><th>Marca Parceira</th><th>Contrato</th><th>Valor</th><th>Vencimento</th><th>NF</th><th>Status</th><th>Ações</th></tr></thead>
-  <tbody>${list.map(p=>`<tr class="tr" onclick="openAffDetail('${p.affiliateId}')">
-    <td class="td-name">${p.affiliate}</td>
-    <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[p.brand]?.color||'#888'}">${p.brand}</span></td>
-    <td style="font-size:11px;color:var(--text2)">${p.contract}</td>
-    <td class="td-money">${fc(p.amount)}</td>
-    <td style="font-size:11px;${od(p.dueDate,p.status)?'color:var(--red)':''}">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):'—'}</td>
-    <td>${p.nfName?`<span style="font-size:10px;color:var(--blue)">📎 ${p.nfName}</span>`:'<span style="font-size:10px;color:var(--text3)">—</span>'}</td>
-    <td><span class="pb pb-${p.status}">${pl(p.status)}</span></td>
-    <td class="td-acts">
-      ${p.status==='pendente' || p.status==='ajuste'?`
-        <button class="ibt" onclick="event.stopPropagation();approvePay('${p.id}')" title="Aprovar"><i data-lucide="check" style="width:13px;height:13px;stroke:var(--green)"></i></button>
-        <button class="ibt amber" onclick="event.stopPropagation();promptPayAction('${p.id}', 'ajuste')" title="Devolver para Ajuste"><i data-lucide="alert-circle" style="width:13px;height:13px"></i></button>
-        <button class="ibt danger" onclick="event.stopPropagation();promptPayAction('${p.id}', 'recusado')" title="Recusar"><i data-lucide="x" style="width:13px;height:13px"></i></button>
-      `:''}
-      ${p.status==='aprovado'?`<button class="ibt" onclick="event.stopPropagation();markPaid('${p.id}')" title="Confirmar pagamento"><i data-lucide="banknote" style="width:13px;height:13px;stroke:var(--green)"></i></button>`:''}
-      <button class="ibt" onclick="event.stopPropagation();openEditPay('${p.id}')" title="Editar"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
-    </td>
-  </tr>`).join('')}</tbody></table>`;
+  // Group by affiliate
+  const groups={};
+  list.forEach(p=>{const k=p.affiliate||'Sem afiliado';if(!groups[k])groups[k]={payments:[],total:0,pending:0};groups[k].payments.push(p);groups[k].total+=p.amount;if(p.status==='pendente'||p.status==='ajuste')groups[k].pending+=p.amount;});
+
+  if(!Object.keys(groups).length){el.innerHTML='<div class="empty"><i data-lucide="inbox"></i><p>Nenhum pagamento</p></div>';lucide.createIcons();return;}
+
+  el.innerHTML=Object.entries(groups).map(([name,g])=>`
+    <div style="margin-bottom:10px;border:1px solid var(--gb);border-radius:14px;overflow:hidden">
+      <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.py-chev').style.transform=this.nextElementSibling.style.display==='none'?'':'rotate(180deg)'"
+        style="padding:12px 16px;background:var(--bg3);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px;flex:1">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">${name}</span>
+          <span style="font-size:9px;color:var(--text3)">${g.payments.length} pgto(s)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          ${g.pending>0?`<span style="font-size:10px;font-weight:700;color:var(--amber)">Pend: ${fc(g.pending)}</span>`:''}
+          <span style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text)">${fc(g.total)}</span>
+          <i data-lucide="chevron-down" class="py-chev" style="width:14px;height:14px;stroke:var(--text3);transition:transform 0.2s"></i>
+        </div>
+      </div>
+      <div>
+        <table style="width:100%;border-collapse:collapse;min-width:680px"><tbody>
+  ${g.payments.map(p=>`<tr class="tr" onclick="openAffDetail('${p.affiliateId}')">`).join('')}
+        </tbody></table>
+      </div>
+    </div>`).join('');
+
+  // Now properly build the table rows inside each group
+  let groupIdx=0;
+  el.innerHTML=Object.entries(groups).map(([name,g])=>`
+    <div style="margin-bottom:10px;border:1px solid var(--gb);border-radius:14px;overflow:hidden">
+      <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.py-chev').style.transform=this.nextElementSibling.style.display==='none'?'':'rotate(180deg)'"
+        style="padding:12px 16px;background:var(--bg3);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px;flex:1">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">${name}</span>
+          <span style="font-size:9px;color:var(--text3)">${g.payments.length} pgto(s)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          ${g.pending>0?`<span style="font-size:10px;font-weight:700;color:var(--amber)">Pend: ${fc(g.pending)}</span>`:''}
+          <span style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text)">${fc(g.total)}</span>
+          <i data-lucide="chevron-down" class="py-chev" style="width:14px;height:14px;stroke:var(--text3);transition:transform 0.2s"></i>
+        </div>
+      </div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:680px">
+        <thead><tr><th>Marca</th><th>Contrato</th><th>Valor</th><th>Vencimento</th><th>NF</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>${g.payments.map(p=>`<tr class="tr" onclick="openAffDetail('${p.affiliateId}')">`).join('')}</tbody>
+      </table></div>
+    </div>`).join('');
+
+  // Re-render properly with full row content
+  el.innerHTML='';
+  Object.entries(groups).forEach(([name,g])=>{
+    const div=document.createElement('div');
+    div.style.cssText='margin-bottom:10px;border:1px solid var(--gb);border-radius:14px;overflow:hidden';
+    const hdr=document.createElement('div');
+    hdr.style.cssText='padding:12px 16px;background:var(--bg3);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px';
+    hdr.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex:1">
+      <span style="font-size:13px;font-weight:700;color:var(--text)">${name}</span>
+      <span style="font-size:9px;color:var(--text3)">${g.payments.length} pgto(s)</span>
+    </div><div style="display:flex;align-items:center;gap:12px">
+      ${g.pending>0?`<span style="font-size:10px;font-weight:700;color:var(--amber)">Pend: ${fc(g.pending)}</span>`:''}
+      <span style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text)">${fc(g.total)}</span>
+      <i data-lucide="chevron-down" class="py-chev" style="width:14px;height:14px;stroke:var(--text3);transition:transform 0.2s"></i>
+    </div>`;
+    const body=document.createElement('div');
+    body.style.cssText='overflow-x:auto';
+    body.innerHTML=`<table style="width:100%;border-collapse:collapse;min-width:600px">
+      <tbody>${g.payments.map(p=>`<tr class="tr" onclick="openAffDetail('${p.affiliateId}')">
+        <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[p.brand]?.color||'#888'}">${p.brand}</span></td>
+        <td style="font-size:11px;color:var(--text2)">${p.contract}</td>
+        <td class="td-money">${fc(p.amount)}</td>
+        <td style="font-size:11px;${od(p.dueDate,p.status)?'color:var(--red)':''}">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):'—'}</td>
+        <td>${p.nfLink?`<a href="${p.nfLink}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue);text-decoration:none" onclick="event.stopPropagation()">🔗 ${p.nfName||'Ver NF'}</a>`:p.nfName?`<span style="font-size:10px;color:var(--blue)">📎 ${p.nfName}</span>`:'<span style="font-size:10px;color:var(--text3)">—</span>'}</td>
+        <td><span class="pb pb-${p.status}">${pl(p.status)}</span></td>
+        <td class="td-acts">
+          ${p.status==='pendente'||p.status==='ajuste'?`<button class="ibt" onclick="event.stopPropagation();approvePay('${p.id}')" title="Aprovar"><i data-lucide="check" style="width:13px;height:13px;stroke:var(--green)"></i></button><button class="ibt amber" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')" title="Ajuste"><i data-lucide="alert-circle" style="width:13px;height:13px"></i></button><button class="ibt danger" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')" title="Recusar"><i data-lucide="x" style="width:13px;height:13px"></i></button>`:''}
+          ${p.status==='aprovado'?`<button class="ibt" onclick="event.stopPropagation();markPaid('${p.id}')" title="Confirmar"><i data-lucide="banknote" style="width:13px;height:13px;stroke:var(--green)"></i></button>`:''}
+          <button class="ibt" onclick="event.stopPropagation();openEditPay('${p.id}')" title="Editar"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
+        </td></tr>`).join('')}</tbody></table>`;
+    hdr.onclick=()=>{body.style.display=body.style.display==='none'?'block':'none';hdr.querySelector('.py-chev').style.transform=body.style.display==='none'?'':'rotate(180deg)';};
+    div.appendChild(hdr);div.appendChild(body);el.appendChild(div);
+  });
   lucide.createIcons();
 }
 window.pilPy=(s,btn)=>{_pyF=s;btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderPyTbl(s?STATE.payments.filter(p=>p.status===s):STATE.payments);};
@@ -2864,8 +2982,10 @@ window.openNewPay=()=>{
     <div class="fgp"><label>Data de Vencimento *</label>
       <input class="fi" type="date" id="np-date">
     </div>
-    <div class="fgp ff"><label>Anexar Nota Fiscal (NF) *</label>
+    <div class="fgp ff"><label>Nota Fiscal (NF) — arquivo ou link *</label>
       <input class="fi" type="file" id="np-nf" accept=".pdf,.jpg,.png" style="padding: 7px 10px; cursor: pointer;">
+      <div style="text-align:center;font-size:9px;color:var(--text3);margin:4px 0">ou cole um link externo (Google Drive, etc)</div>
+      <input class="fi" id="np-nf-url" placeholder="https://drive.google.com/...">
     </div>
   </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-theme" onclick="saveNewPay()"><i data-lucide="upload-cloud"></i> Solicitar Pagamento</button>`);
@@ -2878,31 +2998,20 @@ window.saveNewPay=()=>{
   const amountStr = document.getElementById('np-amount').value;
   const dueDate = document.getElementById('np-date').value;
   const nfFile = document.getElementById('np-nf').files[0];
+  const nfUrl = document.getElementById('np-nf-url')?.value.trim();
 
-  if(!affId || !brand || !amountStr || !dueDate) {
-    toast('Preencha todos os campos obrigatórios', 'e');
-    return;
-  }
-  
-  if(!nfFile) {
-    toast('É obrigatório anexar a Nota Fiscal', 'w');
-    return;
-  }
+  if(!affId || !brand || !amountStr || !dueDate) { toast('Preencha todos os campos obrigatórios', 'e'); return; }
+  if(!nfFile && !nfUrl) { toast('Anexe a NF (arquivo ou link)', 'w'); return; }
 
   const amount = parseFloat(amountStr);
   const affiliate = STATE.affiliates.find(a => a.id === affId)?.name || 'Desconhecido';
-  const nfName = nfFile.name;
+  const nfName = nfFile ? nfFile.name : '';
+  const nfLink = nfUrl || '';
 
   const newPay = {
     id: 'py' + Date.now(),
-    affiliateId: affId,
-    affiliate: affiliate,
-    brand: brand,
-    contract: contract,
-    amount: amount,
-    dueDate: dueDate,
-    status: 'pendente',
-    nfName: nfName
+    affiliateId: affId, affiliate, brand, contract, amount, dueDate,
+    status: 'pendente', nfName, nfLink
   };
 
   STATE.payments.unshift(newPay); 
@@ -3506,6 +3615,21 @@ function renderTasks(list){
         </div>
       </div>
       ${t.description ? `<div class="tk-desc">${t.description}</div>` : ''}
+      ${(t.subtasks&&t.subtasks.length)?`<div style="padding-left:27px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="flex:1;height:4px;background:var(--bg3);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(t.subtasks.filter(s=>s.done).length/t.subtasks.length*100)}%;background:linear-gradient(90deg,#ec4899,#a855f7);border-radius:3px;transition:width 0.3s"></div>
+          </div>
+          <span style="font-size:9px;font-weight:700;color:var(--text2)">${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length}</span>
+        </div>
+        ${t.subtasks.map(s=>`<div style="display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer" onclick="toggleSubtask('${t.id}','${s.id}')">
+          <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${s.done?'var(--theme)':'var(--gb2)'};background:${s.done?'var(--theme)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s">
+            ${s.done?'<i data-lucide="check" style="width:8px;height:8px;stroke:#fff"></i>':''}
+          </div>
+          <span style="font-size:11px;${s.done?'text-decoration:line-through;color:var(--text3)':'color:var(--text)'}">${s.text}</span>
+        </div>`).join('')}
+        <button onclick="promptAddSubtask('${t.id}')" style="margin-top:4px;background:none;border:1px dashed var(--gb2);border-radius:6px;padding:3px 10px;font-size:9px;color:var(--text3);cursor:pointer;width:100%">+ Subtarefa</button>
+      </div>`:canEdit?`<div style="padding-left:27px;margin-bottom:6px"><button onclick="promptAddSubtask('${t.id}')" style="background:none;border:1px dashed var(--gb2);border-radius:6px;padding:3px 10px;font-size:9px;color:var(--text3);cursor:pointer">+ Subtarefa</button></div>`:''}
       ${aff?`<div class="tk-linked" onclick="openAffDetail('${aff.id}')"><i data-lucide="user"></i>${aff.name}</div>`:''}
       <div class="tk-ft">
         <div style="display:flex;gap:12px">
@@ -3518,6 +3642,19 @@ function renderTasks(list){
   }).join('');
   lucide.createIcons();
 }
+window.promptAddSubtask=(taskId)=>{
+  const text=prompt('Nome da subtarefa:');
+  if(!text||!text.trim())return;
+  const t=STATE.tasks.find(x=>x.id===taskId);if(!t)return;
+  if(!t.subtasks)t.subtasks=[];
+  t.subtasks.push({id:'st'+Date.now(),text:text.trim(),done:false});
+  saveToLocal();renderTasks(_tkF?STATE.tasks.filter(x=>x.status===_tkF):STATE.tasks);
+};
+window.toggleSubtask=(taskId,subId)=>{
+  const t=STATE.tasks.find(x=>x.id===taskId);if(!t||!t.subtasks)return;
+  const s=t.subtasks.find(x=>x.id===subId);if(s)s.done=!s.done;
+  saveToLocal();renderTasks(_tkF?STATE.tasks.filter(x=>x.status===_tkF):STATE.tasks);
+};
 window.toggleTask=id=>{const t=STATE.tasks.find(x=>x.id===id);if(!t)return;t.status=t.status==='concluída'?'pendente':'concluída';logAction('Tarefa '+(t.status==='concluída'?'concluída':'reaberta'),t.title);saveToLocal();renderTasks(_tkF?STATE.tasks.filter(x=>x.status===_tkF):STATE.tasks);toast(t.status==='concluída'?'Concluída!':'Reaberta');};
 window.pilTk=(s,btn)=>{_tkF=s;btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderTasks(s?STATE.tasks.filter(t=>t.status===s):STATE.tasks);};
 
@@ -3681,9 +3818,54 @@ function bUsers(el){
           </div>
         </div>`).join('')}
       </div>
+      <div style="margin-top:28px">
+        <div class="sec-hdr"><div class="sec-lbl">Backup & Restauração</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="exportBackup()"><i data-lucide="download"></i> Exportar Backup JSON</button>
+          <button class="btn btn-outline" onclick="document.getElementById('import-backup').click()"><i data-lucide="upload"></i> Importar Backup</button>
+          <input type="file" id="import-backup" accept=".json" style="display:none" onchange="importBackup(event)">
+          <button class="btn btn-outline" onclick="forceSyncCloud()"><i data-lucide="cloud"></i> Forçar Sync Nuvem</button>
+        </div>
+      </div>
     </div></div>`;
   lucide.createIcons();
 }
+
+window.exportBackup=()=>{
+  const data=JSON.parse(JSON.stringify(STATE));
+  delete data.user;
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`3cos_backup_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);logAction('Backup exportado','JSON');toast('Backup exportado!');
+};
+
+window.importBackup=(event)=>{
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.affiliates&&!data.brands)return toast('Arquivo inválido','e');
+      if(!confirm('Isso irá substituir TODOS os dados atuais. Deseja continuar?'))return;
+      const user=STATE.user;
+      Object.assign(STATE,data);
+      STATE.user=user;
+      saveToLocal();
+      logAction('Backup importado','JSON');
+      toast('Backup importado! Recarregando...');
+      setTimeout(()=>location.reload(),1000);
+    }catch(err){toast('Erro ao ler arquivo','e');}
+  };
+  reader.readAsText(file);event.target.value='';
+};
+
+window.forceSyncCloud=async()=>{
+  if(!fbAuth.currentUser)return toast('Não autenticado','e');
+  try{await saveToCloud();toast('Sync completo!');
+  }catch(e){toast('Erro no sync: '+e.message,'e');}
+};
 
 // ══════════════════════════════════════════════════════════
 // MOBILE SIDEBAR LOGIC
