@@ -1970,6 +1970,13 @@ window.openAffDetail=id=>{
         <div class="dr"><span>Status</span><span class="b b-${a.status}">${sl(a.status)}</span></div>
         <div class="dr"><span>Email</span><strong>${a.contactEmail}</strong></div>
         <div class="dr"><span>Marcas</span><strong>${brands.join(', ')}</strong></div>
+        ${a.social&&Object.values(a.social).some(v=>v)?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          ${a.social.instagram?`<a href="https://instagram.com/${a.social.instagram.replace('@','')}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(228,64,95,0.1);color:#e4405f;text-decoration:none;font-weight:600;border:1px solid rgba(228,64,95,0.2)">📷 ${a.social.instagram}</a>`:''}
+          ${a.social.twitter?`<a href="https://x.com/${a.social.twitter.replace('@','')}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,0.05);color:var(--text);text-decoration:none;font-weight:600;border:1px solid var(--gb)">𝕏 ${a.social.twitter}</a>`:''}
+          ${a.social.youtube?`<a href="https://youtube.com/${a.social.youtube.startsWith('@')?a.social.youtube:'@'+a.social.youtube}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(255,0,0,0.08);color:#ff0000;text-decoration:none;font-weight:600;border:1px solid rgba(255,0,0,0.15)">▶ ${a.social.youtube}</a>`:''}
+          ${a.social.tiktok?`<a href="https://tiktok.com/@${a.social.tiktok.replace('@','')}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,0.05);color:var(--text);text-decoration:none;font-weight:600;border:1px solid var(--gb)">♪ ${a.social.tiktok}</a>`:''}
+          ${a.social.website?`<a href="${a.social.website.startsWith('http')?a.social.website:'https://'+a.social.website}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(59,130,246,0.08);color:var(--blue);text-decoration:none;font-weight:600;border:1px solid rgba(59,130,246,0.15)">🌐 Site</a>`:''}
+        </div>`:''}
       </div>
       <div class="ds2"><div class="dtl">Performance</div>
         <div class="dr"><span>FTDs</span><strong style="color:var(--blue)">${a.ftds}</strong></div>
@@ -2073,16 +2080,30 @@ window.openNewAff=()=>{
               <div class="na-deal-tiered" style="display:none;margin-top:8px;width:100%">
                 <label style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;display:block">Níveis CPA Escalonado</label>
                 <div class="na-tiers" data-brand="${n}" style="display:flex;flex-direction:column;gap:4px">
+                  <div style="display:flex;gap:4px;margin-bottom:2px">
+                    <span style="width:50px;font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Nível</span>
+                    <span style="flex:1;font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">CPA (R$)</span>
+                    <span style="flex:1;font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Baseline (FTDs)</span>
+                  </div>
                   <div style="display:flex;gap:4px;align-items:center">
-                    <input class="fi" data-tier="name" value="L1" style="width:50px;padding:6px;font-size:11px" placeholder="Nível">
-                    <input type="number" class="fi" data-tier="cpa" value="${br.cpa||0}" style="flex:1;padding:6px;font-size:11px" placeholder="CPA R$">
-                    <input type="number" class="fi" data-tier="baseline" value="30" style="flex:1;padding:6px;font-size:11px" placeholder="Baseline">
+                    <input class="fi" data-tier="name" value="L1" style="width:50px;padding:6px;font-size:11px" placeholder="L1">
+                    <input type="number" class="fi" data-tier="cpa" value="${br.cpa||0}" style="flex:1;padding:6px;font-size:11px" placeholder="R$ por FTD">
+                    <input type="number" class="fi" data-tier="baseline" value="30" style="flex:1;padding:6px;font-size:11px" placeholder="Mín. FTDs">
                   </div>
                 </div>
                 <button onclick="addTier('${n}')" style="margin-top:4px;background:transparent;border:1px dashed var(--gb2);border-radius:6px;padding:4px 10px;font-size:9px;color:var(--text3);cursor:pointer;width:100%">+ Nível</button>
               </div>
             </div>
           </div>`).join('')}
+      </div>
+    </div>
+    <div class="fgp ff"><label>Redes Sociais</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+        <div style="position:relative"><input class="fi" id="na-instagram" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">📷</span></div>
+        <div style="position:relative"><input class="fi" id="na-twitter" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">𝕏</span></div>
+        <div style="position:relative"><input class="fi" id="na-youtube" placeholder="Canal YouTube" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">▶</span></div>
+        <div style="position:relative"><input class="fi" id="na-tiktok" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">♪</span></div>
+        <div style="position:relative;grid-column:1/-1"><input class="fi" id="na-website" placeholder="https://site.com" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">🌐</span></div>
       </div>
     </div>
     <div class="fgp ff"><label>Observações</label><textarea class="fi" id="na-notes" rows="2"></textarea></div>
@@ -2110,9 +2131,9 @@ window.addTier=(brand)=>{
   const container=document.querySelector(`.na-tiers[data-brand="${brand}"]`);if(!container)return;
   const n=container.children.length+1;
   const div=document.createElement('div');div.style.cssText='display:flex;gap:4px;align-items:center';
-  div.innerHTML=`<input class="fi" data-tier="name" value="L${n}" style="width:50px;padding:6px;font-size:11px">
-    <input type="number" class="fi" data-tier="cpa" value="0" style="flex:1;padding:6px;font-size:11px" placeholder="CPA R$">
-    <input type="number" class="fi" data-tier="baseline" value="0" style="flex:1;padding:6px;font-size:11px" placeholder="Baseline">
+  div.innerHTML=`<input class="fi" data-tier="name" value="L${n}" style="width:50px;padding:6px;font-size:11px" placeholder="L${n}">
+    <input type="number" class="fi" data-tier="cpa" value="0" style="flex:1;padding:6px;font-size:11px" placeholder="R$ por FTD">
+    <input type="number" class="fi" data-tier="baseline" value="0" style="flex:1;padding:6px;font-size:11px" placeholder="Mín. FTDs">
     <button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px">×</button>`;
   container.appendChild(div);
 };
@@ -2146,7 +2167,14 @@ window.saveNewAff=()=>{
     deals[b]=deal;
   });
   if(!Object.keys(deals).length){toast('Selecione pelo menos uma marca','e');return;}
-  const newAff={id:'a'+Date.now(),name,type:'afiliado',status:'ativo',contactName:name,contactEmail:email,contractType:ct,deals,ftds:0,qftds:0,deposits:0,netRev:0,commission:0,profit:0,notes};
+  const social={
+    instagram:document.getElementById('na-instagram')?.value.trim()||'',
+    twitter:document.getElementById('na-twitter')?.value.trim()||'',
+    youtube:document.getElementById('na-youtube')?.value.trim()||'',
+    tiktok:document.getElementById('na-tiktok')?.value.trim()||'',
+    website:document.getElementById('na-website')?.value.trim()||''
+  };
+  const newAff={id:'a'+Date.now(),name,type:'afiliado',status:'ativo',contactName:name,contactEmail:email,contractType:ct,deals,social,ftds:0,qftds:0,deposits:0,netRev:0,commission:0,profit:0,notes};
   STATE.affiliates.push(newAff);logAction('Afiliado cadastrado',name);saveToLocal();closeModal();
   renderAffs(_affTypeF?STATE.affiliates.filter(a=>a.contractType===_affTypeF):STATE.affiliates);
   toast('Afiliado cadastrado!');
@@ -2173,6 +2201,15 @@ window.openEditAff=id=>{
     <div class="fgp"><label>Net Revenue (R$)</label><input type="number" class="fi" id="ea-rev" value="${a.netRev||0}"></div>
     <div class="fgp"><label>Comissão (R$)</label><input type="number" class="fi" id="ea-comm" value="${a.commission}"></div>
     <div class="fgp"><label>Lucro 3C (R$)</label><input type="number" class="fi" id="ea-profit" value="${a.profit}"></div>
+    <div class="fgp ff"><label>Redes Sociais</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+        <div style="position:relative"><input class="fi" id="ea-instagram" value="${a.social?.instagram||''}" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">📷</span></div>
+        <div style="position:relative"><input class="fi" id="ea-twitter" value="${a.social?.twitter||''}" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">𝕏</span></div>
+        <div style="position:relative"><input class="fi" id="ea-youtube" value="${a.social?.youtube||''}" placeholder="Canal YouTube" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">▶</span></div>
+        <div style="position:relative"><input class="fi" id="ea-tiktok" value="${a.social?.tiktok||''}" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">♪</span></div>
+        <div style="position:relative;grid-column:1/-1"><input class="fi" id="ea-website" value="${a.social?.website||''}" placeholder="https://site.com" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">🌐</span></div>
+      </div>
+    </div>
     <div class="fgp ff"><label>Observações</label><textarea class="fi" id="ea-notes" rows="2">${a.notes||''}</textarea></div>
   </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-danger" onclick="confirmDeleteAff('${a.id}')"><i data-lucide="trash-2"></i> Excluir</button>
@@ -2194,6 +2231,13 @@ window.saveEditAff=id=>{
   a.commission=parseFloat(document.getElementById('ea-comm')?.value)||0;
   a.profit=parseFloat(document.getElementById('ea-profit')?.value)||0;
   a.notes=document.getElementById('ea-notes')?.value.trim()||'';
+  a.social={
+    instagram:document.getElementById('ea-instagram')?.value.trim()||'',
+    twitter:document.getElementById('ea-twitter')?.value.trim()||'',
+    youtube:document.getElementById('ea-youtube')?.value.trim()||'',
+    tiktok:document.getElementById('ea-tiktok')?.value.trim()||'',
+    website:document.getElementById('ea-website')?.value.trim()||''
+  };
   logAction('Afiliado editado',name);saveToLocal();closeModal();
   renderAffs(_affTypeF?STATE.affiliates.filter(x=>x.contractType===_affTypeF):STATE.affiliates);
   toast('Afiliado atualizado!');
