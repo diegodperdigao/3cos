@@ -551,7 +551,6 @@ function buildMobileHome(){
 // ── MODULE OPEN/CLOSE ──
 window.openMod=id=>{
   sessionStorage.setItem('3cos_activeMod',id);
-  // Fechar módulo ativo (se houver) ou hub
   const activeMod=document.querySelector('.mod.active');
   if(activeMod){
     activeMod.style.opacity='0';
@@ -569,6 +568,7 @@ window.openMod=id=>{
       setTimeout(()=>el.style.opacity='1',50);initMosaics();lucide.createIcons();
     },320);
   }
+  updateBottomNav(id);
 };
 window.goBack=()=>{
   sessionStorage.removeItem('3cos_activeMod');
@@ -576,7 +576,15 @@ window.goBack=()=>{
   const hub=document.getElementById('hub');hub.style.display='flex';setTimeout(()=>hub.style.opacity='1',50);
   if(window.mainChartInstance) { window.mainChartInstance.destroy(); window.mainChartInstance = null; }
   buildHubCards();buildMobileHome();updateNotifBadge();initMosaics();lucide.createIcons();
+  updateBottomNav('hub');
 };
+function updateBottomNav(activeId){
+  const nav=document.getElementById('mob-bottom-nav');if(!nav)return;
+  const map={hub:0,dashboard:1,affiliates:2,pipeline:3,payments:4};
+  nav.querySelectorAll('.mob-bnav-item').forEach((item,i)=>{
+    item.classList.toggle('active',i===(map[activeId]??-1));
+  });
+}
 
 function initMosaics(){
   document.querySelectorAll('.mosaic-pattern').forEach(el=>{
