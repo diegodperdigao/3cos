@@ -26,15 +26,18 @@ function bPayments(el){
       </div>
       <div class="tabs" id="pay-tabs">
         <button class="tab on" style="--tab-color:var(--pink)" onclick="showPayTab('closing',this)"><div class="tab-dot" style="background:var(--pink)"></div>Fechamento</button>
-        <button class="tab" style="--tab-color:var(--blue)" onclick="showPayTab('queue',this)"><div class="tab-dot" style="background:var(--blue)"></div>Fila de Pagamentos</button>
+        <button class="tab" style="--tab-color:var(--blue)" onclick="showPayTab('queue',this)"><div class="tab-dot" style="background:var(--blue)"></div>Pagamentos</button>
         <button class="tab" style="--tab-color:var(--amber)" onclick="showPayTab('deadlines',this)"><div class="tab-dot" style="background:var(--amber)"></div>Prazos & Calendário</button>
       </div>
       <div id="pay-tab-closing"></div>
       <div id="pay-tab-queue" style="display:none">
-      <div class="sec-hdr"><div class="sec-lbl">Fila de pagamentos</div>
+      <div style="padding:12px 16px;background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);margin-bottom:16px;font-size:11px;color:var(--text2);line-height:1.6">
+        <strong style="color:var(--text)">Como funciona:</strong> Pagamentos são criados automaticamente ao executar um <strong>Fechamento</strong>, ou manualmente com o botão "Novo Pagamento". Todos passam pelo fluxo: <span style="color:var(--red)">Pendente</span> → <span style="color:var(--amber)">Aprovado</span> → <span style="color:var(--green)">Pago</span>.
+      </div>
+      <div class="sec-hdr"><div class="sec-lbl">Todos os Pagamentos</div>
         <div class="sec-actions">
           <button class="btn btn-outline" onclick="exportCSV('payments')"><i data-lucide="download"></i>CSV</button>
-          <button class="btn btn-theme" onclick="openNewPay()"><i data-lucide="plus"></i>Novo</button>
+          <button class="btn btn-theme" onclick="openNewPay()"><i data-lucide="plus"></i>Novo Pagamento</button>
         </div></div>
       <div class="pills">
         <button class="pill on" onclick="pilPy(null,this)">Todos</button>
@@ -121,7 +124,8 @@ function renderPyTbl(list){
     body.style.cssText='overflow-x:auto';
     body.innerHTML=`<table style="width:100%;border-collapse:collapse;min-width:600px">
       <tbody>${g.payments.map(p=>`<tr class="tr" onclick="openAffDetail('${p.affiliateId}')">
-        <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[p.brand]?.color||'#888'}">${p.brand}</span></td>
+        <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[p.brand]?.color||'#888'}">${p.brand}</span>
+          ${p.type?.includes('Fechamento')?'<span style="font-size:7px;display:block;color:var(--pink);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-top:1px">FECHAMENTO</span>':''}</td>
         <td style="font-size:11px;color:var(--text2)">${p.contract}</td>
         <td class="td-money">${fc(p.amount)}</td>
         <td style="font-size:11px;${od(p.dueDate,p.status)?'color:var(--red)':''}">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):'—'}</td>
@@ -490,11 +494,15 @@ function renderClosingTab(){
   const closings=STATE.closings||[];
 
   el.innerHTML=`
+    <div style="padding:12px 16px;background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);margin-bottom:16px;font-size:11px;color:var(--text2);line-height:1.6">
+      <strong style="color:var(--text)">Fechamento mensal:</strong> Selecione o afiliado, marca e mês de referência. O sistema calcula a comissão com base nos dados lançados, gera um PDF de relatório e cria automaticamente um pagamento pendente na aba <strong>Pagamentos</strong>.
+    </div>
+
     <div class="intel-wrap" style="margin-bottom:20px">
       <div class="intel-hdr"><div>
         <div class="intel-eye">Executar Fechamento</div>
         <div class="intel-title">Novo Fechamento de Período</div>
-        <div class="intel-sub">Gera relatório PDF e cria ticket de pagamento na fila</div>
+        <div class="intel-sub">Calcula comissão → Gera PDF → Cria pagamento pendente</div>
       </div></div>
       <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
