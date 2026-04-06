@@ -700,6 +700,16 @@ function renderDeadlinesTab(){
       </div>
     </div>
 
+    <div class="intel-wrap" style="margin-bottom:20px">
+      <div class="intel-hdr"><div>
+        <div class="intel-eye">Lembretes Personalizados</div>
+        <div class="intel-title">Lembretes Manuais</div>
+      </div>
+      <button class="btn btn-theme" onclick="openNewReminder()" style="flex-shrink:0"><i data-lucide="plus"></i> Novo Lembrete</button>
+      </div>
+      <div style="padding:20px" id="dl-reminders"></div>
+    </div>
+
     <div class="intel-wrap">
       <div class="intel-hdr"><div>
         <div class="intel-eye">Calendário Visual</div>
@@ -708,6 +718,7 @@ function renderDeadlinesTab(){
       <div style="padding:20px" id="dl-calendar"></div>
     </div>`;
   renderDeadlineCalendar();
+  renderReminders();
   lucide.createIcons();
 }
 
@@ -744,6 +755,11 @@ function renderDeadlineCalendar(){
     events.push({date:affDate,type:'aff',label:`Pagar afiliados ${brand}`,color:'#10b981',icon:'banknote'});
   });
 
+  // Add custom reminders
+  (STATE.reminders||[]).forEach(r=>{
+    const d=new Date(r.date);
+    if(d>=now)events.push({date:d,type:'reminder',label:r.title,color:'var(--purple)',icon:'bell',note:r.note||''});
+  });
   events.sort((a,b)=>a.date-b.date);
   const upcoming=events.filter(e=>e.date>=now).slice(0,12);
 
@@ -822,5 +838,76 @@ window.generatePaymentTasks=()=>{
     time:'agora',read:false
   });
   updateNotifBadge();
+};
+
+// ══════════════════════════════════════════════════════════
+// LEMBRETES PERSONALIZADOS (CRUD)
+// ══════════════════════════════════════════════════════════
+function renderReminders(){
+  const el=document.getElementById('dl-reminders');if(!el)return;
+  if(!STATE.reminders)STATE.reminders=[];
+  const sorted=[...STATE.reminders].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const now=new Date();
+  el.innerHTML=sorted.length?`<div style="display:flex;flex-direction:column;gap:6px">
+    ${sorted.map(r=>{
+      const d=new Date(r.date);const days=Math.ceil((d-now)/(1000*60*60*24));
+      const past=days<0;const urgency=past?'var(--red)':days<=3?'var(--amber)':'var(--text2)';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;${past?'opacity:0.6':''}">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:var(--text)">${r.title}</div>
+          <div style="font-size:10px;color:var(--text3)">${d.toLocaleDateString('pt-BR')}${r.note?' · '+r.note:''}</div>
+        </div>
+        <span style="font-size:10px;font-weight:700;color:${urgency};white-space:nowrap">${past?`${Math.abs(days)}d atrás`:days===0?'Hoje':days===1?'Amanhã':`${days}d`}</span>
+        <button onclick="editReminder('${r.id}')" style="background:none;border:none;color:var(--theme);cursor:pointer;padding:2px"><i data-lucide="edit-3" style="width:13px;height:13px"></i></button>
+        <button onclick="deleteReminder('${r.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+      </div>`;
+    }).join('')}
+  </div>`:'<div style="text-align:center;padding:16px;color:var(--text3);font-size:11px">Nenhum lembrete. Clique em "Novo Lembrete" para criar.</div>';
+  lucide.createIcons();
+}
+
+window.openNewReminder=()=>{
+  const today=new Date().toISOString().split('T')[0];
+  openModal('Novo Lembrete',`<div class="fg">
+    <div class="fgp ff"><label>Título *</label><input class="fi" id="rm-title" placeholder="Ex: Cobrar NF do afiliado X"></div>
+    <div class="fgp"><label>Data *</label><input type="date" class="fi" id="rm-date" value="${today}"></div>
+    <div class="fgp ff"><label>Nota</label><input class="fi" id="rm-note" placeholder="Observação opcional"></div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveReminder()"><i data-lucide="plus"></i> Criar</button>`);
+};
+
+window.saveReminder=()=>{
+  const title=document.getElementById('rm-title')?.value.trim();
+  const date=document.getElementById('rm-date')?.value;
+  if(!title||!date)return toast('Título e data são obrigatórios','e');
+  if(!STATE.reminders)STATE.reminders=[];
+  STATE.reminders.push({id:'rm'+Date.now(),title,date,note:document.getElementById('rm-note')?.value.trim()||''});
+  logAction('Lembrete criado',title);saveToLocal();closeModal();toast('Lembrete criado!');
+  renderReminders();renderDeadlineCalendar();
+};
+
+window.editReminder=(id)=>{
+  const r=(STATE.reminders||[]).find(x=>x.id===id);if(!r)return;
+  openModal('Editar Lembrete',`<div class="fg">
+    <div class="fgp ff"><label>Título *</label><input class="fi" id="rm-title" value="${r.title}"></div>
+    <div class="fgp"><label>Data *</label><input type="date" class="fi" id="rm-date" value="${r.date}"></div>
+    <div class="fgp ff"><label>Nota</label><input class="fi" id="rm-note" value="${r.note||''}"></div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveEditReminder('${id}')"><i data-lucide="save"></i> Salvar</button>`);
+};
+
+window.saveEditReminder=(id)=>{
+  const r=(STATE.reminders||[]).find(x=>x.id===id);if(!r)return;
+  r.title=document.getElementById('rm-title')?.value.trim()||r.title;
+  r.date=document.getElementById('rm-date')?.value||r.date;
+  r.note=document.getElementById('rm-note')?.value.trim()||'';
+  logAction('Lembrete editado',r.title);saveToLocal();closeModal();toast('Lembrete atualizado!');
+  renderReminders();renderDeadlineCalendar();
+};
+
+window.deleteReminder=(id)=>{
+  const idx=(STATE.reminders||[]).findIndex(x=>x.id===id);
+  if(idx>-1){logAction('Lembrete excluído',STATE.reminders[idx].title);STATE.reminders.splice(idx,1);saveToLocal();toast('Lembrete excluído');
+    renderReminders();renderDeadlineCalendar();}
 };
 

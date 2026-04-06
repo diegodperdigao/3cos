@@ -20,7 +20,7 @@ const CONTRACT_TYPES={
   tiered:{label:'CPA Escalonado',css:'tiered'},
   pct_deposit:{label:'% de Depósitos',css:'deposit'},
 };
-const ALL_MODS=['dashboard','affiliates','brands','payments','tasks','pipeline','audit','users'];
+const ALL_MODS=['dashboard','affiliates','brands','payments','tasks','pipeline','audit','backup','users'];
 const ROLES={
   admin:{label:'Admin',color:'#ef4444',desc:'Acesso total'},
   financeiro:{label:'Financeiro',color:'#f59e0b',desc:'Pagamentos e relatórios'},
@@ -180,6 +180,7 @@ const saveToCloud = async () => {
       deadlines: STATE.deadlines || {},
       closings: STATE.closings || [],
       pipeline: STATE.pipeline || {stages:[],cards:[]},
+      reminders: STATE.reminders || [],
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: STATE.user?.email || 'unknown'
     };
@@ -212,6 +213,7 @@ const loadFromCloud = async () => {
       if (cloud.deadlines) STATE.deadlines = cloud.deadlines;
       if (cloud.closings) STATE.closings = cloud.closings;
       if (cloud.pipeline) STATE.pipeline = cloud.pipeline;
+      if (cloud.reminders) STATE.reminders = cloud.reminders;
       localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
     } else {
       // Primeiro acesso: salva dados iniciais na nuvem
@@ -477,6 +479,7 @@ const MODS=[
   {id:'tasks',label:'Tarefas',icon:'check-square',sub:'Workflow integrado',color:'rgba(16,185,129,0.32)',glow:'rgba(16,185,129,0.14)',bg:'rgba(16,185,129,0.1)',stroke:'#10b981'},
   {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'Kanban · Funil',color:'rgba(14,165,233,0.32)',glow:'rgba(14,165,233,0.14)',bg:'rgba(14,165,233,0.1)',stroke:'#0ea5e9'},
   {id:'audit',label:'Auditoria',icon:'activity',sub:'Log · Registro',color:'rgba(200,255,0,0.28)',glow:'rgba(200,255,0,0.12)',bg:'rgba(200,255,0,0.08)',stroke:'#c8ff00'},
+  {id:'backup',label:'Backup',icon:'cloud',sub:'Nuvem · Exportar',color:'rgba(14,165,233,0.32)',glow:'rgba(14,165,233,0.14)',bg:'rgba(14,165,233,0.1)',stroke:'#0ea5e9'},
   {id:'users',label:'Usuários',icon:'shield',sub:'Acessos · Cargos',color:'rgba(239,68,68,0.32)',glow:'rgba(239,68,68,0.14)',bg:'rgba(239,68,68,0.1)',stroke:'#ef4444',adminOnly:true},
 ];
 function buildHubCards(){
@@ -625,6 +628,6 @@ function heroHTML(mosId,eyebrow,title,sub){
 }
 
 function buildMod(id,el){
-  ({dashboard:bDash,affiliates:bAffs,brands:bBrands,payments:bPayments,tasks:bTasks,pipeline:bPipeline,audit:bAudit,users:bUsers})[id]?.(el);
+  ({dashboard:bDash,affiliates:bAffs,brands:bBrands,payments:bPayments,tasks:bTasks,pipeline:bPipeline,audit:bAudit,backup:bBackup,users:bUsers})[id]?.(el);
 }
 

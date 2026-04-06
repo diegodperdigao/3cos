@@ -24,13 +24,66 @@ function bUsers(el){
           </div>
         </div>`).join('')}
       </div>
-      <div style="margin-top:28px">
-        <div class="sec-hdr"><div class="sec-lbl">Backup & Restauração</div></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-outline" onclick="exportBackup()"><i data-lucide="download"></i> Exportar Backup JSON</button>
-          <button class="btn btn-outline" onclick="document.getElementById('import-backup').click()"><i data-lucide="upload"></i> Importar Backup</button>
-          <input type="file" id="import-backup" accept=".json" style="display:none" onchange="importBackup(event)">
-          <button class="btn btn-outline" onclick="forceSyncCloud()"><i data-lucide="cloud"></i> Forçar Sync Nuvem</button>
+    </div></div>`;
+  lucide.createIcons();
+}
+
+// ══════════════════════════════════════════════════════════
+// BACKUP & NUVEM (módulo separado)
+// ══════════════════════════════════════════════════════════
+function bBackup(el){
+  const lastSync=STATE.lastSync||'Nunca';
+  const dataSize=JSON.stringify(STATE).length;
+  const dataSizeKB=Math.round(dataSize/1024);
+  el.innerHTML=modHdr('Backup & Nuvem')+`<div class="mod-body">
+    ${heroHTML('backup','Backup','Backup & Nuvem','Exportar, importar e sincronizar seus dados')}
+    <div class="mod-main">
+      <div class="sec-hdr"><div class="sec-lbl">Status da Sincronização</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px">
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Firebase</div>
+          <div style="font-size:14px;font-weight:700;color:var(--green);margin-top:4px">Conectado</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Tamanho dos Dados</div>
+          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text);margin-top:4px">${dataSizeKB} KB</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Afiliados</div>
+          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--blue);margin-top:4px">${STATE.affiliates.length}</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Lançamentos</div>
+          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--pink);margin-top:4px">${STATE.reports.length}</div>
+        </div>
+      </div>
+
+      <div class="sec-hdr"><div class="sec-lbl">Ações</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:20px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <i data-lucide="cloud" style="width:20px;height:20px;stroke:var(--green)"></i>
+            <div><div style="font-size:13px;font-weight:700;color:var(--text)">Sincronizar Nuvem</div>
+            <div style="font-size:10px;color:var(--text3)">Enviar dados locais para o Firebase</div></div>
+          </div>
+          <button class="btn btn-theme" onclick="forceSyncCloud()" style="width:100%"><i data-lucide="cloud"></i> Forçar Sync</button>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:20px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <i data-lucide="download" style="width:20px;height:20px;stroke:var(--blue)"></i>
+            <div><div style="font-size:13px;font-weight:700;color:var(--text)">Exportar Backup</div>
+            <div style="font-size:10px;color:var(--text3)">Baixar arquivo JSON com todos os dados</div></div>
+          </div>
+          <button class="btn btn-outline" onclick="exportBackup()" style="width:100%"><i data-lucide="download"></i> Exportar JSON</button>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:20px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <i data-lucide="upload" style="width:20px;height:20px;stroke:var(--amber)"></i>
+            <div><div style="font-size:13px;font-weight:700;color:var(--text)">Importar Backup</div>
+            <div style="font-size:10px;color:var(--text3)">Restaurar dados de um arquivo JSON</div></div>
+          </div>
+          <button class="btn btn-outline" onclick="document.getElementById('import-backup-bk').click()" style="width:100%"><i data-lucide="upload"></i> Importar JSON</button>
+          <input type="file" id="import-backup-bk" accept=".json" style="display:none" onchange="importBackup(event)">
         </div>
       </div>
     </div></div>`;

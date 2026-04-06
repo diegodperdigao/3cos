@@ -294,7 +294,8 @@ function bBrands(el){
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
         ${brandsList.map(([name,br])=>{
-          const affCount=STATE.affiliates.filter(a=>a.deals&&a.deals[name]).length;
+          const affsWithBrand=STATE.affiliates.filter(a=>a.deals&&a.deals[name]);
+          const affCount=affsWithBrand.length;
           return `<div class="aff-card" style="border-left:3px solid ${br.color};cursor:pointer" onclick="openEditBrand('${name}')">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
               ${br.logo?`<img src="${br.logo}" alt="${name}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:var(--bg3);padding:4px">`
@@ -307,23 +308,31 @@ function bBrands(el){
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
               <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">CPA Base</div>
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">CPA Base</div>
                 <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text)">R$${br.cpa||0}</div>
               </div>
               <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Rev Share</div>
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Rev Share</div>
                 <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text)">${br.rs||0}%</div>
               </div>
               <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Afiliados</div>
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Afiliados</div>
                 <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:${br.color}">${affCount}</div>
               </div>
             </div>
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:6px">Afiliados Vinculados</div>
-            <div style="display:flex;flex-wrap:wrap;gap:4px">
-              ${STATE.affiliates.filter(a=>a.deals&&a.deals[name]).map(a=>
-                `<span style="font-size:9px;padding:2px 8px;border-radius:4px;background:rgba(${br.rgb},0.1);color:${br.color};font-weight:600;border:1px solid rgba(${br.rgb},0.15)">${a.name}</span>`
-              ).join('')||'<span style="font-size:9px;color:var(--text3)">Nenhum afiliado</span>'}
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:6px">Deals por Afiliado</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              ${affsWithBrand.length?affsWithBrand.map(a=>{
+                const deal=a.deals[name];const ct=a.contractType;
+                let dealInfo=ct==='tiered'?`CPA Escalonado (${(deal.levels||[]).length} níveis)`:
+                  ct==='pct_deposit'?`${deal.pctDeposit||0}% Depósitos + CPA R$${deal.cpa||0}`:
+                  ct==='rs'?`Rev Share ${deal.rs||br.rs||0}%`:
+                  `CPA R$${deal.cpa||br.cpa||0} + RS ${deal.rs||br.rs||0}%`;
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--bg3);border-radius:6px;font-size:11px">
+                  <span style="font-weight:600;color:var(--text)">${a.name}</span>
+                  <span style="color:var(--text2);font-size:10px">${dealInfo}</span>
+                </div>`;
+              }).join(''):'<span style="font-size:10px;color:var(--text3)">Nenhum afiliado</span>'}
             </div>
           </div>`;
         }).join('')}
