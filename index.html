@@ -1838,8 +1838,15 @@ function bDash(el){
           <div class="kpi-val sm col" style="--kpi-c:var(--green)">${fc(totalProfit)}</div><div class="kpi-sub">Bruto: ${fc(totalComm+totalProfit)}</div></div>
       </div>
       
-      <!-- INTEGRAÇÃO CHART.JS -->
-
+      <!-- RESULTADO POR MARCA -->
+      <div class="sec-hdr" style="margin-top:16px"><div class="sec-lbl">Resultado por Marca</div></div>
+      <div class="tabs" id="dash-brand-tabs">
+        <button class="tab on" style="--tab-color:#ec4899" onclick="setDashBrandTab('all',this)">
+          <div class="tab-dot" style="background:#ec4899"></div>Todas</button>
+        ${Object.entries(STATE.brands).map(([name,br])=>`<button class="tab" style="--tab-color:${br.color}" onclick="setDashBrandTab('${name}',this)">
+          <div class="tab-dot" style="background:${br.color}"></div>${name}</button>`).join('')}
+      </div>
+      <div id="dash-brand-content"></div>
 
       <div class="intel-wrap">
         <div class="intel-hdr">
@@ -1876,15 +1883,6 @@ function bDash(el){
           <td class="td-red" style="color:var(--red)">${fc(a.commission)}</td><td class="td-green" style="color:var(--green)">${fc(a.profit)}</td>
         </tr>`).join('')}
       </tbody></table></div>
-      <!-- RESULTADO POR MARCA -->
-      <div class="sec-hdr" style="margin-top:24px"><div class="sec-lbl">Resultado por Marca</div></div>
-      <div class="tabs" id="dash-brand-tabs">
-        <button class="tab on" style="--tab-color:#ec4899" onclick="setDashBrandTab('all',this)">
-          <div class="tab-dot" style="background:#ec4899"></div>Todas</button>
-        ${Object.entries(STATE.brands).map(([name,br])=>`<button class="tab" style="--tab-color:${br.color}" onclick="setDashBrandTab('${name}',this)">
-          <div class="tab-dot" style="background:${br.color}"></div>${name}</button>`).join('')}
-      </div>
-      <div id="dash-brand-content"></div>
     </div></div>`;
   renderDashBrandTab('all');
 }
