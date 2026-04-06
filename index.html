@@ -1657,7 +1657,7 @@ function showHub(){
 const MODS=[
   {id:'dashboard',label:'Dashboard',icon:'bar-chart-2',sub:'KPIs · Intel · Ranking',color:'rgba(236,72,153,0.32)',glow:'rgba(236,72,153,0.14)',bg:'rgba(236,72,153,0.1)',stroke:'#ec4899'},
   {id:'affiliates',label:'Afiliados',icon:'users',sub:'CRM · Contratos · Deals',color:'rgba(96,165,250,0.32)',glow:'rgba(96,165,250,0.14)',bg:'rgba(96,165,250,0.1)',stroke:'#3b82f6'},
-  {id:'brands',label:'Marcas',icon:'tag',sub:'Vupi · Novibet · Superbet',color:'rgba(168,85,247,0.32)',glow:'rgba(168,85,247,0.14)',bg:'rgba(168,85,247,0.1)',stroke:'#a855f7'},
+  {id:'brands',label:'Marcas',icon:'tag',sub:'Casas Parceiras · Deals',color:'rgba(168,85,247,0.32)',glow:'rgba(168,85,247,0.14)',bg:'rgba(168,85,247,0.1)',stroke:'#a855f7'},
   {id:'payments',label:'Financeiro',icon:'banknote',sub:'Pagamentos · NFs',color:'rgba(245,158,11,0.32)',glow:'rgba(245,158,11,0.14)',bg:'rgba(245,158,11,0.1)',stroke:'#f59e0b'},
   {id:'tasks',label:'Tarefas',icon:'check-square',sub:'Workflow integrado',color:'rgba(16,185,129,0.32)',glow:'rgba(16,185,129,0.14)',bg:'rgba(16,185,129,0.1)',stroke:'#10b981'},
   {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'Kanban · Funil',color:'rgba(14,165,233,0.32)',glow:'rgba(14,165,233,0.14)',bg:'rgba(14,165,233,0.1)',stroke:'#0ea5e9'},
@@ -1875,8 +1875,104 @@ function bDash(el){
           <td class="td-red" style="color:var(--red)">${fc(a.commission)}</td><td class="td-green" style="color:var(--green)">${fc(a.profit)}</td>
         </tr>`).join('')}
       </tbody></table></div>
+      <!-- RESULTADO POR MARCA -->
+      <div class="sec-hdr" style="margin-top:24px"><div class="sec-lbl">Resultado por Marca</div></div>
+      <div class="tabs" id="dash-brand-tabs">
+        <button class="tab on" style="--tab-color:#ec4899" onclick="setDashBrandTab('all',this)">
+          <div class="tab-dot" style="background:#ec4899"></div>Todas</button>
+        ${Object.entries(STATE.brands).map(([name,br])=>`<button class="tab" style="--tab-color:${br.color}" onclick="setDashBrandTab('${name}',this)">
+          <div class="tab-dot" style="background:${br.color}"></div>${name}</button>`).join('')}
+      </div>
+      <div id="dash-brand-content"></div>
     </div></div>`;
+  renderDashBrandTab('all');
+}
 
+window.setDashBrandTab=(brand,btn)=>{
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  renderDashBrandTab(brand);
+};
+
+function renderDashBrandTab(brand){
+  const el=document.getElementById('dash-brand-content');if(!el)return;
+  const brands=brand==='all'?Object.keys(STATE.brands):[brand];
+  const agg={};
+  brands.forEach(b=>{agg[b]={ftd:0,qftd:0,dep:0,netRev:0,affCount:new Set()};});
+  STATE.reports.forEach(r=>{
+    if(!agg[r.brand])return;
+    const q=typeof r.qftd==='object'?(r.qftd.l1||0):(r.qftd||0);
+    agg[r.brand].ftd+=r.ftd||0;agg[r.brand].qftd+=q;
+    agg[r.brand].dep+=r.deposits||0;agg[r.brand].netRev+=r.netRev||0;
+    agg[r.brand].affCount.add(r.affiliateId);
+  });
+  const totFTD=brands.reduce((s,b)=>s+agg[b].ftd,0);
+  const totQFTD=brands.reduce((s,b)=>s+agg[b].qftd,0);
+  const totDep=brands.reduce((s,b)=>s+agg[b].dep,0);
+  const totRev=brands.reduce((s,b)=>s+agg[b].netRev,0);
+  const activeAffIds=new Set(STATE.reports.filter(r=>brands.includes(r.brand)).map(r=>r.affiliateId));
+  const activeAffs=STATE.affiliates.filter(a=>activeAffIds.has(a.id));
+  const br=brand==='all'?null:STATE.brands[brand];
+
+  el.innerHTML=`
+    <div class="kpi-row">
+      <div class="kpi" style="--kpi-c:#ec4899;--kpi-glow:rgba(236,72,153,0.1)">
+        <div class="kpi-icon-row"><i data-lucide="users" style="width:14px;height:14px;stroke:#ec4899"></i><span class="kpi-lbl">QFTDs</span></div>
+        <div class="kpi-val">${totQFTD}</div><div class="kpi-sub">${totFTD} FTDs Totais</div></div>
+      <div class="kpi" style="--kpi-c:var(--blue);--kpi-glow:rgba(59,130,246,0.1)">
+        <div class="kpi-icon-row"><i data-lucide="trending-down" style="width:14px;height:14px;stroke:var(--blue)"></i><span class="kpi-lbl">Depósitos</span></div>
+        <div class="kpi-val sm">${fc(totDep)}</div><div class="kpi-sub">Volume total</div></div>
+      <div class="kpi" style="--kpi-c:var(--red);--kpi-glow:rgba(220,38,38,0.1)">
+        <div class="kpi-icon-row"><i data-lucide="activity" style="width:14px;height:14px;stroke:var(--red)"></i><span class="kpi-lbl">Net Revenue</span></div>
+        <div class="kpi-val sm ${totRev<0?'col':''}" style="${totRev<0?'--kpi-c:var(--red)':''}">${fc(totRev)}</div><div class="kpi-sub">Bruto para 3C</div></div>
+      <div class="kpi" style="--kpi-c:var(--green);--kpi-glow:rgba(16,185,129,0.1)">
+        <div class="kpi-icon-row"><i data-lucide="percent" style="width:14px;height:14px;stroke:var(--green)"></i><span class="kpi-lbl">Conversão</span></div>
+        <div class="kpi-val">${pct(totQFTD,totFTD)}%</div><div class="kpi-sub">FTD → QFTD</div></div>
+    </div>
+    ${brand!=='all'?`
+    <div class="intel-wrap">
+      <div class="intel-hdr"><div>
+        <div class="intel-eye" style="color:${br?.color}">${brand} Intelligence</div>
+        <div class="intel-title">Performance por Afiliado — ${brand}</div>
+        <div class="intel-sub">Conversão FTD→QFTD · Depósitos · Tipo de contrato</div>
+      </div></div>
+      <div class="intel-grid">
+        ${activeAffs.map(a=>{
+          const rs=STATE.reports.filter(r=>r.brand===brand&&r.affiliateId===a.id);
+          const aFTD=rs.reduce((s,r)=>s+r.ftd,0);
+          const aQFTD=rs.reduce((s,r)=>s+(typeof r.qftd==='object'?(r.qftd.l1||0):(r.qftd||0)),0);
+          const aDep=rs.reduce((s,r)=>s+r.deposits,0);
+          const p2=pct(aQFTD,aFTD);const col=cvC(p2);
+          const deal=a.deals?.[brand];
+          const dealStr=a.contractType==='tiered'?'CPA Escalonado':
+            a.contractType==='rs'?`RS ${deal?.rs||STATE.brands[brand]?.rs}%`:`CPA R$${deal?.cpa||STATE.brands[brand]?.cpa}`;
+          return `<div class="intel-card" onclick="openAffDetail('${a.id}')">
+            <div class="intel-name">${a.name}</div>
+            <div class="intel-meta">${dealStr} · ${aFTD} FTDs</div>
+            <div class="conv-row"><span class="conv-label">Conversão</span><span class="conv-pct" style="color:${col}">${p2}%</span></div>
+            <div class="conv-bg"><div class="conv-fill" style="width:${Math.min(p2,100)}%;background:${col}"></div></div>
+            <div class="conv-ft"><span style="color:var(--text3)">${aFTD} FTDs</span><span style="color:${col}">${aQFTD} QFTDs</span></div>
+            <div class="intel-sep"><div><div class="dep-lbl">Depósitos</div><div class="dep-val">${fc(aDep)}</div></div>
+              <svg width="60" height="20"><polyline points="0,18 20,14 40,10 60,6" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/><circle cx="60" cy="6" r="2" fill="var(--green)"/></svg>
+            </div></div>`;
+        }).join('')}
+      </div>
+    </div>`:`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:8px">
+      ${Object.keys(STATE.brands).map(b=>{const br2=STATE.brands[b];const d=agg[b];
+        return `<div class="aff-card" style="border-left:3px solid ${br2.color};cursor:pointer" onclick="setDashBrandTab('${b}',document.querySelectorAll('#dash-brand-tabs .tab')[${Object.keys(STATE.brands).indexOf(b)+1}])">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${br2.color}"></div>
+            <span style="font-family:var(--fd);font-size:15px;font-weight:800;color:${br2.color};text-transform:uppercase;letter-spacing:0.06em">${b}</span>
+            <span style="margin-left:auto;font-size:9px;color:var(--text3)">${d.affCount.size} afiliados</span>
+          </div>
+          <div style="display:flex;gap:12px">
+            <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">QFTDs</div><div style="font-family:var(--fd);font-size:20px;font-weight:800;color:${br2.color}">${d.qftd}</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">FTDs</div><div style="font-family:var(--fd);font-size:20px;font-weight:800;color:var(--text)">${d.ftd}</div></div>
+            <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Depósitos</div><div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text)">${fc(d.dep)}</div></div>
+          </div>
+        </div>`;}).join('')}
+    </div>`}`;
+  lucide.createIcons();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2701,152 +2797,55 @@ window.exportCSV=(type)=>{
 // ══════════════════════════════════════════════════════════
 let _brandTab='all';
 function bBrands(el){
-  el.innerHTML=modHdr('Marcas — Intelligence')+`<div class="mod-body">
-    <div id="brands-hero">
-      <div id="brands-hero-bg"></div>
-      <div class="mosaic-wrapper" id="brands-mw"><div class="mosaic-container"><div class="mosaic-pattern" id="mosaic-brands"></div></div></div>
-      <div class="brands-hero-overlay"></div>
-      <div class="hero-accent" id="brands-accent"></div>
-      <div class="hero-content">
-        <div class="hero-eyebrow" id="brands-eyebrow">Marcas — Visão Geral</div>
-        <div class="hero-title" id="brands-title">Performance por Marca</div>
-        <div class="hero-sub" id="brands-sub">Resultado e inteligência de jogadores por parceiro</div>
-      </div>
-    </div>
+  const brandsList=Object.entries(STATE.brands);
+  el.innerHTML=modHdr('Marcas Parceiras')+`<div class="mod-body">
+    ${heroHTML('brands','Marcas','Casas Parceiras','Gestão de marcas e deals negociados')}
     <div class="mod-main">
-      <div class="sec-hdr"><div class="sec-lbl">Visão Geral das Marcas</div>
+      <div class="sec-hdr"><div class="sec-lbl">Nossas Marcas Parceiras</div>
         <div class="sec-actions">
-           <button class="btn btn-theme" onclick="openNewBrandModal()"><i data-lucide="plus"></i> Nova Marca Parceira</button>
+          <button class="btn btn-theme" onclick="openNewBrandModal()"><i data-lucide="plus"></i> Nova Marca Parceira</button>
         </div>
       </div>
-      <div class="tabs" id="brand-tabs">
-        <button class="tab on" style="--tab-color:#ec4899;--tab-rgb:236,72,153" onclick="setBrandTab('all',this, document.getElementById('mod-brands'))">
-          <div class="tab-dot" style="background:#ec4899"></div>Visão Geral</button>
-        ${Object.entries(STATE.brands).map(([name,br])=>`<button class="tab" style="--tab-color:${br.color}" onclick="setBrandTab('${name}',this, document.getElementById('mod-brands'))">
-          <div class="tab-dot" style="background:${br.color}"></div>${name}</button>`).join('')}
-      </div>
-      <div id="brand-content"></div>
-    </div></div>`;
-  const mc=document.getElementById('mosaic-brands');
-  if(mc)mc.style.backgroundImage=`url('${LOGO}')`;
-  renderBrandTab('all');
-}
-
-window.setBrandTab=(brand,btn, el)=>{
-  _brandTab=brand;
-  btn.closest('.tabs').querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  const br=brand==='all'?null:STATE.brands[brand];
-  const isLight=document.documentElement.getAttribute('data-theme')==='light';
-  const mc=document.getElementById('mosaic-brands');
-  
-  if(mc) mc.style.backgroundImage = br ? `url('${br.logo || LOGO}')` : `url('${LOGO}')`;
-  
-  const bg=document.getElementById('brands-hero-bg');
-  if(bg)bg.style.background=br?(isLight?`rgba(${br.rgb},0.08)`:br.color):'transparent';
-  const mw=document.getElementById('brands-mw');
-  if(mw)mw.style.opacity=br?(isLight?'0.85':'0.6'):(isLight?'0.7':'0.55');
-  const ov=el?.querySelector('.brands-hero-overlay')||document.querySelector('.brands-hero-overlay');
-  if(ov&&br&&!isLight)ov.style.background='linear-gradient(to right,rgba(0,0,0,0.65) 25%,rgba(0,0,0,0.3) 60%,transparent 100%),linear-gradient(to top,rgba(0,0,0,0.55) 0%,transparent 50%)';
-  else if(ov)ov.style.background='';
-  const ac=document.getElementById('brands-accent');
-  if(ac)ac.style.background=br?`linear-gradient(135deg,rgba(${br.rgb},0.15),transparent 58%)`:'';
-  const ey=document.getElementById('brands-eyebrow');
-  const ti=document.getElementById('brands-title');
-  const su=document.getElementById('brands-sub');
-  if(ey){ey.textContent=br?`${brand} — Intelligence`:'Marcas — Visão Geral';ey.style.color=br?br.color:'';}
-  if(ti){
-    ti.textContent=br?brand:'Performance por Marca';
-    ti.style.color=br&&isLight?br.color:'';
-  }
-  if(su)su.textContent=br?`Afiliados, conversão e base de jogadores — ${brand}`:'Resultado e inteligência por parceiro';
-  renderBrandTab(brand);
-  lucide.createIcons();
-};
-
-function renderBrandTab(brand){
-  const el=document.getElementById('brand-content');if(!el)return;
-  const brands=brand==='all'?Object.keys(STATE.brands):[brand];
-  const agg={};
-  brands.forEach(b=>{agg[b]={ftd:0,qftd:0,dep:0,netRev:0,affCount:new Set()};});
-  STATE.reports.forEach(r=>{
-    if(!agg[r.brand])return;
-    const q=typeof r.qftd==='object'?(r.qftd.l1||0):(r.qftd||0);
-    agg[r.brand].ftd+=r.ftd||0;agg[r.brand].qftd+=q;
-    agg[r.brand].dep+=r.deposits||0;agg[r.brand].netRev+=r.netRev||0;
-    agg[r.brand].affCount.add(r.affiliateId);
-  });
-  const totFTD=brands.reduce((s,b)=>s+agg[b].ftd,0);
-  const totQFTD=brands.reduce((s,b)=>s+agg[b].qftd,0);
-  const totDep=brands.reduce((s,b)=>s+agg[b].dep,0);
-  const totRev=brands.reduce((s,b)=>s+agg[b].netRev,0);
-  const activeAffIds=new Set(STATE.reports.filter(r=>brands.includes(r.brand)).map(r=>r.affiliateId));
-  const activeAffs=STATE.affiliates.filter(a=>activeAffIds.has(a.id));
-  const br=brand==='all'?null:STATE.brands[brand];
-
-  el.innerHTML=`
-    <div class="kpi-row">
-      <div class="kpi" style="--kpi-c:#ec4899;--kpi-glow:rgba(236,72,153,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="users" style="width:14px;height:14px;stroke:#ec4899"></i><span class="kpi-lbl">QFTDs</span></div>
-        <div class="kpi-val">${totQFTD}</div><div class="kpi-sub">${totFTD} FTDs Totais</div></div>
-      <div class="kpi" style="--kpi-c:var(--blue);--kpi-glow:rgba(59,130,246,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="trending-down" style="width:14px;height:14px;stroke:var(--blue)"></i><span class="kpi-lbl">Depósitos</span></div>
-        <div class="kpi-val sm">${fc(totDep)}</div><div class="kpi-sub">Volume total</div></div>
-      <div class="kpi" style="--kpi-c:var(--red);--kpi-glow:rgba(220,38,38,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="activity" style="width:14px;height:14px;stroke:var(--red)"></i><span class="kpi-lbl">Net Revenue</span></div>
-        <div class="kpi-val sm ${totRev<0?'col':''}" style="${totRev<0?'--kpi-c:var(--red)':''}">${fc(totRev)}</div><div class="kpi-sub">Bruto para 3C</div></div>
-      <div class="kpi" style="--kpi-c:var(--green);--kpi-glow:rgba(16,185,129,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="percent" style="width:14px;height:14px;stroke:var(--green)"></i><span class="kpi-lbl">Conversão</span></div>
-        <div class="kpi-val">${pct(totQFTD,totFTD)}%</div><div class="kpi-sub">FTD → QFTD</div></div>
-    </div>
-    ${brand!=='all'?`
-    <div class="intel-wrap">
-      <div class="intel-hdr"><div>
-        <div class="intel-eye" style="color:${br?.color}">${brand} Intelligence</div>
-        <div class="intel-title">Performance por Afiliado — ${brand}</div>
-        <div class="intel-sub">Conversão FTD→QFTD · Depósitos · Tipo de contrato</div>
-      </div></div>
-      <div class="intel-grid">
-        ${activeAffs.map(a=>{
-          const rs=STATE.reports.filter(r=>r.brand===brand&&r.affiliateId===a.id);
-          const aFTD=rs.reduce((s,r)=>s+r.ftd,0);
-          const aQFTD=rs.reduce((s,r)=>s+(typeof r.qftd==='object'?(r.qftd.l1||0):(r.qftd||0)),0);
-          const aDep=rs.reduce((s,r)=>s+r.deposits,0);
-          const p2=pct(aQFTD,aFTD);const col=cvC(p2);
-          const deal=a.deals?.[brand];
-          const dealStr=a.contractType==='tiered'?'CPA Escalonado':
-            a.contractType==='deposit'?`Meta R$${(deal?.depositTarget||0).toLocaleString('pt-BR')}`:
-            a.contractType==='rs'?`RS ${deal?.rs||STATE.brands[brand]?.rs}%`:`CPA R$${deal?.cpa||STATE.brands[brand]?.cpa}`;
-          return `<div class="intel-card" onclick="openAffDetail('${a.id}')">
-            <div class="intel-name">${a.name}</div>
-            <div class="intel-meta">${dealStr} · ${aFTD} FTDs</div>
-            <div class="conv-row"><span class="conv-label">Conversão</span><span class="conv-pct" style="color:${col}">${p2}%</span></div>
-            <div class="conv-bg"><div class="conv-fill" style="width:${Math.min(p2,100)}%;background:${col}"></div></div>
-            <div class="conv-ft"><span style="color:var(--text3)">${aFTD} FTDs</span><span style="color:${col}">${aQFTD} QFTDs</span></div>
-            <div class="intel-sep"><div><div class="dep-lbl">Depósitos</div><div class="dep-val">${fc(aDep)}</div></div>
-              <svg width="60" height="20"><polyline points="0,18 20,14 40,10 60,6" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/><circle cx="60" cy="6" r="2" fill="var(--green)"/></svg>
-            </div></div>`;
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+        ${brandsList.map(([name,br])=>{
+          const affCount=STATE.affiliates.filter(a=>a.deals&&a.deals[name]).length;
+          return `<div class="aff-card" style="border-left:3px solid ${br.color};cursor:pointer" onclick="openEditBrand('${name}')">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              ${br.logo?`<img src="${br.logo}" alt="${name}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:var(--bg3);padding:4px">`
+              :`<div style="width:36px;height:36px;border-radius:8px;background:${br.color}22;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:${br.color}">${name[0]}</div>`}
+              <div style="flex:1">
+                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:${br.color};text-transform:uppercase;letter-spacing:0.04em">${name}</div>
+                <div style="font-size:10px;color:var(--text3)">${affCount} afiliado${affCount!==1?'s':''} vinculado${affCount!==1?'s':''}</div>
+              </div>
+              <button class="btn btn-outline" onclick="event.stopPropagation();openEditBrand('${name}')" style="padding:5px 10px;font-size:9px"><i data-lucide="edit-3" style="width:12px;height:12px"></i></button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+              <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">CPA Base</div>
+                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text)">R$${br.cpa||0}</div>
+              </div>
+              <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Rev Share</div>
+                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text)">${br.rs||0}%</div>
+              </div>
+              <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Afiliados</div>
+                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:${br.color}">${affCount}</div>
+              </div>
+            </div>
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:6px">Afiliados Vinculados</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              ${STATE.affiliates.filter(a=>a.deals&&a.deals[name]).map(a=>
+                `<span style="font-size:9px;padding:2px 8px;border-radius:4px;background:rgba(${br.rgb},0.1);color:${br.color};font-weight:600;border:1px solid rgba(${br.rgb},0.15)">${a.name}</span>`
+              ).join('')||'<span style="font-size:9px;color:var(--text3)">Nenhum afiliado</span>'}
+            </div>
+          </div>`;
         }).join('')}
       </div>
-    </div>`:`
-    <div class="sec-hdr"><div class="sec-lbl">Selecione uma Marca</div></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
-      ${Object.keys(STATE.brands).map(b=>{const br2=STATE.brands[b];const d=agg[b];const p2=pct(d.qftd,d.ftd);
-        return `<div class="aff-card" style="border-left:3px solid ${br2.color};cursor:pointer" onclick="setBrandTab('${b}',document.querySelectorAll('#brand-tabs .tab')[${Object.keys(STATE.brands).indexOf(b)+1}], document.getElementById('mod-brands'))">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div style="width:10px;height:10px;border-radius:50%;background:${br2.color}"></div>
-            <span style="font-family:var(--fd);font-size:15px;font-weight:800;color:${br2.color};text-transform:uppercase;letter-spacing:0.06em">${b}</span>
-            <span style="margin-left:auto;font-size:9px;color:var(--text3)">${d.affCount.size} afiliados</span>
-          </div>
-          <div style="display:flex;gap:12px">
-            <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">QFTDs</div><div style="font-family:var(--fd);font-size:20px;font-weight:800;color:${br2.color}">${d.qftd}</div></div>
-            <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">FTDs</div><div style="font-family:var(--fd);font-size:20px;font-weight:800;color:var(--text)">${d.ftd}</div></div>
-            <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Depósitos</div><div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text)">${fc(d.dep)}</div></div>
-          </div>
-        </div>`;}).join('')}
-    </div>`}`;
-  lucide.createIcons();
+    </div></div>`;
 }
+
+// Brand tab functions removed — brand results now in Dashboard
 
 // ══════════════════════════════════════════════════════════
 // 4. PAYMENTS
