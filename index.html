@@ -1760,6 +1760,7 @@ window.goBack=()=>{
   document.querySelectorAll('.mod.active').forEach(a=>{a.style.opacity='0';setTimeout(()=>{a.style.display='none';a.classList.remove('active');},320);});
   const hub=document.getElementById('hub');hub.style.display='flex';setTimeout(()=>hub.style.opacity='1',50);
   if(window.mainChartInstance) { window.mainChartInstance.destroy(); window.mainChartInstance = null; }
+  buildHubCards();buildMobileHome();updateNotifBadge();initMosaics();lucide.createIcons();
 };
 
 function initMosaics(){
