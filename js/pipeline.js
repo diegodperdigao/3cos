@@ -10,7 +10,7 @@ function bPipeline(el){
         <div class="sec-lbl">Pipeline Kanban</div>
         <div class="sec-actions">
           <button class="btn btn-outline" onclick="openManageStages()"><i data-lucide="settings"></i> Editar Etapas</button>
-          <button class="btn btn-theme" onclick="openAddPipelineCard()"><i data-lucide="plus"></i> Adicionar ao Funil</button>
+          <button class="btn btn-theme" onclick="openAddPipelineCard()"><i data-lucide="plus"></i> Novo Lead</button>
         </div>
       </div>
       <div class="kanban" id="kanban-board"></div>
@@ -50,7 +50,7 @@ function renderKanban(){
             ${c.value?`<div style="font-family:var(--fd);font-size:12px;font-weight:700;color:var(--theme);margin-top:4px">${fc(c.value)}</div>`:''}
           </div>`;
         }).join('')}
-        <div class="kanban-add" onclick="openAddPipelineCard('${stage.id}')">+ Adicionar</div>
+        <div class="kanban-add" onclick="openAddPipelineCard('${stage.id}')">+ Novo Lead</div>
       </div>
     </div>`;
   }).join('');
@@ -75,7 +75,7 @@ window.openAddPipelineCard=(defaultStage)=>{
   const affOpts=existingAffs.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
   const brandsList=Object.entries(STATE.brands);
 
-  openModal('Adicionar ao Funil',`<div class="fg">
+  openModal('Novo Lead',`<div class="fg">
     <div class="fgp ff">
       <label>Modo</label>
       <div class="pills" style="margin-top:4px">

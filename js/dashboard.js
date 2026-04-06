@@ -8,7 +8,10 @@ function bDash(el){
     <div class="mod-main">
       <div class="sec-hdr" style="margin-bottom:14px">
         <div class="sec-lbl">Painel de Controle</div>
-        <button class="btn btn-theme" onclick="openDailyDataModal()"><i data-lucide="database"></i> Lançar Dados</button>
+        <div class="sec-actions">
+          <button class="btn btn-outline" onclick="openReportsHistory()"><i data-lucide="list"></i> Lançamentos</button>
+          <button class="btn btn-theme" onclick="openDailyDataModal()"><i data-lucide="database"></i> Lançar Dados</button>
+        </div>
       </div>
 
       <!-- FILTRO DE DATAS -->
@@ -29,7 +32,7 @@ function bDash(el){
       <!-- BRAND TABS -->
       <div class="tabs" id="dash-brand-tabs" style="margin-bottom:6px">
         <button class="tab ${_dashBrand==='all'?'on':''}" style="--tab-color:#ec4899" onclick="setDashBrandTab('all',this)">
-          <div class="tab-dot" style="background:#ec4899"></div>Todas</button>
+          <div class="tab-dot" style="background:#ec4899"></div>Visão Geral</button>
         ${Object.entries(STATE.brands).map(([name,br])=>`<button class="tab ${_dashBrand===name?'on':''}" style="--tab-color:${br.color}" onclick="setDashBrandTab('${name}',this)">
           <div class="tab-dot" style="background:${br.color}"></div>${name}</button>`).join('')}
       </div>
@@ -41,10 +44,16 @@ function bDash(el){
 }
 
 window.setDashDate=(range,btn)=>{
-  _dashDateRange=range;
-  btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  // Toggle: clicking same pill again resets to 'all' (for custom, hides date pickers)
+  if(_dashDateRange===range&&range==='custom'){_dashDateRange='all';range='all';
+    btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));
+    btn.closest('.pills').querySelector('.pill').classList.add('on');
+  }else{
+    _dashDateRange=range;
+    btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  }
   const custom=document.getElementById('dash-custom-dates');
-  if(custom)custom.style.display=range==='custom'?'flex':'none';
+  if(custom)custom.style.display=_dashDateRange==='custom'?'flex':'none';
   refreshDash();
 };
 
@@ -175,23 +184,6 @@ window.refreshDash=()=>{
         <div class="kpi-val">${conv}%</div><div class="kpi-sub">FTD → QFTD</div></div>`}
     </div>
 
-    ${brand==='all'?`
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:24px">
-      ${Object.keys(STATE.brands).map(b=>{const br2=STATE.brands[b];const d=agg[b];
-        return `<div class="aff-card" style="border-left:3px solid ${br2.color};cursor:pointer" onclick="setDashBrandTab('${b}',document.querySelectorAll('#dash-brand-tabs .tab')[${Object.keys(STATE.brands).indexOf(b)+1}])">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-            <div style="width:10px;height:10px;border-radius:50%;background:${br2.color}"></div>
-            <span style="font-family:var(--fd);font-size:15px;font-weight:800;color:${br2.color};text-transform:uppercase;letter-spacing:0.06em">${b}</span>
-            <span style="margin-left:auto;font-size:10px;color:var(--text3)">${d.affCount.size} afil.</span>
-          </div>
-          <div style="display:flex;gap:12px">
-            <div style="text-align:center;flex:1"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em">QFTDs</div><div style="font-family:var(--fd);font-size:22px;font-weight:800;color:${br2.color}">${d.qftd}</div></div>
-            <div style="text-align:center;flex:1"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em">FTDs</div><div style="font-family:var(--fd);font-size:22px;font-weight:800;color:var(--text)">${d.ftd}</div></div>
-            <div style="text-align:center;flex:1"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em">Dep.</div><div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text);margin-top:2px">${fc(d.dep)}</div></div>
-          </div>
-        </div>`;}).join('')}
-    </div>`:''}
-
     <!-- INTELLIGENCE -->
     <div class="intel-wrap" style="margin-bottom:24px">
       <div class="intel-hdr">
@@ -298,8 +290,8 @@ window.updateDailyFields = () => {
   if(isTiered) {
     const levels = aff.deals[brand].levels;
     section.innerHTML = levels.map(l => `
-      <div class="fgp"><label>QFTDs ${l.name} (base ${l.baseline})</label>
-        <input type="number" class="fi dd-qftd-tier" data-tier="${l.key}" placeholder="0">
+      <div class="fgp"><label>QFTDs ${l.name||l.key||'Nível'} (base ${l.baseline||0})</label>
+        <input type="number" class="fi dd-qftd-tier" data-tier="${l.name||l.key||'l1'}" placeholder="0">
       </div>`).join('');
   } else {
     section.innerHTML = `<div class="fgp"><label>QFTDs</label>
@@ -358,6 +350,97 @@ window.saveDailyData = () => {
 
   if(document.getElementById('mod-dashboard').classList.contains('active')) bDash(document.getElementById('mod-dashboard'));
   if(document.getElementById('mod-brands').classList.contains('active')) bBrands(document.getElementById('mod-brands'));
+};
+
+// ══════════════════════════════════════════════════════════
+// HISTÓRICO DE LANÇAMENTOS (ver, editar, excluir)
+// ══════════════════════════════════════════════════════════
+window.openReportsHistory=()=>{
+  renderReportsHistory();
+};
+
+function renderReportsHistory(){
+  const sorted=[...STATE.reports].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  openModal('Histórico de Lançamentos',`
+    <div style="margin-bottom:12px;font-size:11px;color:var(--text3)">${sorted.length} lançamento${sorted.length!==1?'s':''} registrado${sorted.length!==1?'s':''}</div>
+    ${sorted.length?`<div class="tbl-wrap"><table><thead><tr>
+      <th>Data</th><th>Marca</th><th>Afiliado</th><th>FTDs</th><th>QFTDs</th><th>Dep.</th><th>Net Rev</th><th></th>
+    </tr></thead><tbody>
+      ${sorted.map((r,i)=>{
+        const aff=STATE.affiliates.find(a=>a.id===r.affiliateId);
+        const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+v,0):(r.qftd||0);
+        const origIdx=STATE.reports.indexOf(r);
+        return `<tr class="tr">
+          <td style="font-size:11px">${new Date(r.date).toLocaleDateString('pt-BR')}</td>
+          <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[r.brand]?.color||'#888'}">${r.brand}</span></td>
+          <td style="font-size:11px">${aff?.name||'—'}</td>
+          <td class="td-num">${r.ftd||0}</td>
+          <td class="td-num" style="color:var(--pink)">${q}</td>
+          <td class="td-money">${fc(r.deposits||0)}</td>
+          <td style="color:${(r.netRev||0)>=0?'var(--green)':'var(--red)'};font-weight:600;font-size:11px">${fc(r.netRev||0)}</td>
+          <td style="white-space:nowrap">
+            <button onclick="editReport(${origIdx})" style="background:none;border:none;color:var(--theme);cursor:pointer;padding:2px 4px"><i data-lucide="edit-3" style="width:13px;height:13px"></i></button>
+            <button onclick="deleteReport(${origIdx})" style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px 4px"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+          </td>
+        </tr>`;}).join('')}
+    </tbody></table></div>`:'<div style="text-align:center;padding:30px;color:var(--text3)">Nenhum lançamento registrado.</div>'}`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+   <button class="btn btn-theme" onclick="closeModal();openDailyDataModal()"><i data-lucide="plus"></i> Novo Lançamento</button>`);
+  lucide.createIcons();
+}
+
+window.editReport=(idx)=>{
+  const r=STATE.reports[idx];if(!r)return;
+  const aff=STATE.affiliates.find(a=>a.id===r.affiliateId);
+  const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+v,0):(r.qftd||0);
+  openModal(`Editar Lançamento — ${aff?.name||''}`,`<div class="fg">
+    <div style="font-size:10px;color:var(--text3);margin-bottom:8px">${r.brand} · ${new Date(r.date).toLocaleDateString('pt-BR')}</div>
+    <div class="fgp"><label>Data</label><input type="date" class="fi" id="er-date" value="${r.date}"></div>
+    <div class="fgp"><label>FTDs</label><input type="number" class="fi" id="er-ftd" value="${r.ftd||0}"></div>
+    <div class="fgp"><label>QFTDs</label><input type="number" class="fi" id="er-qftd" value="${q}"></div>
+    <div class="fgp"><label>Depósitos (R$)</label><input type="number" step="0.01" class="fi" id="er-dep" value="${r.deposits||0}"></div>
+    <div class="fgp"><label>Net Revenue (R$)</label><input type="number" step="0.01" class="fi" id="er-rev" value="${r.netRev||0}"></div>
+  </div>`,`<button class="btn btn-ghost" onclick="closeModal();openReportsHistory()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveEditReport(${idx})"><i data-lucide="save"></i> Salvar</button>`);
+};
+
+window.saveEditReport=(idx)=>{
+  const r=STATE.reports[idx];if(!r)return;
+  const aff=STATE.affiliates.find(a=>a.id===r.affiliateId);
+  const oldQ=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+v,0):(r.qftd||0);
+
+  // Reverse old values from affiliate totals
+  if(aff){aff.ftds-=r.ftd||0;aff.qftds-=oldQ;aff.deposits-=r.deposits||0;}
+
+  // Apply new values
+  r.date=document.getElementById('er-date')?.value||r.date;
+  r.ftd=parseInt(document.getElementById('er-ftd')?.value)||0;
+  r.qftd=parseInt(document.getElementById('er-qftd')?.value)||0;
+  r.deposits=parseFloat(document.getElementById('er-dep')?.value)||0;
+  r.netRev=parseFloat(document.getElementById('er-rev')?.value)||0;
+
+  // Re-add to affiliate totals
+  if(aff){aff.ftds+=r.ftd;aff.qftds+=r.qftd;aff.deposits+=r.deposits;}
+
+  logAction('Lançamento editado',`${r.brand} · ${aff?.name||''} · ${r.date}`);
+  saveToLocal();closeModal();toast('Lançamento atualizado!');
+  openReportsHistory();
+  if(document.getElementById('mod-dashboard').classList.contains('active'))bDash(document.getElementById('mod-dashboard'));
+};
+
+window.deleteReport=(idx)=>{
+  const r=STATE.reports[idx];if(!r)return;
+  const aff=STATE.affiliates.find(a=>a.id===r.affiliateId);
+  const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+v,0):(r.qftd||0);
+
+  // Reverse values from affiliate totals
+  if(aff){aff.ftds-=r.ftd||0;aff.qftds-=q;aff.deposits-=r.deposits||0;}
+
+  logAction('Lançamento excluído',`${r.brand} · ${aff?.name||''} · ${r.date}`);
+  STATE.reports.splice(idx,1);
+  saveToLocal();closeModal();toast('Lançamento excluído');
+  openReportsHistory();
+  if(document.getElementById('mod-dashboard').classList.contains('active'))bDash(document.getElementById('mod-dashboard'));
 };
 
 
