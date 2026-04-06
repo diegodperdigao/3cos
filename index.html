@@ -1838,7 +1838,7 @@ function bDash(el){
           <div class="kpi-val sm col" style="--kpi-c:var(--green)">${fc(totalProfit)}</div><div class="kpi-sub">Bruto: ${fc(totalComm+totalProfit)}</div></div>
       </div>
       
-      <!-- RESULTADO POR MARCA -->
+      <!-- RESULTADO POR MARCA + INTELLIGENCE UNIFICADO -->
       <div class="sec-hdr" style="margin-top:16px"><div class="sec-lbl">Resultado por Marca</div></div>
       <div class="tabs" id="dash-brand-tabs">
         <button class="tab on" style="--tab-color:#ec4899" onclick="setDashBrandTab('all',this)">
@@ -1847,28 +1847,6 @@ function bDash(el){
           <div class="tab-dot" style="background:${br.color}"></div>${name}</button>`).join('')}
       </div>
       <div id="dash-brand-content"></div>
-
-      <div class="intel-wrap">
-        <div class="intel-hdr">
-          <div><div class="intel-eye">Intelligence 3C</div>
-            <div class="intel-title">Conversão e Retenção por Afiliado</div>
-            <div class="intel-sub">Taxa FTD→QFTD · Depósitos · Tendência</div></div>
-        </div>
-        <div class="intel-grid">
-          ${[...aff].filter(a=>a.ftds>0).sort((a,b)=>pct(b.qftds,b.ftds)-pct(a.qftds,a.ftds)).map(a=>{
-            const p=pct(a.qftds,a.ftds);const col=cvC(p);
-            return `<div class="intel-card" onclick="openMod('affiliates')">
-              <div class="intel-name">${a.name}</div>
-              <div class="intel-meta">${a.ftds} FTDs · ${CONTRACT_TYPES[a.contractType]?.label}</div>
-              <div class="conv-row"><span class="conv-label">Conversão FTD→QFTD</span><span class="conv-pct" style="color:${col}">${p}%</span></div>
-              <div class="conv-bg"><div class="conv-fill" style="width:${Math.min(p,100)}%;background:${col}"></div></div>
-              <div class="conv-ft"><span style="color:var(--text3)">${a.ftds} FTDs</span><span style="color:${col}">${a.qftds} QFTDs</span></div>
-              <div class="intel-sep"><div><div class="dep-lbl">Depósitos/dia</div><div class="dep-val">R$${Math.round(a.deposits/30).toLocaleString('pt-BR')}/dia</div></div>
-                <svg width="70" height="24" style="overflow:visible"><polyline points="0,20 14,15 28,17 42,9 56,11 70,7" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/><circle cx="70" cy="7" r="2.5" fill="var(--green)"/></svg>
-              </div></div>`;
-          }).join('')}
-        </div>
-      </div>
       <div class="sec-hdr"><div class="sec-lbl">Top Ranking</div></div>
       <div class="tbl-wrap"><table><thead><tr>
         <th>Afiliado</th><th>Tipo</th><th style="text-align:center">FTDs</th>
@@ -1908,9 +1886,16 @@ function renderDashBrandTab(brand){
   const totQFTD=brands.reduce((s,b)=>s+agg[b].qftd,0);
   const totDep=brands.reduce((s,b)=>s+agg[b].dep,0);
   const totRev=brands.reduce((s,b)=>s+agg[b].netRev,0);
-  const activeAffIds=new Set(STATE.reports.filter(r=>brands.includes(r.brand)).map(r=>r.affiliateId));
-  const activeAffs=STATE.affiliates.filter(a=>activeAffIds.has(a.id));
   const br=brand==='all'?null:STATE.brands[brand];
+
+  // Intelligence: filter affiliates by brand or show all
+  const intelAffs=brand==='all'
+    ?[...STATE.affiliates].filter(a=>a.ftds>0).sort((a,b)=>pct(b.qftds,b.ftds)-pct(a.qftds,a.ftds))
+    :STATE.affiliates.filter(a=>a.deals&&a.deals[brand]);
+  const intelTitle=brand==='all'?'Intelligence 3C':`${brand} Intelligence`;
+  const intelSub=brand==='all'?'Conversão e Retenção por Afiliado':`Performance por Afiliado — ${brand}`;
+  const intelDesc=brand==='all'?'Taxa FTD→QFTD · Depósitos · Tendência':'Conversão FTD→QFTD · Depósitos · Tipo de contrato';
+  const eyeColor=br?br.color:'';
 
   el.innerHTML=`
     <div class="kpi-row">
@@ -1927,36 +1912,8 @@ function renderDashBrandTab(brand){
         <div class="kpi-icon-row"><i data-lucide="percent" style="width:14px;height:14px;stroke:var(--green)"></i><span class="kpi-lbl">Conversão</span></div>
         <div class="kpi-val">${pct(totQFTD,totFTD)}%</div><div class="kpi-sub">FTD → QFTD</div></div>
     </div>
-    ${brand!=='all'?`
-    <div class="intel-wrap">
-      <div class="intel-hdr"><div>
-        <div class="intel-eye" style="color:${br?.color}">${brand} Intelligence</div>
-        <div class="intel-title">Performance por Afiliado — ${brand}</div>
-        <div class="intel-sub">Conversão FTD→QFTD · Depósitos · Tipo de contrato</div>
-      </div></div>
-      <div class="intel-grid">
-        ${activeAffs.map(a=>{
-          const rs=STATE.reports.filter(r=>r.brand===brand&&r.affiliateId===a.id);
-          const aFTD=rs.reduce((s,r)=>s+r.ftd,0);
-          const aQFTD=rs.reduce((s,r)=>s+(typeof r.qftd==='object'?(r.qftd.l1||0):(r.qftd||0)),0);
-          const aDep=rs.reduce((s,r)=>s+r.deposits,0);
-          const p2=pct(aQFTD,aFTD);const col=cvC(p2);
-          const deal=a.deals?.[brand];
-          const dealStr=a.contractType==='tiered'?'CPA Escalonado':
-            a.contractType==='rs'?`RS ${deal?.rs||STATE.brands[brand]?.rs}%`:`CPA R$${deal?.cpa||STATE.brands[brand]?.cpa}`;
-          return `<div class="intel-card" onclick="openAffDetail('${a.id}')">
-            <div class="intel-name">${a.name}</div>
-            <div class="intel-meta">${dealStr} · ${aFTD} FTDs</div>
-            <div class="conv-row"><span class="conv-label">Conversão</span><span class="conv-pct" style="color:${col}">${p2}%</span></div>
-            <div class="conv-bg"><div class="conv-fill" style="width:${Math.min(p2,100)}%;background:${col}"></div></div>
-            <div class="conv-ft"><span style="color:var(--text3)">${aFTD} FTDs</span><span style="color:${col}">${aQFTD} QFTDs</span></div>
-            <div class="intel-sep"><div><div class="dep-lbl">Depósitos</div><div class="dep-val">${fc(aDep)}</div></div>
-              <svg width="60" height="20"><polyline points="0,18 20,14 40,10 60,6" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round"/><circle cx="60" cy="6" r="2" fill="var(--green)"/></svg>
-            </div></div>`;
-        }).join('')}
-      </div>
-    </div>`:`
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:8px">
+    ${brand==='all'?`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:8px;margin-bottom:16px">
       ${Object.keys(STATE.brands).map(b=>{const br2=STATE.brands[b];const d=agg[b];
         return `<div class="aff-card" style="border-left:3px solid ${br2.color};cursor:pointer" onclick="setDashBrandTab('${b}',document.querySelectorAll('#dash-brand-tabs .tab')[${Object.keys(STATE.brands).indexOf(b)+1}])">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
@@ -1970,7 +1927,36 @@ function renderDashBrandTab(brand){
             <div style="text-align:center;flex:1"><div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Depósitos</div><div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text)">${fc(d.dep)}</div></div>
           </div>
         </div>`;}).join('')}
-    </div>`}`;
+    </div>`:''}
+    <div class="intel-wrap">
+      <div class="intel-hdr">
+        <div><div class="intel-eye" ${eyeColor?`style="color:${eyeColor}"`:''}>${intelTitle}</div>
+          <div class="intel-title">${intelSub}</div>
+          <div class="intel-sub">${intelDesc}</div></div>
+      </div>
+      <div class="intel-grid">
+        ${intelAffs.map(a=>{
+          let aFTD,aQFTD,aDep;
+          if(brand==='all'){aFTD=a.ftds;aQFTD=a.qftds;aDep=a.deposits;}
+          else{const rs=STATE.reports.filter(r=>r.brand===brand&&r.affiliateId===a.id);
+            aFTD=rs.reduce((s,r)=>s+r.ftd,0);aQFTD=rs.reduce((s,r)=>s+(typeof r.qftd==='object'?(r.qftd.l1||0):(r.qftd||0)),0);
+            aDep=rs.reduce((s,r)=>s+r.deposits,0);}
+          const p2=pct(aQFTD,aFTD);const col=cvC(p2);
+          const dealStr=brand==='all'?`${aFTD} FTDs · ${CONTRACT_TYPES[a.contractType]?.label}`:
+            (()=>{const deal=a.deals?.[brand];return a.contractType==='tiered'?'CPA Escalonado':
+              a.contractType==='rs'?`RS ${deal?.rs||STATE.brands[brand]?.rs}%`:`CPA R$${deal?.cpa||STATE.brands[brand]?.cpa}`;})()+` · ${aFTD} FTDs`;
+          return `<div class="intel-card" onclick="openAffDetail('${a.id}')">
+            <div class="intel-name">${a.name}</div>
+            <div class="intel-meta">${dealStr}</div>
+            <div class="conv-row"><span class="conv-label">Conversão FTD→QFTD</span><span class="conv-pct" style="color:${col}">${p2}%</span></div>
+            <div class="conv-bg"><div class="conv-fill" style="width:${Math.min(p2,100)}%;background:${col}"></div></div>
+            <div class="conv-ft"><span style="color:var(--text3)">${aFTD} FTDs</span><span style="color:${col}">${aQFTD} QFTDs</span></div>
+            <div class="intel-sep"><div><div class="dep-lbl">${brand==='all'?'Depósitos/dia':'Depósitos'}</div><div class="dep-val">${brand==='all'?`R$${Math.round(aDep/30).toLocaleString('pt-BR')}/dia`:fc(aDep)}</div></div>
+              <svg width="70" height="24" style="overflow:visible"><polyline points="0,20 14,15 28,17 42,9 56,11 70,7" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/><circle cx="70" cy="7" r="2.5" fill="var(--green)"/></svg>
+            </div></div>`;
+        }).join('')}
+      </div>
+    </div>`;
   lucide.createIcons();
 }
 
