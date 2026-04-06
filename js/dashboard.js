@@ -60,6 +60,29 @@ window.setDashDate=(range,btn)=>{
 window.setDashBrandTab=(brand,btn)=>{
   _dashBrand=brand;
   btn.closest('.tabs').querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  // Switch mosaic to brand logo or back to 3C logo
+  const mosaic=document.getElementById('mosaic-dashboard');
+  if(mosaic){
+    const br=brand!=='all'?STATE.brands[brand]:null;
+    const logoUrl=br?.logo||LOGO;
+    mosaic.style.backgroundImage=`url('${logoUrl}')`;
+  }
+  // Update hero eyebrow and title for brand context
+  const heroEl=document.getElementById('dashboard-hero');
+  if(heroEl){
+    const ey=heroEl.querySelector('.hero-eyebrow');
+    const ti=heroEl.querySelector('.hero-title');
+    const su=heroEl.querySelector('.hero-sub');
+    const br=brand!=='all'?STATE.brands[brand]:null;
+    if(ey)ey.textContent=brand!=='all'?`${brand} — Intelligence`:'Dashboard — Operação 3C';
+    if(ey&&br)ey.style.color=br.color||'';else if(ey)ey.style.color='';
+    if(ti)ti.textContent=brand!=='all'?brand:'Visão Geral 3C';
+    if(su)su.textContent=brand!=='all'?`Resultado e performance — ${brand}`:'Resultado consolidado da operação';
+    // Update hero accent
+    const accent=heroEl.querySelector('.hero-accent');
+    if(accent&&br)accent.style.background=`linear-gradient(135deg,rgba(${br.rgb},0.12),transparent 58%)`;
+    else if(accent)accent.style.background='';
+  }
   refreshDash();
 };
 
