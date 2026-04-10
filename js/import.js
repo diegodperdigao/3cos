@@ -91,7 +91,7 @@ function renderMapping(){
 
   // Fields we need to map
   const fields=[
-    {key:'externalId',label:'ID do Afiliado na Plataforma',required:true,hint:'Código que identifica o afiliado na casa'},
+    {key:'externalId',label:'Identificação do Afiliado',required:true,hint:'Nome, code ou username — como aparece na dash da casa'},
     {key:'date',label:'Data',required:true,hint:'Data de referência do dado'},
     {key:'ftd',label:'FTDs',required:false,hint:'First Time Deposits'},
     {key:'qftd',label:'QFTDs',required:false,hint:'Qualified FTDs'},
@@ -106,7 +106,7 @@ function renderMapping(){
   const headerLower=_impHeaders.map(h=>h.toLowerCase());
   fields.forEach(f=>{
     const matches={
-      externalId:['id','code','código','codigo','affiliate_id','affiliate','aff_id','sub_id','tracker','tag'],
+      externalId:['id','code','código','codigo','affiliate_id','affiliate','aff_id','sub_id','tracker','tag','name','nome','username','player_tag','aff_name','affiliate_name'],
       date:['date','data','dia','day','period','período'],
       ftd:['ftd','ftds','first_time_deposit','first_deposit','new_depositor'],
       qftd:['qftd','qftds','qualified','qualified_ftd'],

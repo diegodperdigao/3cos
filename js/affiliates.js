@@ -226,8 +226,8 @@ window.openNewAff=()=>{
               <span style="font-size:12px;font-weight:700;color:${br.color}">${n}</span>
             </label>
             <div class="na-deal-fields" data-brand="${n}" style="display:none;gap:8px;flex-wrap:wrap">
-              <div style="margin-bottom:6px"><label style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600">ID na plataforma ${n}</label>
-                <input class="fi na-extid" data-brand="${n}" placeholder="Ex: código de 5 dígitos, username, etc." style="padding:8px;font-size:12px;margin-top:2px"></div>
+              <div style="margin-bottom:6px"><label style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Identificação na ${n}</label>
+                <input class="fi na-extid" data-brand="${n}" placeholder="Nome, code, username — como aparece na dash" style="padding:8px;font-size:12px;margin-top:2px"></div>
               <div class="na-deal-std" style="display:flex;gap:6px;flex-wrap:wrap">
                 <div style="flex:1;min-width:100px"><label style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">CPA (R$)</label>
                   <input type="number" class="fi" data-field="cpa" value="${br.cpa||0}" style="padding:8px;font-size:12px"></div>
@@ -366,11 +366,12 @@ window.openEditAff=id=>{
     <div class="fgp"><label>Net Revenue (R$)</label><input type="number" class="fi" id="ea-rev" value="${a.netRev||0}"></div>
     <div class="fgp"><label>Comissão (R$)</label><input type="number" class="fi" id="ea-comm" value="${a.commission}"></div>
     <div class="fgp"><label>Lucro 3C (R$)</label><input type="number" class="fi" id="ea-profit" value="${a.profit}"></div>
-    <div class="fgp ff"><label>IDs nas Plataformas</label>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:4px">
+    <div class="fgp ff"><label>Identificação nas Plataformas</label>
+      <div style="font-size:10px;color:var(--text3);margin:2px 0 6px">Como o afiliado aparece na dashboard de cada casa (nome, code, username)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
         ${Object.keys(a.deals||{}).map(b=>{const br=STATE.brands[b]||{color:'#888'};
           return `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;font-weight:700;color:${br.color};min-width:60px">${b}</span>
-            <input class="fi ea-extid" data-brand="${b}" value="${a.externalIds?.[b]||''}" placeholder="ID/código" style="padding:6px 10px;font-size:12px;flex:1"></div>`;
+            <input class="fi ea-extid" data-brand="${b}" value="${a.externalIds?.[b]||''}" placeholder="Como aparece na dash" style="padding:6px 10px;font-size:12px;flex:1"></div>`;
         }).join('')}
       </div>
     </div>

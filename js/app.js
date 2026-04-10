@@ -181,6 +181,7 @@ const saveToCloud = async () => {
       closings: STATE.closings || [],
       pipeline: STATE.pipeline || {stages:[],cards:[]},
       reminders: STATE.reminders || [],
+      emailjs: STATE.emailjs || {},
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: STATE.user?.email || 'unknown'
     };
@@ -214,6 +215,7 @@ const loadFromCloud = async () => {
       if (cloud.closings) STATE.closings = cloud.closings;
       if (cloud.pipeline) STATE.pipeline = cloud.pipeline;
       if (cloud.reminders) STATE.reminders = cloud.reminders;
+      if (cloud.emailjs) STATE.emailjs = cloud.emailjs;
       localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
     } else {
       // Primeiro acesso: salva dados iniciais na nuvem

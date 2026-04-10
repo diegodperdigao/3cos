@@ -553,6 +553,7 @@ function renderClosingTab(){
         <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
         <td class="td-acts">
           <button class="ibt" onclick="regenerateClosingPDF('${c.id}')" title="Gerar PDF"><i data-lucide="file-text"></i></button>
+            <button class="ibt" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" title="Enviar ao Financeiro"><i data-lucide="send"></i></button>
         </td>
       </tr>`).join('')}
     </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
@@ -656,6 +657,25 @@ window.executeClosing=()=>{
 
   toast('Fechamento executado! Ticket criado na fila.');
   renderClosingTab();
+
+  // Oferecer envio por email
+  if(STATE.emailjs?.publicKey){
+    setTimeout(()=>{
+      openModal('Enviar ao Financeiro?',`
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">
+          <p>Fechamento de <strong style="color:var(--text)">${a.name}</strong> (${brand}) — ${monthLabel} concluído.</p>
+          <p style="margin-top:8px">Deseja enviar os detalhes por email para <strong style="color:var(--theme)">${STATE.emailjs.financeEmail}</strong>?</p>
+          <div style="margin-top:12px;padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;font-size:11px">
+            <div class="dr"><span>Comissão</span><strong style="color:var(--red)">${fc(closing.commission)}</strong></div>
+            <div class="dr"><span>FTDs / QFTDs</span><strong>${closing.ftds} / ${closing.qftds}</strong></div>
+            <div class="dr"><span>Depósitos</span><strong>${fc(closing.deposits)}</strong></div>
+          </div>
+        </div>`,
+      `<button class="btn btn-ghost" onclick="closeModal()">Agora Não</button>
+       <button class="btn btn-theme" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${closingId}'));closeModal()"><i data-lucide="send"></i> Enviar Email</button>`);
+      lucide.createIcons();
+    },600);
+  }
 };
 
 window.regenerateClosingPDF=(closingId)=>{

@@ -86,9 +86,97 @@ function bBackup(el){
           <input type="file" id="import-backup-bk" accept=".json" style="display:none" onchange="importBackup(event)">
         </div>
       </div>
+      <!-- EMAILJS CONFIG -->
+      <div class="sec-hdr" style="margin-top:28px"><div class="sec-lbl">Integração EmailJS</div></div>
+      <div style="padding:12px 16px;background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);margin-bottom:14px;font-size:11px;color:var(--text2);line-height:1.6">
+        Configure suas credenciais do <strong style="color:var(--text)">EmailJS</strong> para enviar emails de fechamento para o financeiro.
+        Crie uma conta em <strong>emailjs.com</strong>, configure um Service e um Template, e cole os IDs abaixo.
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:14px">
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:14px">
+          <label style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px">Public Key</label>
+          <input class="fi" id="ejs-pubkey" value="${STATE.emailjs?.publicKey||''}" placeholder="Seu Public Key" style="padding:8px;font-size:12px">
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:14px">
+          <label style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px">Service ID</label>
+          <input class="fi" id="ejs-service" value="${STATE.emailjs?.serviceId||''}" placeholder="service_xxxxxxx" style="padding:8px;font-size:12px">
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:14px">
+          <label style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px">Template ID (Fechamento)</label>
+          <input class="fi" id="ejs-template" value="${STATE.emailjs?.templateId||''}" placeholder="template_xxxxxxx" style="padding:8px;font-size:12px">
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:14px">
+          <label style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px">Email do Financeiro</label>
+          <input class="fi" id="ejs-finance-email" value="${STATE.emailjs?.financeEmail||''}" placeholder="financeiro@3c.gg" style="padding:8px;font-size:12px">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-theme" onclick="saveEmailJSConfig()"><i data-lucide="save"></i> Salvar Configuração</button>
+        <button class="btn btn-outline" onclick="testEmailJS()"><i data-lucide="send"></i> Enviar Email Teste</button>
+      </div>
     </div></div>`;
   lucide.createIcons();
 }
+
+window.saveEmailJSConfig=()=>{
+  if(!STATE.emailjs)STATE.emailjs={};
+  STATE.emailjs.publicKey=document.getElementById('ejs-pubkey')?.value.trim()||'';
+  STATE.emailjs.serviceId=document.getElementById('ejs-service')?.value.trim()||'';
+  STATE.emailjs.templateId=document.getElementById('ejs-template')?.value.trim()||'';
+  STATE.emailjs.financeEmail=document.getElementById('ejs-finance-email')?.value.trim()||'';
+  logAction('EmailJS configurado','Credenciais atualizadas');
+  saveToLocal();toast('Configuração EmailJS salva!');
+};
+
+window.testEmailJS=()=>{
+  const cfg=STATE.emailjs;
+  if(!cfg?.publicKey||!cfg?.serviceId||!cfg?.templateId||!cfg?.financeEmail)
+    return toast('Preencha todas as credenciais primeiro','e');
+  if(typeof emailjs==='undefined')return toast('SDK EmailJS não carregado','e');
+
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId,cfg.templateId,{
+    to_email:cfg.financeEmail,
+    subject:'3COS — Teste de Integração',
+    affiliate_name:'Teste',
+    brand:'Teste',
+    month_ref:'Teste',
+    commission:'R$ 0,00',
+    ftds:'0',qftds:'0',deposits:'R$ 0,00',
+    message:'Este é um email de teste da integração EmailJS com o 3COS. Se você recebeu, a configuração está correta!'
+  }).then(()=>toast('Email de teste enviado com sucesso!'),
+    (err)=>toast('Erro ao enviar: '+err.text,'e'));
+};
+
+window.sendClosingEmail=(closing)=>{
+  const cfg=STATE.emailjs;
+  if(!cfg?.publicKey||!cfg?.serviceId||!cfg?.templateId||!cfg?.financeEmail)
+    return toast('EmailJS não configurado. Vá em Backup & Nuvem para configurar.','w');
+  if(typeof emailjs==='undefined')return toast('SDK EmailJS não carregado','e');
+
+  const a=STATE.affiliates.find(x=>x.id===closing.affiliateId)||{};
+  const ct=CONTRACT_TYPES[closing.contractType]||{label:''};
+
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId,cfg.templateId,{
+    to_email:cfg.financeEmail,
+    subject:`3COS — Fechamento ${a.name||closing.affiliateName} · ${closing.brand} · ${closing.monthLabel}`,
+    affiliate_name:a.name||closing.affiliateName,
+    brand:closing.brand,
+    month_ref:closing.monthLabel,
+    contract_type:ct.label,
+    commission:fc(closing.commission),
+    ftds:String(closing.ftds),
+    qftds:String(closing.qftds),
+    deposits:fc(closing.deposits),
+    net_rev:fc(closing.netRev||0),
+    profit:fc(closing.profit||0),
+    analyst:closing.createdBy||STATE.user?.name||'',
+    date:closing.createdAt||new Date().toLocaleDateString('pt-BR'),
+    message:`Fechamento executado por ${closing.createdBy||STATE.user?.name||'—'} em ${closing.createdAt}.\n\nAfiliado: ${a.name||closing.affiliateName}\nMarca: ${closing.brand}\nReferência: ${closing.monthLabel}\nComissão: ${fc(closing.commission)}\nFTDs: ${closing.ftds} | QFTDs: ${closing.qftds}\nDepósitos: ${fc(closing.deposits)}\nNet Revenue: ${fc(closing.netRev||0)}\n\nPor favor, verificar e processar o pagamento.`
+  }).then(()=>{toast('Email de fechamento enviado ao financeiro!');logAction('Email fechamento enviado',`${closing.affiliateName} · ${closing.brand}`);},
+    (err)=>toast('Erro ao enviar email: '+err.text,'e'));
+};
 
 window.exportBackup=()=>{
   const data=JSON.parse(JSON.stringify(STATE));
