@@ -226,6 +226,8 @@ window.openNewAff=()=>{
               <span style="font-size:12px;font-weight:700;color:${br.color}">${n}</span>
             </label>
             <div class="na-deal-fields" data-brand="${n}" style="display:none;gap:8px;flex-wrap:wrap">
+              <div style="margin-bottom:6px"><label style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600">ID na plataforma ${n}</label>
+                <input class="fi na-extid" data-brand="${n}" placeholder="Ex: código de 5 dígitos, username, etc." style="padding:8px;font-size:12px;margin-top:2px"></div>
               <div class="na-deal-std" style="display:flex;gap:6px;flex-wrap:wrap">
                 <div style="flex:1;min-width:100px"><label style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">CPA (R$)</label>
                   <input type="number" class="fi" data-field="cpa" value="${br.cpa||0}" style="padding:8px;font-size:12px"></div>
@@ -326,6 +328,10 @@ window.saveNewAff=()=>{
     deals[b]=deal;
   });
   if(!Object.keys(deals).length){toast('Selecione pelo menos uma marca','e');return;}
+  const externalIds={};
+  document.querySelectorAll('.na-extid').forEach(inp=>{
+    const v=inp.value.trim();if(v)externalIds[inp.dataset.brand]=v;
+  });
   const social={
     instagram:document.getElementById('na-instagram')?.value.trim()||'',
     twitter:document.getElementById('na-twitter')?.value.trim()||'',
@@ -333,7 +339,7 @@ window.saveNewAff=()=>{
     tiktok:document.getElementById('na-tiktok')?.value.trim()||'',
     website:document.getElementById('na-website')?.value.trim()||''
   };
-  const newAff={id:'a'+Date.now(),name,type:'afiliado',status:'ativo',contactName:name,contactEmail:email,contractType:ct,deals,social,ftds:0,qftds:0,deposits:0,netRev:0,commission:0,profit:0,notes};
+  const newAff={id:'a'+Date.now(),name,type:'afiliado',status:'ativo',contactName:name,contactEmail:email,contractType:ct,deals,externalIds,social,ftds:0,qftds:0,deposits:0,netRev:0,commission:0,profit:0,notes};
   STATE.affiliates.push(newAff);logAction('Afiliado cadastrado',name);saveToLocal();closeModal();
   renderAffs(_affTypeF?STATE.affiliates.filter(a=>a.contractType===_affTypeF):STATE.affiliates);
   toast('Afiliado cadastrado!');
@@ -360,6 +366,14 @@ window.openEditAff=id=>{
     <div class="fgp"><label>Net Revenue (R$)</label><input type="number" class="fi" id="ea-rev" value="${a.netRev||0}"></div>
     <div class="fgp"><label>Comissão (R$)</label><input type="number" class="fi" id="ea-comm" value="${a.commission}"></div>
     <div class="fgp"><label>Lucro 3C (R$)</label><input type="number" class="fi" id="ea-profit" value="${a.profit}"></div>
+    <div class="fgp ff"><label>IDs nas Plataformas</label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:4px">
+        ${Object.keys(a.deals||{}).map(b=>{const br=STATE.brands[b]||{color:'#888'};
+          return `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;font-weight:700;color:${br.color};min-width:60px">${b}</span>
+            <input class="fi ea-extid" data-brand="${b}" value="${a.externalIds?.[b]||''}" placeholder="ID/código" style="padding:6px 10px;font-size:12px;flex:1"></div>`;
+        }).join('')}
+      </div>
+    </div>
     <div class="fgp ff"><label>Redes Sociais</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
         <div style="position:relative"><input class="fi" id="ea-instagram" value="${a.social?.instagram||''}" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">📷</span></div>
@@ -390,6 +404,10 @@ window.saveEditAff=id=>{
   a.commission=parseFloat(document.getElementById('ea-comm')?.value)||0;
   a.profit=parseFloat(document.getElementById('ea-profit')?.value)||0;
   a.notes=document.getElementById('ea-notes')?.value.trim()||'';
+  if(!a.externalIds)a.externalIds={};
+  document.querySelectorAll('.ea-extid').forEach(inp=>{
+    const v=inp.value.trim();if(v)a.externalIds[inp.dataset.brand]=v;else delete a.externalIds[inp.dataset.brand];
+  });
   a.social={
     instagram:document.getElementById('ea-instagram')?.value.trim()||'',
     twitter:document.getElementById('ea-twitter')?.value.trim()||'',

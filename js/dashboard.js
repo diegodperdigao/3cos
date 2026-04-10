@@ -10,6 +10,7 @@ function bDash(el){
         <div class="sec-lbl">Painel de Controle</div>
         <div class="sec-actions">
           <button class="btn btn-outline" onclick="openReportsHistory()"><i data-lucide="list"></i> Lançamentos</button>
+          <button class="btn btn-outline" onclick="openImportModal()"><i data-lucide="upload"></i> Importar CSV</button>
           <button class="btn btn-theme" onclick="openDailyDataModal()"><i data-lucide="database"></i> Lançar Dados</button>
         </div>
       </div>
