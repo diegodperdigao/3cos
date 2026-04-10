@@ -540,11 +540,18 @@ function renderClosingTab(){
       </div>
     </div>
 
-    <div class="sec-hdr"><div class="sec-lbl">Fechamentos Realizados</div></div>
+    <div class="sec-hdr">
+      <div class="sec-lbl">Fechamentos Realizados</div>
+      ${closings.length?`<div class="sec-actions">
+        <button class="btn btn-outline" id="cl-batch-btn" style="display:none" onclick="sendBatchClosingEmail()"><i data-lucide="send"></i> Enviar Remessa (<span id="cl-batch-count">0</span>)</button>
+      </div>`:''}
+    </div>
     ${closings.length?`<div class="tbl-wrap"><table><thead><tr>
+      <th style="width:36px"><input type="checkbox" id="cl-check-all" onchange="toggleAllClosings(this.checked)" style="accent-color:var(--theme)"></th>
       <th>Afiliado</th><th>Marca</th><th>Referência</th><th>Comissão</th><th>Status</th><th>Data</th><th>Ações</th>
     </tr></thead><tbody>
       ${closings.slice().reverse().map(c=>`<tr class="tr">
+        <td onclick="event.stopPropagation()"><input type="checkbox" class="cl-check" value="${c.id}" onchange="updateBatchCount()" style="accent-color:var(--theme)"></td>
         <td class="td-name">${c.affiliateName}</td>
         <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[c.brand]?.color||'#888'}">${c.brand}</span></td>
         <td style="font-size:11px;color:var(--text2)">${c.monthLabel}</td>
@@ -553,12 +560,98 @@ function renderClosingTab(){
         <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
         <td class="td-acts">
           <button class="ibt" onclick="regenerateClosingPDF('${c.id}')" title="Gerar PDF"><i data-lucide="file-text"></i></button>
-            <button class="ibt" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" title="Enviar ao Financeiro"><i data-lucide="send"></i></button>
+          <button class="ibt" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" title="Enviar individual"><i data-lucide="send"></i></button>
         </td>
       </tr>`).join('')}
     </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
   lucide.createIcons();
 }
+
+window.toggleAllClosings=(checked)=>{
+  document.querySelectorAll('.cl-check').forEach(cb=>cb.checked=checked);
+  updateBatchCount();
+};
+
+window.updateBatchCount=()=>{
+  const count=document.querySelectorAll('.cl-check:checked').length;
+  const btn=document.getElementById('cl-batch-btn');
+  const span=document.getElementById('cl-batch-count');
+  if(btn)btn.style.display=count>0?'inline-flex':'none';
+  if(span)span.textContent=count;
+};
+
+window.sendBatchClosingEmail=()=>{
+  const cfg=STATE.emailjs;
+  if(!cfg?.publicKey||!cfg?.serviceId||!cfg?.templateId||!cfg?.financeEmail)
+    return toast('EmailJS não configurado. Vá em Backup & Nuvem.','w');
+
+  const selectedIds=[...document.querySelectorAll('.cl-check:checked')].map(cb=>cb.value);
+  if(!selectedIds.length)return toast('Selecione pelo menos um fechamento','e');
+
+  const selected=selectedIds.map(id=>(STATE.closings||[]).find(c=>c.id===id)).filter(Boolean);
+  const totalComm=selected.reduce((s,c)=>s+c.commission,0);
+
+  // Build summary table
+  const lines=selected.map(c=>{
+    return `• ${c.affiliateName} — ${c.brand} (${c.monthLabel}): ${fc(c.commission)} | FTDs: ${c.ftds} | QFTDs: ${c.qftds} | Dep: ${fc(c.deposits)}`;
+  }).join('\n');
+
+  openModal('Enviar Remessa ao Financeiro',`
+    <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px">
+      <strong style="color:var(--text)">${selected.length} fechamento${selected.length>1?'s':''}</strong> selecionado${selected.length>1?'s':''} para envio ao <strong style="color:var(--theme)">${cfg.financeEmail}</strong>
+    </div>
+    <div style="max-height:300px;overflow-y:auto;margin-bottom:14px">
+      ${selected.map(c=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;margin-bottom:6px;border-left:3px solid ${STATE.brands[c.brand]?.color||'#888'}">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${c.affiliateName}</div>
+            <div style="font-size:10px;color:var(--text3)">${c.brand} · ${c.monthLabel} · FTDs: ${c.ftds} · QFTDs: ${c.qftds}</div>
+          </div>
+          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--red)">${fc(c.commission)}</div>
+        </div>`).join('')}
+    </div>
+    <div style="padding:12px 16px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;font-weight:700;color:var(--text)">Total da Remessa</span>
+      <span style="font-family:var(--fd);font-size:18px;font-weight:800;color:var(--red)">${fc(totalComm)}</span>
+    </div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+   <button class="btn btn-theme" onclick="confirmBatchSend()"><i data-lucide="send"></i> Enviar Remessa</button>`);
+  lucide.createIcons();
+
+  // Store for confirm
+  window._batchClosings=selected;
+  window._batchLines=lines;
+  window._batchTotal=totalComm;
+};
+
+window.confirmBatchSend=()=>{
+  const cfg=STATE.emailjs;
+  const selected=window._batchClosings;if(!selected?.length)return;
+  if(typeof emailjs==='undefined')return toast('SDK EmailJS não carregado','e');
+
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId,cfg.templateId,{
+    to_email:cfg.financeEmail,
+    subject:`3COS — Remessa de Fechamentos (${selected.length}) — ${fc(window._batchTotal)}`,
+    affiliate_name:`Remessa com ${selected.length} fechamento(s)`,
+    brand:selected.map(c=>c.brand).filter((v,i,a)=>a.indexOf(v)===i).join(', '),
+    month_ref:selected[0]?.monthLabel||'',
+    contract_type:'Diversos',
+    commission:fc(window._batchTotal),
+    ftds:String(selected.reduce((s,c)=>s+c.ftds,0)),
+    qftds:String(selected.reduce((s,c)=>s+c.qftds,0)),
+    deposits:fc(selected.reduce((s,c)=>s+c.deposits,0)),
+    net_rev:fc(selected.reduce((s,c)=>s+(c.netRev||0),0)),
+    profit:fc(selected.reduce((s,c)=>s+(c.profit||0),0)),
+    analyst:STATE.user?.name||'',
+    date:new Date().toLocaleDateString('pt-BR'),
+    message:`REMESSA DE FECHAMENTOS — ${selected.length} nota(s)\nTotal: ${fc(window._batchTotal)}\nEnviado por: ${STATE.user?.name||'—'}\n\n${window._batchLines}\n\nPor favor, verificar e processar os pagamentos.`
+  }).then(()=>{
+    toast(`Remessa de ${selected.length} fechamento(s) enviada!`);
+    logAction('Remessa de fechamentos enviada',`${selected.length} notas · ${fc(window._batchTotal)}`);
+    closeModal();
+  },(err)=>toast('Erro ao enviar: '+err.text,'e'));
+};
 
 window.updateClosingDeals=()=>{
   const affId=document.getElementById('cl-aff')?.value;
