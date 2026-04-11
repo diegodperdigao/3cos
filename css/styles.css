@@ -33,6 +33,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 ::-webkit-scrollbar-thumb { background: var(--theme); border-radius: 10px; }
 ::-webkit-scrollbar-track { background: var(--bg3); }
 
+/* ── SPLASH INTRO ── */
+#splash{will-change:opacity;}
+#splash video{display:block;}
+@media (max-width:768px){
+  #splash video{object-fit:contain;background:#000;}
+}
+
 /* ── MOSAIC & BACKGROUNDS ── */
 .mosaic-wrapper{position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none;opacity:0.55;
   mask-image:linear-gradient(transparent 0%,black 14%,black 86%,transparent 100%);
