@@ -469,6 +469,8 @@ function showHub(){
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
     initMosaics();lucide.createIcons();
+    // Run payment watchdog after login
+    setTimeout(()=>{if(typeof runPaymentWatchdog==='function')runPaymentWatchdog();},1500);
   },650);
 }
 

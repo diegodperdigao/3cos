@@ -377,6 +377,7 @@ fbAuth.onAuthStateChanged(async (firebaseUser) => {
     fixBrandLogos();
     const hub=document.getElementById('hub');
     if(hub && hub.style.display==='flex'){buildHubCards();buildMobileHome();updateNotifBadge();lucide.createIcons();}
+    setTimeout(()=>{if(typeof runPaymentWatchdog==='function')runPaymentWatchdog();},2000);
   } else if (!firebaseUser && STATE.user) {
     // Firebase says not authenticated but we have local session — force logout
     STATE.user=null;localStorage.removeItem('3cos_sess');
