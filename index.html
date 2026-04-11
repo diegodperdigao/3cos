@@ -14,6 +14,7 @@
 <!-- Integração com Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 /* ══════════════════════════════════════════════════════════
    3C OS PRO — Dark/Light · Glassmorphism · Chart.js
@@ -1129,6 +1130,8 @@ const ROLES={
 // ── STATE BASE ORIGINAL (COMPLETO) ──
 const DEFAULT_STATE={
   user:null,
+  emailjs:{publicKey:'gVUoExE8gJiqdy7ko',serviceId:'service_cpo2m7f',templateId:'template_99j6q4e',financeEmail:'diego@3c.gg'},
+  closings:[],
   brands: {
     Vupi:{color:'#6901c7',rgb:'105,1,199',cpa:50,rs:20,type:'standard', logo: 'https://i.ibb.co/PGG7sNnz/Screenshot-2026-03-25-at-15-28-52.png'},
     Novibet:{color:'#3a5fd9',rgb:'58,95,217',rs:30,type:'tiered',levels:[{key:'l1',name:'L1',cpa:180,baseline:30},{key:'l2',name:'L2',cpa:100,baseline:300},{key:'l3',name:'L3',cpa:100,baseline:1200}], logo: 'https://i.ibb.co/1fCKT0kq/logonovibet.png'},
@@ -2110,6 +2113,12 @@ function bPayments(el){
   el.innerHTML=modHdr('Financeiro — Pagamentos')+`<div class="mod-body">
     ${heroHTML('payments','Financeiro','Gestão Financeira','Aprovação, recusa e comissões por afiliado')}
     <div class="mod-main">
+      <div style="display:flex;gap:6px;margin-bottom:18px">
+        <button class="tab on" style="--tab-color:var(--pink)" onclick="showPayTab('closing',this)"><div class="tab-dot" style="background:var(--pink)"></div>Fechamento</button>
+        <button class="tab" style="--tab-color:var(--amber)" onclick="showPayTab('payments',this)"><div class="tab-dot" style="background:var(--amber)"></div>Pagamentos</button>
+      </div>
+      <div id="pay-tab-closing"></div>
+      <div id="pay-tab-payments" style="display:none">
       <div class="kpi-row">
         <div class="kpi" style="--kpi-c:var(--blue);--kpi-glow:rgba(59,130,246,0.1)">
           <div class="kpi-icon-row"><i data-lucide="trending-up" style="width:14px;height:14px;stroke:var(--blue)"></i><span class="kpi-lbl">Pipeline</span></div>
@@ -2137,8 +2146,77 @@ function bPayments(el){
         <button class="pill" onclick="pilPy('pago',this)">Pagos</button>
       </div>
       <div class="tbl-wrap" id="py-tbl"></div>
+      </div>
     </div></div>`;
   renderPyTbl(STATE.payments);
+  renderClosingTab();
+}
+
+window.showPayTab=(tab,btn)=>{
+  btn.closest('div').querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('pay-tab-closing').style.display=tab==='closing'?'block':'none';
+  document.getElementById('pay-tab-payments').style.display=tab==='payments'?'block':'none';
+  if(tab==='closing')renderClosingTab();
+};
+
+function renderClosingTab(){
+  const el=document.getElementById('pay-tab-closing');if(!el)return;
+  const closings=STATE.closings||[];
+  const now=new Date();
+  const months=[];
+  for(let i=0;i<6;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}));}
+
+  el.innerHTML=`
+    <div class="intel-wrap" style="margin-bottom:20px">
+      <div class="intel-hdr"><div>
+        <div class="intel-eye">Executar Fechamento</div>
+        <div class="intel-title">Fechamento Mensal</div>
+        <div class="intel-sub">Calcula comissão → Gera PDF → Cria pagamento pendente</div>
+      </div></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+          <div class="fgp"><label>Afiliado *</label>
+            <select class="fi" id="cl-aff">${STATE.affiliates.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}</select>
+          </div>
+          <div class="fgp"><label>Marca *</label>
+            <select class="fi" id="cl-brand">${Object.keys(STATE.brands).map(b=>`<option value="${b}">${b}</option>`).join('')}</select>
+          </div>
+          <div class="fgp"><label>Mês Referência *</label>
+            <select class="fi" id="cl-month">${months.map(m=>`<option value="${m}">${m.charAt(0).toUpperCase()+m.slice(1)}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-theme" onclick="executeClosing()"><i data-lucide="zap"></i> Executar Fechamento</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-hdr">
+      <div class="sec-lbl">Fechamentos Realizados</div>
+      ${closings.length?`<div class="sec-actions">
+        <button class="btn btn-outline" id="cl-batch-btn" style="display:none" onclick="sendBatchClosingEmail()"><i data-lucide="send"></i> Enviar Remessa (<span id="cl-batch-count">0</span>)</button>
+      </div>`:''}
+    </div>
+    ${closings.length?`<div class="tbl-wrap"><table><thead><tr>
+      <th style="width:36px"><input type="checkbox" id="cl-check-all" onchange="toggleAllClosings(this.checked)" style="accent-color:var(--theme)"></th>
+      <th>Afiliado</th><th>Marca</th><th>Referência</th><th>Comissão</th><th>Status</th><th>Data</th><th>Ações</th>
+    </tr></thead><tbody>
+      ${closings.slice().reverse().map(c=>`<tr class="tr">
+        <td onclick="event.stopPropagation()"><input type="checkbox" class="cl-check" value="${c.id}" onchange="updateBatchCount()" style="accent-color:var(--theme)"></td>
+        <td class="td-name">${c.affiliateName}</td>
+        <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[c.brand]?.color||'#888'}">${c.brand}</span></td>
+        <td style="font-size:11px;color:var(--text2)">${c.monthLabel}</td>
+        <td class="td-money">${fc(c.commission)}</td>
+        <td><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span></td>
+        <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
+        <td class="td-acts">
+          <button class="ibt" onclick="regenerateClosingPDF('${c.id}')" title="Gerar PDF"><i data-lucide="file-text"></i></button>
+          <button class="ibt" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" title="Enviar email"><i data-lucide="send"></i></button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
+  lucide.createIcons();
 }
 function renderPyTbl(list){
   const el=document.getElementById('py-tbl');if(!el)return;
@@ -2517,9 +2595,339 @@ function bUsers(el){
           </div>
         </div>`).join('')}
       </div>
+      <!-- EmailJS Config -->
+      <div class="sec-hdr" style="margin-top:28px"><div class="sec-lbl">EmailJS — Integração de Email</div></div>
+      <div style="padding:16px;background:var(--bg3);border:1px solid var(--gb);border-radius:14px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:14px;line-height:1.6">Configure as credenciais do EmailJS para envio automático de fechamentos ao financeiro.</div>
+        <div class="fg">
+          <div class="fgp"><label>Public Key</label><input class="fi" id="ejs-pubkey" value="${STATE.emailjs?.publicKey||''}" placeholder="Cole aqui"></div>
+          <div class="fgp"><label>Service ID</label><input class="fi" id="ejs-service" value="${STATE.emailjs?.serviceId||''}" placeholder="service_xxx"></div>
+          <div class="fgp"><label>Template ID (Fechamento)</label><input class="fi" id="ejs-template" value="${STATE.emailjs?.templateId||''}" placeholder="template_xxx"></div>
+          <div class="fgp"><label>Email Financeiro</label><input class="fi" id="ejs-finance-email" value="${STATE.emailjs?.financeEmail||''}" placeholder="financeiro@3c.gg"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-theme" onclick="saveEmailJSConfig()"><i data-lucide="save"></i> Salvar</button>
+          <button class="btn btn-outline" onclick="testEmailJS()"><i data-lucide="send"></i> Testar</button>
+        </div>
+      </div>
     </div></div>`;
   lucide.createIcons();
 }
+
+// ══════════════════════════════════════════════════════════
+// EMAILJS FUNCTIONS
+// ══════════════════════════════════════════════════════════
+window.saveEmailJSConfig=()=>{
+  if(!STATE.emailjs)STATE.emailjs={};
+  STATE.emailjs.publicKey=document.getElementById('ejs-pubkey')?.value.trim()||'';
+  STATE.emailjs.serviceId=document.getElementById('ejs-service')?.value.trim()||'';
+  STATE.emailjs.templateId=document.getElementById('ejs-template')?.value.trim()||'';
+  STATE.emailjs.financeEmail=document.getElementById('ejs-finance-email')?.value.trim()||'';
+  logAction('EmailJS configurado','Credenciais atualizadas');
+  saveToLocal();toast('Configuração EmailJS salva!');
+};
+
+window.testEmailJS=()=>{
+  const cfg=STATE.emailjs;
+  if(!cfg?.publicKey||!cfg?.serviceId||!cfg?.templateId||!cfg?.financeEmail)
+    return toast('Preencha todas as credenciais primeiro','e');
+  if(typeof emailjs==='undefined')return toast('SDK EmailJS não carregado','e');
+
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId,cfg.templateId,{
+    to_email:cfg.financeEmail,
+    subject:'3COS — Teste de Integração',
+    affiliate_name:'Teste',
+    brand:'Teste',
+    month_ref:'Teste',
+    contract_type:'Teste',
+    commission:'R$ 0,00',
+    ftds:'0',qftds:'0',deposits:'R$ 0,00',
+    net_rev:'R$ 0,00',profit:'R$ 0,00',
+    analyst:STATE.user?.name||'Sistema',
+    date:new Date().toLocaleDateString('pt-BR'),
+    message:'Este é um email de teste da integração EmailJS com o 3COS. Se você recebeu, a configuração está correta!'
+  }).then(()=>toast('Email de teste enviado com sucesso!'),
+    (err)=>toast('Erro ao enviar: '+err.text,'e'));
+};
+
+window.sendClosingEmail=(closing)=>{
+  const cfg=STATE.emailjs;
+  if(!cfg?.publicKey||!cfg?.serviceId||!cfg?.templateId||!cfg?.financeEmail)
+    return toast('EmailJS não configurado. Vá em Usuários para configurar.','w');
+  if(typeof emailjs==='undefined')return toast('SDK EmailJS não carregado','e');
+
+  const a=STATE.affiliates.find(x=>x.id===closing.affiliateId)||{};
+  const ct=CONTRACT_TYPES[closing.contractType]||{label:''};
+
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId,cfg.templateId,{
+    to_email:cfg.financeEmail,
+    subject:`3COS — Fechamento ${a.name||closing.affiliateName} · ${closing.brand} · ${closing.monthLabel}`,
+    affiliate_name:a.name||closing.affiliateName,
+    brand:closing.brand,
+    month_ref:closing.monthLabel,
+    contract_type:ct.label,
+    commission:fc(closing.commission),
+    ftds:String(closing.ftds),
+    qftds:String(closing.qftds),
+    deposits:fc(closing.deposits),
+    net_rev:fc(closing.netRev||0),
+    profit:fc(closing.profit||0),
+    analyst:closing.createdBy||STATE.user?.name||'',
+    date:closing.createdAt||new Date().toLocaleDateString('pt-BR'),
+    message:`Fechamento executado por ${closing.createdBy||STATE.user?.name||'—'} em ${closing.createdAt}.\n\nAfiliado: ${a.name||closing.affiliateName}\nMarca: ${closing.brand}\nReferência: ${closing.monthLabel}\nComissão: ${fc(closing.commission)}\nFTDs: ${closing.ftds} | QFTDs: ${closing.qftds}\nDepósitos: ${fc(closing.deposits)}\nNet Revenue: ${fc(closing.netRev||0)}\n\nPor favor, verificar e processar o pagamento.`
+  }).then(()=>{toast('Email de fechamento enviado ao financeiro!');logAction('Email fechamento enviado',`${closing.affiliateName} · ${closing.brand}`);},
+    (err)=>toast('Erro ao enviar email: '+err.text,'e'));
+};
+
+window.sendBatchClosingEmail=()=>{
+  const cfg=STATE.emailjs;
+  if(!cfg?.publicKey||!cfg?.serviceId||!cfg?.templateId||!cfg?.financeEmail)
+    return toast('EmailJS não configurado. Vá em Usuários.','w');
+
+  const selectedIds=[...document.querySelectorAll('.cl-check:checked')].map(cb=>cb.value);
+  if(!selectedIds.length)return toast('Selecione pelo menos um fechamento','e');
+
+  const selected=selectedIds.map(id=>(STATE.closings||[]).find(c=>c.id===id)).filter(Boolean);
+  const totalComm=selected.reduce((s,c)=>s+c.commission,0);
+
+  let lines=selected.map(c=>`• ${c.affiliateName} — ${c.brand} (${c.monthLabel}): ${fc(c.commission)}`).join('\n');
+
+  openModal('Confirmar Remessa',`
+    <div style="font-size:12px;color:var(--text2);line-height:1.6">
+      <p><strong style="color:var(--text)">${selected.length} fechamento${selected.length>1?'s':''}</strong> selecionado${selected.length>1?'s':''} para envio ao <strong style="color:var(--theme)">${cfg.financeEmail}</strong></p>
+      <div style="margin-top:12px;padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;font-size:11px;white-space:pre-line;max-height:200px;overflow:auto">${lines}</div>
+      <div style="margin-top:12px;font-size:14px;font-weight:700;color:var(--theme)">Total: ${fc(totalComm)}</div>
+    </div>`,
+  `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+   <button class="btn btn-theme" onclick="confirmBatchSend()"><i data-lucide="send"></i> Enviar Remessa</button>`);
+  window._batchClosings=selected;window._batchLines=lines;window._batchTotal=totalComm;
+  lucide.createIcons();
+};
+
+window.confirmBatchSend=()=>{
+  const cfg=STATE.emailjs;
+  const selected=window._batchClosings;if(!selected?.length)return;
+  if(typeof emailjs==='undefined')return toast('SDK EmailJS não carregado','e');
+
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId,cfg.templateId,{
+    to_email:cfg.financeEmail,
+    subject:`3COS — Remessa de Fechamentos (${selected.length}) — ${fc(window._batchTotal)}`,
+    affiliate_name:`Remessa com ${selected.length} fechamento(s)`,
+    brand:selected.map(c=>c.brand).filter((v,i,a)=>a.indexOf(v)===i).join(', '),
+    month_ref:selected[0]?.monthLabel||'',
+    contract_type:'Diversos',
+    commission:fc(window._batchTotal),
+    ftds:String(selected.reduce((s,c)=>s+c.ftds,0)),
+    qftds:String(selected.reduce((s,c)=>s+c.qftds,0)),
+    deposits:fc(selected.reduce((s,c)=>s+c.deposits,0)),
+    net_rev:fc(selected.reduce((s,c)=>s+(c.netRev||0),0)),
+    profit:fc(selected.reduce((s,c)=>s+(c.profit||0),0)),
+    analyst:STATE.user?.name||'',
+    date:new Date().toLocaleDateString('pt-BR'),
+    message:`REMESSA DE FECHAMENTOS — ${selected.length} nota(s)\nTotal: ${fc(window._batchTotal)}\nEnviado por: ${STATE.user?.name||'—'}\n\n${window._batchLines}\n\nPor favor, verificar e processar os pagamentos.`
+  }).then(()=>{
+    toast(`Remessa de ${selected.length} fechamento(s) enviada!`);
+    logAction('Remessa de fechamentos enviada',`${selected.length} notas · ${fc(window._batchTotal)}`);
+    closeModal();
+  },(err)=>toast('Erro ao enviar: '+err.text,'e'));
+};
+
+// ══════════════════════════════════════════════════════════
+// CLOSING (FECHAMENTO) SYSTEM
+// ══════════════════════════════════════════════════════════
+window.generateClosingPDF=(affiliate,affiliatesList,filterBrand,filterMonth,closingData)=>{
+  const now=new Date();
+  const mesRef=filterMonth||now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const dataEmissao=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const isConsolidated=!affiliate&&affiliatesList;
+  const affs=isConsolidated?affiliatesList:[affiliate];
+  const title=isConsolidated?'Relatório Consolidado de Fechamento':`Relatório de Fechamento — ${affiliate.name}`;
+
+  let sections='';
+  let totalComm=0,totalProfit=0,totalDep=0;
+
+  affs.forEach(a=>{
+    const brands=Object.keys(a.deals||{});
+    const ct=CONTRACT_TYPES[a.contractType]||{label:'CPA'};
+    totalComm+=a.commission;totalProfit+=a.profit;totalDep+=a.deposits;
+
+    let brandRows='';
+    brands.forEach(b=>{
+      const deal=a.deals[b];const br=STATE.brands[b]||{color:'#888'};
+      let dealDesc='';
+      if(a.contractType==='tiered')dealDesc=(deal.levels||[]).map(l=>`${l.name}: R$ ${l.cpa} (base ${l.baseline})`).join(' | ')+` + RS ${deal.rs||0}%`;
+      else if(a.contractType==='deposit')dealDesc=`Meta: R$ ${(deal.depositTarget||0).toLocaleString('pt-BR')}/mês`;
+      else if(a.contractType==='rs')dealDesc=`Revenue Share: ${deal.rs||0}%`;
+      else dealDesc=`CPA: R$ ${deal.cpa||0} + RS: ${deal.rs||0}%`;
+
+      brandRows+=`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;color:${br.color}">${b}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:11px;color:#666">${dealDesc}</td></tr>`;
+    });
+
+    sections+=`
+      ${isConsolidated?`<div style="page-break-inside:avoid;margin-bottom:28px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">`:''}
+      <div style="background:#f8fafc;padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:18px;font-weight:800;color:#0f172a">${a.name}</div>
+          <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;margin-top:2px">${ct.label} · ${a.contactEmail||''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Comissão Total</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#ec4899">R$ ${a.commission.toLocaleString('pt-BR')}</div>
+        </div>
+      </div>
+      <div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div style="background:#f1f5f9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">FTDs</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:24px;font-weight:800;color:#0f172a">${a.ftds}</div>
+        </div>
+        <div style="background:#f1f5f9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">QFTDs</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:24px;font-weight:800;color:#ec4899">${a.qftds}</div>
+        </div>
+        <div style="background:#f1f5f9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Depósitos</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:18px;font-weight:800;color:#0f172a">R$ ${a.deposits.toLocaleString('pt-BR')}</div>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px">
+        <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-bottom:8px">Deals por Marca</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">${brandRows}</table>
+      </div>
+      <div style="padding:0 20px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Net Revenue</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:16px;font-weight:700;color:${(a.netRev||0)>=0?'#10b981':'#ef4444'}">R$ ${(a.netRev||0).toLocaleString('pt-BR')}</div></div>
+        <div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Lucro 3C</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:16px;font-weight:700;color:#10b981">R$ ${a.profit.toLocaleString('pt-BR')}</div></div>
+      </div>
+      ${isConsolidated?'</div>':''}`;
+  });
+
+  let totalsHTML='';
+  if(isConsolidated){
+    totalsHTML=`<div style="margin-top:24px;padding:20px;background:linear-gradient(135deg,#fdf2f8,#f5f3ff);border-radius:12px;border:1px solid #f0abfc">
+      <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-bottom:12px">Totais Consolidados — ${affs.length} afiliado(s)</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        <div><div style="font-size:9px;color:#64748b;text-transform:uppercase">Total Comissões</div><div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#ec4899">R$ ${totalComm.toLocaleString('pt-BR')}</div></div>
+        <div><div style="font-size:9px;color:#64748b;text-transform:uppercase">Total Depósitos</div><div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#3b82f6">R$ ${totalDep.toLocaleString('pt-BR')}</div></div>
+        <div><div style="font-size:9px;color:#64748b;text-transform:uppercase">Lucro 3C Total</div><div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#10b981">R$ ${totalProfit.toLocaleString('pt-BR')}</div></div>
+      </div>
+    </div>`;
+  }
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório de Fechamento — ${mesRef}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Inter',sans-serif;color:#0f172a;font-size:13px;line-height:1.6;background:#fff}
+      @page{size:A4;margin:15mm}
+      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+      .page{max-width:800px;margin:0 auto;padding:40px}
+    </style></head><body>
+    <div class="page">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div style="background:#0f172a;border-radius:10px;padding:10px 18px;display:inline-flex;align-items:center">
+          <img src="https://i.ibb.co/chfw0cND/Horizontal-Com-Tag-W.png" style="height:36px" crossorigin="anonymous">
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#64748b">Relatório de Fechamento</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px">${dataEmissao}</div>
+        </div>
+      </div>
+      <div style="height:3px;background:linear-gradient(to right,#ec4899,#a855f7);border-radius:2px;margin-bottom:28px"></div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">${title}</div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:24px">Referência: ${mesRef.charAt(0).toUpperCase()+mesRef.slice(1)}</div>
+      ${sections}
+      ${totalsHTML}
+      <div style="margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center">
+        <div style="font-size:9px;color:#cbd5e1;letter-spacing:0.15em;text-transform:uppercase">Confidencial · 3C Gaming BizDev · ${now.getFullYear()}</div>
+      </div>
+    </div></body></html>`;
+
+  const w=window.open('','_blank');
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),500);
+};
+
+window.executeClosing=()=>{
+  const affId=document.getElementById('cl-aff')?.value;
+  const brand=document.getElementById('cl-brand')?.value;
+  const monthLabel=document.getElementById('cl-month')?.value;
+  if(!affId||!brand||!monthLabel){toast('Selecione afiliado, marca e mês','e');return;}
+
+  const a=STATE.affiliates.find(x=>x.id===affId);if(!a)return;
+
+  if(!STATE.closings)STATE.closings=[];
+  const closingId='cl'+Date.now();
+  const closing={
+    id:closingId,affiliateId:affId,affiliateName:a.name,
+    brand,monthLabel,contractType:a.contractType,
+    commission:a.commission,ftds:a.ftds,qftds:a.qftds,
+    deposits:a.deposits,netRev:a.netRev||0,profit:a.profit,
+    createdBy:STATE.user?.name||'',createdAt:new Date().toLocaleDateString('pt-BR'),
+    paymentStatus:'pendente'
+  };
+  STATE.closings.push(closing);
+
+  // Create payment
+  STATE.payments.unshift({
+    id:'py'+Date.now(),affiliateId:affId,affiliate:a.name,brand,
+    contract:`Fechamento ${monthLabel}`,amount:a.commission,
+    dueDate:'',status:'pendente',nfName:''
+  });
+
+  STATE.notifications.unshift({
+    id:'n'+Date.now(),type:'blue',
+    text:`Fechamento ${a.name} (${brand}) — ${monthLabel}: ${fc(a.commission)}`,
+    time:'agora',read:false
+  });
+
+  logAction('Fechamento executado',`${a.name} · ${brand} · ${monthLabel}`);
+  saveToLocal();updateNotifBadge();
+
+  generateClosingPDF(a,null,brand,monthLabel,closing);
+  toast('Fechamento executado! Ticket criado na fila.');
+  renderClosingTab();
+
+  if(STATE.emailjs?.publicKey){
+    setTimeout(()=>{
+      openModal('Enviar ao Financeiro?',`
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">
+          <p>Fechamento de <strong style="color:var(--text)">${a.name}</strong> (${brand}) — ${monthLabel} concluído.</p>
+          <p style="margin-top:8px">Deseja enviar os detalhes por email para <strong style="color:var(--theme)">${STATE.emailjs.financeEmail}</strong>?</p>
+          <div style="margin-top:12px;padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;font-size:11px">
+            <div class="dr"><span>Comissão</span><strong style="color:var(--red)">${fc(closing.commission)}</strong></div>
+            <div class="dr"><span>FTDs / QFTDs</span><strong>${closing.ftds} / ${closing.qftds}</strong></div>
+            <div class="dr"><span>Depósitos</span><strong>${fc(closing.deposits)}</strong></div>
+          </div>
+        </div>`,
+      `<button class="btn btn-ghost" onclick="closeModal()">Agora Não</button>
+       <button class="btn btn-theme" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${closingId}'));closeModal()"><i data-lucide="send"></i> Enviar Email</button>`);
+      lucide.createIcons();
+    },600);
+  }
+};
+
+window.regenerateClosingPDF=(closingId)=>{
+  const c=(STATE.closings||[]).find(x=>x.id===closingId);if(!c)return toast('Fechamento não encontrado','e');
+  const a=STATE.affiliates.find(x=>x.id===c.affiliateId)||{name:c.affiliateName,ftds:c.ftds,qftds:c.qftds,deposits:c.deposits,netRev:c.netRev,commission:c.commission,profit:c.profit,contractType:c.contractType,deals:{[c.brand]:{}},notes:''};
+  generateClosingPDF(a,null,c.brand,c.monthLabel,c);
+};
+
+window.toggleAllClosings=(checked)=>{
+  document.querySelectorAll('.cl-check').forEach(cb=>cb.checked=checked);
+  updateBatchCount();
+};
+
+window.updateBatchCount=()=>{
+  const count=document.querySelectorAll('.cl-check:checked').length;
+  const btn=document.getElementById('cl-batch-btn');
+  const span=document.getElementById('cl-batch-count');
+  if(btn)btn.style.display=count>0?'inline-flex':'none';
+  if(span)span.textContent=count;
+};
 
 // ══════════════════════════════════════════════════════════
 // MOBILE SIDEBAR LOGIC
