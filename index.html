@@ -93,10 +93,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="hub-wordmark">3C<em>OS</em></div>
     </div>
     <div class="hub-bar-r">
-      <button class="hub-icon-btn hub-lab-btn" onclick="openLabModal()" id="hub-lab-btn" title="Lab — Recursos Beta" style="padding:6px 12px;gap:6px">
+      <button class="hub-icon-btn hub-lab-btn" onclick="toggleBetaMode()" id="hub-lab-btn" title="Modo Beta — clique para ativar recursos experimentais">
         <i data-lucide="zap"></i>
-        <span class="hub-lab-txt">LAB</span>
-        <div class="hub-lab-dot" id="hub-lab-dot" style="display:none"></div>
       </button>
       <button class="hub-icon-btn" onclick="toggleActionCenter()" id="hub-notif-btn">
         <i data-lucide="bell"></i>

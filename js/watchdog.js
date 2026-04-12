@@ -56,13 +56,8 @@ function runPaymentWatchdog(){
     updateNotifBadge();
     saveToLocal();
   }
-
-  // Show toast summary
-  if(overdue.length){
-    toast(`${overdue.length} pagamento(s) vencido(s)! Verifique o financeiro.`,'e');
-  }else if(dueSoon.length){
-    toast(`${dueSoon.length} pagamento(s) vencem nos próximos 3 dias.`,'w');
-  }
+  // NOTE: alerts go silently to the notification center (bell badge).
+  // No toasts — avoids interrupting the user on login/hub entry.
 
   // Send email if EmailJS configured (overdue only)
   const overdueNoReceipt=overdue.filter(p=>!p.hasReceipt);
