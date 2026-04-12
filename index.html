@@ -623,6 +623,51 @@ td{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-ali
 [data-theme="light"] .mod-chip{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.04);}
 .user-grid{display:flex;flex-direction:column;gap:10px;}
 
+/* ── LAB / BETA FEATURES ── */
+.lab-wrap{border:1px solid var(--gb);border-radius:16px;overflow:hidden;margin-top:18px;
+  background:linear-gradient(135deg,rgba(236,72,153,0.04),rgba(168,85,247,0.03));}
+[data-theme="light"] .lab-wrap{background:linear-gradient(135deg,rgba(236,72,153,0.05),rgba(168,85,247,0.04));}
+.lab-hdr{padding:16px 20px;border-bottom:1px solid var(--gb);display:flex;align-items:center;gap:10px;}
+.lab-hdr-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#ec4899,#a855f7);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(168,85,247,0.25);}
+.lab-hdr-icon i{stroke:#fff;width:18px;height:18px;}
+.lab-title{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.lab-sub{font-size:10px;color:var(--text2);margin-top:2px;}
+.lab-list{padding:8px 0;}
+.lab-item{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--gb);transition:background 0.15s;}
+.lab-item:last-child{border-bottom:none;}
+.lab-item:hover{background:rgba(255,255,255,0.02);}
+[data-theme="light"] .lab-item:hover{background:rgba(0,0,0,0.02);}
+.lab-item-icon{width:34px;height:34px;border-radius:9px;background:var(--bg3);border:1px solid var(--gb);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.lab-item-info{flex:1;min-width:0;}
+.lab-item-name{font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;}
+.lab-item-desc{font-size:10px;color:var(--text2);margin-top:3px;line-height:1.5;}
+.lab-warn{padding:12px 20px;background:rgba(245,158,11,0.06);border-top:1px solid rgba(245,158,11,0.15);
+  font-size:10px;color:var(--amber);display:flex;align-items:center;gap:8px;}
+
+/* Toggle switch */
+.lab-toggle{position:relative;width:40px;height:22px;flex-shrink:0;cursor:pointer;}
+.lab-toggle input{opacity:0;width:0;height:0;position:absolute;}
+.lab-toggle-slider{position:absolute;inset:0;background:var(--gb2);border-radius:22px;transition:0.25s;}
+.lab-toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:0.25s;box-shadow:0 2px 4px rgba(0,0,0,0.2);}
+.lab-toggle input:checked + .lab-toggle-slider{background:linear-gradient(135deg,#ec4899,#a855f7);}
+.lab-toggle input:checked + .lab-toggle-slider::before{transform:translateX(18px);}
+
+/* Tags in affiliate cards */
+.tag-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.aff-tag{font-size:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  padding:3px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+.aff-tag-dot{width:5px;height:5px;border-radius:50%;}
+.tag-picker{display:flex;flex-wrap:wrap;gap:6px;padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;}
+.tag-picker-item{font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  padding:5px 10px;border-radius:6px;cursor:pointer;border:1px solid transparent;transition:all 0.15s;
+  display:inline-flex;align-items:center;gap:5px;}
+.tag-picker-item:hover{transform:translateY(-1px);}
+.tag-picker-item.selected{box-shadow:0 0 0 2px var(--bg),0 0 0 3px currentColor;}
+
+
 .audit-item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--gb);}
 [data-theme="light"] .audit-item { border-bottom-color: rgba(255,255,255,0.5); }
 .audit-item:last-child{border-bottom:none;}
@@ -1132,6 +1177,14 @@ const DEFAULT_STATE={
   user:null,
   emailjs:{publicKey:'gVUoExE8gJiqdy7ko',serviceId:'service_cpo2m7f',templateId:'template_99j6q4e',financeEmail:'diego@3c.gg'},
   closings:[],
+  labFlags:{tags:false,lastContact:false,globalSearch:false,smartLists:false,nextAction:false,workflows:false},
+  availableTags:[
+    {id:'tg1',name:'VIP',color:'#f59e0b'},
+    {id:'tg2',name:'Em Risco',color:'#ef4444'},
+    {id:'tg3',name:'Novo',color:'#3b82f6'},
+    {id:'tg4',name:'Top Performer',color:'#10b981'},
+    {id:'tg5',name:'Escala',color:'#a855f7'},
+  ],
   brands: {
     Vupi:{color:'#6901c7',rgb:'105,1,199',cpa:50,rs:20,type:'standard', logo: 'https://i.ibb.co/PGG7sNnz/Screenshot-2026-03-25-at-15-28-52.png'},
     Novibet:{color:'#3a5fd9',rgb:'58,95,217',rs:30,type:'tiered',levels:[{key:'l1',name:'L1',cpa:180,baseline:30},{key:'l2',name:'L2',cpa:100,baseline:300},{key:'l3',name:'L3',cpa:100,baseline:1200}], logo: 'https://i.ibb.co/1fCKT0kq/logonovibet.png'},
@@ -1242,6 +1295,10 @@ const medal=i=>['🥇','🥈','🥉'][i]||'#'+(i+1);
 const od=(d,s)=>d&&s!=='pago'&&new Date(d)<new Date();
 const sl=s=>({ativo:'Ativo',negociação:'Negociação',encerrado:'Encerrado'}[s]||s||'Ativo');
 const pl=s=>({pendente:'Pendente',aprovado:'Aprovado',pago:'Pago',parcial:'Parcial',recusado:'Recusado',ajuste:'Ajuste Necessário'}[s]||s);
+
+// ── LAB (Beta Features) ──
+const isLab=(flag)=>STATE.labFlags?.[flag]===true;
+const labBadge=()=>`<span style="font-size:8px;font-weight:800;letter-spacing:0.1em;padding:2px 6px;border-radius:4px;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;margin-left:6px">BETA</span>`;
 
 function toast(msg,t='s'){
   const el=document.createElement('div');el.className=`toast t${t}`;el.textContent=msg;
@@ -1738,12 +1795,14 @@ function renderAffs(list){
     let s1={l:'FTDs',v:a.ftds},s2={l:'QFTDs',v:a.qftds,c:'#ec4899'},s3={l:'Depósitos',v:fc(a.deposits)};
     if(a.contractType==='deposit'){s2={l:'Meta/Mês',v:fc(a.deals[brands[0]]?.depositTarget||0)};s3={l:'Progresso',v:Math.round(a.deposits/(a.deals[brands[0]]?.depositTarget||1)*100)+'%'};}
     if(a.contractType==='rs'){s1={l:'Net Rev',v:fc(a.netRev)};s2={l:'Depósitos',v:fc(a.deposits)};s3={l:'Comissão',v:fc(a.commission)};}
+    const tagsHTML=isLab('tags')&&(a.tags||[]).length?`<div class="tag-row">${(a.tags||[]).map(tid=>{const t=STATE.availableTags?.find(x=>x.id===tid);return t?`<span class="aff-tag" style="background:${t.color}15;color:${t.color};border:1px solid ${t.color}33"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}</span>`:'';}).join('')}</div>`:'';
     return `<div class="aff-card ct-${ct.css}" onclick="openAffDetail('${a.id}')">
       <div class="aff-top">
         <div class="aff-av">${a.name[0]}</div>
         <div style="flex:1"><div class="aff-name">${a.name}</div><div class="aff-type">${a.type}</div></div>
         <span class="ct-badge ${ct.css}">${ct.label}</span>
       </div>
+      ${tagsHTML}
       <div class="aff-stats">
         <div class="aff-stat"><span class="aff-stat-l">${s1.l}</span><span class="aff-stat-v">${s1.v}</span></div>
         <div class="aff-stat"><span class="aff-stat-l">${s2.l}</span><span class="aff-stat-v" style="color:${s2.c||'var(--text)'}">${s2.v}</span></div>
@@ -1822,6 +1881,11 @@ window.openAffDetail=id=>{
       </div>
     </div>
 
+    ${isLab('tags')?`<div style="margin-top:14px"><div class="dtl" style="margin-bottom:8px;display:flex;align-items:center">Tags ${labBadge()}</div>
+      <div class="tag-picker">
+        ${(STATE.availableTags||[]).map(t=>{const on=(a.tags||[]).includes(t.id);return `<div class="tag-picker-item ${on?'selected':''}" style="background:${t.color}${on?'22':'10'};color:${t.color};border-color:${t.color}${on?'66':'22'}" onclick="toggleAffTag('${a.id}','${t.id}')"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}</div>`;}).join('')}
+      </div>
+    </div>`:''}
     ${cts.length?`<div style="margin-top:14px"><div class="dtl" style="margin-bottom:8px">Contratos (${cts.length})</div>
       <div class="mini-list">${cts.map(c=>`<div class="mini"><div class="mini-info"><span class="mini-n">${c.name}</span><span class="mini-s">${c.brand} · ${c.type}</span></div>
         <div class="mini-r"><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span><span class="mini-v">${fc(c.value)}</span></div></div>`).join('')}</div></div>`:''}
@@ -1845,6 +1909,20 @@ window.addCRMNote = (affiliateId) => {
     toast('Nota registrada no CRM!');
   }
 }
+
+window.toggleAffTag=(affId,tagId)=>{
+  const a=STATE.affiliates.find(x=>x.id===affId);if(!a)return;
+  if(!a.tags)a.tags=[];
+  const idx=a.tags.indexOf(tagId);
+  if(idx>=0)a.tags.splice(idx,1);else a.tags.push(tagId);
+  const tag=STATE.availableTags?.find(t=>t.id===tagId);
+  logAction(`[BETA] Tag ${idx>=0?'removida':'adicionada'}`,`${a.name} · ${tag?.name||tagId}`);
+  saveToLocal();
+  openAffDetail(affId);
+  // Also update the grid underneath
+  const grid=document.getElementById('aff-grid');
+  if(grid)renderAffs(_affTypeF?STATE.affiliates.filter(x=>x.contractType===_affTypeF):STATE.affiliates);
+};
 
 window.openNewAff=()=>openModal('Novo Afiliado',`<div class="fg">
   <div class="fgp ff"><label>Nome *</label><input class="fi" id="na-name" placeholder="Ex: Agência FMG"></div>
@@ -2610,9 +2688,77 @@ function bUsers(el){
           <button class="btn btn-outline" onclick="testEmailJS()"><i data-lucide="send"></i> Testar</button>
         </div>
       </div>
+
+      <!-- LAB — Beta Features -->
+      ${renderLabPanel()}
+
     </div></div>`;
   lucide.createIcons();
 }
+
+// ══════════════════════════════════════════════════════════
+// LAB (BETA FEATURES) PANEL
+// ══════════════════════════════════════════════════════════
+const LAB_FEATURES=[
+  {key:'tags',icon:'tag',name:'Tags Coloridas',desc:'Labels customizáveis em afiliados (VIP, Em Risco, Top Performer, etc). Ajuda a segmentar e identificar rapidamente.',status:'stable'},
+  {key:'lastContact',icon:'clock',name:'Último Contato',desc:'Mostra "há X dias sem contato" em cada card de afiliado — inspiração Pipedrive.',status:'preview'},
+  {key:'globalSearch',icon:'search',name:'Busca Global (Cmd+K)',desc:'Busca unificada em afiliados, marcas, pagamentos e tarefas — inspiração Linear/HubSpot.',status:'preview'},
+  {key:'smartLists',icon:'list',name:'Smart Lists Dinâmicas',desc:'Filtros vivos: Top 10 por comissão, Em risco, Novos sem fechamento, etc. Atualização automática.',status:'experimental'},
+  {key:'nextAction',icon:'check-circle',name:'Activity-Based Selling',desc:'Próxima ação obrigatória em afiliados ativos + dashboard de parados. Coração do Pipedrive.',status:'experimental'},
+  {key:'workflows',icon:'zap',name:'Workflow Builder',desc:'Automações IF-THEN: quando X acontecer, faça Y. Inspiração HubSpot/Monday.',status:'experimental'},
+];
+
+function renderLabPanel(){
+  if(!STATE.labFlags)STATE.labFlags={};
+  return `
+  <div class="lab-wrap">
+    <div class="lab-hdr">
+      <div class="lab-hdr-icon"><i data-lucide="sparkles"></i></div>
+      <div>
+        <div class="lab-title">Lab — Recursos Experimentais ${labBadge()}</div>
+        <div class="lab-sub">Ative recursos novos antes do lançamento oficial. Feedback é bem-vindo!</div>
+      </div>
+    </div>
+    <div class="lab-list">
+      ${LAB_FEATURES.map(f=>{
+        const active=STATE.labFlags[f.key]===true;
+        const statusColor={stable:'#10b981',preview:'#3b82f6',experimental:'#f59e0b'}[f.status];
+        const statusLabel={stable:'Estável',preview:'Preview',experimental:'Experimental'}[f.status];
+        return `
+        <div class="lab-item">
+          <div class="lab-item-icon"><i data-lucide="${f.icon}" style="width:16px;height:16px;stroke:var(--text2)"></i></div>
+          <div class="lab-item-info">
+            <div class="lab-item-name">${f.name}
+              <span style="font-size:8px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44">${statusLabel}</span>
+            </div>
+            <div class="lab-item-desc">${f.desc}</div>
+          </div>
+          <label class="lab-toggle">
+            <input type="checkbox" ${active?'checked':''} onchange="toggleLabFlag('${f.key}',this.checked)">
+            <span class="lab-toggle-slider"></span>
+          </label>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="lab-warn">
+      <i data-lucide="alert-triangle" style="width:12px;height:12px;stroke:var(--amber)"></i>
+      Recursos em Beta podem conter bugs. Desative se algo quebrar e nos avise.
+    </div>
+  </div>`;
+}
+
+window.toggleLabFlag=(key,value)=>{
+  if(!STATE.labFlags)STATE.labFlags={};
+  STATE.labFlags[key]=value;
+  logAction('Lab flag alterada',`${key} = ${value?'ON':'OFF'}`);
+  saveToLocal();
+  toast(`${LAB_FEATURES.find(f=>f.key===key)?.name}: ${value?'ativado':'desativado'}`);
+  // Re-render current module if it's affected by this flag
+  const currentMod=document.querySelector('.mod.active')?.id?.replace('mod-','');
+  if(currentMod&&['affiliates','dashboard','users'].includes(currentMod)){
+    openMod(currentMod);
+  }
+};
 
 // ══════════════════════════════════════════════════════════
 // EMAILJS FUNCTIONS
