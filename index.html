@@ -190,14 +190,14 @@ body::before {
   display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);}
 [data-theme="light"] .hub-notif-badge { border-color: #fff; }
 
-/* Lab button in header */
-.hub-lab-btn{position:relative;}
-.hub-lab-btn svg{stroke:#ec4899;transition:all 0.3s;}
-.hub-lab-btn:hover svg{stroke:#a855f7;transform:rotate(-10deg) scale(1.1);}
-.hub-lab-dot{position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;
+/* Lab button in hub header + module header */
+.hub-lab-btn,.hdr-lab-btn{position:relative;}
+.hub-lab-btn svg,.hdr-lab-btn svg{stroke:#ec4899 !important;transition:all 0.3s;}
+.hub-lab-btn:hover svg,.hdr-lab-btn:hover svg{stroke:#a855f7 !important;transform:rotate(-10deg) scale(1.1);}
+.hub-lab-dot,.hdr-lab-dot{position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;
   background:linear-gradient(135deg,#ec4899,#a855f7);border:2px solid var(--bg);
   box-shadow:0 0 8px rgba(236,72,153,0.6);animation:labPulse 2s ease-in-out infinite;}
-[data-theme="light"] .hub-lab-dot{border-color:#fff;}
+[data-theme="light"] .hub-lab-dot,[data-theme="light"] .hdr-lab-dot{border-color:#fff;}
 @keyframes labPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:0.8}}
 
 .hub-user-name{font-size:12px;font-weight:600;color:var(--text);}
@@ -1573,6 +1573,7 @@ function initMosaics(){
 }
 
 function modHdr(label){
+  setTimeout(()=>{if(window.updateLabDot)updateLabDot();},10);
   return `<div class="mod-hdr">
     <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
     <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
@@ -1580,6 +1581,7 @@ function modHdr(label){
     <div class="mod-hdr-name">${label}</div>
     <div class="mod-hdr-r">
       <div class="sync-dot"></div><span class="sync-txt">Cloud Sync</span>
+      <button class="hdr-btn hdr-lab-btn" onclick="openLabModal()" title="Lab — Recursos Beta"><i data-lucide="sparkles"></i><div class="hdr-lab-dot" style="display:none"></div></button>
       <button class="hdr-btn" onclick="toggleActionCenter()"><i data-lucide="bell"></i></button>
       <button class="hdr-btn" onclick="toggleTheme()"><i data-lucide="sun"></i></button>
       <button class="hdr-btn" onclick="goBack()"><i data-lucide="grid"></i> Hub</button>
@@ -2785,10 +2787,10 @@ window.openLabModal=()=>{
 };
 
 window.updateLabDot=()=>{
-  const dot=document.getElementById('hub-lab-dot');
-  if(!dot)return;
   const anyActive=Object.values(STATE.labFlags||{}).some(v=>v===true);
-  dot.style.display=anyActive?'block':'none';
+  document.querySelectorAll('.hub-lab-dot,.hdr-lab-dot').forEach(dot=>{
+    dot.style.display=anyActive?'block':'none';
+  });
 };
 
 // ══════════════════════════════════════════════════════════
