@@ -93,6 +93,11 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="hub-wordmark">3C<em>OS</em></div>
     </div>
     <div class="hub-bar-r">
+      <button class="search-pill" onclick="openGlobalSearch()" title="Buscar (Ctrl+K)">
+        <i data-lucide="search"></i>
+        <span class="search-pill-txt">Buscar...</span>
+        <span class="search-pill-kbd"><kbd>⌘</kbd><kbd>K</kbd></span>
+      </button>
       <button class="hub-icon-btn hub-lab-btn" onclick="toggleBetaMode()" id="hub-lab-btn" title="Modo Beta — clique para ativar recursos experimentais">
         <i data-lucide="zap"></i>
       </button>
@@ -116,21 +121,6 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="hub-id-tagline">CRM & Gestão</div>
       <div class="hub-greeting" id="hub-greeting">Selecione o módulo de trabalho</div>
     </div>
-
-    <!-- GLOBAL SEARCH -->
-    <div class="hub-search-wrap">
-      <div class="hub-search-box">
-        <i data-lucide="search" class="hub-search-icon"></i>
-        <input type="text" class="hub-search-input" id="hub-global-search"
-               placeholder="Buscar afiliados, pagamentos, fechamentos, marcas, tarefas..."
-               oninput="hubSearchInput(this.value)"
-               onfocus="showHubSearchResults()">
-        <button class="hub-search-clear" onclick="clearHubSearch()" title="Limpar"><i data-lucide="x"></i></button>
-        <div class="hub-search-kbd"><kbd>Ctrl</kbd><kbd>K</kbd></div>
-      </div>
-      <div class="hub-search-results" id="hub-search-results"></div>
-    </div>
-
     <div class="hub-apps-label hub-desktop-only">Módulos disponíveis</div>
     <div class="hub-apps hub-desktop-only" id="hub-cards"></div>
     <!-- Mobile Home: Tasks + Notifications -->
@@ -170,6 +160,26 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="modal-ft" id="mft"></div>
   </div>
 </div>
+
+<!-- COMMAND PALETTE (Global Search) -->
+<div id="cmdk-overlay" onclick="if(event.target===this)closeGlobalSearch()">
+  <div class="cmdk-box" role="dialog" aria-label="Busca global">
+    <div class="cmdk-input-wrap">
+      <i data-lucide="search" class="cmdk-input-icon"></i>
+      <input type="text" id="cmdk-input" class="cmdk-input"
+             placeholder="Buscar afiliados, pagamentos, fechamentos, marcas, tarefas..."
+             oninput="cmdkSearchInput(this.value)" autocomplete="off">
+      <button class="cmdk-close" onclick="closeGlobalSearch()" title="Fechar"><kbd>esc</kbd></button>
+    </div>
+    <div id="cmdk-results" class="cmdk-results"></div>
+    <div class="cmdk-footer">
+      <div class="cmdk-footer-hint"><kbd>↵</kbd> abrir</div>
+      <div class="cmdk-footer-hint"><kbd>esc</kbd> fechar</div>
+      <div class="cmdk-footer-brand">Busca Global · 3C OS</div>
+    </div>
+  </div>
+</div>
+
 <div id="toasts"></div>
 
 <!-- MOBILE BOTTOM NAV -->
