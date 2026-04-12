@@ -4,26 +4,23 @@
 // Purpose: one button to toggle all experimental features.
 // Click LAB → beta mode ON. Click again → beta mode OFF.
 //
-// Usage in other modules:
-//   if (isLab()) { renderBetaUI(); }
-//
-// All beta features share the single STATE.betaMode flag.
-// Persistence: STATE.betaMode synced to Firestore via
+// All beta features share STATE.betaMode. Persistence via
 // saveToCloud/loadFromCloud in app.js.
 // ══════════════════════════════════════════════════════════
 
-// Single master flag. Accepts an optional feature name for
-// future per-feature gating, but today all features share
-// the same master switch.
 const isLab = (feature) => STATE.betaMode === true;
 window.isLab = isLab;
 
 const labBadge = () => `<span style="font-size:8px;font-weight:800;letter-spacing:0.1em;padding:2px 6px;border-radius:4px;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;margin-left:6px">BETA</span>`;
 window.labBadge = labBadge;
 
-// List of features that are gated behind beta mode (for
-// messaging only — not for per-feature control).
-const BETA_FEATURES_ACTIVE = ['Tags Coloridas em afiliados'];
+// Active beta features (for the activation toast)
+const BETA_FEATURES_ACTIVE = [
+  'Tags Coloridas',
+  'Último Contato',
+  'Smart Lists',
+  'Busca Global (Ctrl+K)'
+];
 
 window.toggleBetaMode = () => {
   STATE.betaMode = !STATE.betaMode;
@@ -35,7 +32,7 @@ window.toggleBetaMode = () => {
   updateLabButton();
 
   if (on) {
-    toast(`Modo Beta ativado — ${BETA_FEATURES_ACTIVE.join(', ')}`, 's');
+    toast(`Modo Beta ativado — ${BETA_FEATURES_ACTIVE.length} recursos experimentais`, 's');
   } else {
     toast('Modo Beta desativado', 'i');
   }
@@ -47,7 +44,6 @@ window.toggleBetaMode = () => {
   }
 };
 
-// Update all Lab buttons (hub + mod header) to reflect on/off state
 window.updateLabButton = () => {
   const on = STATE.betaMode === true;
   document.querySelectorAll('.hub-lab-btn, .hdr-lab-btn').forEach(btn => {
@@ -58,6 +54,179 @@ window.updateLabButton = () => {
       : 'Modo Beta — clique para ativar recursos experimentais');
   });
 };
-
-// Keep this alias for backwards compat with other modules
 window.updateLabDot = window.updateLabButton;
+
+// ══════════════════════════════════════════════════════════
+// BETA: Last Contact tracker
+// ══════════════════════════════════════════════════════════
+// Computes days since last activity for an affiliate by
+// scanning the audit log for entries mentioning their name.
+window.daysSinceContact = (affiliate) => {
+  if (!affiliate || !STATE.auditLog) return null;
+  const entries = STATE.auditLog.filter(log =>
+    (log.detail && log.detail.includes(affiliate.name)) ||
+    (log.action && log.action.includes(affiliate.name))
+  );
+  if (!entries.length) return null;
+  // Audit log stores time as "dd/mm/yyyy hh:mm:ss" in pt-BR locale
+  const parseLogTime = (t) => {
+    if (!t) return null;
+    const [date, time] = t.split(' ');
+    const [d, m, y] = date.split('/');
+    return new Date(`${y}-${m}-${d}T${time || '00:00:00'}`);
+  };
+  const dates = entries.map(e => parseLogTime(e.time)).filter(d => d && !isNaN(d));
+  if (!dates.length) return null;
+  const latest = new Date(Math.max(...dates.map(d => d.getTime())));
+  const diff = Math.floor((new Date() - latest) / (1000 * 60 * 60 * 24));
+  return diff;
+};
+
+window.lastContactHTML = (affiliate) => {
+  if (!isLab()) return '';
+  const days = daysSinceContact(affiliate);
+  if (days === null) {
+    return `<div class="last-contact lc-never" title="Nenhuma atividade registrada"><i data-lucide="clock"></i> Sem contato</div>`;
+  }
+  const cls = days <= 7 ? 'lc-ok' : days <= 14 ? 'lc-warn' : 'lc-danger';
+  const label = days === 0 ? 'hoje' : days === 1 ? 'ontem' : `há ${days} dias`;
+  return `<div class="last-contact ${cls}" title="Último registro no audit log"><i data-lucide="clock"></i> ${label}</div>`;
+};
+
+// ══════════════════════════════════════════════════════════
+// BETA: Smart Lists (dynamic filters)
+// ══════════════════════════════════════════════════════════
+// Returns a filtered array of affiliates based on a preset.
+window.SMART_LISTS = [
+  { key: 'topComm', name: 'Top 10 Comissão', icon: 'trophy', color: '#f59e0b',
+    desc: 'Os 10 maiores em comissão acumulada',
+    compute: (list) => [...list].sort((a, b) => (b.commission || 0) - (a.commission || 0)).slice(0, 10) },
+
+  { key: 'atRisk', name: 'Em Risco', icon: 'alert-triangle', color: '#ef4444',
+    desc: 'Sem atividade há 14+ dias ou Net Rev negativo',
+    compute: (list) => list.filter(a => {
+      const days = daysSinceContact(a);
+      return (days !== null && days >= 14) || (a.netRev || 0) < 0;
+    }) },
+
+  { key: 'newNoClose', name: 'Novos sem Fechamento', icon: 'user-plus', color: '#3b82f6',
+    desc: 'Criados recentemente e ainda sem fechamento',
+    compute: (list) => list.filter(a => {
+      const hasClose = (STATE.closings || []).some(c => c.affiliateId === a.id);
+      return !hasClose;
+    }) },
+
+  { key: 'staleContact', name: 'Sem Contato 30+d', icon: 'clock', color: '#94a3b8',
+    desc: 'Nenhuma atividade há mais de 30 dias',
+    compute: (list) => list.filter(a => {
+      const days = daysSinceContact(a);
+      return days !== null && days >= 30;
+    }) },
+
+  { key: 'topProfit', name: 'Top Lucro 3C', icon: 'trending-up', color: '#10b981',
+    desc: 'Os 10 maiores em lucro pra 3C',
+    compute: (list) => [...list].sort((a, b) => (b.profit || 0) - (a.profit || 0)).slice(0, 10) },
+];
+
+window.applySmartList = (key) => {
+  const list = STATE.affiliates || [];
+  const sl = SMART_LISTS.find(x => x.key === key);
+  return sl ? sl.compute(list) : list;
+};
+
+// ══════════════════════════════════════════════════════════
+// BETA: Global Search (Ctrl+K / Cmd+K)
+// ══════════════════════════════════════════════════════════
+window.openGlobalSearch = () => {
+  if (!isLab()) return;
+  openModal('Busca Global ' + labBadge(), `
+    <div style="margin-bottom:14px">
+      <input class="fi" id="gs-input" placeholder="Digite para buscar afiliados, marcas, pagamentos, tarefas..." style="font-size:14px;padding:12px 14px" autofocus>
+    </div>
+    <div id="gs-results" style="max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
+      <div class="empty" style="padding:30px 10px"><i data-lucide="search"></i><p>Digite para buscar</p></div>
+    </div>
+  `, `<button class="btn btn-ghost" onclick="closeModal()">Fechar (Esc)</button>`);
+  lucide.createIcons();
+  setTimeout(() => {
+    const input = document.getElementById('gs-input');
+    if (input) {
+      input.focus();
+      input.addEventListener('input', runGlobalSearch);
+    }
+  }, 50);
+};
+
+window.runGlobalSearch = (e) => {
+  const q = (e?.target?.value || '').trim().toLowerCase();
+  const el = document.getElementById('gs-results');
+  if (!el) return;
+  if (!q) {
+    el.innerHTML = '<div class="empty" style="padding:30px 10px"><i data-lucide="search"></i><p>Digite para buscar</p></div>';
+    lucide.createIcons();
+    return;
+  }
+
+  const matches = [];
+
+  // Affiliates
+  (STATE.affiliates || []).forEach(a => {
+    if (a.name.toLowerCase().includes(q) || (a.contactEmail || '').toLowerCase().includes(q)) {
+      matches.push({ type: 'Afiliado', icon: 'user', color: '#ec4899', label: a.name, sub: a.contactEmail || '', action: `closeModal();openAffDetail('${a.id}')` });
+    }
+  });
+
+  // Brands
+  Object.keys(STATE.brands || {}).forEach(b => {
+    if (b.toLowerCase().includes(q)) {
+      matches.push({ type: 'Marca', icon: 'tag', color: STATE.brands[b]?.color || '#888', label: b, sub: 'Parceiro', action: `closeModal();openMod('brands')` });
+    }
+  });
+
+  // Payments
+  (STATE.payments || []).forEach(p => {
+    if ((p.affiliate || '').toLowerCase().includes(q) || (p.contract || '').toLowerCase().includes(q)) {
+      matches.push({ type: 'Pagamento', icon: 'banknote', color: '#f59e0b', label: `${p.affiliate} — ${fc(p.amount)}`, sub: `${p.brand} · ${p.contract}`, action: `closeModal();openMod('payments')` });
+    }
+  });
+
+  // Tasks
+  (STATE.tasks || []).forEach(t => {
+    if ((t.title || '').toLowerCase().includes(q)) {
+      matches.push({ type: 'Tarefa', icon: 'check-square', color: '#3b82f6', label: t.title, sub: `${t.assignee || ''} · ${t.status}`, action: `closeModal();openMod('tasks')` });
+    }
+  });
+
+  // Closings
+  (STATE.closings || []).forEach(c => {
+    if ((c.affiliateName || '').toLowerCase().includes(q)) {
+      matches.push({ type: 'Fechamento', icon: 'file-text', color: '#a855f7', label: `${c.affiliateName} · ${c.brand}`, sub: `${c.monthLabel} · ${fc(c.commission)}`, action: `closeModal();openMod('payments')` });
+    }
+  });
+
+  if (!matches.length) {
+    el.innerHTML = '<div class="empty" style="padding:30px 10px"><i data-lucide="search-x"></i><p>Nenhum resultado para "' + q + '"</p></div>';
+    lucide.createIcons();
+    return;
+  }
+
+  el.innerHTML = matches.slice(0, 30).map(m => `
+    <div class="gs-item" onclick="${m.action}">
+      <div class="gs-icon" style="background:${m.color}20;color:${m.color}"><i data-lucide="${m.icon}"></i></div>
+      <div class="gs-info">
+        <div class="gs-label">${m.label}</div>
+        <div class="gs-sub">${m.sub}</div>
+      </div>
+      <span class="gs-type" style="color:${m.color}">${m.type}</span>
+    </div>
+  `).join('');
+  lucide.createIcons();
+};
+
+// Keyboard shortcut: Ctrl+K / Cmd+K opens global search
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k' && isLab()) {
+    e.preventDefault();
+    openGlobalSearch();
+  }
+});
