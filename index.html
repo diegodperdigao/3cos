@@ -190,6 +190,16 @@ body::before {
   display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);}
 [data-theme="light"] .hub-notif-badge { border-color: #fff; }
 
+/* Lab button in header */
+.hub-lab-btn{position:relative;}
+.hub-lab-btn svg{stroke:#ec4899;transition:all 0.3s;}
+.hub-lab-btn:hover svg{stroke:#a855f7;transform:rotate(-10deg) scale(1.1);}
+.hub-lab-dot{position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;
+  background:linear-gradient(135deg,#ec4899,#a855f7);border:2px solid var(--bg);
+  box-shadow:0 0 8px rgba(236,72,153,0.6);animation:labPulse 2s ease-in-out infinite;}
+[data-theme="light"] .hub-lab-dot{border-color:#fff;}
+@keyframes labPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:0.8}}
+
 .hub-user-name{font-size:12px;font-weight:600;color:var(--text);}
 .hub-user-role{font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--theme);display:block;margin-top:1px;}
 
@@ -624,7 +634,7 @@ td{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-ali
 .user-grid{display:flex;flex-direction:column;gap:10px;}
 
 /* ── LAB / BETA FEATURES ── */
-.lab-wrap{border:1px solid var(--gb);border-radius:16px;overflow:hidden;margin-top:18px;
+.lab-wrap{border:1px solid var(--gb);border-radius:16px;overflow:hidden;
   background:linear-gradient(135deg,rgba(236,72,153,0.04),rgba(168,85,247,0.03));}
 [data-theme="light"] .lab-wrap{background:linear-gradient(135deg,rgba(236,72,153,0.05),rgba(168,85,247,0.04));}
 .lab-hdr{padding:16px 20px;border-bottom:1px solid var(--gb);display:flex;align-items:center;gap:10px;}
@@ -1099,6 +1109,10 @@ textarea.fi{resize:vertical;min-height:60px;}
       <div class="hub-wordmark">3C<em>OS</em></div>
     </div>
     <div class="hub-bar-r">
+      <button class="hub-icon-btn hub-lab-btn" onclick="openLabModal()" id="hub-lab-btn" title="Lab — Recursos Beta">
+        <i data-lucide="sparkles"></i>
+        <div class="hub-lab-dot" id="hub-lab-dot" style="display:none"></div>
+      </button>
       <button class="hub-icon-btn" onclick="toggleActionCenter()" id="hub-notif-btn">
         <i data-lucide="bell"></i>
         <div class="hub-notif-badge" id="hub-notif-count" style="display:none">0</div>
@@ -1498,7 +1512,7 @@ function showHub(){
     document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
     const hub=document.getElementById('hub');hub.style.display='flex';
     setTimeout(()=>hub.style.opacity='1',50);
-    buildHubCards(); updateNotifBadge();
+    buildHubCards(); updateNotifBadge(); updateLabDot();
     initMosaics();lucide.createIcons();
   },650);
 }
@@ -2688,10 +2702,6 @@ function bUsers(el){
           <button class="btn btn-outline" onclick="testEmailJS()"><i data-lucide="send"></i> Testar</button>
         </div>
       </div>
-
-      <!-- LAB — Beta Features -->
-      ${renderLabPanel()}
-
     </div></div>`;
   lucide.createIcons();
 }
@@ -2750,14 +2760,35 @@ function renderLabPanel(){
 window.toggleLabFlag=(key,value)=>{
   if(!STATE.labFlags)STATE.labFlags={};
   STATE.labFlags[key]=value;
-  logAction('Lab flag alterada',`${key} = ${value?'ON':'OFF'}`);
+  logAction('[BETA] Lab flag alterada',`${key} = ${value?'ON':'OFF'}`);
   saveToLocal();
   toast(`${LAB_FEATURES.find(f=>f.key===key)?.name}: ${value?'ativado':'desativado'}`);
+  updateLabDot();
   // Re-render current module if it's affected by this flag
   const currentMod=document.querySelector('.mod.active')?.id?.replace('mod-','');
   if(currentMod&&['affiliates','dashboard','users'].includes(currentMod)){
     openMod(currentMod);
   }
+  // Re-render the modal if it's the Lab modal (to reflect the new toggle state)
+  const modalOv=document.getElementById('modal-ov');
+  const title=document.getElementById('mttl')?.textContent||'';
+  if(modalOv?.classList.contains('open')&&title.includes('Lab')){
+    document.getElementById('mbd').innerHTML=renderLabPanel();
+    lucide.createIcons();
+  }
+};
+
+window.openLabModal=()=>{
+  openModal('Lab — Recursos Experimentais',renderLabPanel(),
+    `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+  lucide.createIcons();
+};
+
+window.updateLabDot=()=>{
+  const dot=document.getElementById('hub-lab-dot');
+  if(!dot)return;
+  const anyActive=Object.values(STATE.labFlags||{}).some(v=>v===true);
+  dot.style.display=anyActive?'block':'none';
 };
 
 // ══════════════════════════════════════════════════════════
