@@ -93,11 +93,16 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="hub-wordmark">3C<em>OS</em></div>
     </div>
     <div class="hub-bar-r">
-      <button class="search-pill" onclick="openGlobalSearch()" title="Buscar (Ctrl+K)">
-        <i data-lucide="search"></i>
-        <span class="search-pill-txt">Buscar...</span>
-        <span class="search-pill-kbd"><kbd>⌘</kbd><kbd>K</kbd></span>
-      </button>
+      <div class="search-pill" onclick="focusSearchInput(this)">
+        <i data-lucide="search" class="search-pill-icon"></i>
+        <input type="text" class="search-pill-input" placeholder="Buscar..."
+               oninput="onSearchInput(event)"
+               onfocus="onSearchFocus(event)"
+               onkeydown="onSearchKeydown(event)"
+               autocomplete="off">
+        <span class="search-pill-hint">Ctrl K</span>
+        <div class="search-panel"></div>
+      </div>
       <button class="hub-icon-btn hub-lab-btn" onclick="toggleBetaMode()" id="hub-lab-btn" title="Modo Beta — clique para ativar recursos experimentais">
         <i data-lucide="zap"></i>
       </button>
@@ -158,25 +163,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
     <div class="modal-bd" id="mbd"></div>
     <div class="modal-ft" id="mft"></div>
-  </div>
-</div>
-
-<!-- COMMAND PALETTE (Global Search) -->
-<div id="cmdk-overlay" onclick="if(event.target===this)closeGlobalSearch()">
-  <div class="cmdk-box" role="dialog" aria-label="Busca global">
-    <div class="cmdk-input-wrap">
-      <i data-lucide="search" class="cmdk-input-icon"></i>
-      <input type="text" id="cmdk-input" class="cmdk-input"
-             placeholder="Buscar afiliados, pagamentos, fechamentos, marcas, tarefas..."
-             oninput="cmdkSearchInput(this.value)" autocomplete="off">
-      <button class="cmdk-close" onclick="closeGlobalSearch()" title="Fechar"><kbd>esc</kbd></button>
-    </div>
-    <div id="cmdk-results" class="cmdk-results"></div>
-    <div class="cmdk-footer">
-      <div class="cmdk-footer-hint"><kbd>↵</kbd> abrir</div>
-      <div class="cmdk-footer-hint"><kbd>esc</kbd> fechar</div>
-      <div class="cmdk-footer-brand">Busca Global · 3C OS</div>
-    </div>
   </div>
 </div>
 

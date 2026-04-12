@@ -631,11 +631,16 @@ function modHdr(label){
     <div class="mod-hdr-sep"></div>
     <div class="mod-hdr-name">${label}</div>
     <div class="mod-hdr-r">
-      <button class="search-pill search-pill-sm" onclick="openGlobalSearch()" title="Buscar (Ctrl+K)">
-        <i data-lucide="search"></i>
-        <span class="search-pill-txt">Buscar...</span>
-        <span class="search-pill-kbd"><kbd>⌘</kbd><kbd>K</kbd></span>
-      </button>
+      <div class="search-pill search-pill-sm" onclick="focusSearchInput(this)">
+        <i data-lucide="search" class="search-pill-icon"></i>
+        <input type="text" class="search-pill-input" placeholder="Buscar..."
+               oninput="onSearchInput(event)"
+               onfocus="onSearchFocus(event)"
+               onkeydown="onSearchKeydown(event)"
+               autocomplete="off">
+        <span class="search-pill-hint">Ctrl K</span>
+        <div class="search-panel"></div>
+      </div>
       <div class="sync-dot"></div><span class="sync-txt">Cloud Sync</span>
       <button class="hdr-btn hdr-lab-btn" onclick="toggleBetaMode()" title="Modo Beta — clique para ativar recursos experimentais"><i data-lucide="zap"></i></button>
       <button class="hdr-btn" onclick="toggleActionCenter()"><i data-lucide="bell"></i></button>

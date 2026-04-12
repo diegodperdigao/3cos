@@ -1,13 +1,12 @@
 // ══════════════════════════════════════════════════════════
-// GLOBAL SEARCH — Command Palette (Cmd+K / Ctrl+K)
+// GLOBAL SEARCH — Inline pill with anchored dropdown panel
 // ══════════════════════════════════════════════════════════
-// UX pattern: Linear / Raycast / GitHub / Notion command palette.
-// - Pill-shaped trigger button in every header
-// - Click or Ctrl+K opens a centered overlay
-// - Live search with grouped, highlighted results
-// - Click result navigates, Escape closes
+// UX: click the pill → input is focused → type → results
+// appear in a panel anchored directly below the pill.
+// No modal, no overlay — the pill IS the search.
 //
-// Indexes 8 entity types across the whole app state.
+// Ctrl+K / Cmd+K focuses the visible pill's input from anywhere.
+// Escape blurs and closes. Click outside the pill closes.
 // ══════════════════════════════════════════════════════════
 
 const GS_GROUPS = [
@@ -48,7 +47,7 @@ window.performGlobalSearch = (query) => {
         title: a.name,
         subtitle: `${ct}${brandList ? ' · ' + brandList : ''}${a.contactEmail ? ' · ' + a.contactEmail : ''}`,
         meta: fc(a.commission || 0),
-        action: `closeGlobalSearch();openMod('affiliates');setTimeout(()=>openAffDetail('${a.id}'),320)`,
+        action: `closeSearchPanel();openMod('affiliates');setTimeout(()=>openAffDetail('${a.id}'),320)`,
       });
     }
   });
@@ -61,7 +60,7 @@ window.performGlobalSearch = (query) => {
         title: name,
         subtitle: `${b.type || 'standard'} · CPA R$${b.cpa || 0} · RS ${b.rs || 0}%${levelsStr ? ' · escalonado' : ''}`,
         color: b.color,
-        action: `closeGlobalSearch();openMod('brands')`,
+        action: `closeSearchPanel();openMod('brands')`,
       });
     }
   });
@@ -74,7 +73,7 @@ window.performGlobalSearch = (query) => {
         subtitle: `${c.affiliate} · ${c.brand} · ${c.type}`,
         meta: fc(c.value),
         status: c.paymentStatus,
-        action: `closeGlobalSearch();openMod('affiliates');setTimeout(()=>openAffDetail('${c.affiliateId}'),320)`,
+        action: `closeSearchPanel();openMod('affiliates');setTimeout(()=>openAffDetail('${c.affiliateId}'),320)`,
       });
     }
   });
@@ -87,7 +86,7 @@ window.performGlobalSearch = (query) => {
         subtitle: `${p.brand}${p.type ? ' · ' + p.type : ''}${p.nfName ? ' · 📎 ' + p.nfName : ''}${p.dueDate ? ' · venc. ' + new Date(p.dueDate).toLocaleDateString('pt-BR') : ''}`,
         meta: fc(p.amount),
         status: p.status,
-        action: `closeGlobalSearch();openMod('payments')`,
+        action: `closeSearchPanel();openMod('payments')`,
       });
     }
   });
@@ -101,7 +100,7 @@ window.performGlobalSearch = (query) => {
         subtitle: `${c.monthLabel}${ct ? ' · ' + ct : ''} · ${c.ftds} FTDs${c.createdBy ? ' · por ' + c.createdBy : ''}`,
         meta: fc(c.commission),
         status: c.paymentStatus,
-        action: `closeGlobalSearch();openMod('payments')`,
+        action: `closeSearchPanel();openMod('payments')`,
       });
     }
   });
@@ -113,7 +112,7 @@ window.performGlobalSearch = (query) => {
       results.tasks.push({
         title: t.title,
         subtitle: `${t.assignee || 'sem responsável'} · ${t.priority} · ${t.status}${aff ? ' · ' + aff.name : ''}${t.dueDate ? ' · ' + new Date(t.dueDate).toLocaleDateString('pt-BR') : ''}`,
-        action: `closeGlobalSearch();openMod('tasks')`,
+        action: `closeSearchPanel();openMod('tasks')`,
       });
     }
   });
@@ -126,7 +125,7 @@ window.performGlobalSearch = (query) => {
         title: `${r.brand} · ${aff?.name || 'Afiliado'}`,
         subtitle: `${new Date(r.date).toLocaleDateString('pt-BR')} · ${r.ftd} FTDs · ${r.qftd} QFTDs · Net R$${r.netRev}`,
         meta: fc(r.deposits),
-        action: `closeGlobalSearch();openMod('dashboard')`,
+        action: `closeSearchPanel();openMod('dashboard')`,
       });
     }
   });
@@ -137,7 +136,7 @@ window.performGlobalSearch = (query) => {
       results.users.push({
         title: u.name,
         subtitle: `${u.email} · ${u.role}${u.status ? ' · ' + u.status : ''}`,
-        action: `closeGlobalSearch();openMod('users')`,
+        action: `closeSearchPanel();openMod('users')`,
       });
     }
   });
@@ -154,24 +153,23 @@ function gsHighlight(text, query) {
   let out = String(text);
   terms.forEach(t => {
     const re = new RegExp(`(${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    out = out.replace(re, '<mark class="cmdk-hl">$1</mark>');
+    out = out.replace(re, '<mark class="search-hl">$1</mark>');
   });
   return out;
 }
 
 // ── Render results HTML ──
-function renderCmdKResults(query) {
+function renderSearchResults(query) {
   if (!query.trim()) {
     return `
-      <div class="cmdk-hint">
-        <div class="cmdk-hint-title">Comece a digitar</div>
-        <div class="cmdk-hint-desc">Busca em afiliados, marcas, pagamentos, fechamentos, contratos, tarefas, lançamentos e usuários.</div>
-        <div class="cmdk-hint-examples">
+      <div class="search-hint">
+        <div class="search-hint-title">Comece a digitar</div>
+        <div class="search-hint-desc">Busca em afiliados, marcas, pagamentos, fechamentos, contratos, tarefas e lançamentos.</div>
+        <div class="search-hint-examples">
           <span>fmg</span>
           <span>fechamento vupi</span>
           <span>pendente</span>
           <span>março</span>
-          <span>NF_3001</span>
         </div>
       </div>`;
   }
@@ -180,40 +178,39 @@ function renderCmdKResults(query) {
 
   if (!total) {
     return `
-      <div class="cmdk-empty">
+      <div class="search-empty">
         <i data-lucide="search-x"></i>
-        <div class="cmdk-empty-title">Nenhum resultado</div>
-        <div class="cmdk-empty-sub">Nada encontrado para <strong>"${query}"</strong></div>
+        <div class="search-empty-title">Nenhum resultado</div>
+        <div class="search-empty-sub">Nada encontrado para <strong>"${query}"</strong></div>
       </div>`;
   }
 
-  let html = `<div class="cmdk-total">${total} resultado${total > 1 ? 's' : ''}</div>`;
+  let html = `<div class="search-total">${total} resultado${total > 1 ? 's' : ''}</div>`;
 
   GS_GROUPS.forEach(g => {
     const items = results[g.key];
     if (!items || !items.length) return;
     html += `
-      <div class="cmdk-group">
-        <div class="cmdk-group-hdr">
-          <span class="cmdk-group-name">${g.name}</span>
-          <span class="cmdk-group-count">${items.length}</span>
+      <div class="search-group">
+        <div class="search-group-hdr">
+          <span class="search-group-name">${g.name}</span>
+          <span class="search-group-count">${items.length}</span>
         </div>
-        <div class="cmdk-group-items">
-          ${items.slice(0, 6).map(item => `
-            <div class="cmdk-item" onclick="${item.action}">
-              <div class="cmdk-icon" style="background:${item.color || g.color}18;color:${item.color || g.color}">
+        <div class="search-group-items">
+          ${items.slice(0, 5).map(item => `
+            <div class="search-item" onmousedown="event.preventDefault();${item.action}">
+              <div class="search-icon" style="background:${item.color || g.color}18;color:${item.color || g.color}">
                 <i data-lucide="${g.icon}"></i>
               </div>
-              <div class="cmdk-info">
-                <div class="cmdk-title">${gsHighlight(item.title, query)}</div>
-                <div class="cmdk-sub">${gsHighlight(item.subtitle || '', query)}</div>
+              <div class="search-info">
+                <div class="search-title">${gsHighlight(item.title, query)}</div>
+                <div class="search-sub">${gsHighlight(item.subtitle || '', query)}</div>
               </div>
-              ${item.meta ? `<div class="cmdk-meta">${item.meta}</div>` : ''}
+              ${item.meta ? `<div class="search-meta">${item.meta}</div>` : ''}
               ${item.status ? `<span class="pb pb-${item.status}" style="margin-left:8px">${typeof pl==='function'?pl(item.status):item.status}</span>` : ''}
-              <i data-lucide="arrow-right" class="cmdk-item-arrow"></i>
             </div>
           `).join('')}
-          ${items.length > 6 ? `<div class="cmdk-more">+${items.length - 6} mais em ${g.name}</div>` : ''}
+          ${items.length > 5 ? `<div class="search-more">+${items.length - 5} mais em ${g.name}</div>` : ''}
         </div>
       </div>`;
   });
@@ -221,69 +218,95 @@ function renderCmdKResults(query) {
   return html;
 }
 
-// ── Open/close palette ──
-window.openGlobalSearch = () => {
-  const overlay = document.getElementById('cmdk-overlay');
-  if (!overlay) return;
-  overlay.classList.add('open');
-  document.body.style.overflow = 'hidden';
-  const input = document.getElementById('cmdk-input');
-  if (input) {
-    input.value = '';
-    // Initial render (hint state)
-    const el = document.getElementById('cmdk-results');
-    if (el) {
-      el.innerHTML = renderCmdKResults('');
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-    setTimeout(() => input.focus(), 50);
+// ── Find the active/visible search pill ──
+function getVisibleSearchPill() {
+  // Prefer the pill inside the currently active module header
+  const activeMod = document.querySelector('.mod.active .search-pill');
+  if (activeMod) return activeMod;
+  // Fall back to the hub pill
+  const hub = document.getElementById('hub');
+  if (hub && hub.style.display === 'flex') {
+    return hub.querySelector('.search-pill');
   }
+  return document.querySelector('.search-pill');
+}
+
+// ── Focus the input inside a pill ──
+window.focusSearchInput = (pillEl) => {
+  const input = pillEl?.querySelector('.search-pill-input');
+  if (input) input.focus();
 };
 
-window.closeGlobalSearch = () => {
-  const overlay = document.getElementById('cmdk-overlay');
-  if (!overlay) return;
-  overlay.classList.remove('open');
-  document.body.style.overflow = '';
-  const input = document.getElementById('cmdk-input');
-  if (input) input.value = '';
+// ── Show panel for a given pill, render with current query ──
+function showSearchPanel(pillEl, query) {
+  if (!pillEl) return;
+  pillEl.classList.add('active');
+  const panel = pillEl.querySelector('.search-panel');
+  if (!panel) return;
+  panel.innerHTML = renderSearchResults(query || '');
+  panel.classList.add('open');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// ── Close all open panels ──
+window.closeSearchPanel = () => {
+  document.querySelectorAll('.search-pill').forEach(pill => {
+    pill.classList.remove('active');
+    const panel = pill.querySelector('.search-panel');
+    if (panel) panel.classList.remove('open');
+    const input = pill.querySelector('.search-pill-input');
+    if (input) input.value = '';
+  });
 };
 
-// ── Live input handler (debounced) ──
-let _cmdkTimer = null;
-window.cmdkSearchInput = (value) => {
-  clearTimeout(_cmdkTimer);
-  _cmdkTimer = setTimeout(() => {
-    const el = document.getElementById('cmdk-results');
-    if (!el) return;
-    el.innerHTML = renderCmdKResults(value);
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+// ── Event handlers wired to the input ──
+let _searchTimer = null;
+window.onSearchInput = (event) => {
+  const input = event.target;
+  const pill = input.closest('.search-pill');
+  if (!pill) return;
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => {
+    showSearchPanel(pill, input.value);
   }, 80);
 };
 
-// ── Keyboard shortcuts ──
+window.onSearchFocus = (event) => {
+  const input = event.target;
+  const pill = input.closest('.search-pill');
+  if (!pill) return;
+  showSearchPanel(pill, input.value);
+};
+
+window.onSearchKeydown = (event) => {
+  const input = event.target;
+  const pill = input.closest('.search-pill');
+  if (!pill) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    input.value = '';
+    input.blur();
+    closeSearchPanel();
+  }
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const firstItem = pill.querySelector('.search-panel .search-item');
+    if (firstItem) firstItem.dispatchEvent(new MouseEvent('mousedown'));
+  }
+};
+
+// ── Click outside closes any open panel ──
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-pill')) {
+    closeSearchPanel();
+  }
+});
+
+// ── Ctrl+K / Cmd+K focuses the visible pill ──
 document.addEventListener('keydown', (e) => {
-  // Ctrl+K / Cmd+K opens (or closes if already open)
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault();
-    const overlay = document.getElementById('cmdk-overlay');
-    if (overlay?.classList.contains('open')) closeGlobalSearch();
-    else openGlobalSearch();
-  }
-  // Escape closes the palette
-  if (e.key === 'Escape') {
-    const overlay = document.getElementById('cmdk-overlay');
-    if (overlay?.classList.contains('open')) {
-      e.preventDefault();
-      closeGlobalSearch();
-    }
-  }
-  // Enter opens first result
-  if (e.key === 'Enter') {
-    const overlay = document.getElementById('cmdk-overlay');
-    if (overlay?.classList.contains('open')) {
-      const firstItem = document.querySelector('#cmdk-results .cmdk-item');
-      if (firstItem) firstItem.click();
-    }
+    const pill = getVisibleSearchPill();
+    if (pill) focusSearchInput(pill);
   }
 });
