@@ -18,8 +18,7 @@ window.labBadge = labBadge;
 const BETA_FEATURES_ACTIVE = [
   'Tags Coloridas',
   'Último Contato',
-  'Smart Lists',
-  'Busca Global (Ctrl+K)'
+  'Smart Lists'
 ];
 
 window.toggleBetaMode = () => {
@@ -134,99 +133,4 @@ window.applySmartList = (key) => {
   return sl ? sl.compute(list) : list;
 };
 
-// ══════════════════════════════════════════════════════════
-// BETA: Global Search (Ctrl+K / Cmd+K)
-// ══════════════════════════════════════════════════════════
-window.openGlobalSearch = () => {
-  if (!isLab()) return;
-  openModal('Busca Global ' + labBadge(), `
-    <div style="margin-bottom:14px">
-      <input class="fi" id="gs-input" placeholder="Digite para buscar afiliados, marcas, pagamentos, tarefas..." style="font-size:14px;padding:12px 14px" autofocus>
-    </div>
-    <div id="gs-results" style="max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
-      <div class="empty" style="padding:30px 10px"><i data-lucide="search"></i><p>Digite para buscar</p></div>
-    </div>
-  `, `<button class="btn btn-ghost" onclick="closeModal()">Fechar (Esc)</button>`);
-  lucide.createIcons();
-  setTimeout(() => {
-    const input = document.getElementById('gs-input');
-    if (input) {
-      input.focus();
-      input.addEventListener('input', runGlobalSearch);
-    }
-  }, 50);
-};
-
-window.runGlobalSearch = (e) => {
-  const q = (e?.target?.value || '').trim().toLowerCase();
-  const el = document.getElementById('gs-results');
-  if (!el) return;
-  if (!q) {
-    el.innerHTML = '<div class="empty" style="padding:30px 10px"><i data-lucide="search"></i><p>Digite para buscar</p></div>';
-    lucide.createIcons();
-    return;
-  }
-
-  const matches = [];
-
-  // Affiliates
-  (STATE.affiliates || []).forEach(a => {
-    if (a.name.toLowerCase().includes(q) || (a.contactEmail || '').toLowerCase().includes(q)) {
-      matches.push({ type: 'Afiliado', icon: 'user', color: '#ec4899', label: a.name, sub: a.contactEmail || '', action: `closeModal();openAffDetail('${a.id}')` });
-    }
-  });
-
-  // Brands
-  Object.keys(STATE.brands || {}).forEach(b => {
-    if (b.toLowerCase().includes(q)) {
-      matches.push({ type: 'Marca', icon: 'tag', color: STATE.brands[b]?.color || '#888', label: b, sub: 'Parceiro', action: `closeModal();openMod('brands')` });
-    }
-  });
-
-  // Payments
-  (STATE.payments || []).forEach(p => {
-    if ((p.affiliate || '').toLowerCase().includes(q) || (p.contract || '').toLowerCase().includes(q)) {
-      matches.push({ type: 'Pagamento', icon: 'banknote', color: '#f59e0b', label: `${p.affiliate} — ${fc(p.amount)}`, sub: `${p.brand} · ${p.contract}`, action: `closeModal();openMod('payments')` });
-    }
-  });
-
-  // Tasks
-  (STATE.tasks || []).forEach(t => {
-    if ((t.title || '').toLowerCase().includes(q)) {
-      matches.push({ type: 'Tarefa', icon: 'check-square', color: '#3b82f6', label: t.title, sub: `${t.assignee || ''} · ${t.status}`, action: `closeModal();openMod('tasks')` });
-    }
-  });
-
-  // Closings
-  (STATE.closings || []).forEach(c => {
-    if ((c.affiliateName || '').toLowerCase().includes(q)) {
-      matches.push({ type: 'Fechamento', icon: 'file-text', color: '#a855f7', label: `${c.affiliateName} · ${c.brand}`, sub: `${c.monthLabel} · ${fc(c.commission)}`, action: `closeModal();openMod('payments')` });
-    }
-  });
-
-  if (!matches.length) {
-    el.innerHTML = '<div class="empty" style="padding:30px 10px"><i data-lucide="search-x"></i><p>Nenhum resultado para "' + q + '"</p></div>';
-    lucide.createIcons();
-    return;
-  }
-
-  el.innerHTML = matches.slice(0, 30).map(m => `
-    <div class="gs-item" onclick="${m.action}">
-      <div class="gs-icon" style="background:${m.color}20;color:${m.color}"><i data-lucide="${m.icon}"></i></div>
-      <div class="gs-info">
-        <div class="gs-label">${m.label}</div>
-        <div class="gs-sub">${m.sub}</div>
-      </div>
-      <span class="gs-type" style="color:${m.color}">${m.type}</span>
-    </div>
-  `).join('');
-  lucide.createIcons();
-};
-
-// Keyboard shortcut: Ctrl+K / Cmd+K opens global search
-document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k' && isLab()) {
-    e.preventDefault();
-    openGlobalSearch();
-  }
-});
+// Global Search lives in js/search.js now (not beta — always available)

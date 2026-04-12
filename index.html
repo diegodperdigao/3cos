@@ -116,6 +116,21 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="hub-id-tagline">CRM & Gestão</div>
       <div class="hub-greeting" id="hub-greeting">Selecione o módulo de trabalho</div>
     </div>
+
+    <!-- GLOBAL SEARCH -->
+    <div class="hub-search-wrap">
+      <div class="hub-search-box">
+        <i data-lucide="search" class="hub-search-icon"></i>
+        <input type="text" class="hub-search-input" id="hub-global-search"
+               placeholder="Buscar afiliados, pagamentos, fechamentos, marcas, tarefas..."
+               oninput="hubSearchInput(this.value)"
+               onfocus="showHubSearchResults()">
+        <button class="hub-search-clear" onclick="clearHubSearch()" title="Limpar"><i data-lucide="x"></i></button>
+        <div class="hub-search-kbd"><kbd>Ctrl</kbd><kbd>K</kbd></div>
+      </div>
+      <div class="hub-search-results" id="hub-search-results"></div>
+    </div>
+
     <div class="hub-apps-label hub-desktop-only">Módulos disponíveis</div>
     <div class="hub-apps hub-desktop-only" id="hub-cards"></div>
     <!-- Mobile Home: Tasks + Notifications -->
@@ -170,6 +185,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 <script src="js/app.js"></script>
 <!-- Lab (feature flag system) -->
 <script src="js/lab.js"></script>
+<!-- Global Search (unified search engine) -->
+<script src="js/search.js"></script>
 <!-- Modules -->
 <script src="js/dashboard.js"></script>
 <script src="js/affiliates.js"></script>
