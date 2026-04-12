@@ -191,9 +191,13 @@ body::before {
 [data-theme="light"] .hub-notif-badge { border-color: #fff; }
 
 /* Lab button in hub header + module header */
-.hub-lab-btn,.hdr-lab-btn{position:relative;}
+.hub-lab-btn,.hdr-lab-btn{position:relative;background:linear-gradient(135deg,rgba(236,72,153,0.18),rgba(168,85,247,0.18)) !important;
+  border-color:rgba(236,72,153,0.4) !important;font-weight:700;letter-spacing:0.08em;}
 .hub-lab-btn svg,.hdr-lab-btn svg{stroke:#ec4899 !important;transition:all 0.3s;}
+.hub-lab-btn:hover,.hdr-lab-btn:hover{background:linear-gradient(135deg,rgba(236,72,153,0.28),rgba(168,85,247,0.28)) !important;
+  border-color:rgba(236,72,153,0.6) !important;}
 .hub-lab-btn:hover svg,.hdr-lab-btn:hover svg{stroke:#a855f7 !important;transform:rotate(-10deg) scale(1.1);}
+.hub-lab-txt,.hdr-lab-txt{font-size:9px;font-weight:800;color:#ec4899;letter-spacing:0.1em;}
 .hub-lab-dot,.hdr-lab-dot{position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;
   background:linear-gradient(135deg,#ec4899,#a855f7);border:2px solid var(--bg);
   box-shadow:0 0 8px rgba(236,72,153,0.6);animation:labPulse 2s ease-in-out infinite;}
@@ -1109,8 +1113,9 @@ textarea.fi{resize:vertical;min-height:60px;}
       <div class="hub-wordmark">3C<em>OS</em></div>
     </div>
     <div class="hub-bar-r">
-      <button class="hub-icon-btn hub-lab-btn" onclick="openLabModal()" id="hub-lab-btn" title="Lab — Recursos Beta">
-        <i data-lucide="sparkles"></i>
+      <button class="hub-icon-btn hub-lab-btn" onclick="openLabModal()" id="hub-lab-btn" title="Lab — Recursos Beta" style="padding:6px 12px;gap:6px">
+        <i data-lucide="zap"></i>
+        <span class="hub-lab-txt">LAB</span>
         <div class="hub-lab-dot" id="hub-lab-dot" style="display:none"></div>
       </button>
       <button class="hub-icon-btn" onclick="toggleActionCenter()" id="hub-notif-btn">
@@ -1581,7 +1586,7 @@ function modHdr(label){
     <div class="mod-hdr-name">${label}</div>
     <div class="mod-hdr-r">
       <div class="sync-dot"></div><span class="sync-txt">Cloud Sync</span>
-      <button class="hdr-btn hdr-lab-btn" onclick="openLabModal()" title="Lab — Recursos Beta"><i data-lucide="sparkles"></i><div class="hdr-lab-dot" style="display:none"></div></button>
+      <button class="hdr-btn hdr-lab-btn" onclick="openLabModal()" title="Lab — Recursos Beta"><i data-lucide="zap"></i><span class="hdr-lab-txt">LAB</span><div class="hdr-lab-dot" style="display:none"></div></button>
       <button class="hdr-btn" onclick="toggleActionCenter()"><i data-lucide="bell"></i></button>
       <button class="hdr-btn" onclick="toggleTheme()"><i data-lucide="sun"></i></button>
       <button class="hdr-btn" onclick="goBack()"><i data-lucide="grid"></i> Hub</button>
@@ -2725,7 +2730,7 @@ function renderLabPanel(){
   return `
   <div class="lab-wrap">
     <div class="lab-hdr">
-      <div class="lab-hdr-icon"><i data-lucide="sparkles"></i></div>
+      <div class="lab-hdr-icon"><i data-lucide="zap"></i></div>
       <div>
         <div class="lab-title">Lab — Recursos Experimentais ${labBadge()}</div>
         <div class="lab-sub">Ative recursos novos antes do lançamento oficial. Feedback é bem-vindo!</div>
