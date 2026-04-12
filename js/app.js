@@ -626,14 +626,16 @@ function initMosaics(){
 function modHdr(label){
   setTimeout(()=>{if(window.updateLabButton)updateLabButton();},10);
   return `<div class="mod-hdr">
-    <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
-    <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
-    <div class="mod-hdr-sep"></div>
-    <div class="mod-hdr-name">${label}</div>
-    <div class="mod-hdr-r">
+    <div class="mod-hdr-l">
+      <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
+      <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
+      <div class="mod-hdr-sep"></div>
+      <div class="mod-hdr-name">${label}</div>
+    </div>
+    <div class="mod-hdr-c">
       <div class="search-pill search-pill-sm" onclick="focusSearchInput(this)">
         <i data-lucide="search" class="search-pill-icon"></i>
-        <input type="text" class="search-pill-input" placeholder="Buscar..."
+        <input type="text" class="search-pill-input" placeholder="Buscar em tudo..."
                oninput="onSearchInput(event)"
                onfocus="onSearchFocus(event)"
                onkeydown="onSearchKeydown(event)"
@@ -641,6 +643,8 @@ function modHdr(label){
         <span class="search-pill-hint">Ctrl K</span>
         <div class="search-panel"></div>
       </div>
+    </div>
+    <div class="mod-hdr-r">
       <div class="sync-dot"></div><span class="sync-txt">Cloud Sync</span>
       <button class="hdr-btn hdr-lab-btn" onclick="toggleBetaMode()" title="Modo Beta — clique para ativar recursos experimentais"><i data-lucide="zap"></i></button>
       <button class="hdr-btn" onclick="toggleActionCenter()"><i data-lucide="bell"></i></button>

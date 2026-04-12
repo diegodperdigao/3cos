@@ -160,46 +160,58 @@ function gsHighlight(text, query) {
 
 // ── Render results HTML ──
 function renderSearchResults(query) {
+  const footer = `
+    <div class="search-footer">
+      <div class="search-footer-hint"><kbd>↵</kbd> abrir</div>
+      <div class="search-footer-hint"><kbd>esc</kbd> fechar</div>
+      <div class="search-footer-brand">Busca · 3C OS</div>
+    </div>`;
+
   if (!query.trim()) {
     return `
-      <div class="search-hint">
-        <div class="search-hint-title">Comece a digitar</div>
-        <div class="search-hint-desc">Busca em afiliados, marcas, pagamentos, fechamentos, contratos, tarefas e lançamentos.</div>
-        <div class="search-hint-examples">
-          <span>fmg</span>
-          <span>fechamento vupi</span>
-          <span>pendente</span>
-          <span>março</span>
+      <div class="search-panel-body">
+        <div class="search-hint">
+          <div class="search-hint-title">Comece a digitar</div>
+          <div class="search-hint-desc">Busca em afiliados, marcas, pagamentos, fechamentos, contratos, tarefas e lançamentos.</div>
+          <div class="search-hint-examples">
+            <span>fmg</span>
+            <span>fechamento vupi</span>
+            <span>pendente</span>
+            <span>março</span>
+          </div>
         </div>
-      </div>`;
+      </div>${footer}`;
   }
 
   const { results, total } = performGlobalSearch(query);
 
   if (!total) {
     return `
-      <div class="search-empty">
-        <i data-lucide="search-x"></i>
-        <div class="search-empty-title">Nenhum resultado</div>
-        <div class="search-empty-sub">Nada encontrado para <strong>"${query}"</strong></div>
-      </div>`;
+      <div class="search-panel-body">
+        <div class="search-empty">
+          <i data-lucide="search-x"></i>
+          <div class="search-empty-title">Nenhum resultado</div>
+          <div class="search-empty-sub">Nada encontrado para <strong>"${query}"</strong></div>
+        </div>
+      </div>${footer}`;
   }
 
-  let html = `<div class="search-total">${total} resultado${total > 1 ? 's' : ''}</div>`;
+  let body = `<div class="search-total">${total} resultado${total > 1 ? 's' : ''} encontrado${total > 1 ? 's' : ''}</div>`;
 
   GS_GROUPS.forEach(g => {
     const items = results[g.key];
     if (!items || !items.length) return;
-    html += `
+    body += `
       <div class="search-group">
         <div class="search-group-hdr">
+          <span class="search-group-accent" style="background:${g.color};color:${g.color}"></span>
           <span class="search-group-name">${g.name}</span>
           <span class="search-group-count">${items.length}</span>
         </div>
         <div class="search-group-items">
           ${items.slice(0, 5).map(item => `
             <div class="search-item" onmousedown="event.preventDefault();${item.action}">
-              <div class="search-icon" style="background:${item.color || g.color}18;color:${item.color || g.color}">
+              <div class="search-icon" style="background:${item.color || g.color}1a;color:${item.color || g.color}">
                 <i data-lucide="${g.icon}"></i>
               </div>
               <div class="search-info">
@@ -215,7 +227,7 @@ function renderSearchResults(query) {
       </div>`;
   });
 
-  return html;
+  return `<div class="search-panel-body">${body}</div>${footer}`;
 }
 
 // ── Find the active/visible search pill ──

@@ -87,15 +87,17 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="hub-overlay"></div>
   </div>
   <div class="hub-bar">
-    <button class="hub-hamburger" onclick="openMobSidebar()"><i data-lucide="menu"></i></button>
-    <div class="hub-logo-row">
-      <img src="https://i.ibb.co/TDvNpKbv/285535120-111261434935979-5560566145880188190-n.jpg" class="hub-logo-img">
-      <div class="hub-wordmark">3C<em>OS</em></div>
+    <div class="hub-bar-l">
+      <button class="hub-hamburger" onclick="openMobSidebar()"><i data-lucide="menu"></i></button>
+      <div class="hub-logo-row">
+        <img src="https://i.ibb.co/TDvNpKbv/285535120-111261434935979-5560566145880188190-n.jpg" class="hub-logo-img">
+        <div class="hub-wordmark">3C<em>OS</em></div>
+      </div>
     </div>
-    <div class="hub-bar-r">
+    <div class="hub-bar-c">
       <div class="search-pill" onclick="focusSearchInput(this)">
         <i data-lucide="search" class="search-pill-icon"></i>
-        <input type="text" class="search-pill-input" placeholder="Buscar..."
+        <input type="text" class="search-pill-input" placeholder="Buscar em tudo..."
                oninput="onSearchInput(event)"
                onfocus="onSearchFocus(event)"
                onkeydown="onSearchKeydown(event)"
@@ -103,6 +105,8 @@ document.addEventListener('DOMContentLoaded',()=>{
         <span class="search-pill-hint">Ctrl K</span>
         <div class="search-panel"></div>
       </div>
+    </div>
+    <div class="hub-bar-r">
       <button class="hub-icon-btn hub-lab-btn" onclick="toggleBetaMode()" id="hub-lab-btn" title="Modo Beta — clique para ativar recursos experimentais">
         <i data-lucide="zap"></i>
       </button>
