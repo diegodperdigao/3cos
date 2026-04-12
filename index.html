@@ -2114,8 +2114,8 @@ function bPayments(el){
     ${heroHTML('payments','Financeiro','Gestão Financeira','Aprovação, recusa e comissões por afiliado')}
     <div class="mod-main">
       <div style="display:flex;gap:6px;margin-bottom:18px">
-        <button class="tab on" style="--tab-color:var(--pink)" onclick="showPayTab('closing',this)"><div class="tab-dot" style="background:var(--pink)"></div>Fechamento</button>
-        <button class="tab" style="--tab-color:var(--amber)" onclick="showPayTab('payments',this)"><div class="tab-dot" style="background:var(--amber)"></div>Pagamentos</button>
+        <button class="tab on" style="--tab-color:#ec4899;--tab-rgb:236,72,153" onclick="showPayTab('closing',this)"><div class="tab-dot" style="background:#ec4899"></div>Fechamento</button>
+        <button class="tab" style="--tab-color:#f59e0b;--tab-rgb:245,158,11" onclick="showPayTab('payments',this)"><div class="tab-dot" style="background:#f59e0b"></div>Pagamentos</button>
       </div>
       <div id="pay-tab-closing"></div>
       <div id="pay-tab-payments" style="display:none">
@@ -2215,7 +2215,7 @@ function renderClosingTab(){
           <button class="ibt" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" title="Enviar email"><i data-lucide="send"></i></button>
         </td>
       </tr>`).join('')}
-    </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
+    </tbody></table></div>`:'<div class="empty"><i data-lucide="file-text"></i><p>Nenhum fechamento realizado.</p></div>'}`;
   lucide.createIcons();
 }
 function renderPyTbl(list){
