@@ -127,8 +127,8 @@ const DEFAULT_STATE={
     // Mês de referência atual (para controle)
     lastGenerated:''
   },
-  // ── LAB (Beta Features) ──
-  labFlags:{tags:false,lastContact:false,globalSearch:false,smartLists:false,nextAction:false,workflows:false},
+  // ── LAB (Beta Mode) ──
+  betaMode:false,
   availableTags:[
     {id:'tg1',name:'VIP',color:'#f59e0b'},
     {id:'tg2',name:'Em Risco',color:'#ef4444'},
@@ -191,7 +191,7 @@ const saveToCloud = async () => {
       pipeline: STATE.pipeline || {stages:[],cards:[]},
       reminders: STATE.reminders || [],
       emailjs: STATE.emailjs || {},
-      labFlags: STATE.labFlags || {},
+      betaMode: STATE.betaMode === true,
       availableTags: STATE.availableTags || [],
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy: STATE.user?.email || 'unknown'
@@ -227,7 +227,7 @@ const loadFromCloud = async () => {
       if (cloud.pipeline) STATE.pipeline = cloud.pipeline;
       if (cloud.reminders) STATE.reminders = cloud.reminders;
       if (cloud.emailjs) STATE.emailjs = cloud.emailjs;
-      if (cloud.labFlags) STATE.labFlags = {...DEFAULT_STATE.labFlags, ...cloud.labFlags};
+      if (typeof cloud.betaMode === 'boolean') STATE.betaMode = cloud.betaMode;
       if (cloud.availableTags) STATE.availableTags = cloud.availableTags;
       localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
     } else {
@@ -260,9 +260,10 @@ const loadFromLocal = () => {
     fixBrandLogos();
   }
   // Ensure Lab defaults exist for existing users (backwards compat)
-  if (!STATE.labFlags) STATE.labFlags = {...DEFAULT_STATE.labFlags};
-  else STATE.labFlags = {...DEFAULT_STATE.labFlags, ...STATE.labFlags};
+  if (typeof STATE.betaMode !== 'boolean') STATE.betaMode = false;
   if (!STATE.availableTags || !STATE.availableTags.length) STATE.availableTags = [...DEFAULT_STATE.availableTags];
+  // Clean up legacy labFlags shape if present
+  if (STATE.labFlags) delete STATE.labFlags;
 };
 loadFromLocal();
 
@@ -485,10 +486,11 @@ function showHub(){
     const hub=document.getElementById('hub');hub.style.display='flex';
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
-    if(window.updateLabDot)updateLabDot();
+    if(window.updateLabButton)updateLabButton();
     initMosaics();lucide.createIcons();
-    // Run payment watchdog after login
-    setTimeout(()=>{if(typeof runPaymentWatchdog==='function')runPaymentWatchdog();},1500);
+    // Run payment watchdog silently after hub is fully visible.
+    // No toasts — alerts go to the notification center (bell badge).
+    setTimeout(()=>{if(typeof runPaymentWatchdog==='function')runPaymentWatchdog();},3000);
   },650);
 }
 
@@ -622,7 +624,7 @@ function initMosaics(){
 }
 
 function modHdr(label){
-  setTimeout(()=>{if(window.updateLabDot)updateLabDot();},10);
+  setTimeout(()=>{if(window.updateLabButton)updateLabButton();},10);
   return `<div class="mod-hdr">
     <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
     <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
@@ -630,7 +632,7 @@ function modHdr(label){
     <div class="mod-hdr-name">${label}</div>
     <div class="mod-hdr-r">
       <div class="sync-dot"></div><span class="sync-txt">Cloud Sync</span>
-      <button class="hdr-btn hdr-lab-btn" onclick="openLabModal()" title="Lab — Recursos Beta"><i data-lucide="zap"></i><span class="hdr-lab-txt">LAB</span><div class="hdr-lab-dot" style="display:none"></div></button>
+      <button class="hdr-btn hdr-lab-btn" onclick="toggleBetaMode()" title="Modo Beta — clique para ativar recursos experimentais"><i data-lucide="zap"></i></button>
       <button class="hdr-btn" onclick="toggleActionCenter()"><i data-lucide="bell"></i></button>
       <button class="hdr-btn" onclick="toggleTheme()"><i data-lucide="sun"></i></button>
       <button class="hdr-btn" onclick="goBack()"><i data-lucide="grid"></i> Hub</button>
