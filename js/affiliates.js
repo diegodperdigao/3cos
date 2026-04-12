@@ -33,12 +33,14 @@ function renderAffs(list){
     let s1={l:'FTDs',v:a.ftds},s2={l:'QFTDs',v:a.qftds,c:'#ec4899'},s3={l:'Depósitos',v:fc(a.deposits)};
     if(a.contractType==='deposit'){s2={l:'Meta/Mês',v:fc(a.deals[brands[0]]?.depositTarget||0)};s3={l:'Progresso',v:Math.round(a.deposits/(a.deals[brands[0]]?.depositTarget||1)*100)+'%'};}
     if(a.contractType==='rs'){s1={l:'Net Rev',v:fc(a.netRev)};s2={l:'Depósitos',v:fc(a.deposits)};s3={l:'Comissão',v:fc(a.commission)};}
+    const tagsHTML=isLab('tags')&&(a.tags||[]).length?`<div class="tag-row">${(a.tags||[]).map(tid=>{const t=STATE.availableTags?.find(x=>x.id===tid);return t?`<span class="aff-tag" style="background:${t.color}15;color:${t.color};border:1px solid ${t.color}33"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}</span>`:'';}).join('')}</div>`:'';
     return `<div class="aff-card ct-${ct.css}" onclick="openAffDetail('${a.id}')">
       <div class="aff-top">
         <div class="aff-av">${a.name[0]}</div>
         <div style="flex:1"><div class="aff-name">${a.name}</div><div class="aff-type">${a.type}</div></div>
         <span class="ct-badge ${ct.css}">${ct.label}</span>
       </div>
+      ${tagsHTML}
       <div class="aff-stats">
         <div class="aff-stat"><span class="aff-stat-l">${s1.l}</span><span class="aff-stat-v">${s1.v}</span></div>
         <div class="aff-stat"><span class="aff-stat-l">${s2.l}</span><span class="aff-stat-v" style="color:${s2.c||'var(--text)'}">${s2.v}</span></div>
@@ -85,6 +87,11 @@ window.openAffDetail=id=>{
 
     <!-- TAB: PERFIL -->
     <div id="aff-tab-perfil">
+      ${isLab('tags')?`<div style="margin-bottom:14px"><div class="dtl" style="margin-bottom:8px;display:flex;align-items:center">Tags ${labBadge()}</div>
+        <div class="tag-picker">
+          ${(STATE.availableTags||[]).map(t=>{const on=(a.tags||[]).includes(t.id);return `<div class="tag-picker-item ${on?'selected':''}" style="background:${t.color}${on?'22':'10'};color:${t.color};border-color:${t.color}${on?'66':'22'}" onclick="toggleAffTag('${a.id}','${t.id}')"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}</div>`;}).join('')}
+        </div>
+      </div>`:''}
       <div class="dg">
         <div class="ds2"><div class="dtl">Afiliado · <span style="color:var(--theme)">${ct.label}</span></div>
           <div class="dr"><span>Status</span><span class="b b-${a.status}">${sl(a.status)}</span></div>
@@ -206,6 +213,22 @@ window.addCRMNote = (affiliateId) => {
     toast('Nota registrada no CRM!');
   }
 }
+
+// ── LAB: Tags (beta) ──
+window.toggleAffTag = (affId, tagId) => {
+  const a = STATE.affiliates.find(x => x.id === affId);
+  if (!a) return;
+  if (!a.tags) a.tags = [];
+  const idx = a.tags.indexOf(tagId);
+  if (idx >= 0) a.tags.splice(idx, 1); else a.tags.push(tagId);
+  const tag = STATE.availableTags?.find(t => t.id === tagId);
+  logAction(`[BETA] Tag ${idx >= 0 ? 'removida' : 'adicionada'}`, `${a.name} · ${tag?.name || tagId}`);
+  saveToLocal();
+  openAffDetail(affId);
+  // Also refresh the grid underneath
+  const grid = document.getElementById('aff-grid');
+  if (grid) renderAffs(_affTypeF ? STATE.affiliates.filter(x => x.contractType === _affTypeF) : STATE.affiliates);
+};
 
 window.openNewAff=()=>{
   const brandsList=Object.entries(STATE.brands);
