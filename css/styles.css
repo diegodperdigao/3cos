@@ -1331,3 +1331,333 @@ textarea.fi{resize:vertical;min-height:60px;}
     max-height:calc(100vh - 80px);}
   .search-panel.open{transform:translateY(0) scale(1);}
 }
+
+/* ══════════════════════════════════════════════════════════
+   3C OS · EDITION MONO — Beta Theme (Linear/Vercel inspired)
+   Activated when [data-edition="mono"] is on <html>
+   Toggled by Beta Mode (lab.js applyBetaEdition)
+
+   Design principles:
+   - Pure black/white base with 4 tonal grays
+   - Single brand accent (theme color reserved for primary action)
+   - Functional colors preserved (red/green/amber for meaning)
+   - Typography does the heavy lifting
+   - Brutalist hairlines, paper-like shadows, no gradient decoration
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Base color flip (dark mode mono) ── */
+[data-edition="mono"] {
+  --bg: #0a0a0a;
+  --bg2: #131313;
+  --bg3: rgba(255,255,255,0.025);
+  --gb: rgba(255,255,255,0.07);
+  --gb2: rgba(255,255,255,0.12);
+  --gb3: rgba(255,255,255,0.18);
+  --text: #f5f5f5;
+  --text2: #a3a3a3;
+  --text3: #525252;
+  --theme: #ffffff;
+  --theme-glow: rgba(255,255,255,0.18);
+  --theme-dim: rgba(255,255,255,0.06);
+  --theme-b: rgba(255,255,255,0.25);
+  --pink: #ffffff;
+  --purple: #ffffff;
+  --blue: #ffffff;
+  /* Functional colors stay (Linear-style: meaning only) */
+  --green: #10b981;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --lime: #c8ff00;
+}
+[data-edition="mono"][data-theme="light"] {
+  --bg: #fafafa;
+  --bg2: #ffffff;
+  --bg3: rgba(0,0,0,0.025);
+  --gb: rgba(0,0,0,0.08);
+  --gb2: rgba(0,0,0,0.14);
+  --gb3: rgba(0,0,0,0.22);
+  --text: #0a0a0a;
+  --text2: #525252;
+  --text3: #a3a3a3;
+  --theme: #0a0a0a;
+  --theme-glow: rgba(0,0,0,0.18);
+  --theme-dim: rgba(0,0,0,0.06);
+  --theme-b: rgba(0,0,0,0.25);
+  --pink: #0a0a0a;
+  --purple: #0a0a0a;
+  --blue: #0a0a0a;
+}
+
+/* ── Body & background animation OFF ── */
+[data-edition="mono"] body{background:var(--bg);}
+[data-edition="mono"] body::before{display:none;}
+[data-edition="mono"][data-theme="light"] body::before{display:none;}
+
+/* ── Headers: flatter, sharper ── */
+[data-edition="mono"] .hub-bar,
+[data-edition="mono"] .mod-hdr{
+  background:rgba(10,10,10,0.92);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--gb);
+  box-shadow:none;}
+[data-edition="mono"][data-theme="light"] .hub-bar,
+[data-edition="mono"][data-theme="light"] .mod-hdr{
+  background:rgba(255,255,255,0.92);
+  border-bottom:1px solid var(--gb);}
+
+/* Wordmark in mono — pure typography */
+[data-edition="mono"] .hub-wordmark em,
+[data-edition="mono"] .mod-hdr-logo em,
+[data-edition="mono"] .hub-id-name span{color:var(--text);opacity:0.55;}
+
+/* Hub identity: minimal */
+[data-edition="mono"] .hub-id-tagline{color:var(--text3);letter-spacing:0.18em;text-transform:uppercase;font-size:9px;}
+[data-edition="mono"] .hub-greeting{color:var(--text2);}
+
+/* Hub apps label */
+[data-edition="mono"] .hub-apps-label{color:var(--text3);letter-spacing:0.2em;}
+
+/* ── Hub module cards: hairline border, no gradient, no shadow ── */
+[data-edition="mono"] .hub-card{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb) !important;
+  box-shadow:none !important;
+  transition:border-color 0.18s, transform 0.18s;}
+[data-edition="mono"] .hub-card:hover{
+  border-color:var(--gb3) !important;
+  transform:translateY(-2px);}
+[data-edition="mono"] .hub-card-icon{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb) !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .hub-card-icon i{stroke:var(--text) !important;}
+[data-edition="mono"] .hub-card-name{color:var(--text);letter-spacing:0.14em;}
+[data-edition="mono"] .hub-card-sub{color:var(--text3);}
+
+/* Hide colorful mosaic backgrounds inside cards */
+[data-edition="mono"] .hub-card .mosaic-wrapper,
+[data-edition="mono"] .hub-bg .mosaic-wrapper{opacity:0.12;filter:grayscale(100%) contrast(120%);}
+
+/* ── Hero sections: editorial header ── */
+[data-edition="mono"] .hero{
+  background:transparent !important;
+  border-bottom:1px solid var(--gb);
+  box-shadow:none;}
+[data-edition="mono"] .hero .mosaic-wrapper{opacity:0.08;filter:grayscale(100%) contrast(150%);}
+[data-edition="mono"] .hero-overlay,
+[data-edition="mono"] .hero-accent{display:none;}
+[data-edition="mono"] .hero-eyebrow{color:var(--text3);letter-spacing:0.22em;font-weight:700;}
+[data-edition="mono"] .hero-title{color:var(--text);font-weight:900;}
+[data-edition="mono"] .hero-sub{color:var(--text2);}
+
+/* ── KPI cards: flat with hairline ── */
+[data-edition="mono"] .kpi{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb) !important;
+  border-top:1px solid var(--gb) !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .kpi-icon-row i{stroke:var(--text2) !important;}
+[data-edition="mono"] .kpi-lbl{color:var(--text3);letter-spacing:0.12em;}
+[data-edition="mono"] .kpi-val{color:var(--text) !important;font-family:var(--fd);font-weight:900;}
+[data-edition="mono"] .kpi-val.col{color:var(--text) !important;}
+/* Functional color exceptions on KPIs that use --green for "received" etc. */
+[data-edition="mono"] .kpi-val.col[style*="green"]{color:var(--green) !important;}
+[data-edition="mono"] .kpi-val.col[style*="red"]{color:var(--red) !important;}
+[data-edition="mono"] .kpi-val.col[style*="amber"]{color:var(--amber) !important;}
+
+/* ── Affiliate cards: editorial layout ── */
+[data-edition="mono"] .aff-card{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb) !important;
+  border-left:1px solid var(--gb) !important;
+  box-shadow:none !important;
+  transition:border-color 0.18s;}
+[data-edition="mono"] .aff-card:hover{border-color:var(--gb3) !important;}
+[data-edition="mono"] .aff-av{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb) !important;
+  color:var(--text) !important;
+  font-family:var(--fd);font-weight:900;}
+[data-edition="mono"] .aff-name{color:var(--text);font-family:var(--fd);}
+[data-edition="mono"] .aff-type{color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;font-size:9px;}
+[data-edition="mono"] .ct-badge{
+  background:transparent !important;color:var(--text2) !important;
+  border:1px solid var(--gb2);font-weight:700;letter-spacing:0.08em;}
+[data-edition="mono"] .aff-stat-l{color:var(--text3);}
+[data-edition="mono"] .aff-stat-v{color:var(--text) !important;font-family:var(--fd);}
+[data-edition="mono"] .casa-chip{
+  background:transparent !important;color:var(--text2) !important;
+  border:1px solid var(--gb2) !important;font-weight:700;}
+[data-edition="mono"] .aff-contact{color:var(--text3);}
+
+/* ── Pills (filter buttons) ── */
+[data-edition="mono"] .pill{
+  background:transparent;border:1px solid var(--gb);color:var(--text2);}
+[data-edition="mono"] .pill:hover{border-color:var(--gb3);color:var(--text);}
+[data-edition="mono"] .pill.on{
+  background:var(--text) !important;
+  color:var(--bg) !important;
+  border-color:var(--text) !important;}
+[data-edition="mono"][data-theme="light"] .pill.on{
+  background:var(--text) !important;
+  color:#fff !important;}
+
+/* ── Buttons ── */
+[data-edition="mono"] .btn-theme{
+  background:var(--text) !important;
+  color:var(--bg) !important;
+  box-shadow:none !important;
+  border:1px solid var(--text);}
+[data-edition="mono"] .btn-theme:hover{transform:translateY(-1px);box-shadow:0 2px 0 var(--gb3) !important;}
+[data-edition="mono"] .btn-outline{
+  background:transparent !important;
+  border:1px solid var(--gb2) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .btn-outline:hover{border-color:var(--text) !important;color:var(--text) !important;}
+[data-edition="mono"] .btn-ghost{color:var(--text2) !important;}
+[data-edition="mono"] .btn-ghost:hover{background:var(--bg3) !important;color:var(--text) !important;}
+
+/* ── Header buttons (icon + text) ── */
+[data-edition="mono"] .hub-icon-btn,
+[data-edition="mono"] .hdr-btn{
+  background:transparent !important;
+  border:1px solid var(--gb) !important;
+  color:var(--text2) !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .hub-icon-btn:hover,
+[data-edition="mono"] .hdr-btn:hover{
+  background:var(--bg3) !important;
+  border-color:var(--gb3) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .hub-icon-btn svg{stroke:var(--text2);}
+[data-edition="mono"] .hub-icon-btn:hover svg{stroke:var(--text);}
+
+/* Lab button in mono: uses text accent only */
+[data-edition="mono"] .hub-lab-btn,
+[data-edition="mono"] .hdr-lab-btn{
+  background:transparent !important;
+  border-color:var(--gb) !important;}
+[data-edition="mono"] .hub-lab-btn svg,
+[data-edition="mono"] .hdr-lab-btn svg{stroke:var(--text2) !important;filter:none !important;animation:none !important;}
+[data-edition="mono"] .hub-lab-btn.active,
+[data-edition="mono"] .hdr-lab-btn.active{
+  background:var(--text) !important;
+  border-color:var(--text) !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .hub-lab-btn.active svg,
+[data-edition="mono"] .hdr-lab-btn.active svg{stroke:var(--bg) !important;animation:none !important;}
+
+/* ── Search pill (mono treatment) ── */
+[data-edition="mono"] .search-pill{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb) !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .search-pill:hover{border-color:var(--gb2) !important;}
+[data-edition="mono"] .search-pill.active,
+[data-edition="mono"] .search-pill:focus-within{
+  background:var(--bg2) !important;
+  border-color:var(--text) !important;
+  box-shadow:0 0 0 3px var(--theme-dim) !important;}
+[data-edition="mono"] .search-pill-icon{stroke:var(--text2) !important;}
+[data-edition="mono"] .search-pill:focus-within .search-pill-icon{stroke:var(--text) !important;}
+[data-edition="mono"] .search-pill-input{color:var(--text);}
+[data-edition="mono"] .search-pill-hint{color:var(--text3);}
+
+/* Search panel mono */
+[data-edition="mono"] .search-panel{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb2) !important;
+  box-shadow:0 24px 48px rgba(0,0,0,0.45),0 8px 16px rgba(0,0,0,0.25),0 0 0 1px var(--gb) !important;
+  backdrop-filter:blur(20px);}
+[data-edition="mono"][data-theme="light"] .search-panel{
+  background:var(--bg2) !important;
+  box-shadow:0 24px 48px rgba(0,0,0,0.12),0 8px 16px rgba(0,0,0,0.06),0 0 0 1px var(--gb) !important;}
+[data-edition="mono"] .search-item:hover{background:var(--bg3) !important;border-color:var(--gb3) !important;}
+[data-edition="mono"] .search-item:hover::before{background:var(--text) !important;}
+[data-edition="mono"] .search-icon{background:var(--bg3) !important;color:var(--text) !important;border:1px solid var(--gb);}
+[data-edition="mono"] .search-icon i{stroke:var(--text) !important;}
+[data-edition="mono"] .search-group-accent{background:var(--text) !important;color:var(--text) !important;box-shadow:none;}
+[data-edition="mono"] .search-hl{background:var(--bg3) !important;color:var(--text) !important;
+  text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1.5px;}
+[data-edition="mono"] .search-meta{background:var(--bg3) !important;border:1px solid var(--gb) !important;}
+
+/* ── Modal: paper-style ── */
+[data-edition="mono"] #modal-ov{background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);}
+[data-edition="mono"][data-theme="light"] #modal-ov{background:rgba(0,0,0,0.35);}
+[data-edition="mono"] .modal{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb2) !important;
+  box-shadow:0 30px 60px rgba(0,0,0,0.55),0 0 0 1px var(--gb) !important;
+  border-radius:14px !important;}
+
+/* ── Tables ── */
+[data-edition="mono"] table th{
+  color:var(--text3);font-weight:700;letter-spacing:0.12em;text-transform:uppercase;
+  border-bottom:1px solid var(--gb2);}
+[data-edition="mono"] table td{border-bottom:1px solid var(--gb);}
+[data-edition="mono"] .tr:hover{background:var(--bg3) !important;}
+[data-edition="mono"] .td-name{color:var(--text);font-family:var(--fd);font-weight:700;}
+[data-edition="mono"] .td-money{color:var(--text);font-family:var(--fd);font-weight:800;}
+
+/* ── Status badges (functional colors preserved but desaturated) ── */
+[data-edition="mono"] .pb,
+[data-edition="mono"] .b{font-weight:800;letter-spacing:0.1em;border:1px solid currentColor;background:transparent !important;}
+[data-edition="mono"] .pb-pendente{color:var(--amber) !important;}
+[data-edition="mono"] .pb-aprovado{color:var(--text2) !important;}
+[data-edition="mono"] .pb-pago{color:var(--green) !important;}
+[data-edition="mono"] .pb-recusado{color:var(--red) !important;}
+[data-edition="mono"] .pb-ajuste{color:var(--amber) !important;}
+[data-edition="mono"] .pb-parcial{color:var(--text2) !important;}
+
+/* ── Sec headers ── */
+[data-edition="mono"] .sec-lbl{color:var(--text2);letter-spacing:0.2em;}
+[data-edition="mono"] .sec-lbl::before{background:var(--text);}
+
+/* ── Intelligence wraps & misc ── */
+[data-edition="mono"] .intel-wrap{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb) !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .intel-hdr{
+  background:transparent !important;
+  border-bottom:1px solid var(--gb) !important;}
+[data-edition="mono"] .intel-eye{color:var(--text3) !important;letter-spacing:0.16em;}
+[data-edition="mono"] .intel-title{color:var(--text);}
+[data-edition="mono"] .intel-sub{color:var(--text2);}
+
+/* ── Form fields ── */
+[data-edition="mono"] .fi{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb) !important;
+  color:var(--text);
+  box-shadow:none !important;}
+[data-edition="mono"] .fi:focus{border-color:var(--text) !important;background:var(--bg2) !important;}
+
+/* ── User cards / Tasks / Audit ── */
+[data-edition="mono"] .user-card,
+[data-edition="mono"] .tk{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb) !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .user-av{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .role-badge{
+  background:transparent !important;
+  border:1px solid var(--gb2);
+  color:var(--text2) !important;}
+
+/* ── Mosaic-related: convert to grayscale ── */
+[data-edition="mono"] .mosaic-pattern{filter:grayscale(100%) contrast(140%) brightness(0.8);}
+[data-edition="mono"][data-theme="light"] .mosaic-pattern{filter:grayscale(100%) contrast(110%);opacity:0.4;}
+
+/* ── Scrollbars ── */
+[data-edition="mono"] ::-webkit-scrollbar-thumb{background:var(--gb3);}
+
+/* ── Subtle indicator that beta edition is active ── */
+[data-edition="mono"]::before{
+  content:'';position:fixed;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--text),transparent);
+  z-index:9999;pointer-events:none;opacity:0.5;}

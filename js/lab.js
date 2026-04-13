@@ -29,6 +29,7 @@ window.toggleBetaMode = () => {
     on ? `Features: ${BETA_FEATURES_ACTIVE.join(', ')}` : '');
   saveToLocal();
   updateLabButton();
+  applyBetaEdition();
 
   if (on) {
     toast(`Modo Beta ativado — ${BETA_FEATURES_ACTIVE.length} recursos experimentais`, 's');
@@ -42,6 +43,20 @@ window.toggleBetaMode = () => {
     openMod(currentMod);
   }
 };
+
+// Apply/remove the monochrome "Edition" skin
+window.applyBetaEdition = () => {
+  const root = document.documentElement;
+  if (STATE.betaMode) root.setAttribute('data-edition', 'mono');
+  else root.removeAttribute('data-edition');
+};
+
+// Ensure edition is applied on page load (if STATE already has betaMode on)
+if (typeof window !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof applyBetaEdition === 'function') applyBetaEdition();
+  });
+}
 
 window.updateLabButton = () => {
   const on = STATE.betaMode === true;
