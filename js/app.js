@@ -14,7 +14,7 @@ const fbAuth = firebase.auth();
 const fbDb = firebase.firestore();
 const FB_DOC = fbDb.collection('3cos').doc('appState');
 
-const LOGO='https://i.ibb.co/TDvNpKbv/285535120-111261434935979-5560566145880188190-n.jpg';
+const LOGO='https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg';
 const CONTRACT_TYPES={
   cpa:{label:'CPA + Rev Share',css:'cpa'},
   tiered:{label:'CPA Escalonado',css:'tiered'},
