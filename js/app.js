@@ -645,7 +645,8 @@ function modHdr(label){
       </div>
     </div>
     <div class="mod-hdr-r">
-      <div class="sync-dot"></div><span class="sync-txt">Cloud Sync</span>
+      <div class="sync-pill"><div class="sync-dot"></div><span class="sync-txt">Cloud Sync</span></div>
+      <div class="hdr-divider"></div>
       <button class="beta-btn beta-btn-sm" onclick="toggleBetaMode()" title="Modo Beta — recursos experimentais"><span class="beta-btn-txt">BETA</span><span class="beta-btn-status" aria-hidden="true"></span></button>
       <button class="hdr-btn" onclick="toggleActionCenter()"><i data-lucide="bell"></i></button>
       <button class="hdr-btn" onclick="toggleTheme()"><i data-lucide="sun"></i></button>
