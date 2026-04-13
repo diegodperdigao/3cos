@@ -1125,10 +1125,17 @@ textarea.fi{resize:vertical;min-height:60px;}
 /* Smart list + tag filter bars */
 .pills-smart, .pills-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .pills-lbl{font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);padding:6px 4px 6px 0;display:flex;align-items:center;gap:4px;}
-.pill-smart{border-color:var(--sl-c,#ec4899)33 !important;}
+
+/* Smart list pills: ensure inline alignment and constrained icon */
+.pill-smart{border-color:var(--sl-c,#ec4899)33 !important;display:inline-flex;align-items:center;gap:5px;}
+.pill-smart svg{width:11px !important;height:11px !important;flex-shrink:0;stroke:var(--sl-c,#ec4899);stroke-width:2.2;}
 .pill-smart.on{background:var(--sl-c,#ec4899)15 !important;color:var(--sl-c,#ec4899) !important;border-color:var(--sl-c,#ec4899)66 !important;}
-.pill-tag{border-color:var(--tag-c,#ec4899)33 !important;}
+
+/* Tag pills: dot + label + count */
+.pill-tag{border-color:var(--tag-c,#ec4899)33 !important;display:inline-flex;align-items:center;gap:5px;}
+.pill-tag .aff-tag-dot{width:6px;height:6px;flex-shrink:0;}
 .pill-tag.on{background:var(--tag-c,#ec4899)15 !important;color:var(--tag-c,#ec4899) !important;border-color:var(--tag-c,#ec4899)66 !important;}
+
 .pill-count{font-size:7px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:8px;margin-left:4px;}
 [data-theme="light"] .pill-count{background:rgba(0,0,0,0.06);}
 
@@ -1862,3 +1869,203 @@ textarea.fi{resize:vertical;min-height:60px;}
   font-size:8px;font-weight:800;letter-spacing:0.3em;
   color:var(--text);opacity:0.25;
   z-index:9999;pointer-events:none;font-family:var(--fb);}
+
+/* ══════════════════════════════════════════════════════════
+   MONO v2.2 — Module-specific refinements
+   Pipeline · Tasks · Tabs · Brand pages · Smart lists pills
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Smart list / Tag pill icons (also affects non-mono) ──
+   handled outside the mono scope at line ~1128                 */
+
+/* ── Tabs (Pagamentos: Fechamento/Pagamentos) ── */
+[data-edition="mono"] .tab{
+  background:transparent !important;
+  border-color:var(--gb2) !important;
+  border-bottom:none !important;
+  color:var(--text) !important;
+  opacity:0.6;}
+[data-edition="mono"] .tab:hover{opacity:0.85;}
+[data-edition="mono"] .tab.on{
+  background:var(--bg2) !important;
+  border-color:var(--text) !important;
+  color:var(--text) !important;
+  opacity:1;}
+[data-edition="mono"] .tab-dot{background:var(--text) !important;}
+
+/* ── Pipeline kanban ── */
+[data-edition="mono"] .kanban-col{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb) !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .kanban-col-hdr{border-bottom:1px solid var(--gb) !important;}
+[data-edition="mono"] .kanban-col-dot{
+  background:var(--text) !important;
+  width:10px;height:10px;border-radius:2px;}
+[data-edition="mono"] .kanban-col-name{color:var(--text) !important;letter-spacing:0.12em;}
+[data-edition="mono"] .kanban-col-count{
+  background:var(--bg3) !important;
+  color:var(--text) !important;
+  border:1px solid var(--gb);}
+[data-edition="mono"] .kanban-col-body.drag-over{
+  background:var(--bg3) !important;}
+[data-edition="mono"] .kanban-card{
+  background:var(--bg) !important;
+  border:1px solid var(--gb2) !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .kanban-card:hover{
+  border-color:var(--text) !important;
+  box-shadow:0 4px 12px rgba(0,0,0,0.25) !important;}
+[data-edition="mono"] .kanban-card-name{color:var(--text) !important;font-weight:700;}
+[data-edition="mono"] .kanban-card-meta{color:var(--text) !important;opacity:0.6;}
+[data-edition="mono"] .kanban-card-brand{
+  background:transparent !important;
+  border:1px solid var(--text) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .kanban-add{
+  border:1px dashed var(--gb2) !important;
+  color:var(--text) !important;opacity:0.5;}
+[data-edition="mono"] .kanban-add:hover{
+  border-color:var(--text) !important;
+  color:var(--text) !important;opacity:1;}
+
+/* ── Tasks ── */
+[data-edition="mono"] .tk{border-left-color:var(--text) !important;}
+[data-edition="mono"] .tk-chk{
+  border-color:var(--gb2) !important;}
+[data-edition="mono"] .tk-chk:hover{border-color:var(--text) !important;}
+[data-edition="mono"] .tk-chk.dn{
+  background:var(--text) !important;
+  border-color:var(--text) !important;}
+[data-edition="mono"] .tk-chk.dn svg{stroke:var(--bg) !important;}
+[data-edition="mono"] .tk-ttl.dn{color:var(--text) !important;opacity:0.4;}
+[data-edition="mono"] .tk-desc{color:var(--text) !important;opacity:0.7;}
+[data-edition="mono"] .tk-linked{color:var(--text) !important;opacity:0.7;}
+[data-edition="mono"] .tk-linked:hover{opacity:1;}
+[data-edition="mono"] .tk-as,
+[data-edition="mono"] .tk-du{color:var(--text) !important;opacity:0.65;}
+/* Priority badges (functional colors preserved) */
+[data-edition="mono"] .pri{
+  background:transparent !important;
+  border:1px solid currentColor !important;
+  font-weight:800;}
+[data-edition="mono"] .pri-a{color:var(--red) !important;}
+[data-edition="mono"] .pri-m{color:var(--amber) !important;}
+[data-edition="mono"] .pri-b{color:var(--text) !important;opacity:0.6;}
+
+/* ── Brand pages: flatten brand colors but keep them recognizable ── */
+/* Brand chips/cards should stay as outlined elements with their color */
+[data-edition="mono"] .casa-chip,
+[data-edition="mono"] .brand-chip{filter:saturate(0) brightness(1.2);}
+/* Mosaics inside brand views go grayscale */
+[data-edition="mono"] .mod .mosaic-wrapper,
+[data-edition="mono"] .mod .mosaic-pattern{filter:grayscale(100%) brightness(0.7) contrast(140%);}
+
+/* ── Notifications (action center) ── */
+[data-edition="mono"] .ac-item{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb) !important;}
+[data-edition="mono"] .ac-item:hover{border-color:var(--text) !important;}
+[data-edition="mono"] .ac-item-text{color:var(--text) !important;}
+[data-edition="mono"] .ac-item-time{color:var(--text) !important;opacity:0.55;}
+[data-edition="mono"] .ac-empty{color:var(--text) !important;opacity:0.55;}
+
+/* ── Audit log items ── */
+[data-edition="mono"] .audit-item{border-bottom:1px solid var(--gb) !important;}
+[data-edition="mono"] .audit-icon{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb2) !important;}
+[data-edition="mono"] .audit-icon i{stroke:var(--text) !important;}
+[data-edition="mono"] .audit-action{color:var(--text) !important;font-weight:700;}
+[data-edition="mono"] .audit-detail{color:var(--text) !important;opacity:0.6;}
+[data-edition="mono"] .audit-meta{color:var(--text) !important;opacity:0.5;}
+
+/* ── Mini lists (used in detail modals) ── */
+[data-edition="mono"] .mini{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb) !important;}
+[data-edition="mono"] .mini:hover{border-color:var(--gb2) !important;}
+[data-edition="mono"] .mini-n{color:var(--text) !important;}
+[data-edition="mono"] .mini-s{color:var(--text) !important;opacity:0.6;}
+[data-edition="mono"] .mini-v{color:var(--text) !important;font-weight:800;}
+
+/* ── Detail modal: dl/ds/dr ── */
+[data-edition="mono"] .ds2{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb) !important;}
+[data-edition="mono"] .dtl{color:var(--text) !important;opacity:0.7;}
+[data-edition="mono"] .dr span:first-child{color:var(--text) !important;opacity:0.6;}
+[data-edition="mono"] .dr strong,
+[data-edition="mono"] .dr .b,
+[data-edition="mono"] .dr .pb{color:var(--text) !important;}
+
+/* ── Smart lists pills inside affiliates module (mono) ── */
+[data-edition="mono"] .pill-smart{
+  border-color:var(--gb2) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .pill-smart svg{stroke:var(--text) !important;}
+[data-edition="mono"] .pill-smart.on{
+  background:var(--text) !important;
+  color:var(--bg) !important;
+  border-color:var(--text) !important;}
+[data-edition="mono"] .pill-smart.on svg{stroke:var(--bg) !important;}
+[data-edition="mono"] .pill-tag{
+  border-color:var(--gb2) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .pill-tag .aff-tag-dot{filter:saturate(0) brightness(1.2);}
+[data-edition="mono"] .pill-tag.on{
+  background:var(--text) !important;
+  color:var(--bg) !important;
+  border-color:var(--text) !important;}
+[data-edition="mono"] .pill-count{
+  background:var(--bg3) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .pill-smart.on .pill-count,
+[data-edition="mono"] .pill-tag.on .pill-count{
+  background:var(--bg) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .pills-lbl{color:var(--text) !important;opacity:0.55;}
+
+/* ── Last-contact indicator (functional colors preserved) ── */
+[data-edition="mono"] .lc-ok{
+  background:transparent !important;
+  border:1px solid var(--green);
+  color:var(--green) !important;}
+[data-edition="mono"] .lc-warn{
+  background:transparent !important;
+  border:1px solid var(--amber);
+  color:var(--amber) !important;}
+[data-edition="mono"] .lc-danger{
+  background:transparent !important;
+  border:1px solid var(--red);
+  color:var(--red) !important;}
+[data-edition="mono"] .lc-never{
+  background:transparent !important;
+  border:1px solid var(--gb2);
+  color:var(--text) !important;opacity:0.55;}
+
+/* ── Affiliate tags inside cards (flatten tag colors) ── */
+[data-edition="mono"] .aff-tag{
+  background:transparent !important;
+  border:1px solid var(--text) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .aff-tag-dot{filter:saturate(0) brightness(1.2);}
+
+/* ── Tag picker inside affiliate detail modal ── */
+[data-edition="mono"] .tag-picker{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb) !important;}
+[data-edition="mono"] .tag-picker-item{
+  background:transparent !important;
+  border:1px solid var(--gb2) !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .tag-picker-item:hover{border-color:var(--text) !important;}
+[data-edition="mono"] .tag-picker-item.selected{
+  background:var(--text) !important;
+  color:var(--bg) !important;
+  border-color:var(--text) !important;
+  box-shadow:none !important;}
+
+/* ── Charts (Chart.js): override only the canvas wrap, real
+        chart colors need JS; for now, just ensure container is mono */
+[data-edition="mono"] .chart-wrap canvas{filter:grayscale(60%) contrast(110%);}
