@@ -1592,9 +1592,10 @@ textarea.fi{resize:vertical;min-height:60px;}
   background:var(--bg2) !important;
   border-bottom:1px solid var(--gb) !important;
   box-shadow:none !important;}
-[data-edition="mono"] .hero .mosaic-wrapper{opacity:0.4 !important;filter:grayscale(100%);}
-[data-edition="mono"] .hero-overlay,
-[data-edition="mono"] .hero-accent{display:none !important;}
+/* Hero mosaic keeps brand colors (when a specific brand is selected) */
+[data-edition="mono"] .hero .mosaic-wrapper{opacity:0.55 !important;}
+[data-edition="mono"] .hero-overlay{display:none !important;}
+/* Hero accent preserved — carries the brand color gradient */
 [data-edition="mono"] .hero-eyebrow{
   color:var(--text) !important;
   letter-spacing:0.28em !important;
@@ -1953,7 +1954,7 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-color:var(--text) !important;
   color:var(--text) !important;
   opacity:1;}
-[data-edition="mono"] .tab-dot{background:var(--text) !important;}
+/* .tab-dot keeps its inline brand color — functional identity */
 
 /* ── Pipeline kanban ── */
 [data-edition="mono"] .kanban-col{
@@ -2016,11 +2017,9 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="mono"] .pri-b{color:var(--text) !important;opacity:0.6;}
 
 /* ── Brand pages: flatten brand colors but keep them recognizable ── */
-/* Brand chips/cards should stay as outlined elements with their color */
-[data-edition="mono"] .casa-chip,
-[data-edition="mono"] .brand-chip{filter:saturate(0) brightness(1.2);}
-/* Mosaics inside modules: grayscale only, keep texture clean */
-[data-edition="mono"] .mod .mosaic-pattern{filter:grayscale(100%);}
+/* Brand chips/cards keep their brand colors (functional info) */
+/* Mosaics inside modules: kept in full color — brand colors are
+   meaningful and present in the dashboard/brand mosaics */
 
 /* ── Notifications (action center) ── */
 [data-edition="mono"] .ac-item{
