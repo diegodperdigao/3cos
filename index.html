@@ -107,8 +107,10 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
     </div>
     <div class="hub-bar-r">
-      <button class="hub-icon-btn hub-lab-btn" onclick="toggleBetaMode()" id="hub-lab-btn" title="Modo Beta — clique para ativar recursos experimentais">
-        <i data-lucide="zap"></i>
+      <button class="beta-btn" onclick="toggleBetaMode()" id="hub-beta-btn" title="Modo Beta — recursos experimentais">
+        <i data-lucide="sparkles" class="beta-btn-icon"></i>
+        <span class="beta-btn-txt">BETA</span>
+        <span class="beta-btn-status" aria-hidden="true"></span>
       </button>
       <button class="hub-icon-btn" onclick="toggleActionCenter()" id="hub-notif-btn">
         <i data-lucide="bell"></i>

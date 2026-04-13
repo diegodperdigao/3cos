@@ -1081,30 +1081,83 @@ textarea.fi{resize:vertical;min-height:60px;}
    LAB — Beta Features
    ══════════════════════════════════════════════════════════ */
 
-/* Lab button in hub-bar + mod-hdr — subtle OFF, glowing ON */
-.hub-lab-btn,.hdr-lab-btn{position:relative;transition:all 0.25s;}
-.hub-lab-btn svg,.hdr-lab-btn svg{transition:all 0.25s;}
+/* ══════════════════════════════════════════════════════════
+   BETA Button — labeled, prominent, discoverable
+   ══════════════════════════════════════════════════════════ */
+.beta-btn{
+  position:relative;display:inline-flex;align-items:center;gap:6px;
+  height:34px;padding:0 12px 0 11px;
+  background:linear-gradient(135deg,rgba(236,72,153,0.14),rgba(168,85,247,0.12));
+  border:1px solid rgba(236,72,153,0.4);
+  border-radius:10px;
+  color:#ec4899;
+  font-family:var(--fb);font-size:10px;font-weight:800;letter-spacing:0.14em;
+  cursor:pointer;
+  transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:0 0 0 0 rgba(236,72,153,0);
+  margin-right:4px;}
+[data-theme="light"] .beta-btn{
+  background:linear-gradient(135deg,rgba(219,39,119,0.08),rgba(168,85,247,0.06));
+  border-color:rgba(219,39,119,0.32);
+  color:#db2777;}
+.beta-btn:hover{
+  background:linear-gradient(135deg,rgba(236,72,153,0.22),rgba(168,85,247,0.20));
+  border-color:rgba(236,72,153,0.65);
+  transform:translateY(-1px);
+  box-shadow:0 6px 16px rgba(236,72,153,0.18);}
+[data-theme="light"] .beta-btn:hover{
+  background:linear-gradient(135deg,rgba(219,39,119,0.14),rgba(168,85,247,0.12));
+  box-shadow:0 6px 16px rgba(219,39,119,0.14);}
 
-/* Hover (OFF state): gentle pink hint */
-.hub-lab-btn:hover svg,.hdr-lab-btn:hover svg{stroke:#ec4899 !important;}
+.beta-btn-icon{width:13px;height:13px;flex-shrink:0;stroke:currentColor;stroke-width:2;}
+.beta-btn-txt{font-weight:800;letter-spacing:0.14em;font-family:var(--fb);}
+.beta-btn-status{
+  width:6px;height:6px;border-radius:50%;
+  background:currentColor;opacity:0;transform:scale(0.6);
+  transition:all 0.25s;flex-shrink:0;margin-left:2px;}
 
-/* ACTIVE state: pink fill + glow + soft pulse */
-.hub-lab-btn.active,.hdr-lab-btn.active{
-  background:linear-gradient(135deg,rgba(236,72,153,0.15),rgba(168,85,247,0.12)) !important;
-  border-color:rgba(236,72,153,0.45) !important;
-  box-shadow:0 0 16px rgba(236,72,153,0.25),inset 0 0 8px rgba(236,72,153,0.08);
+/* Subtle "discover me" pulse when OFF — only every 6s, not annoying */
+.beta-btn:not(.active){animation:betaIdlePulse 6s ease-in-out infinite;}
+@keyframes betaIdlePulse{
+  0%,90%,100%{box-shadow:0 0 0 0 rgba(236,72,153,0);}
+  93%,97%{box-shadow:0 0 0 6px rgba(236,72,153,0.18);}
 }
-[data-theme="light"] .hub-lab-btn.active,[data-theme="light"] .hdr-lab-btn.active{
-  background:linear-gradient(135deg,rgba(219,39,119,0.1),rgba(168,85,247,0.08)) !important;
-  border-color:rgba(219,39,119,0.4) !important;
-  box-shadow:0 0 16px rgba(219,39,119,0.2);
+
+/* ACTIVE state: solid gradient + glow + status dot */
+.beta-btn.active{
+  background:linear-gradient(135deg,#ec4899,#a855f7) !important;
+  border-color:#a855f7 !important;
+  color:#ffffff !important;
+  box-shadow:0 0 0 3px rgba(168,85,247,0.18),0 6px 18px rgba(236,72,153,0.32) !important;
+  animation:none;}
+[data-theme="light"] .beta-btn.active{
+  background:linear-gradient(135deg,#db2777,#9333ea) !important;
+  border-color:#9333ea !important;
+  box-shadow:0 0 0 3px rgba(147,51,234,0.18),0 6px 18px rgba(219,39,119,0.32) !important;}
+.beta-btn.active .beta-btn-icon{
+  stroke:#fff !important;
+  filter:drop-shadow(0 0 4px rgba(255,255,255,0.5));
+  animation:betaActiveSparkle 2.5s ease-in-out infinite;}
+@keyframes betaActiveSparkle{
+  0%,100%{transform:rotate(0deg) scale(1);}
+  25%{transform:rotate(-12deg) scale(1.15);}
+  50%{transform:rotate(0deg) scale(1);}
+  75%{transform:rotate(12deg) scale(1.15);}
 }
-.hub-lab-btn.active svg,.hdr-lab-btn.active svg{
-  stroke:#ec4899 !important;
-  filter:drop-shadow(0 0 4px rgba(236,72,153,0.7));
-  animation:labActivePulse 3s ease-in-out infinite;
+.beta-btn.active .beta-btn-status{
+  opacity:1;transform:scale(1);
+  background:#fff !important;
+  box-shadow:0 0 6px rgba(255,255,255,0.7);}
+
+/* Smaller variant for module headers (slightly tighter) */
+.beta-btn-sm{height:30px;padding:0 11px;font-size:9px;}
+.beta-btn-sm .beta-btn-icon{width:12px;height:12px;}
+
+@media (max-width: 720px) {
+  .beta-btn{padding:0 10px;height:32px;}
+  .beta-btn-sm{height:30px;padding:0 9px;}
+  .beta-btn-txt{font-size:9px;}
 }
-@keyframes labActivePulse{0%,100%{opacity:1}50%{opacity:0.75}}
 
 /* Tags in affiliate cards (beta feature) */
 .tag-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
@@ -1533,7 +1586,7 @@ textarea.fi{resize:vertical;min-height:60px;}
   background:var(--bg2) !important;
   border-bottom:1px solid var(--gb) !important;
   box-shadow:none !important;}
-[data-edition="mono"] .hero .mosaic-wrapper{opacity:0.06 !important;filter:grayscale(100%) contrast(160%);}
+[data-edition="mono"] .hero .mosaic-wrapper{opacity:0.4 !important;filter:grayscale(100%);}
 [data-edition="mono"] .hero-overlay,
 [data-edition="mono"] .hero-accent{display:none !important;}
 [data-edition="mono"] .hero-eyebrow{
@@ -1660,20 +1713,25 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="mono"] .hub-user-name{color:var(--text) !important;}
 [data-edition="mono"] .hub-user-role{color:var(--text) !important;opacity:0.6;}
 
-/* Lab button mono */
-[data-edition="mono"] .hub-lab-btn,
-[data-edition="mono"] .hdr-lab-btn{
+/* BETA button mono — keep recognizable but in mono palette */
+[data-edition="mono"] .beta-btn{
   background:transparent !important;
-  border:1px solid var(--gb2) !important;}
-[data-edition="mono"] .hub-lab-btn svg,
-[data-edition="mono"] .hdr-lab-btn svg{stroke:var(--text) !important;filter:none !important;animation:none !important;}
-[data-edition="mono"] .hub-lab-btn.active,
-[data-edition="mono"] .hdr-lab-btn.active{
-  background:var(--text) !important;
+  border:1px solid var(--gb2) !important;
+  color:var(--text) !important;
+  animation:none !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .beta-btn:hover{
+  background:var(--bg3) !important;
   border-color:var(--text) !important;
   box-shadow:none !important;}
-[data-edition="mono"] .hub-lab-btn.active svg,
-[data-edition="mono"] .hdr-lab-btn.active svg{stroke:var(--bg) !important;}
+[data-edition="mono"] .beta-btn-icon{stroke:var(--text) !important;filter:none !important;animation:none !important;}
+[data-edition="mono"] .beta-btn.active{
+  background:var(--text) !important;
+  border-color:var(--text) !important;
+  color:var(--bg) !important;
+  box-shadow:0 0 0 3px var(--theme-dim) !important;}
+[data-edition="mono"] .beta-btn.active .beta-btn-icon{stroke:var(--bg) !important;animation:none !important;filter:none !important;}
+[data-edition="mono"] .beta-btn.active .beta-btn-status{background:var(--bg) !important;box-shadow:none !important;}
 
 /* Search pill mono */
 [data-edition="mono"] .search-pill{
@@ -1957,9 +2015,8 @@ textarea.fi{resize:vertical;min-height:60px;}
 /* Brand chips/cards should stay as outlined elements with their color */
 [data-edition="mono"] .casa-chip,
 [data-edition="mono"] .brand-chip{filter:saturate(0) brightness(1.2);}
-/* Mosaics inside brand views go grayscale */
-[data-edition="mono"] .mod .mosaic-wrapper,
-[data-edition="mono"] .mod .mosaic-pattern{filter:grayscale(100%) brightness(0.7) contrast(140%);}
+/* Mosaics inside modules: grayscale only, keep texture clean */
+[data-edition="mono"] .mod .mosaic-pattern{filter:grayscale(100%);}
 
 /* ── Notifications (action center) ── */
 [data-edition="mono"] .ac-item{

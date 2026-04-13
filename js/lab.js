@@ -60,12 +60,14 @@ if (typeof window !== 'undefined') {
 
 window.updateLabButton = () => {
   const on = STATE.betaMode === true;
-  document.querySelectorAll('.hub-lab-btn, .hdr-lab-btn').forEach(btn => {
+  document.querySelectorAll('.beta-btn').forEach(btn => {
     if (on) btn.classList.add('active');
     else btn.classList.remove('active');
     btn.setAttribute('title', on
       ? 'Modo Beta ATIVO — clique para desativar'
-      : 'Modo Beta — clique para ativar recursos experimentais');
+      : 'Modo Beta — recursos experimentais. Clique para ativar.');
+    const txt = btn.querySelector('.beta-btn-txt');
+    if (txt) txt.textContent = on ? 'BETA · ON' : 'BETA';
   });
 };
 window.updateLabDot = window.updateLabButton;
