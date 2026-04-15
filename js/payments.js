@@ -780,16 +780,255 @@ window.regenerateClosingPDF=(closingId)=>{
   generateClosingPDF(a,null,c.brand,c.monthLabel,c);
 };
 
+// ══════════════════════════════════════════════════════════
+// FINANCIAL SUMMARY WIDGET — A Pagar / A Receber / Saldo
+// ══════════════════════════════════════════════════════════
+function renderFinancialSummary(){
+  const now=new Date();
+  const y=now.getFullYear(),m=now.getMonth();
+  const monthStart=new Date(y,m,1),monthEnd=new Date(y,m+1,0,23,59,59);
+  const monthLabel=now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  // A Pagar: pagamentos não-pagos do mês atual (por dueDate)
+  const toPay=(STATE.payments||[]).filter(p=>{
+    if(p.status==='pago'||p.status==='recusado')return false;
+    if(!p.dueDate)return false;
+    const d=new Date(p.dueDate);
+    return d>=monthStart&&d<=monthEnd;
+  });
+  const toPaySum=toPay.reduce((s,p)=>s+(p.amount||0),0);
+  const overdue=toPay.filter(p=>new Date(p.dueDate)<now);
+  const overdueSum=overdue.reduce((s,p)=>s+(p.amount||0),0);
+
+  // A Receber: closings do mês (commission + profit = total que a marca vai repassar)
+  const monthClosings=(STATE.closings||[]).filter(c=>{
+    // Match monthLabel loosely (e.g. "abril de 2026" matches the current month)
+    const cLabel=(c.monthLabel||'').toLowerCase();
+    const curLabel=monthLabel.toLowerCase();
+    return cLabel===curLabel||cLabel.includes(curLabel.split(' ')[0]);
+  });
+  const toReceive=monthClosings.reduce((s,c)=>s+(c.commission||0)+(c.profit||0),0);
+
+  // Saldo previsto
+  const saldo=toReceive-toPaySum;
+  const saldoOk=saldo>=0;
+
+  // Helpers
+  const countTxt=(n,singular,plural)=>`${n} ${n===1?singular:plural}`;
+
+  return `<div class="fin-summary">
+    <div class="fin-summary-hdr">
+      <div>
+        <div class="fin-summary-eye">Controle Financeiro</div>
+        <div class="fin-summary-title">${monthLabel.charAt(0).toUpperCase()+monthLabel.slice(1)}</div>
+        <div class="fin-summary-sub">Fluxo previsto do mês</div>
+      </div>
+    </div>
+    <div class="fin-summary-grid">
+      <div class="fin-card fin-card-out">
+        <div class="fin-card-head">
+          <i data-lucide="arrow-up-right" style="stroke:#ef4444"></i>
+          <span class="fin-card-lbl">A Pagar</span>
+        </div>
+        <div class="fin-card-val">${fc(toPaySum)}</div>
+        <div class="fin-card-meta">${countTxt(toPay.length,'pagamento','pagamentos')}${overdueSum?`<span class="fin-card-alert"> · ${fc(overdueSum)} vencido</span>`:''}</div>
+      </div>
+      <div class="fin-card fin-card-in">
+        <div class="fin-card-head">
+          <i data-lucide="arrow-down-left" style="stroke:#10b981"></i>
+          <span class="fin-card-lbl">A Receber</span>
+        </div>
+        <div class="fin-card-val">${fc(toReceive)}</div>
+        <div class="fin-card-meta">${countTxt(monthClosings.length,'fechamento','fechamentos')} — previsto das marcas</div>
+      </div>
+      <div class="fin-card fin-card-net ${saldoOk?'fin-card-positive':'fin-card-negative'}">
+        <div class="fin-card-head">
+          <i data-lucide="wallet" style="stroke:${saldoOk?'#10b981':'#ef4444'}"></i>
+          <span class="fin-card-lbl">Saldo Previsto</span>
+        </div>
+        <div class="fin-card-val">${saldoOk?'+':''}${fc(saldo)}</div>
+        <div class="fin-card-meta">${saldoOk?'Fluxo positivo':'⚠ Atenção no fluxo'}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// MONTHLY VISUAL CALENDAR — Google Calendar-style grid
+// ══════════════════════════════════════════════════════════
+let _calMonth=null,_calYear=null;
+
+function _buildCalEvents(year,month){
+  const now=new Date();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const events={};
+  const add=(day,e)=>{if(!events[day])events[day]=[];events[day].push(e);};
+
+  // Pagamentos com dueDate no mês
+  (STATE.payments||[]).forEach(p=>{
+    if(!p.dueDate)return;
+    const d=new Date(p.dueDate);
+    if(d.getFullYear()!==year||d.getMonth()!==month)return;
+    const isOverdue=d<now&&p.status!=='pago';
+    const color=p.status==='pago'?'#10b981':isOverdue?'#ef4444':'#f59e0b';
+    add(d.getDate(),{
+      type:'payment',color,
+      label:`${p.affiliate} — ${fc(p.amount)}`,
+      sub:`${p.brand} · ${pl(p.status)}`,
+      id:p.id,
+      action:`closeModal();openMod('payments');setTimeout(()=>{const tb=document.querySelector('[onclick*="showPayTab(\\'queue\\'"]');if(tb)showPayTab('queue',tb);},320);`
+    });
+  });
+
+  // Repasses de marca (recorrente mensal)
+  const dl=STATE.deadlines||{};
+  Object.entries(dl.brandPayDays||{}).forEach(([brand,day])=>{
+    if(day<1||day>daysInMonth)return;
+    const br=STATE.brands[brand];if(!br)return;
+    add(day,{
+      type:'brand',color:br.color,
+      label:`Repasse ${brand}`,
+      sub:'Marca repassa para 3C',
+      action:`closeModal();openMod('brands');`
+    });
+  });
+
+  // Lembretes customizados
+  (STATE.reminders||[]).forEach(r=>{
+    if(!r.date)return;
+    const d=new Date(r.date);
+    if(d.getFullYear()!==year||d.getMonth()!==month)return;
+    add(d.getDate(),{
+      type:'reminder',color:'#a855f7',
+      label:r.title,
+      sub:r.note||'Lembrete',
+      action:`closeModal();`
+    });
+  });
+
+  return events;
+}
+
+function renderMonthlyCalendar(){
+  const now=new Date();
+  if(_calMonth===null){_calMonth=now.getMonth();_calYear=now.getFullYear();}
+
+  const firstDay=new Date(_calYear,_calMonth,1);
+  const daysInMonth=new Date(_calYear,_calMonth+1,0).getDate();
+  const startWeekday=firstDay.getDay();
+  const events=_buildCalEvents(_calYear,_calMonth);
+
+  const monthLabel=firstDay.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const totalEvents=Object.values(events).reduce((s,arr)=>s+arr.length,0);
+  const weekdays=['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
+
+  let grid='';
+  // Leading blank cells
+  for(let i=0;i<startWeekday;i++){
+    grid+=`<div class="fin-cal-day fin-cal-day-empty"></div>`;
+  }
+
+  // Day cells
+  for(let day=1;day<=daysInMonth;day++){
+    const date=new Date(_calYear,_calMonth,day);
+    const isToday=date.toDateString()===now.toDateString();
+    const wd=date.getDay();
+    const isWeekend=wd===0||wd===6;
+    const dayEvents=events[day]||[];
+    const hasEvents=dayEvents.length>0;
+    const overdueCount=dayEvents.filter(e=>e.color==='#ef4444').length;
+
+    grid+=`
+      <div class="fin-cal-day ${isToday?'fin-cal-day-today':''} ${isWeekend?'fin-cal-day-weekend':''} ${hasEvents?'fin-cal-day-hasevents':''} ${overdueCount?'fin-cal-day-alert':''}"
+           ${hasEvents?`onclick="calShowDay(${day})"`:''}>
+        <div class="fin-cal-day-num">${day}</div>
+        ${hasEvents?`
+          <div class="fin-cal-dots">
+            ${dayEvents.slice(0,4).map(e=>`<span class="fin-cal-dot" style="background:${e.color}" title="${e.label}"></span>`).join('')}
+            ${dayEvents.length>4?`<span class="fin-cal-more">+${dayEvents.length-4}</span>`:''}
+          </div>
+        `:''}
+      </div>`;
+  }
+
+  return `<div class="intel-wrap" style="margin-bottom:20px" id="fin-cal-wrap-inner">
+    <div class="intel-hdr" style="align-items:center">
+      <div>
+        <div class="intel-eye">Calendário Financeiro</div>
+        <div class="intel-title">${monthLabel.charAt(0).toUpperCase()+monthLabel.slice(1)}</div>
+        <div class="intel-sub">${totalEvents} evento${totalEvents!==1?'s':''} neste mês</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-outline" onclick="calNavMonth(-1)" style="padding:6px 10px"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>
+        <button class="btn btn-outline" onclick="calGoToday()" style="padding:6px 12px;font-size:10px">HOJE</button>
+        <button class="btn btn-outline" onclick="calNavMonth(1)" style="padding:6px 10px"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>
+      </div>
+    </div>
+    <div style="padding:16px 20px 20px">
+      <div class="fin-cal-weekdays">
+        ${weekdays.map(w=>`<div>${w}</div>`).join('')}
+      </div>
+      <div class="fin-cal-grid">${grid}</div>
+      <div class="fin-cal-legend">
+        <div class="fin-cal-legend-item"><span class="fin-cal-dot" style="background:#ef4444"></span>Vencido</div>
+        <div class="fin-cal-legend-item"><span class="fin-cal-dot" style="background:#f59e0b"></span>Pendente</div>
+        <div class="fin-cal-legend-item"><span class="fin-cal-dot" style="background:#10b981"></span>Pago / Repasse</div>
+        <div class="fin-cal-legend-item"><span class="fin-cal-dot" style="background:#a855f7"></span>Lembrete</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.calNavMonth=(delta)=>{
+  _calMonth+=delta;
+  if(_calMonth<0){_calMonth=11;_calYear--;}
+  if(_calMonth>11){_calMonth=0;_calYear++;}
+  const wrap=document.getElementById('fin-cal-wrap');
+  if(wrap){wrap.innerHTML=renderMonthlyCalendar();lucide.createIcons();}
+};
+
+window.calGoToday=()=>{
+  const now=new Date();
+  _calMonth=now.getMonth();_calYear=now.getFullYear();
+  const wrap=document.getElementById('fin-cal-wrap');
+  if(wrap){wrap.innerHTML=renderMonthlyCalendar();lucide.createIcons();}
+};
+
+window.calShowDay=(day)=>{
+  const events=_buildCalEvents(_calYear,_calMonth)[day]||[];
+  if(!events.length)return;
+  const date=new Date(_calYear,_calMonth,day);
+  const dateStr=date.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+  const body=`<div style="display:flex;flex-direction:column;gap:8px">
+    ${events.map(e=>`
+      <div class="fin-cal-event" ${e.action?`onclick="${e.action}"`:''} style="border-left:3px solid ${e.color}">
+        <div class="fin-cal-event-dot" style="background:${e.color}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="fin-cal-event-label">${e.label}</div>
+          <div class="fin-cal-event-sub">${e.sub||''}</div>
+        </div>
+        ${e.action?`<i data-lucide="chevron-right" style="width:14px;height:14px;stroke:var(--text3);flex-shrink:0"></i>`:''}
+      </div>
+    `).join('')}
+  </div>`;
+
+  openModal(dateStr,body,`<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+  lucide.createIcons();
+};
+
 function renderDeadlinesTab(){
   const el=document.getElementById('pay-tab-deadlines');if(!el)return;
   const dl=STATE.deadlines||{brandPayDays:{},affiliatePayDays:10,nfReminderDays:5,lastGenerated:''};
   const brands=Object.keys(STATE.brands);
 
   el.innerHTML=`
+    ${renderFinancialSummary()}
+    <div id="fin-cal-wrap">${renderMonthlyCalendar()}</div>
     <div class="intel-wrap" style="margin-bottom:20px">
       <div class="intel-hdr"><div>
         <div class="intel-eye">Configuração de Prazos</div>
-        <div class="intel-title">Calendário de Pagamentos</div>
+        <div class="intel-title">Datas de Repasse</div>
         <div class="intel-sub">Define quando cada marca repassa e o prazo para pagar afiliados</div>
       </div></div>
       <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
