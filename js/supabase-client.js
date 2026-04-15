@@ -10,8 +10,8 @@
 // Don't put service_role keys here.
 // ══════════════════════════════════════════════════════════
 
-const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const SUPABASE_URL = 'https://zolvuamsikxtobzafkao.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_pLaVyissnbo1jvOwfoG3pQ_ENDQZrpd';
 
 // Detect placeholder credentials → don't initialize
 const SUPABASE_CONFIGURED = !SUPABASE_URL.includes('YOUR_PROJECT') && !SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY');
