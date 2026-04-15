@@ -190,12 +190,15 @@ window.deleteContract=id=>{
 };
 
 // ══════════════════════════════════════════════════════════
-// USERS CRUD
+// USERS CRUD — Supabase Auth + profiles table integration
 // ══════════════════════════════════════════════════════════
 window.openNewUser=()=>{
   openModal('Novo Usuário',`<div class="fg">
     <div class="fgp ff"><label>Nome *</label><input class="fi" id="nu-name" placeholder="Nome completo"></div>
     <div class="fgp"><label>Email *</label><input class="fi" id="nu-email" placeholder="user@3c.gg"></div>
+    <div class="fgp ff"><label>Senha temporária *</label><input type="password" class="fi" id="nu-pass" placeholder="mínimo 6 caracteres">
+      <div style="font-size:9px;color:var(--text3);margin-top:4px">O usuário pode mudar depois pela tela de login</div>
+    </div>
     <div class="fgp"><label>Cargo</label><select class="fi" id="nu-role">
       <option value="admin">Admin</option><option value="financeiro">Financeiro</option>
       <option value="operacao">Operação</option><option value="viewer">Viewer</option>
@@ -207,16 +210,54 @@ window.openNewUser=()=>{
     <button class="btn btn-theme" onclick="saveNewUser()"><i data-lucide="save"></i> Criar Usuário</button>`);
 };
 
-window.saveNewUser=()=>{
+window.saveNewUser=async ()=>{
   const name=document.getElementById('nu-name')?.value.trim();
   const email=document.getElementById('nu-email')?.value.trim();
-  if(!name||!email)return toast('Nome e email são obrigatórios','e');
+  const password=document.getElementById('nu-pass')?.value;
+  if(!name||!email||!password)return toast('Nome, email e senha são obrigatórios','e');
+  if(password.length<6)return toast('Senha precisa ter pelo menos 6 caracteres','e');
   if(STATE.users.find(u=>u.email===email))return toast('Email já existe','e');
   const role=document.getElementById('nu-role')?.value||'viewer';
   const modules=[...document.querySelectorAll('#mbd .mod-check input:checked')].map(c=>c.value);
+
+  // Create user in Supabase Auth + update profile via direct upsert
+  if(window.SUPABASE_CONFIGURED && window.sb){
+    try {
+      const { data, error } = await sb.auth.signUp({
+        email, password,
+        options: { data: { name } }
+      });
+      if (error) throw error;
+      if (!data.user) throw new Error('Usuário não criado');
+
+      // Update profile (created by handle_new_user trigger) with role + modules
+      const { error: upErr } = await sb.from('profiles').upsert({
+        id: data.user.id,
+        name, email, role, status: 'ativo', modules
+      });
+      if (upErr) throw upErr;
+
+      // Add to STATE
+      STATE.users.push({
+        id: data.user.id, name, email, role, status: 'ativo', modules,
+        createdAt: new Date().toISOString().split('T')[0]
+      });
+      logAction('Usuário criado (Supabase)', name);
+      closeModal();
+      bUsers(document.getElementById('mod-users'));
+      toast(`Usuário ${name} criado! ${data.user.email_confirmed_at ? 'Já pode logar.' : 'Confirme o email se necessário.'}`);
+      return;
+    } catch (e) {
+      console.error('[saveNewUser] Supabase failed:', e);
+      toast('Erro ao criar no Supabase: ' + (e.message||e), 'e');
+      return;
+    }
+  }
+
+  // Fallback: only local state (legacy)
   STATE.users.push({id:'u'+Date.now(),name,email,role,status:'ativo',modules,createdAt:new Date().toISOString().split('T')[0]});
-  logAction('Usuário criado',name);saveToLocal();closeModal();
-  bUsers(document.getElementById('mod-users'));toast('Usuário criado!');
+  logAction('Usuário criado (local)',name);saveToLocal();closeModal();
+  bUsers(document.getElementById('mod-users'));toast('Usuário criado localmente!');
 };
 
 window.openEditUser=id=>{
@@ -237,20 +278,57 @@ window.openEditUser=id=>{
     <button class="btn btn-theme" onclick="saveEditUser('${id}')"><i data-lucide="save"></i> Salvar</button>`);
 };
 
-window.saveEditUser=id=>{
+window.saveEditUser=async id=>{
   const u=STATE.users.find(x=>x.id===id);if(!u)return;
   u.name=document.getElementById('eu-name')?.value.trim()||u.name;
   u.role=document.getElementById('eu-role')?.value||u.role;
   u.modules=[...document.querySelectorAll('#mbd .mod-check input:checked')].map(c=>c.value);
-  logAction('Usuário editado',u.name);saveToLocal();closeModal();
-  bUsers(document.getElementById('mod-users'));toast('Usuário atualizado!');
+
+  // Upsert to Supabase profiles
+  if(window.SUPABASE_CONFIGURED && window.sb){
+    try {
+      const { error } = await sb.from('profiles').upsert({
+        id: u.id, name: u.name, email: u.email, role: u.role, status: u.status, modules: u.modules
+      });
+      if (error) throw error;
+    } catch (e) {
+      console.error('[saveEditUser] Supabase failed:', e);
+      toast('Erro ao salvar no Supabase: ' + (e.message||e), 'e');
+      return;
+    }
+  }
+
+  logAction('Usuário editado', u.name);
+  saveToLocal();
+  closeModal();
+  bUsers(document.getElementById('mod-users'));
+  toast('Usuário atualizado!');
 };
 
-window.toggleUserStatus=id=>{
+window.toggleUserStatus=async id=>{
   const u=STATE.users.find(x=>x.id===id);if(!u)return;
   u.status=u.status==='ativo'?'bloqueado':'ativo';
-  logAction('Usuário '+(u.status==='ativo'?'desbloqueado':'bloqueado'),u.name);saveToLocal();
-  bUsers(document.getElementById('mod-users'));toast(u.status==='ativo'?'Usuário desbloqueado':'Usuário bloqueado');
+
+  // Upsert to Supabase profiles
+  if(window.SUPABASE_CONFIGURED && window.sb){
+    try {
+      const { error } = await sb.from('profiles').upsert({
+        id: u.id, name: u.name, email: u.email, role: u.role, status: u.status, modules: u.modules
+      });
+      if (error) throw error;
+    } catch (e) {
+      console.error('[toggleUserStatus] Supabase failed:', e);
+      // Revert local change
+      u.status=u.status==='ativo'?'bloqueado':'ativo';
+      toast('Erro ao alterar status: ' + (e.message||e), 'e');
+      return;
+    }
+  }
+
+  logAction('Usuário '+(u.status==='ativo'?'desbloqueado':'bloqueado'), u.name);
+  saveToLocal();
+  bUsers(document.getElementById('mod-users'));
+  toast(u.status==='ativo'?'Usuário desbloqueado':'Usuário bloqueado');
 };
 
 // ══════════════════════════════════════════════════════════

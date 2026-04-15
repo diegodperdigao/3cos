@@ -10,12 +10,12 @@ function bAudit(el){
           <div class="audit-item">
             <div class="audit-icon"><i data-lucide="shield-check"></i></div>
             <div class="audit-info">
-              <div class="audit-action">${a.action}</div>
-              <div class="audit-detail">${a.detail}</div>
+              <div class="audit-action">${a.action||''}</div>
+              <div class="audit-detail">${a.detail||''}</div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:11px;font-weight:600;color:var(--text)">${a.user}</div>
-              <div class="audit-time">${a.time}</div>
+              <div style="font-size:11px;font-weight:600;color:var(--text)">${a.user||'Sistema'}</div>
+              <div class="audit-time">${a.time||''}</div>
             </div>
           </div>`).join(''):'<div class="empty"><p>Nenhum log registrado.</p></div>'}
       </div>

@@ -104,7 +104,7 @@ window.openAffDetail=id=>{
   const tks=STATE.tasks.filter(t=>t.affiliateId===id&&t.status!=='concluída');
   const p=pct(a.qftds,a.ftds);
   const brands=Object.keys(a.deals||{});
-  const history=STATE.auditLog.filter(log=>log.detail.includes(a.name)||log.action.includes(a.name)).slice(0,15);
+  const history=STATE.auditLog.filter(log=>(log.detail||'').includes(a.name)||(log.action||'').includes(a.name)).slice(0,15);
   const reports=STATE.reports.filter(r=>r.affiliateId===id).sort((x,y)=>new Date(y.date)-new Date(x.date));
   const pipeCard=STATE.pipeline?.cards?.find(c=>c.affiliateId===id);
   const pipeStage=pipeCard?STATE.pipeline.stages.find(s=>s.id===pipeCard.stageId):null;
