@@ -3,26 +3,41 @@
 // ══════════════════════════════════════════════════════════
 let _pyF=null;
 function bPayments(el){
-  const total=STATE.payments.reduce((s,p)=>s+p.amount,0);
-  const paid=STATE.payments.filter(p=>p.status==='pago').reduce((s,p)=>s+p.amount,0);
-  const pend=STATE.payments.filter(p=>p.status==='pendente').reduce((s,p)=>s+p.amount,0);
-  const appr=STATE.payments.filter(p=>p.status==='aprovado').reduce((s,p)=>s+p.amount,0);
+  // Compute KPIs using computed status (vencido/atrasado are time-based)
+  const byStatus=STATE.payments.reduce((acc,p)=>{
+    const cs=computePaymentStatus(p);
+    if(!acc[cs])acc[cs]={count:0,sum:0};
+    acc[cs].count++;
+    acc[cs].sum+=(p.amount||0);
+    return acc;
+  },{});
+  const paid=byStatus.pago?.sum||0;
+  const overdueSum=byStatus.vencido?.sum||0;
+  const overdueCount=byStatus.vencido?.count||0;
+  const lateSum=byStatus.atrasado?.sum||0;
+  const lateCount=byStatus.atrasado?.count||0;
+  const pend=(byStatus.pendente?.sum||0)+(byStatus.aprovado?.sum||0)+(byStatus.ajuste?.sum||0);
+
   el.innerHTML=modHdr('Financeiro — Pagamentos')+`<div class="mod-body">
     ${heroHTML('payments','Financeiro','Gestão Financeira','Aprovação, recusa e comissões por afiliado')}
     <div class="mod-main">
       <div class="kpi-row">
+        <div class="kpi" style="--kpi-c:var(--red);--kpi-glow:rgba(239,68,68,0.1);cursor:pointer" onclick="document.querySelector('[onclick*=&quot;pilPy(\\'vencido\\'&quot;]')?.click()">
+          <div class="kpi-icon-row"><i data-lucide="alert-octagon" style="width:14px;height:14px;stroke:var(--red)"></i><span class="kpi-lbl">Vencidos</span></div>
+          <div class="kpi-val sm col" style="--kpi-c:var(--red)">${fc(overdueSum)}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px">${overdueCount} pgto(s)</div></div>
+        <div class="kpi" style="--kpi-c:var(--amber);--kpi-glow:rgba(245,158,11,0.1);cursor:pointer" onclick="document.querySelector('[onclick*=&quot;pilPy(\\'atrasado\\'&quot;]')?.click()">
+          <div class="kpi-icon-row"><i data-lucide="clock" style="width:14px;height:14px;stroke:var(--amber)"></i><span class="kpi-lbl">Em Atraso</span></div>
+          <div class="kpi-val sm col" style="--kpi-c:var(--amber)">${fc(lateSum)}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px">${lateCount} pgto(s)</div></div>
         <div class="kpi" style="--kpi-c:var(--blue);--kpi-glow:rgba(59,130,246,0.1)">
           <div class="kpi-icon-row"><i data-lucide="trending-up" style="width:14px;height:14px;stroke:var(--blue)"></i><span class="kpi-lbl">Pipeline</span></div>
-          <div class="kpi-val sm">${fc(total)}</div></div>
+          <div class="kpi-val sm col" style="--kpi-c:var(--blue)">${fc(pend)}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px">a processar</div></div>
         <div class="kpi" style="--kpi-c:var(--green);--kpi-glow:rgba(16,185,129,0.1)">
-          <div class="kpi-icon-row"><i data-lucide="check-circle" style="width:14px;height:14px;stroke:var(--green)"></i><span class="kpi-lbl">Recebido</span></div>
-          <div class="kpi-val sm col" style="--kpi-c:var(--green)">${fc(paid)}</div></div>
-        <div class="kpi" style="--kpi-c:var(--amber);--kpi-glow:rgba(245,158,11,0.1)">
-          <div class="kpi-icon-row"><i data-lucide="clock" style="width:14px;height:14px;stroke:var(--amber)"></i><span class="kpi-lbl">Aprovados</span></div>
-          <div class="kpi-val sm col" style="--kpi-c:var(--amber)">${fc(appr)}</div></div>
-        <div class="kpi" style="--kpi-c:var(--red);--kpi-glow:rgba(239,68,68,0.1)">
-          <div class="kpi-icon-row"><i data-lucide="alert-circle" style="width:14px;height:14px;stroke:var(--red)"></i><span class="kpi-lbl">Pendente</span></div>
-          <div class="kpi-val sm col" style="--kpi-c:var(--red)">${fc(pend)}</div></div>
+          <div class="kpi-icon-row"><i data-lucide="check-circle" style="width:14px;height:14px;stroke:var(--green)"></i><span class="kpi-lbl">Pagos</span></div>
+          <div class="kpi-val sm col" style="--kpi-c:var(--green)">${fc(paid)}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px">${byStatus.pago?.count||0} pgto(s)</div></div>
       </div>
       <div class="tabs" id="pay-tabs">
         <button class="tab on" style="--tab-color:var(--pink)" onclick="showPayTab('closing',this)"><div class="tab-dot" style="background:var(--pink)"></div>Fechamento</button>
@@ -41,6 +56,8 @@ function bPayments(el){
         </div></div>
       <div class="pills">
         <button class="pill on" onclick="pilPy(null,this)">Todos</button>
+        <button class="pill" onclick="pilPy('vencido',this)">Vencidos</button>
+        <button class="pill" onclick="pilPy('atrasado',this)">Em Atraso</button>
         <button class="pill" onclick="pilPy('pendente',this)">Pendentes</button>
         <button class="pill" onclick="pilPy('ajuste',this)">Em Ajuste</button>
         <button class="pill" onclick="pilPy('aprovado',this)">Aprovados</button>
@@ -122,37 +139,61 @@ function renderPyTbl(list){
     </div>`;
     const body=document.createElement('div');
     body.style.cssText='overflow-x:auto';
-    body.innerHTML=`<table style="width:100%;border-collapse:collapse;min-width:600px">
-      <tbody>${g.payments.map(p=>`<tr class="tr" onclick="openAffDetail('${p.affiliateId}')">
+    body.innerHTML=`<table style="width:100%;border-collapse:collapse;min-width:760px">
+      <thead><tr>
+        <th>Marca</th><th>Contrato</th><th>Valor</th>
+        <th data-tooltip="Data em que o afiliado enviou a NF">Recebido</th>
+        <th data-tooltip="Data limite explícita do pagamento">Vencimento</th>
+        <th>NF</th><th>Status</th><th>Ações</th>
+      </tr></thead>
+      <tbody>${g.payments.map(p=>{
+        const cs=computePaymentStatus(p);
+        const info=getPaymentDeadlineInfo(p);
+        const dueOver=p.dueDate&&new Date(p.dueDate)<new Date()&&cs!=='pago';
+        const isLate=cs==='atrasado';
+        const isOverdue=cs==='vencido';
+        return `<tr class="tr ${isOverdue?'tr-overdue':isLate?'tr-late':''}" onclick="openAffDetail('${p.affiliateId}')">
         <td><span style="font-size:11px;font-weight:700;color:${STATE.brands[p.brand]?.color||'#888'}">${p.brand}</span></td>
         <td style="font-size:11px;color:var(--text2)">${p.contract}</td>
         <td class="td-money">${fc(p.amount)}</td>
-        <td style="font-size:11px;${od(p.dueDate,p.status)?'color:var(--red)':''}">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):'—'}</td>
+        <td style="font-size:11px;${isLate?'color:var(--amber);font-weight:700':''}">${p.nfReceivedDate?new Date(p.nfReceivedDate).toLocaleDateString('pt-BR'):'<span style="color:var(--text3)">—</span>'}${info?.companyDeadline&&cs!=='pago'?`<div style="font-size:8px;color:${isLate?'var(--amber)':'var(--text3)'};margin-top:2px">prazo ${info.companyDeadline.toLocaleDateString('pt-BR')}</div>`:''}</td>
+        <td style="font-size:11px;${dueOver?'color:var(--red);font-weight:700':''}">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):'<span style="color:var(--text3)">—</span>'}</td>
         <td>${p.nfLink?`<a href="${p.nfLink}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue);text-decoration:none" onclick="event.stopPropagation()">🔗 ${p.nfName||'Ver NF'}</a>`:p.nfName?`<span style="font-size:10px;color:var(--blue)">📎 ${p.nfName}</span>`:'<span style="font-size:10px;color:var(--text3)">—</span>'}</td>
-        <td><span class="pb pb-${p.status}">${pl(p.status)}</span></td>
+        <td><span class="pb pb-${cs}">${pl(cs)}</span></td>
         <td class="td-acts">
-          ${p.status==='pendente'||p.status==='ajuste'?`<button class="ibt" onclick="event.stopPropagation();approvePay('${p.id}')" data-tooltip="Aprovar pagamento"><i data-lucide="check" style="width:13px;height:13px;stroke:var(--green)"></i></button><button class="ibt amber" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')" data-tooltip="Devolver para ajuste"><i data-lucide="alert-circle" style="width:13px;height:13px"></i></button><button class="ibt danger" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')" data-tooltip="Recusar pagamento"><i data-lucide="x" style="width:13px;height:13px"></i></button>`:''}
+          ${(p.status==='pendente'||p.status==='ajuste')?`<button class="ibt" onclick="event.stopPropagation();approvePay('${p.id}')" data-tooltip="Aprovar pagamento"><i data-lucide="check" style="width:13px;height:13px;stroke:var(--green)"></i></button><button class="ibt amber" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')" data-tooltip="Devolver para ajuste"><i data-lucide="alert-circle" style="width:13px;height:13px"></i></button><button class="ibt danger" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')" data-tooltip="Recusar pagamento"><i data-lucide="x" style="width:13px;height:13px"></i></button>`:''}
           ${p.status==='aprovado'?`<button class="ibt" onclick="event.stopPropagation();markPaid('${p.id}')" data-tooltip="Confirmar pagamento"><i data-lucide="banknote" style="width:13px;height:13px;stroke:var(--green)"></i></button>`:''}
           <button class="ibt" onclick="event.stopPropagation();openEditPay('${p.id}')" data-tooltip="Editar pagamento"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
-        </td></tr>`).join('')}</tbody></table>`;
+        </td></tr>`;
+      }).join('')}</tbody></table>`;
     hdr.onclick=()=>{body.style.display=body.style.display==='none'?'block':'none';hdr.querySelector('.py-chev').style.transform=body.style.display==='none'?'':'rotate(180deg)';};
     div.appendChild(hdr);div.appendChild(body);el.appendChild(div);
   });
   lucide.createIcons();
 }
-window.pilPy=(s,btn)=>{_pyF=s;btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderPyTbl(s?STATE.payments.filter(p=>p.status===s):STATE.payments);};
-window.approvePay=id=>{const p=STATE.payments.find(x=>x.id===id);if(!p)return;p.status='aprovado';logAction('Pagamento aprovado',`${p.affiliate} ${fc(p.amount)}`);renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);toast('Aprovado!');};
-window.markPaid=id=>{const p=STATE.payments.find(x=>x.id===id);if(!p)return;p.status='pago';logAction('Pagamento confirmado',`${p.affiliate} ${fc(p.amount)}`);saveToLocal();renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);toast('Marcado como pago!');};
+window.pilPy=(s,btn)=>{
+  _pyF=s;
+  btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  // Filter by COMPUTED status (so vencido/atrasado work as time-based filters)
+  const list=s?STATE.payments.filter(p=>computePaymentStatus(p)===s):STATE.payments;
+  renderPyTbl(list);
+};
+window.approvePay=id=>{const p=STATE.payments.find(x=>x.id===id);if(!p)return;p.status='aprovado';logAction('Pagamento aprovado',`${p.affiliate} ${fc(p.amount)}`);renderPyTbl(_pyF?STATE.payments.filter(x=>computePaymentStatus(x)===_pyF):STATE.payments);toast('Aprovado!');};
+window.markPaid=id=>{const p=STATE.payments.find(x=>x.id===id);if(!p)return;p.status='pago';logAction('Pagamento confirmado',`${p.affiliate} ${fc(p.amount)}`);saveToLocal();renderPyTbl(_pyF?STATE.payments.filter(x=>computePaymentStatus(x)===_pyF):STATE.payments);toast('Marcado como pago!');};
 
 window.openEditPay=id=>{
   const p=STATE.payments.find(x=>x.id===id);if(!p)return;
+  const stdDays=STATE.deadlines?.standardPaymentDays||5;
   openModal('Editar Pagamento',`<div class="fg">
     <div class="fgp ff"><label>Afiliado</label><input class="fi" value="${p.affiliate}" disabled></div>
     <div class="fgp"><label>Marca</label><input class="fi" value="${p.brand}" disabled></div>
-    <div class="fgp"><label>Contrato / Referência</label><input class="fi" id="ep-contract" value="${p.contract||''}"></div>
+    <div class="fgp ff"><label>Contrato / Referência</label><input class="fi" id="ep-contract" value="${p.contract||''}"></div>
     <div class="fgp"><label>Valor (R$) *</label><input type="number" class="fi" id="ep-amount" value="${p.amount}"></div>
+    <div class="fgp"><label>NF Recebida em</label><input type="date" class="fi" id="ep-nfdate" value="${p.nfReceivedDate||''}">
+      <div style="font-size:9px;color:var(--text3);margin-top:4px">Prazo da empresa: ${stdDays} dias úteis</div></div>
     <div class="fgp"><label>Data de Vencimento</label><input type="date" class="fi" id="ep-date" value="${p.dueDate||''}"></div>
-    <div class="fgp"><label>Status</label><select class="fi" id="ep-status">
+    <div class="fgp ff"><label>Status</label><select class="fi" id="ep-status">
       <option value="pendente" ${p.status==='pendente'?'selected':''}>Pendente</option>
       <option value="aprovado" ${p.status==='aprovado'?'selected':''}>Aprovado</option>
       <option value="ajuste" ${p.status==='ajuste'?'selected':''}>Em Ajuste</option>
@@ -171,12 +212,13 @@ window.saveEditPay=id=>{
   const p=STATE.payments.find(x=>x.id===id);if(!p)return;
   p.contract=document.getElementById('ep-contract')?.value.trim()||p.contract;
   p.amount=parseFloat(document.getElementById('ep-amount')?.value)||p.amount;
+  p.nfReceivedDate=document.getElementById('ep-nfdate')?.value||p.nfReceivedDate||'';
   p.dueDate=document.getElementById('ep-date')?.value||p.dueDate;
   p.status=document.getElementById('ep-status')?.value||p.status;
   const nf=document.getElementById('ep-nf')?.files[0];
   if(nf)p.nfName=nf.name;
   logAction('Pagamento editado',`${p.affiliate} ${fc(p.amount)}`);saveToLocal();closeModal();
-  renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);
+  renderPyTbl(_pyF?STATE.payments.filter(x=>computePaymentStatus(x)===_pyF):STATE.payments);
   toast('Pagamento atualizado!');
 };
 
@@ -219,6 +261,8 @@ window.confirmPayAction = (id, action) => {
 };
 
 window.openNewPay=()=>{
+  const today=new Date().toISOString().split('T')[0];
+  const stdDays=STATE.deadlines?.standardPaymentDays||5;
   openModal('Solicitar Pagamento',`<div class="fg">
     <div class="fgp ff"><label>Afiliado *</label>
       <select class="fi" id="np-aff">
@@ -230,14 +274,19 @@ window.openNewPay=()=>{
         ${Object.keys(STATE.brands).map(b=>`<option value="${b}">${b}</option>`).join('')}
       </select>
     </div>
-    <div class="fgp"><label>Referência / Contrato</label>
+    <div class="fgp ff"><label>Referência / Contrato</label>
       <input class="fi" type="text" id="np-contract" placeholder="Ex: Faturamento Março">
     </div>
     <div class="fgp"><label>Valor (R$) *</label>
       <input class="fi" type="number" id="np-amount" placeholder="0.00">
     </div>
+    <div class="fgp"><label>NF Recebida em *</label>
+      <input class="fi" type="date" id="np-nfdate" value="${today}">
+      <div style="font-size:9px;color:var(--text3);margin-top:4px">Prazo da empresa: ${stdDays} dias úteis</div>
+    </div>
     <div class="fgp"><label>Data de Vencimento *</label>
       <input class="fi" type="date" id="np-date">
+      <div style="font-size:9px;color:var(--text3);margin-top:4px">Limite máximo (após isso = vencido)</div>
     </div>
     <div class="fgp ff"><label>Nota Fiscal (NF) — arquivo ou link *</label>
       <input class="fi" type="file" id="np-nf" accept=".pdf,.jpg,.png" style="padding: 7px 10px; cursor: pointer;">
@@ -253,11 +302,12 @@ window.saveNewPay=()=>{
   const brand = document.getElementById('np-brand').value;
   const contract = document.getElementById('np-contract').value.trim() || 'Pagamento Avulso';
   const amountStr = document.getElementById('np-amount').value;
+  const nfReceivedDate = document.getElementById('np-nfdate').value;
   const dueDate = document.getElementById('np-date').value;
   const nfFile = document.getElementById('np-nf').files[0];
   const nfUrl = document.getElementById('np-nf-url')?.value.trim();
 
-  if(!affId || !brand || !amountStr || !dueDate) { toast('Preencha todos os campos obrigatórios', 'e'); return; }
+  if(!affId || !brand || !amountStr || !dueDate || !nfReceivedDate) { toast('Preencha todos os campos obrigatórios', 'e'); return; }
   if(!nfFile && !nfUrl) { toast('Anexe a NF (arquivo ou link)', 'w'); return; }
 
   const amount = parseFloat(amountStr);
@@ -267,13 +317,13 @@ window.saveNewPay=()=>{
 
   const newPay = {
     id: 'py' + Date.now(),
-    affiliateId: affId, affiliate, brand, contract, amount, dueDate,
+    affiliateId: affId, affiliate, brand, contract, amount, nfReceivedDate, dueDate,
     status: 'pendente', nfName, nfLink
   };
 
-  STATE.payments.unshift(newPay); 
+  STATE.payments.unshift(newPay);
   logAction('Solicitação de pagamento', `${affiliate} - ${fc(amount)}`);
-  
+
   STATE.notifications.unshift({
     id: 'n' + Date.now(),
     type: 'blue',
@@ -284,7 +334,7 @@ window.saveNewPay=()=>{
   });
 
   closeModal();
-  renderPyTbl(_pyF ? STATE.payments.filter(x => x.status === _pyF) : STATE.payments);
+  renderPyTbl(_pyF ? STATE.payments.filter(x => computePaymentStatus(x) === _pyF) : STATE.payments);
   updateActionCenter();
   updateNotifBadge();
   toast('Pagamento solicitado com sucesso!');
@@ -469,7 +519,7 @@ window.sendBatch=()=>{
   appr.forEach((p,i)=>{if(checked[i]?.checked){p.status='pago';sent++;}});
   if(sent>0){logAction('Remessa enviada',`${sent} pagamento(s) confirmado(s)`);saveToLocal();}
   closeModal();
-  renderPyTbl(_pyF?STATE.payments.filter(x=>x.status===_pyF):STATE.payments);
+  renderPyTbl(_pyF?STATE.payments.filter(x=>computePaymentStatus(x)===_pyF):STATE.payments);
   toast(sent>0?`${sent} pagamento(s) confirmado(s)!`:'Nenhum selecionado');
 };
 
@@ -1044,7 +1094,12 @@ function renderDeadlinesTab(){
         </div>
 
         <div class="dtl" style="margin-top:8px">Prazos Gerais</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">
+          <div style="padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:12px;border-left:3px solid var(--amber)">
+            <label style="font-size:9px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:0.12em;display:block;margin-bottom:6px">Prazo da Empresa (dias úteis)</label>
+            <input type="number" min="1" max="60" class="fi" id="dl-std-days" value="${dl.standardPaymentDays||5}" style="padding:8px;font-size:14px;font-weight:700">
+            <div style="font-size:9px;color:var(--text3);margin-top:6px;line-height:1.4">Após NF recebida + N dias úteis sem pagamento → <strong style="color:var(--amber)">EM ATRASO</strong></div>
+          </div>
           <div style="padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:12px">
             <label style="font-size:9px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:6px">Dias após repasse da marca para pagar afiliado</label>
             <input type="number" min="1" max="60" class="fi" id="dl-aff-days" value="${dl.affiliatePayDays||10}" style="padding:8px;font-size:13px">
@@ -1091,6 +1146,7 @@ window.saveDeadlines=()=>{
   });
   STATE.deadlines.affiliatePayDays=parseInt(document.getElementById('dl-aff-days')?.value)||10;
   STATE.deadlines.nfReminderDays=parseInt(document.getElementById('dl-nf-days')?.value)||5;
+  STATE.deadlines.standardPaymentDays=parseInt(document.getElementById('dl-std-days')?.value)||5;
   logAction('Prazos atualizados','Calendário financeiro');saveToLocal();toast('Prazos salvos!');
   renderDeadlineCalendar();
 };

@@ -1,54 +1,87 @@
 // ══════════════════════════════════════════════════════════
-// PAYMENT WATCHDOG — Automated overdue payment checker
+// PAYMENT WATCHDOG — Automated overdue/late payment checker
 // ══════════════════════════════════════════════════════════
-// Runs on login. Checks all payments against deadlines.
-// If overdue + no receipt → alert + email (when EmailJS configured).
+// Runs on login. Uses computePaymentStatus() to detect:
+//   - VENCIDO: past the explicit dueDate
+//   - ATRASADO: past company standard deadline (NF received + N business days)
+//   - DUE SOON: dueDate within next 3 days
+//
+// Generates notifications with proper routing + sends summary
+// email to finance team via EmailJS (when configured).
+//
+// AI agents reading from Firestore can replicate this same logic
+// using computePaymentStatus / getPaymentDeadlineInfo helpers.
+// ══════════════════════════════════════════════════════════
 
 function runPaymentWatchdog(){
   const now=new Date();
   const today=now.toISOString().split('T')[0];
-  const overdue=[];
-  const dueSoon=[];
+  const overdue=[];   // vencido — past dueDate
+  const late=[];      // atrasado — past company deadline
+  const dueSoon=[];   // dueDate within 3 days
 
   STATE.payments.forEach(p=>{
-    // Only check pending or approved (not paid, not refused)
+    // Terminal states are skipped
     if(p.status==='pago'||p.status==='recusado')return;
-    if(!p.dueDate)return;
 
-    const due=new Date(p.dueDate);
-    const daysLeft=Math.ceil((due-now)/(1000*60*60*24));
+    const cs=(typeof computePaymentStatus==='function')?computePaymentStatus(p):p.status;
     const hasReceipt=!!(p.nfName||p.nfLink);
 
-    if(daysLeft<0){
-      // OVERDUE
-      overdue.push({...p,daysLeft,hasReceipt});
-    }else if(daysLeft<=3){
-      // DUE SOON (within 3 days)
-      dueSoon.push({...p,daysLeft,hasReceipt});
+    if(cs==='vencido'){
+      const due=p.dueDate?new Date(p.dueDate):null;
+      const daysLate=due?Math.abs(Math.ceil((due-now)/86400000)):0;
+      overdue.push({...p,daysLate,hasReceipt});
+      return;
+    }
+    if(cs==='atrasado'){
+      const std=STATE.deadlines?.standardPaymentDays||5;
+      const deadline=p.nfReceivedDate?addBusinessDays(new Date(p.nfReceivedDate),std):null;
+      const daysLate=deadline?Math.abs(Math.ceil((deadline-now)/86400000)):0;
+      late.push({...p,daysLate,hasReceipt});
+      return;
+    }
+    // Due soon (still within term, but close)
+    if(p.dueDate){
+      const due=new Date(p.dueDate);
+      const daysLeft=Math.ceil((due-now)/86400000);
+      if(daysLeft>=0&&daysLeft<=3){
+        dueSoon.push({...p,daysLeft,hasReceipt});
+      }
     }
   });
 
-  if(!overdue.length&&!dueSoon.length)return;
+  if(!overdue.length&&!late.length&&!dueSoon.length)return;
 
-  // Generate notifications for overdue payments
   const newAlerts=[];
-  overdue.forEach(p=>{
-    const alertId='wd_'+p.id;
-    // Avoid duplicate notifications (check if already notified today)
-    if(STATE.notifications?.some(n=>n.id===alertId&&n.time?.includes(today.split('-').reverse().join('/'))))return;
+  const dateStamp=now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const todayBR=today.split('-').reverse().join('/');
+  const isDuplicate=(id)=>STATE.notifications?.some(n=>n.id===id&&n.time?.includes(todayBR));
 
-    const msg=`VENCIDO: ${p.affiliate} — ${p.brand} (${fc(p.amount)}) venceu há ${Math.abs(p.daysLeft)} dia(s)${!p.hasReceipt?' · SEM COMPROVANTE':''}`;
-    newAlerts.push({id:alertId,type:'red',text:msg,time:now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),read:false,
-      action:{module:'payments',tab:'queue',filter:'pendente',entityId:p.id}});
+  // VENCIDOS — alta prioridade (vermelho)
+  overdue.forEach(p=>{
+    const alertId='wd_v_'+p.id;
+    if(isDuplicate(alertId))return;
+    const msg=`VENCIDO: ${p.affiliate} — ${p.brand} (${fc(p.amount)}) há ${p.daysLate} dia(s)${!p.hasReceipt?' · SEM NF':''}`;
+    newAlerts.push({id:alertId,type:'red',text:msg,time:dateStamp,read:false,
+      action:{module:'payments',tab:'queue',filter:'vencido',entityId:p.id}});
   });
 
-  dueSoon.forEach(p=>{
-    const alertId='wd_soon_'+p.id;
-    if(STATE.notifications?.some(n=>n.id===alertId&&n.time?.includes(today.split('-').reverse().join('/'))))return;
+  // ATRASADOS — média prioridade (amber)
+  late.forEach(p=>{
+    const alertId='wd_a_'+p.id;
+    if(isDuplicate(alertId))return;
+    const msg=`EM ATRASO: ${p.affiliate} — ${p.brand} (${fc(p.amount)}) prazo da empresa estourou há ${p.daysLate} dia(s)`;
+    newAlerts.push({id:alertId,type:'amber',text:msg,time:dateStamp,read:false,
+      action:{module:'payments',tab:'queue',filter:'atrasado',entityId:p.id}});
+  });
 
+  // DUE SOON — info (azul)
+  dueSoon.forEach(p=>{
+    const alertId='wd_s_'+p.id;
+    if(isDuplicate(alertId))return;
     const daysTxt=p.daysLeft===0?'HOJE':p.daysLeft===1?'AMANHÃ':`em ${p.daysLeft} dias`;
-    const msg=`Vence ${daysTxt}: ${p.affiliate} — ${p.brand} (${fc(p.amount)})${!p.hasReceipt?' · SEM COMPROVANTE':''}`;
-    newAlerts.push({id:alertId,type:'amber',text:msg,time:now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),read:false,
+    const msg=`Vence ${daysTxt}: ${p.affiliate} — ${p.brand} (${fc(p.amount)})${!p.hasReceipt?' · SEM NF':''}`;
+    newAlerts.push({id:alertId,type:'blue',text:msg,time:dateStamp,read:false,
       action:{module:'payments',tab:'queue',filter:'pendente',entityId:p.id}});
   });
 
@@ -58,55 +91,59 @@ function runPaymentWatchdog(){
     updateNotifBadge();
     saveToLocal();
   }
-  // NOTE: alerts go silently to the notification center (bell badge).
-  // No toasts — avoids interrupting the user on login/hub entry.
+  // Alerts go silently to the notification center (no toast)
 
-  // Send email if EmailJS configured (overdue only)
-  const overdueNoReceipt=overdue.filter(p=>!p.hasReceipt);
-  if(overdueNoReceipt.length&&STATE.emailjs?.publicKey&&STATE.emailjs?.serviceId&&STATE.emailjs?.financeEmail){
-    sendWatchdogEmail(overdueNoReceipt);
+  // Email summary (vencidos + atrasados — aggregated, once per day)
+  const criticalList=[...overdue,...late];
+  if(criticalList.length&&STATE.emailjs?.publicKey&&STATE.emailjs?.serviceId&&STATE.emailjs?.financeEmail){
+    sendWatchdogEmail(overdue,late);
   }
 
-  // Log
-  if(overdue.length||dueSoon.length){
-    logAction('Watchdog executado',`${overdue.length} vencido(s), ${dueSoon.length} próximo(s)`);
+  if(overdue.length||late.length||dueSoon.length){
+    logAction('Watchdog executado',`${overdue.length} vencido(s), ${late.length} em atraso, ${dueSoon.length} próximo(s)`);
   }
 }
 
-function sendWatchdogEmail(overdueList){
+function sendWatchdogEmail(overdue,late){
   if(typeof emailjs==='undefined')return;
   const cfg=STATE.emailjs;
 
-  // Check if already sent today (avoid spam)
+  // Avoid spam — once per day
   const today=new Date().toISOString().split('T')[0];
   if(STATE._watchdogLastEmail===today)return;
 
-  const totalAmount=overdueList.reduce((s,p)=>s+p.amount,0);
-  const lines=overdueList.map(p=>
-    `• ${p.affiliate} — ${p.brand}: ${fc(p.amount)} (vencido há ${Math.abs(p.daysLeft)} dia${Math.abs(p.daysLeft)>1?'s':''})${p.status==='pendente'?' [PENDENTE]':' [APROVADO]'}`
-  ).join('\n');
+  const totalOverdue=overdue.reduce((s,p)=>s+p.amount,0);
+  const totalLate=late.reduce((s,p)=>s+p.amount,0);
+  const totalAmount=totalOverdue+totalLate;
 
-  // Use closing template or a generic one
+  const overdueLines=overdue.length?'\n— VENCIDOS (passou da data limite) —\n'+overdue.map(p=>
+    `• ${p.affiliate} — ${p.brand}: ${fc(p.amount)} (vencido há ${p.daysLate} dia${p.daysLate>1?'s':''})${!p.hasReceipt?' [SEM NF]':''}`
+  ).join('\n'):'';
+
+  const lateLines=late.length?'\n\n— EM ATRASO (passou do prazo da empresa) —\n'+late.map(p=>
+    `• ${p.affiliate} — ${p.brand}: ${fc(p.amount)} (atraso de ${p.daysLate} dia${p.daysLate>1?'s':''} úteis)`
+  ).join('\n'):'';
+
   const templateId=STATE.emailjs.templateIdWatchdog||STATE.emailjs.templateId;
   if(!templateId)return;
 
   emailjs.init(cfg.publicKey);
   emailjs.send(cfg.serviceId,templateId,{
     to_email:cfg.financeEmail,
-    subject:`3COS — ALERTA: ${overdueList.length} pagamento(s) vencido(s) sem comprovante`,
-    affiliate_name:`Alerta Automático — ${overdueList.length} pagamento(s)`,
-    brand:overdueList.map(p=>p.brand).filter((v,i,a)=>a.indexOf(v)===i).join(', '),
+    subject:`3COS — ALERTA: ${overdue.length} vencido(s) + ${late.length} em atraso`,
+    affiliate_name:`Watchdog Financeiro — ${overdue.length+late.length} pagamento(s)`,
+    brand:[...new Set([...overdue,...late].map(p=>p.brand))].join(', '),
     month_ref:new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'}),
     commission:fc(totalAmount),
     ftds:'-',qftds:'-',deposits:'-',net_rev:'-',profit:'-',
-    contract_type:'Diversos',
+    contract_type:'Watchdog',
     analyst:'Watchdog 3COS (automático)',
     date:new Date().toLocaleDateString('pt-BR'),
-    message:`ALERTA AUTOMÁTICO — PAGAMENTOS VENCIDOS SEM COMPROVANTE\n\n${overdueList.length} pagamento(s) vencido(s) totalizando ${fc(totalAmount)}:\n\n${lines}\n\nPor favor, verificar e registrar os comprovantes no sistema 3COS.`
+    message:`ALERTA AUTOMÁTICO — STATUS DOS PAGAMENTOS\n\nTotal crítico: ${fc(totalAmount)}\n• Vencidos: ${overdue.length} (${fc(totalOverdue)})\n• Em atraso: ${late.length} (${fc(totalLate)})\n${overdueLines}${lateLines}\n\nAcesse o 3COS > Financeiro > Pagamentos para resolver.`
   }).then(()=>{
     STATE._watchdogLastEmail=today;
     saveToLocal();
-    logAction('Watchdog email enviado',`${overdueList.length} pagamento(s) vencido(s)`);
+    logAction('Watchdog email enviado',`${overdue.length} vencido(s), ${late.length} em atraso`);
   },(err)=>{
     console.warn('Watchdog email failed:',err);
   });

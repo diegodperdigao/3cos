@@ -70,11 +70,11 @@ const DEFAULT_STATE={
     {id:'ct5',affiliateId:'a1',affiliate:'Agência FMG',brand:'Novibet',name:'Deal Novibet — FMG',type:'tiered',value:320000,status:'ativo',startDate:'2026-01-15',endDate:'2026-03-31',description:'CPA escalonado Novibet.',paymentStatus:'parcial',paid:160000},
   ],
   payments:[
-    {id:'py1',contractId:'ct1',affiliateId:'a1',affiliate:'Agência FMG',brand:'Vupi',contract:'Deal Vupi — FMG Q1 2026',amount:90000,dueDate:'2026-02-15',status:'pago',type:'Parcela 1/2',nfName:'NF_3001.pdf'},
-    {id:'py2',contractId:'ct1',affiliateId:'a1',affiliate:'Agência FMG',brand:'Vupi',contract:'Deal Vupi — FMG Q1 2026',amount:90000,dueDate:'2026-04-01',status:'pendente',type:'Parcela 2/2',nfName:''},
-    {id:'py3',contractId:'ct5',affiliateId:'a1',affiliate:'Agência FMG',brand:'Novibet',contract:'Deal Novibet — FMG',amount:60000,dueDate:'2026-03-31',status:'aprovado',type:'Parcela 1/2',nfName:'NF_3045.pdf'},
-    {id:'py4',contractId:'ct5',affiliateId:'a1',affiliate:'Agência FMG',brand:'Novibet',contract:'Deal Novibet — FMG',amount:100000,dueDate:'2026-05-31',status:'pendente',type:'Parcela 2/2',nfName:''},
-    {id:'py5',contractId:'ct4',affiliateId:'a5',affiliate:'Igor Lima',brand:'Superbet',contract:'RS Superbet — Igor',amount:30000,dueDate:'2026-03-29',status:'aprovado',type:'Jan-Fev',nfName:'NF_3067.pdf'},
+    {id:'py1',contractId:'ct1',affiliateId:'a1',affiliate:'Agência FMG',brand:'Vupi',contract:'Deal Vupi — FMG Q1 2026',amount:90000,nfReceivedDate:'2026-02-05',dueDate:'2026-02-15',status:'pago',type:'Parcela 1/2',nfName:'NF_3001.pdf'},
+    {id:'py2',contractId:'ct1',affiliateId:'a1',affiliate:'Agência FMG',brand:'Vupi',contract:'Deal Vupi — FMG Q1 2026',amount:90000,nfReceivedDate:'2026-03-25',dueDate:'2026-04-01',status:'pendente',type:'Parcela 2/2',nfName:''},
+    {id:'py3',contractId:'ct5',affiliateId:'a1',affiliate:'Agência FMG',brand:'Novibet',contract:'Deal Novibet — FMG',amount:60000,nfReceivedDate:'2026-03-20',dueDate:'2026-03-31',status:'aprovado',type:'Parcela 1/2',nfName:'NF_3045.pdf'},
+    {id:'py4',contractId:'ct5',affiliateId:'a1',affiliate:'Agência FMG',brand:'Novibet',contract:'Deal Novibet — FMG',amount:100000,nfReceivedDate:'',dueDate:'2026-05-31',status:'pendente',type:'Parcela 2/2',nfName:''},
+    {id:'py5',contractId:'ct4',affiliateId:'a5',affiliate:'Igor Lima',brand:'Superbet',contract:'RS Superbet — Igor',amount:30000,nfReceivedDate:'2026-03-19',dueDate:'2026-03-29',status:'aprovado',type:'Jan-Fev',nfName:'NF_3067.pdf'},
   ],
   reports:[
     {brand:'Vupi',affiliateId:'a1',date:'2026-03-01',ftd:18,qftd:14,deposits:2200,netRev:22},
@@ -124,6 +124,9 @@ const DEFAULT_STATE={
     affiliatePayDays:10,
     // Dias antes do vencimento para gerar tarefa de envio de NF
     nfReminderDays:5,
+    // Prazo padrão da empresa (dias úteis) após o recebimento da NF
+    // Se passar deste prazo sem ser pago, status computado = "atrasado"
+    standardPaymentDays:5,
     // Mês de referência atual (para controle)
     lastGenerated:''
   },
@@ -262,6 +265,9 @@ const loadFromLocal = () => {
   // Ensure Lab defaults exist for existing users (backwards compat)
   if (typeof STATE.betaMode !== 'boolean') STATE.betaMode = false;
   if (!STATE.availableTags || !STATE.availableTags.length) STATE.availableTags = [...DEFAULT_STATE.availableTags];
+  // Ensure deadlines.standardPaymentDays exists (added in payment status feature)
+  if (!STATE.deadlines) STATE.deadlines = {...DEFAULT_STATE.deadlines};
+  if (typeof STATE.deadlines.standardPaymentDays !== 'number') STATE.deadlines.standardPaymentDays = 5;
   // Clean up legacy labFlags shape if present
   if (STATE.labFlags) delete STATE.labFlags;
 };
@@ -274,7 +280,85 @@ const cvC=p=>p>=60?'#10b981':p>=30?'#f59e0b':'#ef4444';
 const medal=i=>['🥇','🥈','🥉'][i]||'#'+(i+1);
 const od=(d,s)=>d&&s!=='pago'&&new Date(d)<new Date();
 const sl=s=>({ativo:'Ativo',negociação:'Negociação',encerrado:'Encerrado'}[s]||s||'Ativo');
-const pl=s=>({pendente:'Pendente',aprovado:'Aprovado',pago:'Pago',parcial:'Parcial',recusado:'Recusado',ajuste:'Ajuste Necessário'}[s]||s);
+const pl=s=>({pendente:'Pendente',aprovado:'Aprovado',pago:'Pago',parcial:'Parcial',recusado:'Recusado',ajuste:'Ajuste Necessário',atrasado:'Atrasado',vencido:'Vencido'}[s]||s);
+
+// ══════════════════════════════════════════════════════════
+// PAYMENT STATUS COMPUTATION
+// ══════════════════════════════════════════════════════════
+// The raw STATE.payments[i].status is the WORKFLOW state
+// (pendente/aprovado/ajuste/pago/recusado). The DISPLAY status
+// adds time-based states (atrasado/vencido) computed on render.
+//
+// Rules:
+//  - pago / recusado → terminal, never recomputed
+//  - vencido → past the explicit dueDate (highest severity)
+//  - atrasado → past company deadline (NF received + N business days)
+//  - otherwise → keep stored status
+//
+// This function is the single source of truth for payment status
+// across the UI, watchdog, notifications, and AI agents reading
+// from Firestore.
+// ══════════════════════════════════════════════════════════
+function addBusinessDays(date, days) {
+  const result = new Date(date);
+  let added = 0;
+  while (added < days) {
+    result.setDate(result.getDate() + 1);
+    const day = result.getDay();
+    if (day !== 0 && day !== 6) added++;
+  }
+  return result;
+}
+window.addBusinessDays = addBusinessDays;
+
+window.computePaymentStatus = (p) => {
+  if (!p) return 'pendente';
+  // Terminal states — never recomputed
+  if (p.status === 'pago') return 'pago';
+  if (p.status === 'recusado') return 'recusado';
+  if (p.status === 'ajuste') return 'ajuste';
+
+  const now = new Date();
+
+  // 1) Vencido — past the explicit dueDate (highest severity)
+  if (p.dueDate) {
+    const due = new Date(p.dueDate);
+    if (due < now) return 'vencido';
+  }
+
+  // 2) Atrasado — past the company standard deadline (NF received + N business days)
+  if (p.nfReceivedDate) {
+    const std = STATE.deadlines?.standardPaymentDays || 5;
+    const deadline = addBusinessDays(new Date(p.nfReceivedDate), std);
+    if (deadline < now) return 'atrasado';
+  }
+
+  // Otherwise keep stored status (pendente / aprovado)
+  return p.status || 'pendente';
+};
+
+// Returns metadata about why a payment is late + when its deadline is
+window.getPaymentDeadlineInfo = (p) => {
+  if (!p) return null;
+  const now = new Date();
+  const std = STATE.deadlines?.standardPaymentDays || 5;
+  const info = { standardDays: std };
+
+  if (p.nfReceivedDate) {
+    const nfDate = new Date(p.nfReceivedDate);
+    const deadline = addBusinessDays(nfDate, std);
+    info.nfReceivedDate = nfDate;
+    info.companyDeadline = deadline;
+    info.daysUntilDeadline = Math.ceil((deadline - now) / 86400000);
+  }
+  if (p.dueDate) {
+    const due = new Date(p.dueDate);
+    info.dueDate = due;
+    info.daysUntilDue = Math.ceil((due - now) / 86400000);
+  }
+  info.computedStatus = computePaymentStatus(p);
+  return info;
+};
 
 function toast(msg,t='s'){
   const el=document.createElement('div');el.className=`toast t${t}`;el.textContent=msg;

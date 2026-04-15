@@ -605,12 +605,24 @@ td{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-ali
 .b-negociação{background:rgba(59,130,246,0.1);color:var(--blue);}
 .b-encerrado{background:rgba(255,255,255,0.05);color:var(--text3);}
 [data-theme="light"] .b-encerrado{background:rgba(0,0,0,0.04);}
-.pb-pendente{background:rgba(245,158,11,0.1);color:var(--amber);}
-.pb-aprovado{background:rgba(59,130,246,0.1);color:var(--blue);}
+.pb-pendente{background:rgba(59,130,246,0.1);color:var(--blue);}
+.pb-aprovado{background:rgba(168,85,247,0.1);color:var(--purple);}
 .pb-pago{background:rgba(16,185,129,0.1);color:var(--green);}
 .pb-parcial{background:rgba(168,85,247,0.1);color:var(--purple);}
 .pb-recusado{background:rgba(239,68,68,0.1);color:var(--red);}
 .pb-ajuste{background:rgba(245,158,11,0.1);color:var(--amber);}
+.pb-atrasado{background:rgba(245,158,11,0.15);color:var(--amber);border:1px solid rgba(245,158,11,0.4);}
+.pb-vencido{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.4);
+  animation:pulseVencido 2.5s ease-in-out infinite;}
+@keyframes pulseVencido{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}50%{box-shadow:0 0 0 4px rgba(239,68,68,0)}}
+
+/* Highlighted rows for late/overdue payments */
+.tr-late{background:rgba(245,158,11,0.04) !important;}
+.tr-late:hover{background:rgba(245,158,11,0.08) !important;}
+.tr-overdue{background:rgba(239,68,68,0.05) !important;}
+.tr-overdue:hover{background:rgba(239,68,68,0.09) !important;}
+[data-theme="light"] .tr-late{background:rgba(245,158,11,0.05) !important;}
+[data-theme="light"] .tr-overdue{background:rgba(239,68,68,0.06) !important;}
 
 .role-badge{font-size:8px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;padding:2px 8px;border-radius:4px;white-space:nowrap;}
 .role-admin{background:rgba(239,68,68,0.1);color:var(--red);}
@@ -1885,9 +1897,11 @@ textarea.fi{resize:vertical;min-height:60px;}
   border:1px solid currentColor !important;
   background:transparent !important;
   padding:3px 8px !important;}
-[data-edition="mono"] .pb-pendente{color:var(--amber) !important;}
+[data-edition="mono"] .pb-pendente{color:var(--text) !important;}
 [data-edition="mono"] .pb-aprovado{color:var(--text) !important;}
 [data-edition="mono"] .pb-pago{color:var(--green) !important;}
+[data-edition="mono"] .pb-atrasado{color:var(--amber) !important;}
+[data-edition="mono"] .pb-vencido{color:var(--red) !important;animation:none !important;}
 [data-edition="mono"] .pb-recusado{color:var(--red) !important;}
 [data-edition="mono"] .pb-ajuste{color:var(--amber) !important;}
 [data-edition="mono"] .pb-parcial{color:var(--text) !important;}
