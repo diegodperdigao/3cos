@@ -309,7 +309,7 @@ window.Data = (function () {
         if (brandRows.length) ops.push(sb().from('brands').upsert(brandRows));
       }
 
-      // Array tables — bulk upsert
+      // Array tables — bulk upsert (use primary key by default)
       const arrayTables = [
         ['affiliates', STATE.affiliates],
         ['contracts', STATE.contracts],
@@ -325,6 +325,38 @@ window.Data = (function () {
           ops.push(sb().from(table).upsert(rows));
         }
       });
+
+      // Reports — natural key upsert (no JS-side id)
+      // Requires unique index on (brand, affiliate_id, date)
+      // → see supabase/migrations/001_phase3_followup.sql
+      if (STATE.reports?.length) {
+        const reportRows = STATE.reports
+          .filter(r => r.brand && r.affiliateId && r.date)
+          .map(r => ({
+            brand: r.brand,
+            affiliate_id: r.affiliateId,
+            date: r.date,
+            ftd: r.ftd || 0,
+            qftd: r.qftd || 0,
+            deposits: r.deposits || 0,
+            net_rev: r.netRev || 0,
+          }));
+        if (reportRows.length) {
+          ops.push(sb().from('reports').upsert(reportRows, { onConflict: 'brand,affiliate_id,date' }));
+        }
+      }
+
+      // Notifications — text id, drop "time" field (Postgres handles created_at)
+      if (STATE.notifications?.length) {
+        const notifRows = STATE.notifications.map(n => ({
+          id: n.id,
+          type: n.type,
+          text: n.text,
+          action: n.action || null,
+          read: !!n.read,
+        }));
+        ops.push(sb().from('notifications').upsert(notifRows));
+      }
 
       // Pipeline (stages + cards)
       if (STATE.pipeline?.stages?.length) {
