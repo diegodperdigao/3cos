@@ -274,6 +274,82 @@ window.Data = (function () {
     return true;
   }
 
+  // ── SYNC ALL — bulk push entire STATE to Supabase ───────
+  // This is the Phase 3 write strategy: instead of refactoring
+  // every mutation site to call upsert individually, we just
+  // hook this into saveToCloud(). When the user changes anything,
+  // saveToCloud fires (debounced) and syncs the affected entities.
+  //
+  // Trade-off: more network bandwidth than per-row upserts, but
+  // ZERO code changes outside of saveToCloud. At our scale
+  // (6 affiliates, 5 payments) the entire sync is < 50KB.
+  let _syncing = false;
+  async function syncAll() {
+    if (!sb() || _syncing) return false;
+    _syncing = true;
+    try {
+      const ops = [];
+
+      // Singletons (deadlines, emailjs config)
+      ops.push(saveDeadlines());
+      ops.push(saveEmailJS());
+
+      // Brands — keyed object, convert to array
+      if (STATE.brands) {
+        const brandRows = Object.entries(STATE.brands).map(([name, b]) => ({
+          name,
+          color: b.color,
+          rgb: b.rgb,
+          type: b.type || 'standard',
+          cpa: b.cpa || 0,
+          rs: b.rs || 0,
+          levels: b.levels || null,
+          logo: b.logo || null,
+        }));
+        if (brandRows.length) ops.push(sb().from('brands').upsert(brandRows));
+      }
+
+      // Array tables — bulk upsert
+      const arrayTables = [
+        ['affiliates', STATE.affiliates],
+        ['contracts', STATE.contracts],
+        ['payments', STATE.payments],
+        ['closings', STATE.closings],
+        ['tasks', STATE.tasks],
+        ['available_tags', STATE.availableTags],
+        ['reminders', STATE.reminders],
+      ];
+      arrayTables.forEach(([table, arr]) => {
+        if (arr && arr.length) {
+          const rows = arr.map(item => toSnake(table, item));
+          ops.push(sb().from(table).upsert(rows));
+        }
+      });
+
+      // Pipeline (stages + cards)
+      if (STATE.pipeline?.stages?.length) {
+        const stages = STATE.pipeline.stages.map(s => toSnake('pipeline_stages', s));
+        ops.push(sb().from('pipeline_stages').upsert(stages));
+      }
+      if (STATE.pipeline?.cards?.length) {
+        const cards = STATE.pipeline.cards.map(c => toSnake('pipeline_cards', c));
+        ops.push(sb().from('pipeline_cards').upsert(cards));
+      }
+
+      const results = await Promise.allSettled(ops);
+      const failed = results.filter(r => r.status === 'rejected' || r.value?.error);
+      if (failed.length) {
+        console.warn('[Data.syncAll] some operations failed:', failed.length);
+      }
+      return failed.length === 0;
+    } catch (err) {
+      console.error('[Data.syncAll] crashed:', err);
+      return false;
+    } finally {
+      _syncing = false;
+    }
+  }
+
   // ── SINGLETON UPDATERS (deadlines, emailjs_config) ──────
   async function saveDeadlines() {
     if (!sb()) return false;
@@ -394,6 +470,7 @@ window.Data = (function () {
     loadAll,
     upsert,
     remove,
+    syncAll,
     saveDeadlines,
     saveEmailJS,
     logAction,

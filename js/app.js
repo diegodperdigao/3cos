@@ -163,6 +163,19 @@ const saveToLocal = () => {
 };
 
 const saveToCloud = async () => {
+  // Limpar dados antigos para economizar espaço
+  if (STATE.auditLog && STATE.auditLog.length > 200) STATE.auditLog = STATE.auditLog.slice(0, 200);
+  if (STATE.notifications && STATE.notifications.length > 50) STATE.notifications = STATE.notifications.slice(0, 50);
+
+  // PHASE 3: Supabase is now the primary write target
+  // Fire-and-forget — the in-memory STATE is the source of truth
+  // for the UI, and saveToLocal already handles the local cache.
+  if (window.SUPABASE_CONFIGURED && window.Data?.syncAll) {
+    Data.syncAll().catch(err => console.warn('[saveToCloud] Supabase sync failed:', err));
+  }
+
+  // Legacy Firebase write — keep running in parallel until Phase 4
+  // (so we have a safety net if Supabase has issues)
   if (!fbAuth.currentUser) return;
   resetWriteCounter();
 
@@ -175,9 +188,6 @@ const saveToCloud = async () => {
   }
 
   try {
-    // Limpar dados antigos para economizar espaço
-    if (STATE.auditLog.length > 200) STATE.auditLog = STATE.auditLog.slice(0, 200);
-    if (STATE.notifications.length > 50) STATE.notifications = STATE.notifications.slice(0, 50);
 
     const data = {
       brands: STATE.brands,
@@ -610,7 +620,7 @@ window.toggleTheme=function(){
 };
 (()=>{const t=localStorage.getItem('3cos_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
 
-// ── AUTH ──
+// ── AUTH (PHASE 3: Supabase Auth as primary, Firebase as fallback) ──
 window.doLogin=async()=>{
   const email=document.getElementById('le').value.trim();
   const pass=document.getElementById('lp').value;
@@ -620,11 +630,54 @@ window.doLogin=async()=>{
   if(!email||!pass){err.textContent='Preencha email e senha.';err.style.display='block';return;}
   btn.disabled=true;btn.textContent='VERIFICANDO...';
 
+  // ── Try Supabase Auth first ─────────────────────────────
+  if (window.SUPABASE_CONFIGURED && window.sb) {
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
+
+      // Fetch the profile row (created by trigger on signup)
+      const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+      if (profile) {
+        STATE.user = {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role,
+          status: profile.status,
+          modules: profile.modules || [],
+          createdAt: profile.created_at?.split('T')[0] || '',
+        };
+      } else {
+        // Profile missing — create from auth metadata
+        STATE.user = {
+          id: data.user.id,
+          name: email.split('@')[0],
+          email,
+          role: 'operacao',
+          status: 'ativo',
+          modules: ['dashboard','affiliates'],
+          createdAt: new Date().toISOString().split('T')[0],
+        };
+      }
+
+      await loadFromCloud();
+      localStorage.setItem('3cos_sess', JSON.stringify({ user: STATE.user, exp: Date.now() + 7*86400000 }));
+      btn.disabled = false; btn.textContent = 'ACESSAR O SISTEMA';
+      logAction('Login (Supabase)', email);
+      showHub();
+      return;
+    } catch (e) {
+      console.warn('[doLogin] Supabase auth failed, trying Firebase fallback:', e.message);
+      // Fall through to Firebase
+    }
+  }
+
+  // ── Firebase Auth fallback (legacy) ─────────────────────
   try {
     await fbAuth.signInWithEmailAndPassword(email, pass);
     const found=STATE.users.find(u=>u.email===email&&u.status==='ativo');
     if(!found){
-      // Usuário existe no Firebase Auth mas não no STATE — cria perfil básico
       const newUser={id:'u'+Date.now(),name:email.split('@')[0],email,role:'viewer',status:'ativo',modules:['dashboard'],createdAt:new Date().toISOString().split('T')[0]};
       STATE.users.push(newUser);
       STATE.user=newUser;
@@ -634,7 +687,7 @@ window.doLogin=async()=>{
     await loadFromCloud();
     localStorage.setItem('3cos_sess',JSON.stringify({user:STATE.user,exp:Date.now()+7*86400000}));
     btn.disabled=false;btn.textContent='ACESSAR O SISTEMA';
-    logAction('Login',email);
+    logAction('Login (Firebase)',email);
     showHub();
   } catch(e) {
     let msg='Credenciais inválidas.';
@@ -646,8 +699,14 @@ window.doLogin=async()=>{
     btn.disabled=false;btn.textContent='ACESSAR O SISTEMA';
   }
 };
-window.doLogout=()=>{
-  fbAuth.signOut();
+window.doLogout=async ()=>{
+  // Sign out of both providers
+  if (window.SUPABASE_CONFIGURED && window.sb) {
+    try { await sb.auth.signOut(); } catch (e) { console.warn('Supabase signOut:', e); }
+  }
+  try { fbAuth.signOut(); } catch (e) { /* ignore */ }
+  if (window.Data?.unsubscribeAll) Data.unsubscribeAll();
+
   STATE.user=null;localStorage.removeItem('3cos_sess');
   const hub=document.getElementById('hub');hub.style.opacity='0';
   setTimeout(()=>{hub.style.display='none';
