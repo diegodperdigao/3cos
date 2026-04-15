@@ -335,6 +335,11 @@ window.toggleTheme = _wrapToggleTheme;
 
 // ── AUTO SESSION RESTORE ──
 // 1) Instantly restore from localStorage (no flash, no delay)
+// PHASE 3 fix: always go to hub on boot, never restore the previously
+// active module. The active-mod restore was causing a "dashboard flash"
+// + silent failures in buildMod() that left the UI in a broken state.
+sessionStorage.removeItem('3cos_activeMod');
+
 (function(){
   const sess=localStorage.getItem('3cos_sess');
   if(sess){
@@ -349,22 +354,18 @@ window.toggleTheme = _wrapToggleTheme;
         document.getElementById('hub-uname').textContent=STATE.user.name;
         document.getElementById('hub-urole').textContent=ROLES[STATE.user.role]?.label||STATE.user.role;
         document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
-        // Restaurar módulo ativo ou mostrar hub
-        const savedMod=sessionStorage.getItem('3cos_activeMod');
-        if(savedMod){
-          const modEl=document.getElementById('mod-'+savedMod);
-          if(modEl){buildMod(savedMod,modEl);modEl.style.display='flex';modEl.classList.add('active');modEl.style.opacity='1';initMosaics();lucide.createIcons();}
-          else{const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';buildHubCards();buildMobileHome();}
-        }else{
-          const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
-          buildHubCards();buildMobileHome();
-        }
+        // Always show hub on boot (no active-mod restore)
+        const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
+        try { buildHubCards(); buildMobileHome(); } catch(e){ console.error('[boot] buildHub failed:', e); }
         updateNotifBadge();initMosaics();lucide.createIcons();
+        // Apply beta edition skin only after authentication
+        if (typeof applyBetaEdition === 'function') applyBetaEdition();
         return;
       }
-    }catch(e){}
+    }catch(e){ console.error('[boot] session restore failed:', e); }
   }
-  // No valid session — show login
+  // No valid session — show login. Force-clear beta edition on lock screen.
+  document.documentElement.removeAttribute('data-edition');
   document.getElementById('lock').style.display='flex';
   document.getElementById('lock').style.opacity='1';
 })();

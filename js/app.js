@@ -817,21 +817,43 @@ function buildMobileHome(){
 // ── MODULE OPEN/CLOSE ──
 window.openMod=id=>{
   sessionStorage.setItem('3cos_activeMod',id);
+  const _doBuild = (el) => {
+    try {
+      buildMod(id, el);
+      el.style.display='flex';
+      el.classList.add('active');
+      setTimeout(()=>el.style.opacity='1',50);
+      initMosaics();
+      lucide.createIcons();
+    } catch (err) {
+      console.error('[openMod] buildMod failed for', id, err);
+      // Render a fallback error UI inside the module so the user isn't stuck on a blank screen
+      el.innerHTML = `<div style="padding:60px 24px;text-align:center;color:var(--text2)">
+        <div style="font-size:36px;margin-bottom:16px">⚠️</div>
+        <div style="font-family:var(--fd);font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">Erro ao abrir o módulo</div>
+        <div style="font-size:12px;margin-bottom:18px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6">${err?.message || String(err)}</div>
+        <button class="btn btn-theme" onclick="goBack()">Voltar ao Hub</button>
+      </div>`;
+      el.style.display='flex';
+      el.classList.add('active');
+      setTimeout(()=>el.style.opacity='1',50);
+      lucide.createIcons();
+    }
+  };
   const activeMod=document.querySelector('.mod.active');
   if(activeMod){
     activeMod.style.opacity='0';
-    setTimeout(()=>{activeMod.style.display='none';activeMod.classList.remove('active');
+    setTimeout(()=>{
+      activeMod.style.display='none';
+      activeMod.classList.remove('active');
       if(window.mainChartInstance){window.mainChartInstance.destroy();window.mainChartInstance=null;}
-      const el=document.getElementById('mod-'+id);
-      buildMod(id,el);el.style.display='flex';el.classList.add('active');
-      setTimeout(()=>el.style.opacity='1',50);initMosaics();lucide.createIcons();
+      _doBuild(document.getElementById('mod-'+id));
     },320);
   } else {
     const hub=document.getElementById('hub');hub.style.opacity='0';
-    setTimeout(()=>{hub.style.display='none';
-      const el=document.getElementById('mod-'+id);
-      buildMod(id,el);el.style.display='flex';el.classList.add('active');
-      setTimeout(()=>el.style.opacity='1',50);initMosaics();lucide.createIcons();
+    setTimeout(()=>{
+      hub.style.display='none';
+      _doBuild(document.getElementById('mod-'+id));
     },320);
   }
   updateBottomNav(id);

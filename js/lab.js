@@ -45,13 +45,15 @@ window.toggleBetaMode = () => {
 };
 
 // Apply/remove the monochrome "Edition" skin
+// Only applies when user is authenticated — never on the lock screen
+// (which doesn't have full mono CSS coverage and creates visual mixing)
 window.applyBetaEdition = () => {
   const root = document.documentElement;
-  if (STATE.betaMode) root.setAttribute('data-edition', 'mono');
+  if (STATE.betaMode && STATE.user) root.setAttribute('data-edition', 'mono');
   else root.removeAttribute('data-edition');
 };
 
-// Ensure edition is applied on page load (if STATE already has betaMode on)
+// Ensure edition is applied on page load (if user is logged in AND has betaMode on)
 if (typeof window !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     if (typeof applyBetaEdition === 'function') applyBetaEdition();
