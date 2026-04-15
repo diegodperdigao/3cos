@@ -192,28 +192,28 @@ window.openAffDetail=id=>{
 
     <!-- TAB: PERFORMANCE -->
     <div id="aff-tab-performance" style="display:none">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">FTDs</div>
-          <div style="font-family:var(--fd);font-size:24px;font-weight:800;color:var(--blue)">${a.ftds}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:14px 12px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">FTDs</div>
+          <div style="font-family:var(--fd);font-size:22px;font-weight:800;color:var(--blue);line-height:1">${a.ftds}</div>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">QFTDs</div>
-          <div style="font-family:var(--fd);font-size:24px;font-weight:800;color:var(--pink)">${a.qftds}</div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:14px 12px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">QFTDs</div>
+          <div style="font-family:var(--fd);font-size:22px;font-weight:800;color:var(--pink);line-height:1">${a.qftds}</div>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Conversão</div>
-          <div style="font-family:var(--fd);font-size:24px;font-weight:800;color:${cvC(p)}">${p}%</div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:14px 12px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Conversão</div>
+          <div style="font-family:var(--fd);font-size:22px;font-weight:800;color:${cvC(p)};line-height:1">${p}%</div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Depósitos</div>
-          <div style="font-family:var(--fd);font-size:18px;font-weight:800;color:var(--text)">${fc(a.deposits)}</div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:14px 12px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Depósitos</div>
+          <div style="font-family:var(--fd);font-size:22px;font-weight:800;color:var(--text);line-height:1">${fc(a.deposits)}</div>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">Comissão</div>
-          <div style="font-family:var(--fd);font-size:18px;font-weight:800;color:var(--red)">${fc(a.commission)}</div>
+        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:14px 12px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Comissão</div>
+          <div style="font-family:var(--fd);font-size:22px;font-weight:800;color:var(--red);line-height:1">${fc(a.commission)}</div>
         </div>
       </div>
       <div class="dtl" style="margin-bottom:8px">Lançamentos Diários (${reports.length})</div>

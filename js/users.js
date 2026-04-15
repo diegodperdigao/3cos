@@ -17,8 +17,8 @@ function bUsers(el){
             <div class="user-mods">${u.modules.map(m=>`<span class="mod-chip">${MODS.find(x=>x.id===m)?.label||m}</span>`).join('')}</div>
           </div>
           <div style="display:flex;gap:4px">
-            <button class="ibt" onclick="openEditUser('${u.id}')" title="Editar"><i data-lucide="edit-3"></i></button>
-            <button class="ibt ${u.status==='ativo'?'danger':'green'}" onclick="toggleUserStatus('${u.id}')" title="${u.status==='ativo'?'Bloquear':'Desbloquear'}">
+            <button class="ibt" onclick="openEditUser('${u.id}')" data-tooltip="Editar usuário"><i data-lucide="edit-3"></i></button>
+            <button class="ibt ${u.status==='ativo'?'danger':'green'}" onclick="toggleUserStatus('${u.id}')" data-tooltip="${u.status==='ativo'?'Bloquear acesso':'Desbloquear acesso'}">
               <i data-lucide="${u.status==='ativo'?'lock':'unlock'}"></i>
             </button>
           </div>

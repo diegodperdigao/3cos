@@ -36,8 +36,8 @@ function renderTasks(list){
           <span class="pri pri-${t.priority[0]==='a'?'a':t.priority[0]==='m'?'m':'b'}">${t.priority.toUpperCase()}</span>
           ${canEdit ? `
           <div class="tk-acts">
-            <button class="ibt" onclick="openEditTask('${t.id}')" title="Editar"><i data-lucide="edit-2"></i></button>
-            <button class="ibt danger" onclick="confirmRemoveTask('${t.id}')" title="Excluir"><i data-lucide="trash-2"></i></button>
+            <button class="ibt" onclick="openEditTask('${t.id}')" data-tooltip="Editar tarefa"><i data-lucide="edit-2"></i></button>
+            <button class="ibt danger" onclick="confirmRemoveTask('${t.id}')" data-tooltip="Excluir tarefa"><i data-lucide="trash-2"></i></button>
           </div>` : ''}
         </div>
       </div>

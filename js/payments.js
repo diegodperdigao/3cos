@@ -124,17 +124,16 @@ function renderPyTbl(list){
     body.style.cssText='overflow-x:auto';
     body.innerHTML=`<table style="width:100%;border-collapse:collapse;min-width:600px">
       <tbody>${g.payments.map(p=>`<tr class="tr" onclick="openAffDetail('${p.affiliateId}')">
-        <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[p.brand]?.color||'#888'}">${p.brand}</span>
-          ${p.type?.includes('Fechamento')?'<span style="font-size:7px;display:block;color:var(--pink);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-top:1px">FECHAMENTO</span>':''}</td>
+        <td><span style="font-size:11px;font-weight:700;color:${STATE.brands[p.brand]?.color||'#888'}">${p.brand}</span></td>
         <td style="font-size:11px;color:var(--text2)">${p.contract}</td>
         <td class="td-money">${fc(p.amount)}</td>
         <td style="font-size:11px;${od(p.dueDate,p.status)?'color:var(--red)':''}">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):'—'}</td>
         <td>${p.nfLink?`<a href="${p.nfLink}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue);text-decoration:none" onclick="event.stopPropagation()">🔗 ${p.nfName||'Ver NF'}</a>`:p.nfName?`<span style="font-size:10px;color:var(--blue)">📎 ${p.nfName}</span>`:'<span style="font-size:10px;color:var(--text3)">—</span>'}</td>
         <td><span class="pb pb-${p.status}">${pl(p.status)}</span></td>
         <td class="td-acts">
-          ${p.status==='pendente'||p.status==='ajuste'?`<button class="ibt" onclick="event.stopPropagation();approvePay('${p.id}')" title="Aprovar"><i data-lucide="check" style="width:13px;height:13px;stroke:var(--green)"></i></button><button class="ibt amber" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')" title="Ajuste"><i data-lucide="alert-circle" style="width:13px;height:13px"></i></button><button class="ibt danger" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')" title="Recusar"><i data-lucide="x" style="width:13px;height:13px"></i></button>`:''}
-          ${p.status==='aprovado'?`<button class="ibt" onclick="event.stopPropagation();markPaid('${p.id}')" title="Confirmar"><i data-lucide="banknote" style="width:13px;height:13px;stroke:var(--green)"></i></button>`:''}
-          <button class="ibt" onclick="event.stopPropagation();openEditPay('${p.id}')" title="Editar"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
+          ${p.status==='pendente'||p.status==='ajuste'?`<button class="ibt" onclick="event.stopPropagation();approvePay('${p.id}')" data-tooltip="Aprovar pagamento"><i data-lucide="check" style="width:13px;height:13px;stroke:var(--green)"></i></button><button class="ibt amber" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')" data-tooltip="Devolver para ajuste"><i data-lucide="alert-circle" style="width:13px;height:13px"></i></button><button class="ibt danger" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')" data-tooltip="Recusar pagamento"><i data-lucide="x" style="width:13px;height:13px"></i></button>`:''}
+          ${p.status==='aprovado'?`<button class="ibt" onclick="event.stopPropagation();markPaid('${p.id}')" data-tooltip="Confirmar pagamento"><i data-lucide="banknote" style="width:13px;height:13px;stroke:var(--green)"></i></button>`:''}
+          <button class="ibt" onclick="event.stopPropagation();openEditPay('${p.id}')" data-tooltip="Editar pagamento"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
         </td></tr>`).join('')}</tbody></table>`;
     hdr.onclick=()=>{body.style.display=body.style.display==='none'?'block':'none';hdr.querySelector('.py-chev').style.transform=body.style.display==='none'?'':'rotate(180deg)';};
     div.appendChild(hdr);div.appendChild(body);el.appendChild(div);
@@ -561,8 +560,8 @@ function renderClosingTab(){
         <td><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span></td>
         <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
         <td class="td-acts">
-          <button class="ibt" onclick="regenerateClosingPDF('${c.id}')" title="Gerar PDF"><i data-lucide="file-text"></i></button>
-          <button class="ibt" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" title="Enviar individual"><i data-lucide="send"></i></button>
+          <button class="ibt" onclick="regenerateClosingPDF('${c.id}')" data-tooltip="Gerar PDF do fechamento"><i data-lucide="file-text"></i></button>
+          <button class="ibt" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" data-tooltip="Enviar email ao financeiro"><i data-lucide="send"></i></button>
         </td>
       </tr>`).join('')}
     </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
