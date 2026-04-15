@@ -208,7 +208,8 @@ window.confirmPayAction = (id, action) => {
     type: action === 'ajuste' ? 'amber' : 'red',
     text: `Pagamento de ${fc(p.amount)} (${p.affiliate}) devolvido: ${reason}`,
     time: 'agora',
-    read: false
+    read: false,
+    action: {module:'payments',tab:'queue',filter:action==='ajuste'?'ajuste':'recusado',entityId:p.id}
   });
   
   logAction(`Pagamento ${action === 'ajuste' ? 'em ajuste' : 'recusado'}`, `${p.affiliate}: ${reason}`);
@@ -279,7 +280,8 @@ window.saveNewPay=()=>{
     type: 'blue',
     text: `Novo pagamento solicitado: ${affiliate} (${fc(amount)})`,
     time: 'agora',
-    read: false
+    read: false,
+    action: {module:'payments',tab:'queue',filter:'pendente',entityId:newPay.id}
   });
 
   closeModal();
@@ -739,7 +741,8 @@ window.executeClosing=()=>{
   STATE.notifications.unshift({
     id:'n'+Date.now(),type:'blue',
     text:`Fechamento ${a.name} (${brand}) — ${monthLabel}: ${fc(a.commission)}`,
-    time:'agora',read:false
+    time:'agora',read:false,
+    action:{module:'payments',tab:'closing'}
   });
 
   logAction('Fechamento executado',`${a.name} · ${brand} · ${monthLabel}`);

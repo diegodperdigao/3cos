@@ -301,6 +301,20 @@ body::before {
 .ac-card-sub { font-size: 10px; color: var(--text2); display: flex; justify-content: space-between; align-items: center; }
 .ac-badge { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
 
+/* Notification cards (Avisos) — interactive when they have an action */
+.ac-notif{padding:10px 12px;}
+.ac-notif-row{display:flex;gap:10px;align-items:flex-start;}
+.ac-notif-dot{width:7px;height:7px;border-radius:50%;margin-top:6px;flex-shrink:0;box-shadow:0 0 6px currentColor;}
+.ac-notif-body{flex:1;min-width:0;}
+.ac-notif-text{font-size:11px;font-weight:500;color:var(--text);line-height:1.45;}
+.ac-notif-meta{font-size:9px;color:var(--text3);margin-top:4px;letter-spacing:0.02em;}
+.ac-notif-arrow{width:14px;height:14px;stroke:var(--text3);flex-shrink:0;margin-top:4px;opacity:0.5;transition:all 0.15s;}
+.ac-notif-clickable{cursor:pointer;transition:all 0.15s;}
+.ac-notif-clickable:hover{background:var(--theme-dim) !important;border-color:var(--theme-b) !important;transform:translateX(2px);}
+.ac-notif-clickable:hover .ac-notif-arrow{opacity:1;stroke:var(--theme);transform:translateX(2px);}
+.ac-notif-unread{border-left:2px solid var(--theme) !important;}
+.ac-notif-unread .ac-notif-text{font-weight:600;}
+
 #ac-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 390; 
   display: none; opacity: 0; transition: opacity 0.3s; backdrop-filter: blur(2px);

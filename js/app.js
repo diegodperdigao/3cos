@@ -308,6 +308,64 @@ function updateNotifBadge(){
   if(el){el.textContent=n>9?'9+':n;el.style.display=n>0?'flex':'none';}
 }
 
+// Infer action target from notification text when not explicitly set
+function inferNotifAction(n){
+  if(n.action)return n.action;
+  const txt=(n.text||'').toLowerCase();
+  // Watchdog overdue/due soon → Financeiro > Pagamentos > Pendentes
+  if(/vencid|vence\s|próxim|sem comprovante/.test(txt)){
+    return {module:'payments',tab:'queue',filter:'pendente'};
+  }
+  // Closing / fechamento → Financeiro > Fechamento
+  if(/fechamento|remessa/.test(txt)){
+    return {module:'payments',tab:'closing'};
+  }
+  // Payment adjustments/rejections → Financeiro > Pagamentos
+  if(/pagamento|parcela|ajuste|recus/.test(txt)){
+    return {module:'payments',tab:'queue'};
+  }
+  // Tasks → Tarefas
+  if(/tarefa/.test(txt)){
+    return {module:'tasks'};
+  }
+  // Affiliate → Afiliados
+  if(/afiliado|crm/.test(txt)){
+    return {module:'affiliates'};
+  }
+  return null;
+}
+
+window.navigateFromNotification=(notifId)=>{
+  const n=STATE.notifications.find(x=>x.id===notifId);
+  if(!n)return;
+  const action=inferNotifAction(n);
+  // Mark as read
+  n.read=true;updateNotifBadge();
+  if(!action){toggleActionCenter();return;}
+
+  toggleActionCenter();
+  setTimeout(()=>{
+    if(typeof openMod==='function')openMod(action.module);
+    // Tab switch inside payments module
+    if(action.tab&&action.module==='payments'){
+      setTimeout(()=>{
+        if(typeof showPayTab==='function'){
+          const tabBtn=document.querySelector(`#pay-tabs [onclick*="showPayTab('${action.tab}'"]`);
+          if(tabBtn)showPayTab(action.tab,tabBtn);
+        }
+      },360);
+    }
+    // Payment status filter
+    if(action.filter&&action.module==='payments'){
+      setTimeout(()=>{
+        const filterBtn=document.querySelector(`[onclick*="pilPy('${action.filter}'"]`);
+        if(filterBtn&&typeof pilPy==='function')pilPy(action.filter,filterBtn);
+      },520);
+    }
+  },300);
+  saveToLocal();
+};
+
 window.toggleActionCenter=()=>{
   const panel = document.getElementById('action-center');
   const overlay = document.getElementById('ac-overlay');
@@ -343,15 +401,21 @@ function updateActionCenter() {
     html += `
       <div>
         <div class="ac-section-title"><i data-lucide="bell"></i> Avisos <button onclick="clearNotifs()" style="margin-left:auto;background:none;border:none;color:var(--text3);font-size:8px;cursor:pointer">Limpar</button></div>
-        ${STATE.notifications.map(n => `
-          <div class="ac-card" style="display:flex; gap:10px; align-items:flex-start">
-            <div style="width:6px;height:6px;border-radius:50%;background:var(--${n.type});margin-top:5px;flex-shrink:0"></div>
-            <div>
-              <div style="font-size:11px;font-weight:500;color:var(--text);line-height:1.4">${n.text}</div>
-              <div style="font-size:9px;color:var(--text3);margin-top:3px">${n.time}</div>
+        ${STATE.notifications.map(n => {
+          const hasAction = !!inferNotifAction(n);
+          const unread = !n.read;
+          return `
+          <div class="ac-card ac-notif ${hasAction?'ac-notif-clickable':''} ${unread?'ac-notif-unread':''}" ${hasAction?`onclick="navigateFromNotification('${n.id}')"`:''}>
+            <div class="ac-notif-row">
+              <div class="ac-notif-dot" style="background:var(--${n.type})"></div>
+              <div class="ac-notif-body">
+                <div class="ac-notif-text">${n.text}</div>
+                <div class="ac-notif-meta">${n.time}</div>
+              </div>
+              ${hasAction?`<i data-lucide="chevron-right" class="ac-notif-arrow"></i>`:''}
             </div>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>`;
   }
 

@@ -38,7 +38,8 @@ function runPaymentWatchdog(){
     if(STATE.notifications?.some(n=>n.id===alertId&&n.time?.includes(today.split('-').reverse().join('/'))))return;
 
     const msg=`VENCIDO: ${p.affiliate} — ${p.brand} (${fc(p.amount)}) venceu há ${Math.abs(p.daysLeft)} dia(s)${!p.hasReceipt?' · SEM COMPROVANTE':''}`;
-    newAlerts.push({id:alertId,type:'red',text:msg,time:now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),read:false});
+    newAlerts.push({id:alertId,type:'red',text:msg,time:now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),read:false,
+      action:{module:'payments',tab:'queue',filter:'pendente',entityId:p.id}});
   });
 
   dueSoon.forEach(p=>{
@@ -47,7 +48,8 @@ function runPaymentWatchdog(){
 
     const daysTxt=p.daysLeft===0?'HOJE':p.daysLeft===1?'AMANHÃ':`em ${p.daysLeft} dias`;
     const msg=`Vence ${daysTxt}: ${p.affiliate} — ${p.brand} (${fc(p.amount)})${!p.hasReceipt?' · SEM COMPROVANTE':''}`;
-    newAlerts.push({id:alertId,type:'amber',text:msg,time:now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),read:false});
+    newAlerts.push({id:alertId,type:'amber',text:msg,time:now.toLocaleDateString('pt-BR')+' '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),read:false,
+      action:{module:'payments',tab:'queue',filter:'pendente',entityId:p.id}});
   });
 
   if(newAlerts.length){
