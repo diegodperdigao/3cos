@@ -17,10 +17,12 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <!-- EmailJS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<!-- Firebase SDK -->
+<!-- Firebase SDK (legacy — being migrated out) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Supabase SDK (new backend) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -184,6 +186,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <!-- Core: Firebase, Auth, State, Utils, Navigation -->
 <script src="js/app.js"></script>
+<!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
+<script src="js/supabase-client.js"></script>
+<script src="js/data.js"></script>
 <!-- Lab (feature flag system) -->
 <script src="js/lab.js"></script>
 <!-- Global Search (unified search engine) -->
