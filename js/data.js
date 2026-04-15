@@ -217,22 +217,32 @@ window.Data = (function () {
       }
 
       // Profiles → app's STATE.users
+      // PHASE 2: until auth migration (Phase 3), we keep the seed users
+      // hardcoded so the lock screen has someone to validate against.
+      // Once Phase 3 lands, profiles will be populated via Supabase Auth signup.
       const { data: profiles } = await sb().from('profiles').select('*');
-      STATE.users = (profiles || []).map(p => ({
-        id: p.id,
-        name: p.name,
-        email: p.email,
-        role: p.role,
-        status: p.status,
-        modules: p.modules || [],
-        createdAt: p.created_at?.split('T')[0] || '',
-      }));
+      if (profiles && profiles.length > 0) {
+        STATE.users = profiles.map(p => ({
+          id: p.id,
+          name: p.name,
+          email: p.email,
+          role: p.role,
+          status: p.status,
+          modules: p.modules || [],
+          createdAt: p.created_at?.split('T')[0] || '',
+        }));
+      } else if (!STATE.users || STATE.users.length === 0) {
+        // No profiles in Supabase yet (pre-auth-migration) → keep the seed users
+        // from DEFAULT_STATE so the user can still login during transition
+        STATE.users = (typeof DEFAULT_STATE !== 'undefined' && DEFAULT_STATE.users) ? [...DEFAULT_STATE.users] : [];
+      }
 
       console.log('[Data] loaded:',
         `${STATE.affiliates.length} affiliates,`,
         `${STATE.payments.length} payments,`,
         `${STATE.closings.length} closings,`,
-        `${STATE.tasks.length} tasks`);
+        `${STATE.tasks.length} tasks,`,
+        `${STATE.users.length} users`);
 
       return true;
     } catch (err) {

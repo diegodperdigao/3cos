@@ -212,6 +212,26 @@ const saveToCloud = async () => {
 };
 
 const loadFromCloud = async () => {
+  // PHASE 2: Supabase is now the primary source of truth
+  // If configured and reachable → load from Supabase + activate realtime
+  // Otherwise → fall back to Firebase (legacy)
+  if (window.SUPABASE_CONFIGURED && window.sb && window.Data) {
+    try {
+      const ok = await Data.loadAll();
+      if (ok) {
+        // Activate realtime subscriptions
+        if (typeof Data.subscribeAll === 'function') Data.subscribeAll();
+        localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
+        console.log('[loadFromCloud] Supabase load successful');
+        return;
+      }
+      console.warn('[loadFromCloud] Supabase load returned false, falling back to Firebase');
+    } catch (e) {
+      console.warn('[loadFromCloud] Supabase failed, falling back to Firebase:', e);
+    }
+  }
+
+  // ── Legacy Firebase load (fallback) ────────────────────
   try {
     const snap = await FB_DOC.get();
     if (snap.exists) {
@@ -233,12 +253,24 @@ const loadFromCloud = async () => {
       if (typeof cloud.betaMode === 'boolean') STATE.betaMode = cloud.betaMode;
       if (cloud.availableTags) STATE.availableTags = cloud.availableTags;
       localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
+      console.log('[loadFromCloud] Firebase fallback load successful');
     } else {
       // Primeiro acesso: salva dados iniciais na nuvem
       await saveToCloud();
     }
   } catch (e) {
     console.warn('Cloud load failed, using local cache:', e.message);
+  }
+};
+
+// Helper for realtime subscriptions to trigger UI re-render
+window.refreshActiveModule = () => {
+  const active = document.querySelector('.mod.active');
+  if (!active) return;
+  const id = active.id?.replace('mod-', '');
+  if (id && typeof window.openMod === 'function') {
+    // Re-build the module from scratch with new data
+    if (typeof buildMod === 'function') buildMod(id, active);
   }
 };
 
