@@ -1,64 +1,29 @@
 // ══════════════════════════════════════════════════════════
-// LAB — Beta Mode (single master toggle)
+// LAB — Beta Mode (reserved for future experimental features)
 // ══════════════════════════════════════════════════════════
-// Purpose: one button to toggle all experimental features.
-// Click LAB → beta mode ON. Click again → beta mode OFF.
-//
-// All beta features share STATE.betaMode. Persistence via
-// saveToCloud/loadFromCloud in app.js.
+// Previously gated: Tags, Smart Lists, Last Contact, Mono theme.
+// These are now STANDARD features. Mono became a theme option
+// under Settings. This file keeps the framework alive for the
+// next wave of experiments (AI Copilot, Automations, Forecast...).
 // ══════════════════════════════════════════════════════════
 
-const isLab = (feature) => STATE.betaMode === true;
+// Features that used to be beta are now always on.
+const isLab = (_feature) => true;
 window.isLab = isLab;
 
-const labBadge = () => `<span style="font-size:8px;font-weight:800;letter-spacing:0.1em;padding:2px 6px;border-radius:4px;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;margin-left:6px">BETA</span>`;
+// No badge next to feature headers anymore (features are stable).
+const labBadge = () => '';
 window.labBadge = labBadge;
-
-// Active beta features (for the activation toast)
-const BETA_FEATURES_ACTIVE = [
-  'Tags Coloridas',
-  'Último Contato',
-  'Smart Lists'
-];
 
 window.toggleBetaMode = () => {
   STATE.betaMode = !STATE.betaMode;
   const on = STATE.betaMode;
-
-  logAction(`[BETA] Modo Beta ${on ? 'ATIVADO' : 'DESATIVADO'}`,
-    on ? `Features: ${BETA_FEATURES_ACTIVE.join(', ')}` : '');
+  logAction(`[BETA] Modo Beta ${on ? 'ATIVADO' : 'DESATIVADO'}`, '');
   saveToLocal();
   updateLabButton();
-  applyBetaEdition();
-
-  if (on) {
-    toast(`Modo Beta ativado — ${BETA_FEATURES_ACTIVE.length} recursos experimentais`, 's');
-  } else {
-    toast('Modo Beta desativado', 'i');
-  }
-
-  // Re-render current module if it shows beta UI
-  const currentMod = document.querySelector('.mod.active')?.id?.replace('mod-', '');
-  if (currentMod && ['affiliates', 'dashboard', 'pipeline'].includes(currentMod)) {
-    openMod(currentMod);
-  }
+  if (on) toast('Modo Beta ativado — aguardando novos recursos', 'i');
+  else toast('Modo Beta desativado', 'i');
 };
-
-// Apply/remove the monochrome "Edition" skin
-// Only applies when user is authenticated — never on the lock screen
-// (which doesn't have full mono CSS coverage and creates visual mixing)
-window.applyBetaEdition = () => {
-  const root = document.documentElement;
-  if (STATE.betaMode && STATE.user) root.setAttribute('data-edition', 'mono');
-  else root.removeAttribute('data-edition');
-};
-
-// Ensure edition is applied on page load (if user is logged in AND has betaMode on)
-if (typeof window !== 'undefined') {
-  document.addEventListener('DOMContentLoaded', () => {
-    if (typeof applyBetaEdition === 'function') applyBetaEdition();
-  });
-}
 
 window.updateLabButton = () => {
   const on = STATE.betaMode === true;
@@ -75,10 +40,8 @@ window.updateLabButton = () => {
 window.updateLabDot = window.updateLabButton;
 
 // ══════════════════════════════════════════════════════════
-// BETA: Last Contact tracker
+// Last Contact tracker (promoted from beta to standard)
 // ══════════════════════════════════════════════════════════
-// Computes days since last activity for an affiliate by
-// scanning the audit log for entries mentioning their name.
 window.daysSinceContact = (affiliate) => {
   if (!affiliate || !STATE.auditLog) return null;
   const entries = STATE.auditLog.filter(log =>
@@ -86,7 +49,6 @@ window.daysSinceContact = (affiliate) => {
     (log.action && log.action.includes(affiliate.name))
   );
   if (!entries.length) return null;
-  // Audit log stores time as "dd/mm/yyyy hh:mm:ss" in pt-BR locale
   const parseLogTime = (t) => {
     if (!t) return null;
     const [date, time] = t.split(' ');
@@ -101,7 +63,6 @@ window.daysSinceContact = (affiliate) => {
 };
 
 window.lastContactHTML = (affiliate) => {
-  if (!isLab()) return '';
   const days = daysSinceContact(affiliate);
   if (days === null) {
     return `<div class="last-contact lc-never" title="Nenhuma atividade registrada"><i data-lucide="clock"></i> Sem contato</div>`;
@@ -112,9 +73,8 @@ window.lastContactHTML = (affiliate) => {
 };
 
 // ══════════════════════════════════════════════════════════
-// BETA: Smart Lists (dynamic filters)
+// Smart Lists (promoted from beta to standard)
 // ══════════════════════════════════════════════════════════
-// Returns a filtered array of affiliates based on a preset.
 window.SMART_LISTS = [
   { key: 'topComm', name: 'Top 10 Comissão', icon: 'trophy', color: '#f59e0b',
     desc: 'Os 10 maiores em comissão acumulada',
@@ -151,5 +111,3 @@ window.applySmartList = (key) => {
   const sl = SMART_LISTS.find(x => x.key === key);
   return sl ? sl.compute(list) : list;
 };
-
-// Global Search lives in js/search.js now (not beta — always available)

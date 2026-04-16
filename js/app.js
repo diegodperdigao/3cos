@@ -19,7 +19,7 @@ const CONTRACT_TYPES={
   tiered:{label:'CPA Escalonado',css:'tiered'},
   pct_deposit:{label:'% de Depósitos',css:'deposit'},
 };
-const ALL_MODS=['dashboard','affiliates','brands','payments','tasks','pipeline','audit','backup','users'];
+const ALL_MODS=['dashboard','affiliates','brands','payments','tasks','pipeline','audit','backup','users','settings'];
 const ROLES={
   admin:{label:'Admin',color:'#ef4444',desc:'Acesso total'},
   financeiro:{label:'Financeiro',color:'#f59e0b',desc:'Pagamentos e relatórios'},
@@ -129,8 +129,20 @@ const DEFAULT_STATE={
     // Mês de referência atual (para controle)
     lastGenerated:''
   },
-  // ── LAB (Beta Mode) ──
+  // ── LAB (Beta Mode) — reserved for future experimental features ──
   betaMode:false,
+  // ── USER SETTINGS (persisted in localStorage + Supabase user_settings) ──
+  settings:{
+    theme:'default',           // 'default' | 'mono'
+    density:'comfortable',     // 'comfortable' | 'compact'
+    showIntroVideo:true,
+    reducedMotion:false,
+    notifications:{
+      paymentAlerts:true,
+      taskReminders:true,
+      realtimeUpdates:true,
+    },
+  },
   availableTags:[
     {id:'tg1',name:'VIP',color:'#f59e0b'},
     {id:'tg2',name:'Em Risco',color:'#ef4444'},
@@ -219,6 +231,17 @@ const loadFromLocal = () => {
   // Ensure deadlines.standardPaymentDays exists (added in payment status feature)
   if (!STATE.deadlines) STATE.deadlines = {...DEFAULT_STATE.deadlines};
   if (typeof STATE.deadlines.standardPaymentDays !== 'number') STATE.deadlines.standardPaymentDays = 5;
+  // Ensure settings object exists with all fields (backwards compat)
+  if (!STATE.settings || typeof STATE.settings !== 'object') STATE.settings = {...DEFAULT_STATE.settings};
+  Object.keys(DEFAULT_STATE.settings).forEach(k=>{
+    if (STATE.settings[k]===undefined) STATE.settings[k] = DEFAULT_STATE.settings[k];
+  });
+  if (!STATE.settings.notifications) STATE.settings.notifications = {...DEFAULT_STATE.settings.notifications};
+  // Migrate: if betaMode was previously the mono trigger, translate to theme
+  if (STATE.betaMode && STATE.settings.theme === 'default') {
+    STATE.settings.theme = 'mono';
+    STATE.betaMode = false;
+  }
   // Clean up legacy labFlags shape if present
   if (STATE.labFlags) delete STATE.labFlags;
 };
@@ -597,6 +620,8 @@ window.doLogout=async ()=>{
   if (window.Data?.unsubscribeAll) Data.unsubscribeAll();
 
   STATE.user=null;localStorage.removeItem('3cos_sess');
+  // Force clear theme edition on logout (lock screen should always be default)
+  document.documentElement.removeAttribute('data-edition');
   const hub=document.getElementById('hub');hub.style.opacity='0';
   setTimeout(()=>{hub.style.display='none';
     document.querySelectorAll('.mod').forEach(m=>{m.classList.remove('active');m.style.display='none';m.style.opacity='0';});
@@ -615,6 +640,7 @@ function showHub(){
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
     if(window.updateLabButton)updateLabButton();
+    if(window.applyAppTheme)applyAppTheme();
     initMosaics();lucide.createIcons();
     // Run payment watchdog silently after hub is fully visible.
     // No toasts — alerts go to the notification center (bell badge).
@@ -633,6 +659,7 @@ const MODS=[
   {id:'audit',label:'Auditoria',icon:'activity',sub:'Log · Registro',color:'rgba(200,255,0,0.28)',glow:'rgba(200,255,0,0.12)',bg:'rgba(200,255,0,0.08)',stroke:'#c8ff00'},
   {id:'backup',label:'Backup',icon:'cloud',sub:'Nuvem · Exportar',color:'rgba(14,165,233,0.32)',glow:'rgba(14,165,233,0.14)',bg:'rgba(14,165,233,0.1)',stroke:'#0ea5e9'},
   {id:'users',label:'Usuários',icon:'shield',sub:'Acessos · Cargos',color:'rgba(239,68,68,0.32)',glow:'rgba(239,68,68,0.14)',bg:'rgba(239,68,68,0.1)',stroke:'#ef4444',adminOnly:true},
+  {id:'settings',label:'Configurações',icon:'settings',sub:'Preferências · Conta',color:'rgba(148,163,184,0.32)',glow:'rgba(148,163,184,0.14)',bg:'rgba(148,163,184,0.1)',stroke:'#94a3b8'},
 ];
 function buildHubCards(){
   const userMods=STATE.user?.modules||[];
@@ -819,6 +846,6 @@ function heroHTML(mosId,eyebrow,title,sub){
 }
 
 function buildMod(id,el){
-  ({dashboard:bDash,affiliates:bAffs,brands:bBrands,payments:bPayments,tasks:bTasks,pipeline:bPipeline,audit:bAudit,backup:bBackup,users:bUsers})[id]?.(el);
+  ({dashboard:bDash,affiliates:bAffs,brands:bBrands,payments:bPayments,tasks:bTasks,pipeline:bPipeline,audit:bAudit,backup:bBackup,users:bUsers,settings:bSettings})[id]?.(el);
 }
 

@@ -354,7 +354,8 @@ window.toggleTheme = _wrapToggleTheme;
         const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
         try { buildHubCards(); buildMobileHome(); } catch(e){ console.error('[boot] buildHub failed:', e); }
         updateNotifBadge();initMosaics();lucide.createIcons();
-        if (typeof applyBetaEdition === 'function') applyBetaEdition();
+        if (typeof applyAppTheme === 'function') applyAppTheme();
+        else if (typeof applyBetaEdition === 'function') applyBetaEdition();
         // Restore active module (openMod has try/catch safety net)
         const savedMod=sessionStorage.getItem('3cos_activeMod');
         if(savedMod && typeof openMod === 'function'){

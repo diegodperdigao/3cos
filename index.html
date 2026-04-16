@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=29">
+<link rel="stylesheet" href="css/styles.css?v=30">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -22,13 +22,20 @@
 </head>
 <body>
 
-<!-- SPLASH / INTRO -->
-<div id="splash" style="position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.6s" onclick="skipIntro()">
-  <video id="splash-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover">
-    <source src="assets/intro.mp4" type="video/mp4">
-  </video>
-</div>
+<!-- SPLASH / INTRO — only rendered if user preference allows it -->
 <script>
+(function(){
+  try{
+    var pref=localStorage.getItem('3cos_show_intro');
+    if(pref==='0') return;
+    var raw=localStorage.getItem('3C_OS_DATA');
+    if(raw){
+      var s=JSON.parse(raw);
+      if(s&&s.settings&&s.settings.showIntroVideo===false) return;
+    }
+  }catch(e){}
+  document.write('<div id="splash" style="position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.6s" onclick="skipIntro()"><video id="splash-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover"><source src="assets/intro.mp4" type="video/mp4"></video></div>');
+})();
 function skipIntro(){
   const s=document.getElementById('splash');if(!s||s.style.opacity==='0')return;
   s.style.opacity='0';setTimeout(()=>s.remove(),600);
@@ -36,7 +43,6 @@ function skipIntro(){
 document.addEventListener('DOMContentLoaded',()=>{
   const v=document.getElementById('splash-video');
   if(v){v.addEventListener('ended',skipIntro);
-    // Fallback: remove after 8s max
     setTimeout(skipIntro,8000);
   }
 });
@@ -146,6 +152,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <div class="mod" id="mod-audit"></div>
 <div class="mod" id="mod-backup"></div>
 <div class="mod" id="mod-users"></div>
+<div class="mod" id="mod-settings"></div>
 
 <!-- ACTION CENTER (Barra Lateral Direita) -->
 <div id="ac-overlay" onclick="toggleActionCenter()"></div>
@@ -181,24 +188,25 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=29"></script>
+<script src="js/app.js?v=30"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=29"></script>
-<script src="js/data.js?v=29"></script>
+<script src="js/supabase-client.js?v=30"></script>
+<script src="js/data.js?v=30"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=29"></script>
+<script src="js/lab.js?v=30"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=29"></script>
+<script src="js/search.js?v=30"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=29"></script>
-<script src="js/affiliates.js?v=29"></script>
-<script src="js/brands.js?v=29"></script>
-<script src="js/payments.js?v=29"></script>
-<script src="js/tasks.js?v=29"></script>
-<script src="js/pipeline.js?v=29"></script>
-<script src="js/import.js?v=29"></script>
-<script src="js/watchdog.js?v=29"></script>
-<script src="js/audit.js?v=29"></script>
-<script src="js/users.js?v=29"></script>
+<script src="js/dashboard.js?v=30"></script>
+<script src="js/affiliates.js?v=30"></script>
+<script src="js/brands.js?v=30"></script>
+<script src="js/payments.js?v=30"></script>
+<script src="js/tasks.js?v=30"></script>
+<script src="js/pipeline.js?v=30"></script>
+<script src="js/import.js?v=30"></script>
+<script src="js/watchdog.js?v=30"></script>
+<script src="js/audit.js?v=30"></script>
+<script src="js/users.js?v=30"></script>
+<script src="js/settings.js?v=30"></script>
 </body>
 </html>

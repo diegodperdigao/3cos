@@ -14,6 +14,8 @@
 // ══════════════════════════════════════════════════════════
 
 function runPaymentWatchdog(){
+  // Respect user preference — skip entirely if disabled
+  if (STATE.settings?.notifications?.paymentAlerts === false) return;
   const now=new Date();
   const today=now.toISOString().split('T')[0];
   const overdue=[];   // vencido — past dueDate

@@ -19,15 +19,14 @@ function bAffs(el){
         <button class="pill" onclick="filterAffType('tiered',this)">CPA Escalonado</button>
         <button class="pill" onclick="filterAffType('pct_deposit',this)">% de Depósitos</button>
       </div>
-      ${isLab()?`
       <div class="pills pills-smart" style="margin-top:6px">
-        <div class="pills-lbl">Smart Lists ${labBadge()}</div>
+        <div class="pills-lbl">Smart Lists</div>
         ${SMART_LISTS.map(sl=>`<button class="pill pill-smart" style="--sl-c:${sl.color}" onclick="applySmartFilter('${sl.key}',this)" title="${sl.desc}"><i data-lucide="${sl.icon}" style="width:10px;height:10px;stroke:${sl.color}"></i>${sl.name}</button>`).join('')}
       </div>
       <div class="pills pills-tags" style="margin-top:6px">
-        <div class="pills-lbl">Tags ${labBadge()}</div>
+        <div class="pills-lbl">Tags</div>
         ${(STATE.availableTags||[]).map(t=>{const count=(STATE.affiliates||[]).filter(a=>(a.tags||[]).includes(t.id)).length;return `<button class="pill pill-tag" style="--tag-c:${t.color}" onclick="applyTagFilter('${t.id}',this)"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}<span class="pill-count">${count}</span></button>`;}).join('')}
-      </div>`:''}
+      </div>
       <div class="aff-grid" id="aff-grid"></div>
     </div></div>`;
   renderAffs(STATE.affiliates);
@@ -44,7 +43,7 @@ function renderAffs(list){
     let s1={l:'FTDs',v:a.ftds},s2={l:'QFTDs',v:a.qftds,c:'#ec4899'},s3={l:'Depósitos',v:fc(a.deposits)};
     if(a.contractType==='deposit'){s2={l:'Meta/Mês',v:fc(a.deals[brands[0]]?.depositTarget||0)};s3={l:'Progresso',v:Math.round(a.deposits/(a.deals[brands[0]]?.depositTarget||1)*100)+'%'};}
     if(a.contractType==='rs'){s1={l:'Net Rev',v:fc(a.netRev)};s2={l:'Depósitos',v:fc(a.deposits)};s3={l:'Comissão',v:fc(a.commission)};}
-    const tagsHTML=isLab('tags')&&(a.tags||[]).length?`<div class="tag-row">${(a.tags||[]).map(tid=>{const t=STATE.availableTags?.find(x=>x.id===tid);return t?`<span class="aff-tag" style="background:${t.color}15;color:${t.color};border:1px solid ${t.color}33"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}</span>`:'';}).join('')}</div>`:'';
+    const tagsHTML=(a.tags||[]).length?`<div class="tag-row">${(a.tags||[]).map(tid=>{const t=STATE.availableTags?.find(x=>x.id===tid);return t?`<span class="aff-tag" style="background:${t.color}15;color:${t.color};border:1px solid ${t.color}33"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}</span>`:'';}).join('')}</div>`:'';
     const lcHTML=typeof lastContactHTML==='function'?lastContactHTML(a):'';
     return `<div class="aff-card ct-${ct.css}" onclick="openAffDetail('${a.id}')">
       <div class="aff-top">
@@ -126,11 +125,11 @@ window.openAffDetail=id=>{
 
     <!-- TAB: PERFIL -->
     <div id="aff-tab-perfil">
-      ${isLab('tags')?`<div style="margin-bottom:14px"><div class="dtl" style="margin-bottom:8px;display:flex;align-items:center">Tags ${labBadge()}</div>
+      <div style="margin-bottom:14px"><div class="dtl" style="margin-bottom:8px">Tags</div>
         <div class="tag-picker">
           ${(STATE.availableTags||[]).map(t=>{const on=(a.tags||[]).includes(t.id);return `<div class="tag-picker-item ${on?'selected':''}" style="background:${t.color}${on?'22':'10'};color:${t.color};border-color:${t.color}${on?'66':'22'}" onclick="toggleAffTag('${a.id}','${t.id}')"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}</div>`;}).join('')}
         </div>
-      </div>`:''}
+      </div>
       <div class="dg">
         <div class="ds2"><div class="dtl">Afiliado · <span style="color:var(--theme)">${ct.label}</span></div>
           <div class="dr"><span>Status</span><span class="b b-${a.status}">${sl(a.status)}</span></div>
