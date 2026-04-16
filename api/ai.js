@@ -12,8 +12,18 @@
 // Configure in Vercel: Settings → Environment Variables → GEMINI_API_KEY
 // ══════════════════════════════════════════════════════════
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 const MAX_TOKENS = 2048;
+
+// Models to try in order if the primary model returns quota exceeded.
+// This handles cases where the user's Google account has zero free-tier
+// quota on a specific model (e.g. gemini-2.0-flash in some regions).
+const FALLBACK_MODELS = [
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-8b',
+  'gemini-2.5-flash-lite',
+  'gemini-2.0-flash',
+];
 
 const SYSTEM_PROMPT = `Você é o 3C Copilot, um assistente de IA integrado ao 3C OS Pro — um CRM para gestão de afiliados na indústria de iGaming (apostas online).
 
@@ -69,51 +79,65 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'messages array obrigatório' });
     }
 
-    // Build system instruction with embedded data context
     const contextText = JSON.stringify(context, null, 2);
     const systemText = `${SYSTEM_PROMPT}\n\n---\nDADOS ATUAIS DO USUÁRIO (snapshot do STATE):\n\n${contextText}`;
 
-    // Gemini uses 'user' and 'model' roles (not 'user' and 'assistant')
     const contents = messages.map(m => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
     }));
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    // Build ordered model list: primary first, then fallbacks (deduped)
+    const tryOrder = [MODEL, ...FALLBACK_MODELS.filter(m => m !== MODEL)];
+    const attempts = [];
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemText }] },
-        contents,
-        generationConfig: {
-          maxOutputTokens: MAX_TOKENS,
-          temperature: 0.4,
-        },
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('[api/ai] Gemini error:', data);
-      return res.status(response.status).json({
-        error: data?.error?.message || `HTTP ${response.status}`,
-        type: data?.error?.status || 'GeminiError',
+    for (const modelId of tryOrder) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemText }] },
+          contents,
+          generationConfig: { maxOutputTokens: MAX_TOKENS, temperature: 0.4 },
+        }),
       });
+      const data = await response.json();
+
+      if (response.ok) {
+        const reply =
+          data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') ||
+          '(sem resposta)';
+        return res.status(200).json({
+          reply,
+          usage: data?.usageMetadata,
+          model: modelId,
+          finish_reason: data?.candidates?.[0]?.finishReason,
+          attempts: attempts.length > 0 ? attempts : undefined,
+        });
+      }
+
+      // Log attempt, decide whether to fallback
+      const errMsg = data?.error?.message || `HTTP ${response.status}`;
+      const isQuotaZero = response.status === 429 && /limit:\s*0/.test(errMsg);
+      const isModelNotFound = response.status === 404;
+      attempts.push({ model: modelId, status: response.status, error: errMsg });
+
+      // Only fallback on "quota 0" or "model not found" — other errors are fatal
+      if (!isQuotaZero && !isModelNotFound) {
+        console.error('[api/ai] Gemini fatal error:', data);
+        return res.status(response.status).json({
+          error: errMsg,
+          type: data?.error?.status || 'GeminiError',
+          attempts,
+        });
+      }
     }
 
-    // Extract text from Gemini response
-    const reply =
-      data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') ||
-      '(sem resposta)';
-
-    return res.status(200).json({
-      reply,
-      usage: data?.usageMetadata,
-      model: MODEL,
-      finish_reason: data?.candidates?.[0]?.finishReason,
+    // All models exhausted
+    return res.status(429).json({
+      error: 'Todos os modelos Gemini falharam. Verifique se sua conta Google tem acesso ao free tier em ai.dev/rate-limit',
+      attempts,
     });
   } catch (err) {
     console.error('[api/ai] Exception:', err);

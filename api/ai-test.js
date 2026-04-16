@@ -8,7 +8,7 @@
 
 module.exports = async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
   const result = {
     timestamp: new Date().toISOString(),
