@@ -2271,8 +2271,7 @@ textarea.fi{resize:vertical;min-height:60px;}
 .fin-cal-day-weekend .fin-cal-day-num{color:var(--text3);}
 
 .fin-cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:auto;align-items:center;}
-.fin-cal-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;
-  box-shadow:0 0 4px currentColor;}
+.fin-cal-dot{width:6px;height:6px;border-radius:2px;display:inline-block;flex-shrink:0;}
 .fin-cal-more{font-size:8px;font-weight:700;color:var(--text3);margin-left:2px;}
 
 .fin-cal-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;padding-top:14px;
@@ -2353,49 +2352,38 @@ table th{font-size:9px !important;font-weight:700 !important;letter-spacing:0.12
 .dtl{font-size:10px !important;font-weight:700 !important;letter-spacing:0.16em !important;
   text-transform:uppercase !important;color:var(--text2) !important;}
 
-/* ── Financial calendar: MUCH more prominent events ── */
+/* ── Financial calendar: clean prominent events ── */
 .fin-cal-day{min-height:72px;padding:8px 6px 6px;}
-.fin-cal-dots{gap:4px;margin-top:4px;}
-.fin-cal-dot{width:8px;height:8px;border-radius:50%;
-  box-shadow:0 0 6px currentColor,0 0 12px currentColor;}
-.fin-cal-day-hasevents{
-  background:rgba(236,72,153,0.04) !important;
-  border-color:var(--gb2) !important;}
+.fin-cal-dots{gap:3px;margin-top:auto;flex-direction:row;}
+.fin-cal-dot{width:100%;max-width:36px;height:4px;border-radius:2px;}
 .fin-cal-day-hasevents .fin-cal-day-num{font-weight:900 !important;}
 
-/* Event count badge on calendar days */
+/* Event count badge — clear indicator */
 .fin-cal-event-count{
   position:absolute;top:4px;right:4px;
   min-width:18px;height:18px;border-radius:9px;
-  background:var(--theme);color:#fff;
+  background:var(--text);color:var(--bg);
   font-size:9px;font-weight:800;
   display:flex;align-items:center;justify-content:center;
-  padding:0 4px;
-  box-shadow:0 2px 6px rgba(236,72,153,0.4);}
+  padding:0 4px;}
 
-/* Calendar day hover: show bigger tooltip */
+/* Hover */
 .fin-cal-day-hasevents:hover{
-  background:var(--theme-dim) !important;
-  border-color:var(--theme-b) !important;
-  transform:translateY(-2px);
-  box-shadow:0 6px 16px rgba(0,0,0,0.2) !important;
+  border-color:var(--text) !important;
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(0,0,0,0.15) !important;
   z-index:5;}
-.fin-cal-day-hasevents:hover .fin-cal-dots{transform:scale(1.15);}
 
-/* Overdue day: red tint with strong border */
+/* Overdue day */
 .fin-cal-day-alert{
   background:rgba(239,68,68,0.06) !important;
-  border-color:rgba(239,68,68,0.3) !important;}
-.fin-cal-day-alert .fin-cal-event-count{
-  background:var(--red);}
+  border-left:3px solid var(--red) !important;}
+.fin-cal-day-alert .fin-cal-event-count{background:var(--red);color:#fff;}
 
-/* Today: stronger pink ring */
+/* Today */
 .fin-cal-day-today{
-  box-shadow:0 0 0 2px var(--theme),inset 0 0 6px var(--theme-dim) !important;
-  border-color:var(--theme) !important;}
-
-/* Legend: slightly bigger dots */
-.fin-cal-legend-item .fin-cal-dot{width:8px;height:8px;}
+  border-color:var(--text) !important;
+  box-shadow:inset 0 0 0 1px var(--text) !important;}
 
 /* ── Clean up excessive decorative shadows ── */
 .aff-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.12) !important;}
