@@ -9,7 +9,7 @@ function bSettings(el){
   const s = STATE.settings || {};
   const notif = s.notifications || {};
   const user = STATE.user || {};
-  const isMono = s.theme === 'mono';
+  const themeName = s.theme || 'default';
   const dark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
 
   el.innerHTML = modHdr('Configurações')+`<div class="mod-body">
@@ -28,16 +28,21 @@ function bSettings(el){
         <div class="st-card">
           <div class="st-row st-row-col">
             <div class="st-label">Tema</div>
-            <div class="st-theme-grid">
-              <div class="st-theme-card ${!isMono?'on':''}" onclick="setAppTheme('default')">
+            <div class="st-theme-grid st-theme-grid-3">
+              <div class="st-theme-card ${themeName==='default'?'on':''}" onclick="setAppTheme('default')">
                 <div class="st-theme-preview st-theme-default"></div>
                 <div class="st-theme-name">Default</div>
                 <div class="st-theme-desc">Cores vibrantes da marca 3C</div>
               </div>
-              <div class="st-theme-card ${isMono?'on':''}" onclick="setAppTheme('mono')">
+              <div class="st-theme-card ${themeName==='mono'?'on':''}" onclick="setAppTheme('mono')">
                 <div class="st-theme-preview st-theme-mono"></div>
                 <div class="st-theme-name">Mono</div>
                 <div class="st-theme-desc">Monocromático, foco em conteúdo</div>
+              </div>
+              <div class="st-theme-card ${themeName==='glass'?'on':''}" onclick="setAppTheme('glass')">
+                <div class="st-theme-preview st-theme-glass"></div>
+                <div class="st-theme-name">Glass</div>
+                <div class="st-theme-desc">Translúcido, interface de vidro fosco</div>
               </div>
             </div>
           </div>
@@ -233,10 +238,10 @@ function bSettings(el){
           <div class="st-divider"></div>
           <div class="st-lab-roadmap">
             <div class="st-lab-roadmap-title">Próximos recursos no forno</div>
-            <div class="st-lab-item"><i data-lucide="brain-circuit"></i><div><strong>AI Copilot</strong><span>Análise conversacional de afiliados e pagamentos</span></div></div>
-            <div class="st-lab-item"><i data-lucide="workflow"></i><div><strong>Pipeline Automations</strong><span>Regras automáticas entre estágios do kanban</span></div></div>
-            <div class="st-lab-item"><i data-lucide="line-chart"></i><div><strong>Forecast de comissão</strong><span>Projeção financeira com base histórica</span></div></div>
-            <div class="st-lab-item"><i data-lucide="alert-triangle"></i><div><strong>Detecção de anomalias</strong><span>Alertas automáticos em padrões suspeitos de QFTD</span></div></div>
+            <div class="st-lab-item"><i data-lucide="brain-circuit"></i><div><strong>AI Copilot <span class="st-badge-soon">Em breve</span></strong><span>Análise conversacional de afiliados e pagamentos</span></div></div>
+            <div class="st-lab-item"><i data-lucide="workflow"></i><div><strong>Pipeline Automations <span class="st-badge-soon">Em breve</span></strong><span>Regras automáticas entre estágios do kanban</span></div></div>
+            <div class="st-lab-item"><i data-lucide="line-chart"></i><div><strong>Forecast de comissão <span class="st-badge-soon">Em breve</span></strong><span>Projeção financeira com base histórica</span></div></div>
+            <div class="st-lab-item"><i data-lucide="alert-triangle"></i><div><strong>Detecção de anomalias <span class="st-badge-soon">Em breve</span></strong><span>Alertas automáticos em padrões suspeitos de QFTD</span></div></div>
           </div>
         </div>
       </div>
@@ -277,20 +282,31 @@ function escapeHTML(s){
 // ACTIONS
 // ══════════════════════════════════════════════════════════
 
+function rerenderSettings(){
+  const el = document.getElementById('mod-settings');
+  if (!el || !el.classList.contains('active')) return;
+  const scrollEl = el.querySelector('.mod-body') || el;
+  const top = scrollEl.scrollTop;
+  bSettings(el);
+  const newScrollEl = el.querySelector('.mod-body') || el;
+  newScrollEl.scrollTop = top;
+  initMosaics();
+}
+
 window.setAppTheme = (name) => {
   STATE.settings.theme = name;
   applyAppTheme();
   saveToLocal();
-  toast(`Tema ${name==='mono'?'Mono':'Default'} aplicado`, 's');
+  toast(`Tema ${({default:'Default',mono:'Mono',glass:'Glass'})[name]||name} aplicado`, 's');
   // Re-render settings to update selection UI
-  const el = document.getElementById('mod-settings');
-  if (el && el.classList.contains('active')) { bSettings(el); initMosaics(); }
+  rerenderSettings();
 };
 
 window.applyAppTheme = () => {
   const root = document.documentElement;
   const theme = STATE.settings?.theme || 'default';
-  if (theme === 'mono' && STATE.user) root.setAttribute('data-edition', 'mono');
+  // Apply edition attribute: 'mono', 'glass', or remove for default
+  if ((theme === 'mono' || theme === 'glass') && STATE.user) root.setAttribute('data-edition', theme);
   else root.removeAttribute('data-edition');
   // Reduced motion
   if (STATE.settings?.reducedMotion) root.setAttribute('data-motion', 'reduced');
@@ -311,16 +327,14 @@ window.setColorMode = (mode) => {
   icons.forEach(i => i.setAttribute('data-lucide', mode === 'dark' ? 'sun' : 'moon'));
   lucide.createIcons();
   // Re-render settings
-  const el = document.getElementById('mod-settings');
-  if (el && el.classList.contains('active')) { bSettings(el); initMosaics(); }
+  rerenderSettings();
 };
 
 window.setDensity = (d) => {
   STATE.settings.density = d;
   applyAppTheme();
   saveToLocal();
-  const el = document.getElementById('mod-settings');
-  if (el && el.classList.contains('active')) bSettings(el);
+  rerenderSettings();
 };
 
 window.toggleSetting = (key) => {

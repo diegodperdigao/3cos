@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '3.0';
+  --3cos-version: '3.1';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -1176,6 +1176,14 @@ textarea.fi{resize:vertical;min-height:60px;}
    ══════════════════════════════════════════════════════════ */
 /* BETA button hidden — toggle lives in Settings > Labs now */
 .beta-btn{display:none !important;}
+
+/* Beta active banner — shown atop module header when betaMode=true */
+.beta-banner{display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:6px 16px;font-size:10px;font-weight:700;letter-spacing:0.08em;
+  text-transform:uppercase;color:rgba(168,85,247,0.9);
+  background:linear-gradient(90deg,rgba(168,85,247,0.06),rgba(236,72,153,0.06));
+  border-bottom:1px solid rgba(168,85,247,0.15);}
+.beta-banner svg{width:12px;height:12px;stroke:currentColor;flex-shrink:0;}
 .beta-btn-legacy{
   position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
   height:34px;min-width:78px;padding:0 16px;
@@ -2335,6 +2343,79 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="mono"] .fin-cal-day-today .fin-cal-day-num{color:var(--text) !important;}
 
 /* ══════════════════════════════════════════════════════════
+   EDITION: GLASS — translucent frosted glass
+   ══════════════════════════════════════════════════════════ */
+[data-edition="glass"] .kpi,
+[data-edition="glass"] .intel-wrap,
+[data-edition="glass"] .intel-card,
+[data-edition="glass"] .aff-card,
+[data-edition="glass"] .user-card,
+[data-edition="glass"] .tk,
+[data-edition="glass"] .st-card,
+[data-edition="glass"] .ac-card{
+  background:rgba(255,255,255,0.04) !important;
+  backdrop-filter:blur(16px) saturate(1.4);
+  -webkit-backdrop-filter:blur(16px) saturate(1.4);
+  border-color:rgba(255,255,255,0.1) !important;
+  box-shadow:0 4px 24px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.06);
+}
+[data-theme="light"][data-edition="glass"] .kpi,
+[data-theme="light"][data-edition="glass"] .intel-wrap,
+[data-theme="light"][data-edition="glass"] .intel-card,
+[data-theme="light"][data-edition="glass"] .aff-card,
+[data-theme="light"][data-edition="glass"] .user-card,
+[data-theme="light"][data-edition="glass"] .tk,
+[data-theme="light"][data-edition="glass"] .st-card,
+[data-theme="light"][data-edition="glass"] .ac-card{
+  background:rgba(255,255,255,0.45) !important;
+  border-color:rgba(255,255,255,0.6) !important;
+  box-shadow:0 4px 24px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.8);
+}
+[data-edition="glass"] .modal{
+  background:rgba(var(--bg-rgb,3,0,8),0.75) !important;
+  backdrop-filter:blur(24px) saturate(1.5);
+  -webkit-backdrop-filter:blur(24px) saturate(1.5);
+  border:1px solid rgba(255,255,255,0.08) !important;
+}
+[data-edition="glass"] .mod-hdr{
+  background:rgba(var(--bg-rgb,3,0,8),0.6) !important;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,0.06) !important;
+}
+[data-edition="glass"] .hero{
+  border:1px solid rgba(255,255,255,0.06);
+  overflow:hidden;
+}
+[data-edition="glass"] .hero-overlay{
+  background:rgba(var(--bg-rgb,3,0,8),0.3) !important;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+[data-edition="glass"] .tabs .tab{
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.08) !important;
+}
+[data-edition="glass"] .tabs .tab.on{
+  background:rgba(255,255,255,0.08) !important;
+  border-color:rgba(255,255,255,0.15) !important;
+}
+[data-edition="glass"] .pill{
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1) !important;
+}
+[data-edition="glass"] .pill.on{
+  background:rgba(236,72,153,0.12) !important;
+  border-color:rgba(236,72,153,0.25) !important;
+}
+[data-edition="glass"] .kpi::before{opacity:0.7;}
+[data-edition="glass"] table{
+  background:rgba(255,255,255,0.02);border-radius:var(--radius);overflow:hidden;
+}
+[data-edition="glass"] .tbl-wrap{
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);
+}
+
+/* ══════════════════════════════════════════════════════════
    UX SWEEP — Typography harmony + icon visibility + calendar
    ══════════════════════════════════════════════════════════ */
 
@@ -2547,6 +2628,12 @@ table td{font-weight:400;}
   background:linear-gradient(0deg,rgba(0,0,0,0.25),transparent);}
 .st-theme-mono{background:linear-gradient(135deg,#1a1a1a,#3a3a3a 50%,#e5e5e5 100%);}
 [data-theme="light"] .st-theme-mono{background:linear-gradient(135deg,#111,#777 50%,#f5f5f5 100%);}
+.st-theme-glass{background:linear-gradient(135deg,rgba(59,130,246,0.25),rgba(168,85,247,0.2) 50%,rgba(236,72,153,0.15));
+  backdrop-filter:blur(8px);}
+.st-theme-glass::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,0.15) 0%,transparent 50%);border-radius:inherit;}
+.st-theme-grid-3{grid-template-columns:repeat(3,1fr);}
+@media(max-width:720px){.st-theme-grid-3{grid-template-columns:1fr;}}
 .st-theme-name{font-family:var(--fd);font-size:13px;font-weight:800;color:var(--text);margin-bottom:2px;}
 .st-theme-desc{font-size:10px;color:var(--text3);line-height:1.4;}
 
@@ -2563,14 +2650,17 @@ table td{font-weight:400;}
 /* Switch (iOS-style toggle) */
 .st-switch{display:inline-block;position:relative;cursor:pointer;flex-shrink:0;}
 .st-switch input{opacity:0;width:0;height:0;position:absolute;}
-.st-switch-track{display:block;width:40px;height:22px;border-radius:22px;background:var(--gb2);
-  border:1px solid var(--gb);position:relative;transition:all 0.2s;}
-.st-switch-thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
-  background:var(--text3);transition:all 0.2s;}
-.st-switch input:checked + .st-switch-track{background:var(--theme);border-color:var(--theme);}
-.st-switch input:checked + .st-switch-track .st-switch-thumb{left:20px;background:#fff;}
+.st-switch-track{display:block;width:44px;height:24px;border-radius:24px;background:var(--gb2);
+  border:1px solid var(--gb);position:relative;transition:background 0.2s,border-color 0.2s;}
+.st-switch-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+  background:var(--text3);transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+.st-switch input:checked + .st-switch-track{background:var(--green);border-color:var(--green);}
+.st-switch input:checked + .st-switch-track .st-switch-thumb{left:23px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2);}
 
 /* Status badges */
+.st-badge-soon{font-size:8px;font-weight:800;letter-spacing:0.06em;padding:2px 6px;border-radius:4px;
+  background:rgba(168,85,247,0.1);color:#a855f7;border:1px solid rgba(168,85,247,0.2);margin-left:6px;
+  vertical-align:middle;}
 .st-badge-ok,.st-badge-err,.st-badge-mute{font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;
   padding:4px 8px;border-radius:6px;}
 .st-badge-ok{background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.25);}
@@ -2603,10 +2693,10 @@ table td{font-weight:400;}
   .st-theme-grid{grid-template-columns:1fr;}
 }
 
-/* Reduced motion */
-[data-motion="reduced"] *,
-[data-motion="reduced"] *::before,
-[data-motion="reduced"] *::after{
+/* Reduced motion — exclude mosaic (needs its CSS animation to tile) */
+[data-motion="reduced"] *:not(.mosaic-pattern):not(.mosaic-container):not(.mosaic-wrapper),
+[data-motion="reduced"] *:not(.mosaic-pattern):not(.mosaic-container):not(.mosaic-wrapper)::before,
+[data-motion="reduced"] *:not(.mosaic-pattern):not(.mosaic-container):not(.mosaic-wrapper)::after{
   animation-duration:0.01ms !important;
   transition-duration:0.01ms !important;
 }

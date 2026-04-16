@@ -198,8 +198,13 @@ window.refreshActiveModule = () => {
   if (!active) return;
   const id = active.id?.replace('mod-', '');
   if (id && typeof buildMod === 'function') {
+    // Preserve scroll position before rebuild
+    const scrollEl = active.querySelector('.mod-body') || active;
+    const scrollTop = scrollEl.scrollTop;
     try { buildMod(id, active); } catch (e) { console.error('[refreshActiveModule]', e); return; }
-    // Re-paint mosaic background + Lucide icons (fresh DOM wipes them)
+    // Restore scroll position after rebuild
+    const newScrollEl = active.querySelector('.mod-body') || active;
+    if (scrollTop > 0) newScrollEl.scrollTop = scrollTop;
     if (typeof initMosaics === 'function') initMosaics();
     if (window.lucide?.createIcons) lucide.createIcons();
   }
@@ -801,8 +806,8 @@ function initMosaics(){
 }
 
 function modHdr(label){
-  setTimeout(()=>{if(window.updateLabButton)updateLabButton();},10);
-  return `<div class="mod-hdr">
+  return `${STATE.betaMode?'<div class="beta-banner"><i data-lucide="flask-conical"></i> Modo Beta ativo — recursos experimentais habilitados</div>':''}
+    <div class="mod-hdr">
     <div class="mod-hdr-l">
       <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
       <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
