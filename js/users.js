@@ -50,11 +50,11 @@ function bBackup(el){
         </div>
         <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
           <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Afiliados</div>
-          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--blue);margin-top:4px">${STATE.affiliates.length}</div>
+          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text);margin-top:4px">${STATE.affiliates.length}</div>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
           <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Lançamentos</div>
-          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--pink);margin-top:4px">${STATE.reports.length}</div>
+          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text);margin-top:4px">${STATE.reports.length}</div>
         </div>
       </div>
 

@@ -81,7 +81,6 @@ window.setDashBrandTab=(brand,btn)=>{
     const ti=heroEl.querySelector('.hero-title');
     const su=heroEl.querySelector('.hero-sub');
     if(ey)ey.textContent=brand!=='all'?`${brand} — Intelligence`:'Dashboard — Operação 3C';
-    if(ey&&br)ey.style.color=br.color||'';else if(ey)ey.style.color='';
     if(ti)ti.textContent=brand!=='all'?brand:'Visão Geral 3C';
     if(su)su.textContent=brand!=='all'?`Resultado e performance — ${brand}`:'Resultado consolidado da operação';
     // Stronger brand accent gradient
@@ -192,31 +191,31 @@ window.refreshDash=()=>{
   el.innerHTML=`
     <!-- KPIs -->
     <div class="kpi-row" style="margin-bottom:22px">
-      <div class="kpi" style="--kpi-c:#ec4899;--kpi-glow:rgba(236,72,153,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="users" style="width:14px;height:14px;stroke:#ec4899"></i><span class="kpi-lbl">QFTDs</span></div>
+      <div class="kpi" style="--kpi-c:#ec4899">
+        <div class="kpi-icon-row"><i data-lucide="users"></i><span class="kpi-lbl">QFTDs</span></div>
         <div class="kpi-val">${totQFTD}</div><div class="kpi-sub">${totFTD} FTDs · ${dateLbl}</div></div>
-      <div class="kpi" style="--kpi-c:var(--blue);--kpi-glow:rgba(59,130,246,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="trending-down" style="width:14px;height:14px;stroke:var(--blue)"></i><span class="kpi-lbl">Depósitos</span></div>
+      <div class="kpi" style="--kpi-c:var(--blue)">
+        <div class="kpi-icon-row"><i data-lucide="trending-down"></i><span class="kpi-lbl">Depósitos</span></div>
         <div class="kpi-val sm">${fc(totDep)}</div><div class="kpi-sub">Volume depositado</div></div>
       ${isAllTime&&brand==='all'?`
-      <div class="kpi" style="--kpi-c:var(--red);--kpi-glow:rgba(220,38,38,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="credit-card" style="width:14px;height:14px;stroke:var(--red)"></i><span class="kpi-lbl">Comissão</span></div>
-        <div class="kpi-val sm col" style="--kpi-c:var(--red)">${fc(totComm)}</div><div class="kpi-sub">CPA + Rev Share</div></div>
-      <div class="kpi" style="--kpi-c:var(--green);--kpi-glow:rgba(16,185,129,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="diamond" style="width:14px;height:14px;stroke:var(--green)"></i><span class="kpi-lbl">Lucro 3C</span></div>
-        <div class="kpi-val sm col" style="--kpi-c:var(--green)">${fc(totProfit)}</div><div class="kpi-sub">Bruto: ${fc(totComm+totProfit)}</div></div>`:`
-      <div class="kpi" style="--kpi-c:var(--red);--kpi-glow:rgba(220,38,38,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="activity" style="width:14px;height:14px;stroke:var(--red)"></i><span class="kpi-lbl">Net Revenue</span></div>
-        <div class="kpi-val sm ${totRev<0?'col':''}" style="${totRev<0?'--kpi-c:var(--red)':''}">${fc(totRev)}</div><div class="kpi-sub">Receita líquida</div></div>
-      <div class="kpi" style="--kpi-c:var(--green);--kpi-glow:rgba(16,185,129,0.1)">
-        <div class="kpi-icon-row"><i data-lucide="percent" style="width:14px;height:14px;stroke:var(--green)"></i><span class="kpi-lbl">Conversão</span></div>
+      <div class="kpi" style="--kpi-c:var(--red)">
+        <div class="kpi-icon-row"><i data-lucide="credit-card"></i><span class="kpi-lbl">Comissão</span></div>
+        <div class="kpi-val sm">${fc(totComm)}</div><div class="kpi-sub">CPA + Rev Share</div></div>
+      <div class="kpi" style="--kpi-c:var(--green)">
+        <div class="kpi-icon-row"><i data-lucide="diamond"></i><span class="kpi-lbl">Lucro 3C</span></div>
+        <div class="kpi-val sm">${fc(totProfit)}</div><div class="kpi-sub">Bruto: ${fc(totComm+totProfit)}</div></div>`:`
+      <div class="kpi" style="--kpi-c:var(--red)">
+        <div class="kpi-icon-row"><i data-lucide="activity"></i><span class="kpi-lbl">Net Revenue</span></div>
+        <div class="kpi-val sm">${fc(totRev)}</div><div class="kpi-sub">Receita líquida</div></div>
+      <div class="kpi" style="--kpi-c:var(--green)">
+        <div class="kpi-icon-row"><i data-lucide="percent"></i><span class="kpi-lbl">Conversão</span></div>
         <div class="kpi-val">${conv}%</div><div class="kpi-sub">FTD → QFTD</div></div>`}
     </div>
 
     <!-- INTELLIGENCE -->
     <div class="intel-wrap" style="margin-bottom:24px">
       <div class="intel-hdr">
-        <div><div class="intel-eye" ${eyeColor?`style="color:${eyeColor}"`:''}>${intelTitle}</div>
+        <div><div class="intel-eye">${intelTitle}</div>
           <div class="intel-title">${intelSub}</div>
           <div class="intel-sub">Taxa FTD→QFTD · Depósitos · Tendência</div></div>
       </div>
@@ -235,11 +234,11 @@ window.refreshDash=()=>{
           return `<div class="intel-card" onclick="openAffDetail('${a.id}')">
             <div class="intel-name">${a.name}</div>
             <div class="intel-meta">${dealStr}</div>
-            <div class="conv-row"><span class="conv-label">Conversão FTD→QFTD</span><span class="conv-pct" style="color:${col}">${p2}%</span></div>
+            <div class="conv-row"><span class="conv-label">Conversão FTD→QFTD</span><span class="conv-pct">${p2}%</span></div>
             <div class="conv-bg"><div class="conv-fill" style="width:${Math.min(p2,100)}%;background:${col}"></div></div>
-            <div class="conv-ft"><span style="color:var(--text3)">${aFTD} FTDs</span><span style="color:${col}">${aQFTD} QFTDs</span></div>
+            <div class="conv-ft"><span>${aFTD} FTDs</span><span>${aQFTD} QFTDs</span></div>
             <div class="intel-sep"><div><div class="dep-lbl">Depósitos</div><div class="dep-val">${fc(aDep)}</div></div>
-              <svg width="70" height="24" style="overflow:visible"><polyline points="0,20 14,15 28,17 42,9 56,11 70,7" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/><circle cx="70" cy="7" r="2.5" fill="var(--green)"/></svg>
+              <svg width="70" height="24" style="overflow:visible"><polyline points="0,20 14,15 28,17 42,9 56,11 70,7" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/><circle cx="70" cy="7" r="2.5" fill="var(--text2)"/></svg>
             </div></div>`;
         }).join('')}
       </div>
@@ -401,12 +400,12 @@ function renderReportsHistory(){
         const origIdx=STATE.reports.indexOf(r);
         return `<tr class="tr">
           <td style="font-size:11px">${new Date(r.date).toLocaleDateString('pt-BR')}</td>
-          <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[r.brand]?.color||'#888'}">${r.brand}</span></td>
+          <td><span class="td-brand">${r.brand}</span></td>
           <td style="font-size:11px">${aff?.name||'—'}</td>
           <td class="td-num">${r.ftd||0}</td>
           <td class="td-num">${q}</td>
           <td class="td-money">${fc(r.deposits||0)}</td>
-          <td style="color:${(r.netRev||0)>=0?'var(--green)':'var(--red)'};font-weight:600;font-size:11px">${fc(r.netRev||0)}</td>
+          <td class="td-money">${fc(r.netRev||0)}</td>
           <td style="white-space:nowrap">
             <button onclick="editReport(${origIdx})" style="background:none;border:none;color:var(--theme);cursor:pointer;padding:2px 4px"><i data-lucide="edit-3" style="width:13px;height:13px"></i></button>
             <button onclick="deleteReport(${origIdx})" style="background:none;border:none;color:var(--red);cursor:pointer;padding:2px 4px"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>

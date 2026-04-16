@@ -259,11 +259,11 @@ window.openPipelineCardDetail=(cardId)=>{
 
   // Social links (clickable, open in new tab)
   const socialLinks=[];
-  if(socials.instagram)socialLinks.push(`<a href="https://instagram.com/${socials.instagram.replace('@','')}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(228,64,95,0.1);color:#e4405f;text-decoration:none;font-weight:600;border:1px solid rgba(228,64,95,0.2)">📷 ${socials.instagram}</a>`);
-  if(socials.twitter)socialLinks.push(`<a href="https://x.com/${socials.twitter.replace('@','')}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,0.05);color:var(--text);text-decoration:none;font-weight:600;border:1px solid var(--gb)">𝕏 ${socials.twitter}</a>`);
-  if(socials.youtube)socialLinks.push(`<a href="https://youtube.com/${socials.youtube.startsWith('@')?socials.youtube:'@'+socials.youtube}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(255,0,0,0.08);color:#ff0000;text-decoration:none;font-weight:600;border:1px solid rgba(255,0,0,0.15)">▶ ${socials.youtube}</a>`);
-  if(socials.tiktok)socialLinks.push(`<a href="https://tiktok.com/@${socials.tiktok.replace('@','')}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,0.05);color:var(--text);text-decoration:none;font-weight:600;border:1px solid var(--gb)">♪ ${socials.tiktok}</a>`);
-  if(socials.website)socialLinks.push(`<a href="${socials.website.startsWith('http')?socials.website:'https://'+socials.website}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(59,130,246,0.08);color:var(--blue);text-decoration:none;font-weight:600;border:1px solid rgba(59,130,246,0.15)">🌐 Site</a>`);
+  if(socials.instagram)socialLinks.push(`<a href="https://instagram.com/${socials.instagram.replace('@','')}" target="_blank" rel="noopener" class="social-pill">📷 ${socials.instagram}</a>`);
+  if(socials.twitter)socialLinks.push(`<a href="https://x.com/${socials.twitter.replace('@','')}" target="_blank" rel="noopener" class="social-pill">𝕏 ${socials.twitter}</a>`);
+  if(socials.youtube)socialLinks.push(`<a href="https://youtube.com/${socials.youtube.startsWith('@')?socials.youtube:'@'+socials.youtube}" target="_blank" rel="noopener" class="social-pill">▶ ${socials.youtube}</a>`);
+  if(socials.tiktok)socialLinks.push(`<a href="https://tiktok.com/@${socials.tiktok.replace('@','')}" target="_blank" rel="noopener" class="social-pill">♪ ${socials.tiktok}</a>`);
+  if(socials.website)socialLinks.push(`<a href="${socials.website.startsWith('http')?socials.website:'https://'+socials.website}" target="_blank" rel="noopener" class="social-pill">🌐 Site</a>`);
 
   openModal(c.affiliateName||'Card do Pipeline',`<div class="fg">
     <!-- PIPELINE INFO -->

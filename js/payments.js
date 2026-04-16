@@ -23,22 +23,22 @@ function bPayments(el){
     ${heroHTML('payments','Financeiro','Gestão Financeira','Aprovação, recusa e comissões por afiliado')}
     <div class="mod-main">
       <div class="kpi-row">
-        <div class="kpi" style="--kpi-c:var(--red);--kpi-glow:rgba(239,68,68,0.1);cursor:pointer" onclick="document.querySelector('[onclick*=&quot;pilPy(\\'vencido\\'&quot;]')?.click()">
-          <div class="kpi-icon-row"><i data-lucide="alert-octagon" style="width:14px;height:14px;stroke:var(--red)"></i><span class="kpi-lbl">Vencidos</span></div>
-          <div class="kpi-val sm col" style="--kpi-c:var(--red)">${fc(overdueSum)}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:3px">${overdueCount} pgto(s)</div></div>
-        <div class="kpi" style="--kpi-c:var(--amber);--kpi-glow:rgba(245,158,11,0.1);cursor:pointer" onclick="document.querySelector('[onclick*=&quot;pilPy(\\'atrasado\\'&quot;]')?.click()">
-          <div class="kpi-icon-row"><i data-lucide="clock" style="width:14px;height:14px;stroke:var(--amber)"></i><span class="kpi-lbl">Em Atraso</span></div>
-          <div class="kpi-val sm col" style="--kpi-c:var(--amber)">${fc(lateSum)}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:3px">${lateCount} pgto(s)</div></div>
-        <div class="kpi" style="--kpi-c:var(--blue);--kpi-glow:rgba(59,130,246,0.1)">
-          <div class="kpi-icon-row"><i data-lucide="trending-up" style="width:14px;height:14px;stroke:var(--blue)"></i><span class="kpi-lbl">Pipeline</span></div>
-          <div class="kpi-val sm col" style="--kpi-c:var(--blue)">${fc(pend)}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:3px">a processar</div></div>
-        <div class="kpi" style="--kpi-c:var(--green);--kpi-glow:rgba(16,185,129,0.1)">
-          <div class="kpi-icon-row"><i data-lucide="check-circle" style="width:14px;height:14px;stroke:var(--green)"></i><span class="kpi-lbl">Pagos</span></div>
-          <div class="kpi-val sm col" style="--kpi-c:var(--green)">${fc(paid)}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:3px">${byStatus.pago?.count||0} pgto(s)</div></div>
+        <div class="kpi" style="--kpi-c:var(--red);cursor:pointer" onclick="document.querySelector('[onclick*=&quot;pilPy(\\'vencido\\'&quot;]')?.click()">
+          <div class="kpi-icon-row"><i data-lucide="alert-octagon"></i><span class="kpi-lbl">Vencidos</span></div>
+          <div class="kpi-val sm">${fc(overdueSum)}</div>
+          <div class="kpi-sub">${overdueCount} pgto(s)</div></div>
+        <div class="kpi" style="--kpi-c:var(--amber);cursor:pointer" onclick="document.querySelector('[onclick*=&quot;pilPy(\\'atrasado\\'&quot;]')?.click()">
+          <div class="kpi-icon-row"><i data-lucide="clock"></i><span class="kpi-lbl">Em Atraso</span></div>
+          <div class="kpi-val sm">${fc(lateSum)}</div>
+          <div class="kpi-sub">${lateCount} pgto(s)</div></div>
+        <div class="kpi" style="--kpi-c:var(--blue)">
+          <div class="kpi-icon-row"><i data-lucide="trending-up"></i><span class="kpi-lbl">Pipeline</span></div>
+          <div class="kpi-val sm">${fc(pend)}</div>
+          <div class="kpi-sub">a processar</div></div>
+        <div class="kpi" style="--kpi-c:var(--green)">
+          <div class="kpi-icon-row"><i data-lucide="check-circle"></i><span class="kpi-lbl">Pagos</span></div>
+          <div class="kpi-val sm">${fc(paid)}</div>
+          <div class="kpi-sub">${byStatus.pago?.count||0} pgto(s)</div></div>
       </div>
       <div class="tabs" id="pay-tabs">
         <button class="tab${_pyTab==='closing'?' on':''}" style="--tab-color:var(--pink)" onclick="showPayTab('closing',this)"><div class="tab-dot" style="background:var(--pink)"></div>Fechamento</button>

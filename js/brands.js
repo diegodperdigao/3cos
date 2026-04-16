@@ -374,12 +374,12 @@ function bBrands(el){
         ${brandsList.map(([name,br])=>{
           const affsWithBrand=STATE.affiliates.filter(a=>a.deals&&a.deals[name]);
           const affCount=affsWithBrand.length;
-          return `<div class="aff-card" style="border-left:3px solid ${br.color};cursor:pointer" onclick="openEditBrand('${name}')">
+          return `<div class="aff-card" style="cursor:pointer" onclick="openEditBrand('${name}')">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
               ${br.logo?`<img src="${br.logo}" alt="${name}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;background:var(--bg3);padding:4px">`
-              :`<div style="width:36px;height:36px;border-radius:8px;background:${br.color}22;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:${br.color}">${name[0]}</div>`}
+              :`<div style="width:36px;height:36px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--text)">${name[0]}</div>`}
               <div style="flex:1">
-                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:${br.color};text-transform:uppercase;letter-spacing:0.04em">${name}</div>
+                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:0.04em">${name}</div>
                 <div style="font-size:10px;color:var(--text3)">${affCount} afiliado${affCount!==1?'s':''} vinculado${affCount!==1?'s':''}</div>
               </div>
               <button class="btn btn-outline" onclick="event.stopPropagation();openEditBrand('${name}')" style="padding:5px 10px;font-size:9px"><i data-lucide="edit-3" style="width:12px;height:12px"></i></button>
@@ -395,7 +395,7 @@ function bBrands(el){
               </div>
               <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Afiliados</div>
-                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:${br.color}">${affCount}</div>
+                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text)">${affCount}</div>
               </div>
             </div>
             <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:6px">Deals por Afiliado</div>

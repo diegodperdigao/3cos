@@ -110,11 +110,11 @@ window.openAffDetail=id=>{
   const pipeStage=pipeCard?STATE.pipeline.stages.find(s=>s.id===pipeCard.stageId):null;
 
   const socialHTML=a.social&&Object.values(a.social).some(v=>v)?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
-    ${a.social.instagram?`<a href="https://instagram.com/${a.social.instagram.replace('@','')}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(228,64,95,0.1);color:#e4405f;text-decoration:none;font-weight:600;border:1px solid rgba(228,64,95,0.2)">📷 ${a.social.instagram}</a>`:''}
-    ${a.social.twitter?`<a href="https://x.com/${a.social.twitter.replace('@','')}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,0.05);color:var(--text);text-decoration:none;font-weight:600;border:1px solid var(--gb)">𝕏 ${a.social.twitter}</a>`:''}
-    ${a.social.youtube?`<a href="https://youtube.com/${a.social.youtube.startsWith('@')?a.social.youtube:'@'+a.social.youtube}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(255,0,0,0.08);color:#ff0000;text-decoration:none;font-weight:600;border:1px solid rgba(255,0,0,0.15)">▶ ${a.social.youtube}</a>`:''}
-    ${a.social.tiktok?`<a href="https://tiktok.com/@${a.social.tiktok.replace('@','')}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,0.05);color:var(--text);text-decoration:none;font-weight:600;border:1px solid var(--gb)">♪ ${a.social.tiktok}</a>`:''}
-    ${a.social.website?`<a href="${a.social.website.startsWith('http')?a.social.website:'https://'+a.social.website}" target="_blank" rel="noopener" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(59,130,246,0.08);color:var(--blue);text-decoration:none;font-weight:600;border:1px solid rgba(59,130,246,0.15)">🌐 Site</a>`:''}
+    ${a.social.instagram?`<a href="https://instagram.com/${a.social.instagram.replace('@','')}" target="_blank" rel="noopener" class="social-pill">📷 ${a.social.instagram}</a>`:''}
+    ${a.social.twitter?`<a href="https://x.com/${a.social.twitter.replace('@','')}" target="_blank" rel="noopener" class="social-pill">𝕏 ${a.social.twitter}</a>`:''}
+    ${a.social.youtube?`<a href="https://youtube.com/${a.social.youtube.startsWith('@')?a.social.youtube:'@'+a.social.youtube}" target="_blank" rel="noopener" class="social-pill">▶ ${a.social.youtube}</a>`:''}
+    ${a.social.tiktok?`<a href="https://tiktok.com/@${a.social.tiktok.replace('@','')}" target="_blank" rel="noopener" class="social-pill">♪ ${a.social.tiktok}</a>`:''}
+    ${a.social.website?`<a href="${a.social.website.startsWith('http')?a.social.website:'https://'+a.social.website}" target="_blank" rel="noopener" class="social-pill">🌐 Site</a>`:''}
   </div>`:'';
 
   openModal(a.name,`
@@ -140,11 +140,11 @@ window.openAffDetail=id=>{
           ${socialHTML}
         </div>
         <div class="ds2"><div class="dtl">Performance</div>
-          <div class="dr"><span>FTDs</span><strong style="color:var(--blue)">${a.ftds}</strong></div>
-          <div class="dr"><span>QFTDs</span><strong style="color:var(--pink)">${a.qftds}</strong></div>
-          <div class="dr"><span>Conversão</span><strong style="color:${cvC(p)}">${p}%</strong></div>
-          <div class="dr"><span>Depósitos</span><strong style="color:var(--green)">${fc(a.deposits)}</strong></div>
-          <div class="dr"><span>Comissão</span><strong style="color:var(--red)">${fc(a.commission)}</strong></div>
+          <div class="dr"><span>FTDs</span><strong>${a.ftds}</strong></div>
+          <div class="dr"><span>QFTDs</span><strong>${a.qftds}</strong></div>
+          <div class="dr"><span>Conversão</span><strong>${p}%</strong></div>
+          <div class="dr"><span>Depósitos</span><strong>${fc(a.deposits)}</strong></div>
+          <div class="dr"><span>Comissão</span><strong>${fc(a.commission)}</strong></div>
           <div class="dr"><span>Lucro 3C</span><strong class="hi">${fc(a.profit)}</strong></div>
         </div>
       </div>
@@ -221,10 +221,10 @@ window.openAffDetail=id=>{
         <tbody>${reports.slice(0,20).map(r=>{
           const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+v,0):(r.qftd||0);
           return `<tr class="tr"><td style="font-size:11px">${new Date(r.date).toLocaleDateString('pt-BR')}</td>
-            <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[r.brand]?.color||'#888'}">${r.brand}</span></td>
-            <td class="td-num">${r.ftd}</td><td class="td-num" style="color:var(--pink)">${q}</td>
+            <td><span class="td-brand">${r.brand}</span></td>
+            <td class="td-num">${r.ftd}</td><td class="td-num">${q}</td>
             <td class="td-money">${fc(r.deposits)}</td>
-            <td style="color:${(r.netRev||0)>=0?'var(--green)':'var(--red)'}; font-weight:600">${fc(r.netRev)}</td></tr>`;
+            <td class="td-money">${fc(r.netRev)}</td></tr>`;
         }).join('')}</tbody></table></div>`:'<span style="font-size:10px;color:var(--text3)">Nenhum lançamento diário registrado.</span>'}
       ${pys.length?`<div style="margin-top:14px"><div class="dtl" style="margin-bottom:8px">Pagamentos (${pys.length})</div>
         <div class="mini-list">${pys.map(py=>`<div class="mini"><div class="mini-info"><span class="mini-n">${py.contract}</span><span class="mini-s">${py.type||''} · ${py.dueDate?new Date(py.dueDate).toLocaleDateString('pt-BR'):''}</span></div>
