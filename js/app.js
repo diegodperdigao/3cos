@@ -1,18 +1,17 @@
 // ══════════════════════════════════════════════════════════
-// FIREBASE INITIALIZATION
+// 3C OS — Core Application (Supabase backend)
 // ══════════════════════════════════════════════════════════
-const firebaseConfig = {
-  apiKey: "AIzaSyDuiup15ELAcm78GFJ0w7pdeYu2DHy-6Zk",
-  authDomain: "hub-3c.firebaseapp.com",
-  projectId: "hub-3c",
-  storageBucket: "hub-3c.firebasestorage.app",
-  messagingSenderId: "340842089459",
-  appId: "1:340842089459:web:c2072752324c52f998a086"
-};
-firebase.initializeApp(firebaseConfig);
-const fbAuth = firebase.auth();
-const fbDb = firebase.firestore();
-const FB_DOC = fbDb.collection('3cos').doc('appState');
+// Firebase has been fully removed. Supabase handles:
+// - Auth (supabase-client.js → sb.auth)
+// - Data (data.js → Data.loadAll/syncAll)
+// - Realtime (data.js → Data.subscribeAll)
+// ══════════════════════════════════════════════════════════
+
+// Legacy stubs so existing code doesn't throw reference errors
+// while we clean up all call sites over time
+const fbAuth = { signInWithEmailAndPassword: () => Promise.reject(new Error('Firebase removed')), signOut: () => Promise.resolve(), onAuthStateChanged: () => {}, currentUser: null };
+const fbDb = null;
+const FB_DOC = { get: () => Promise.resolve({ exists: false }), set: () => Promise.resolve() };
 
 const LOGO='https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg';
 const CONTRACT_TYPES={
@@ -141,20 +140,9 @@ const DEFAULT_STATE={
   ],
 };
 
-// ── PERSISTENCE (LOCALSTORAGE) ──
+// ── PERSISTENCE ──
 const STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
-// ── PERSISTENCE: localStorage (cache) + Firestore (cloud) ──
-// ── PERSISTENCE: localStorage (cache) + Firestore (cloud) ──
 let _saveTimeout = null;
-let _dailyWrites = parseInt(localStorage.getItem('3cos_writes_today')||'0');
-let _writesDate = localStorage.getItem('3cos_writes_date')||'';
-const WRITE_LIMIT_WARNING = 15000; // avisa com 75% do limite
-const WRITE_LIMIT_BLOCK = 19000;   // bloqueia com 95%
-
-const resetWriteCounter = () => {
-  const today = new Date().toISOString().split('T')[0];
-  if (_writesDate !== today) { _dailyWrites = 0; _writesDate = today; }
-};
 
 const saveToLocal = () => {
   localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
@@ -163,114 +151,33 @@ const saveToLocal = () => {
 };
 
 const saveToCloud = async () => {
-  // Limpar dados antigos para economizar espaço
+  // Clean stale data
   if (STATE.auditLog && STATE.auditLog.length > 200) STATE.auditLog = STATE.auditLog.slice(0, 200);
   if (STATE.notifications && STATE.notifications.length > 50) STATE.notifications = STATE.notifications.slice(0, 50);
 
-  // PHASE 3: Supabase is now the primary write target
-  // Fire-and-forget — the in-memory STATE is the source of truth
-  // for the UI, and saveToLocal already handles the local cache.
+  // Supabase is the ONLY cloud target now (Firebase removed in Phase 4)
   if (window.SUPABASE_CONFIGURED && window.Data?.syncAll) {
     Data.syncAll().catch(err => console.warn('[saveToCloud] Supabase sync failed:', err));
-  }
-
-  // Legacy Firebase write — keep running in parallel until Phase 4
-  // (so we have a safety net if Supabase has issues)
-  if (!fbAuth.currentUser) return;
-  resetWriteCounter();
-
-  if (_dailyWrites >= WRITE_LIMIT_BLOCK) {
-    console.warn('Cloud save blocked: daily write limit reached');
-    return;
-  }
-  if (_dailyWrites === WRITE_LIMIT_WARNING) {
-    toast('Atenção: 75% do limite diário de escritas na nuvem','w');
-  }
-
-  try {
-
-    const data = {
-      brands: STATE.brands,
-      users: STATE.users,
-      affiliates: STATE.affiliates,
-      contracts: STATE.contracts,
-      payments: STATE.payments,
-      reports: STATE.reports,
-      tasks: STATE.tasks,
-      auditLog: STATE.auditLog,
-      notifications: STATE.notifications,
-      deadlines: STATE.deadlines || {},
-      closings: STATE.closings || [],
-      pipeline: STATE.pipeline || {stages:[],cards:[]},
-      reminders: STATE.reminders || [],
-      emailjs: STATE.emailjs || {},
-      betaMode: STATE.betaMode === true,
-      availableTags: STATE.availableTags || [],
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy: STATE.user?.email || 'unknown'
-    };
-    await FB_DOC.set(data, { merge: true });
-    _dailyWrites++;
-    localStorage.setItem('3cos_writes_today', String(_dailyWrites));
-    localStorage.setItem('3cos_writes_date', _writesDate);
-  } catch (e) {
-    console.warn('Cloud save failed:', e.message);
-    if (e.code === 'resource-exhausted') {
-      toast('Limite do Firebase atingido. Dados salvos localmente.', 'w');
-    }
   }
 };
 
 const loadFromCloud = async () => {
-  // PHASE 2: Supabase is now the primary source of truth
-  // If configured and reachable → load from Supabase + activate realtime
-  // Otherwise → fall back to Firebase (legacy)
+  // Supabase is the ONLY cloud source (Firebase removed)
   if (window.SUPABASE_CONFIGURED && window.sb && window.Data) {
     try {
       const ok = await Data.loadAll();
       if (ok) {
-        // Activate realtime subscriptions
         if (typeof Data.subscribeAll === 'function') Data.subscribeAll();
         localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
         console.log('[loadFromCloud] Supabase load successful');
         return;
       }
-      console.warn('[loadFromCloud] Supabase load returned false, falling back to Firebase');
     } catch (e) {
-      console.warn('[loadFromCloud] Supabase failed, falling back to Firebase:', e);
+      console.warn('[loadFromCloud] Supabase failed, using local cache:', e);
     }
   }
-
-  // ── Legacy Firebase load (fallback) ────────────────────
-  try {
-    const snap = await FB_DOC.get();
-    if (snap.exists) {
-      const cloud = snap.data();
-      if (cloud.brands) STATE.brands = cloud.brands;
-      if (cloud.users) STATE.users = cloud.users;
-      if (cloud.affiliates) STATE.affiliates = cloud.affiliates;
-      if (cloud.contracts) STATE.contracts = cloud.contracts;
-      if (cloud.payments) STATE.payments = cloud.payments;
-      if (cloud.reports) STATE.reports = cloud.reports;
-      if (cloud.tasks) STATE.tasks = cloud.tasks;
-      if (cloud.auditLog) STATE.auditLog = cloud.auditLog;
-      if (cloud.notifications) STATE.notifications = cloud.notifications;
-      if (cloud.deadlines) STATE.deadlines = cloud.deadlines;
-      if (cloud.closings) STATE.closings = cloud.closings;
-      if (cloud.pipeline) STATE.pipeline = cloud.pipeline;
-      if (cloud.reminders) STATE.reminders = cloud.reminders;
-      if (cloud.emailjs) STATE.emailjs = cloud.emailjs;
-      if (typeof cloud.betaMode === 'boolean') STATE.betaMode = cloud.betaMode;
-      if (cloud.availableTags) STATE.availableTags = cloud.availableTags;
-      localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
-      console.log('[loadFromCloud] Firebase fallback load successful');
-    } else {
-      // Primeiro acesso: salva dados iniciais na nuvem
-      await saveToCloud();
-    }
-  } catch (e) {
-    console.warn('Cloud load failed, using local cache:', e.message);
-  }
+  // If Supabase is not configured or failed, local cache is used (already loaded by loadFromLocal)
+  console.log('[loadFromCloud] Using local cache');
 };
 
 // Helper for realtime subscriptions to trigger UI re-render
@@ -668,43 +575,26 @@ window.doLogin=async()=>{
       showHub();
       return;
     } catch (e) {
-      console.warn('[doLogin] Supabase auth failed, trying Firebase fallback:', e.message);
-      // Fall through to Firebase
+      let msg='Credenciais inválidas.';
+      if(e.message?.includes('Invalid login'))msg='Email ou senha incorretos.';
+      else if(e.message?.includes('Email not confirmed'))msg='Confirme seu email antes de logar.';
+      else msg=e.message||'Erro ao autenticar.';
+      err.textContent=msg;
+      err.style.display='block';
+      btn.disabled=false;btn.textContent='ACESSAR O SISTEMA';
+      return;
     }
   }
 
-  // ── Firebase Auth fallback (legacy) ─────────────────────
-  try {
-    await fbAuth.signInWithEmailAndPassword(email, pass);
-    const found=STATE.users.find(u=>u.email===email&&u.status==='ativo');
-    if(!found){
-      const newUser={id:'u'+Date.now(),name:email.split('@')[0],email,role:'viewer',status:'ativo',modules:['dashboard'],createdAt:new Date().toISOString().split('T')[0]};
-      STATE.users.push(newUser);
-      STATE.user=newUser;
-    } else {
-      STATE.user=found;
-    }
-    await loadFromCloud();
-    localStorage.setItem('3cos_sess',JSON.stringify({user:STATE.user,exp:Date.now()+7*86400000}));
-    btn.disabled=false;btn.textContent='ACESSAR O SISTEMA';
-    logAction('Login (Firebase)',email);
-    showHub();
-  } catch(e) {
-    let msg='Credenciais inválidas.';
-    if(e.code==='auth/user-not-found')msg='Usuário não encontrado no sistema.';
-    else if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential')msg='Senha incorreta.';
-    else if(e.code==='auth/too-many-requests')msg='Muitas tentativas. Aguarde um momento.';
-    err.textContent=msg;
-    err.style.display='block';
-    btn.disabled=false;btn.textContent='ACESSAR O SISTEMA';
-  }
+  // Supabase not configured — show error
+  err.textContent='Sistema não configurado. Contate o administrador.';
+  err.style.display='block';
+  btn.disabled=false;btn.textContent='ACESSAR O SISTEMA';
 };
 window.doLogout=async ()=>{
-  // Sign out of both providers
-  if (window.SUPABASE_CONFIGURED && window.sb) {
-    try { await sb.auth.signOut(); } catch (e) { console.warn('Supabase signOut:', e); }
+  if (window.sb) {
+    try { await sb.auth.signOut(); } catch (e) { console.warn('signOut:', e); }
   }
-  try { fbAuth.signOut(); } catch (e) { /* ignore */ }
   if (window.Data?.unsubscribeAll) Data.unsubscribeAll();
 
   STATE.user=null;localStorage.removeItem('3cos_sess');

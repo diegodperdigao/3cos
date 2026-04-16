@@ -41,8 +41,8 @@ function bBackup(el){
       <div class="sec-hdr"><div class="sec-lbl">Status da Sincronização</div></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px">
         <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
-          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Firebase</div>
-          <div style="font-size:14px;font-weight:700;color:var(--green);margin-top:4px">Conectado</div>
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Supabase</div>
+          <div style="font-size:14px;font-weight:700;color:${window.SUPABASE_CONFIGURED?'var(--green)':'var(--red)'};margin-top:4px">${window.SUPABASE_CONFIGURED?'Conectado':'Desconectado'}</div>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
           <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Tamanho dos Dados</div>
@@ -64,7 +64,7 @@ function bBackup(el){
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
             <i data-lucide="cloud" style="width:20px;height:20px;stroke:var(--green)"></i>
             <div><div style="font-size:13px;font-weight:700;color:var(--text)">Sincronizar Nuvem</div>
-            <div style="font-size:10px;color:var(--text3)">Enviar dados locais para o Firebase</div></div>
+            <div style="font-size:10px;color:var(--text3)">Sincronizar dados com o Supabase</div></div>
           </div>
           <button class="btn btn-theme" onclick="forceSyncCloud()" style="width:100%"><i data-lucide="cloud"></i> Forçar Sync</button>
         </div>
