@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '3.8';
+  --3cos-version: '3.9';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -2611,6 +2611,174 @@ textarea.fi{resize:vertical;min-height:60px;}
 /* ── Link/button hover ── */
 [data-edition="glass"] .ibt:hover,
 [data-edition="glass"] .hdr-btn:hover{color: var(--theme) !important;}
+
+/* ══════════════════════════════════════════════════════════
+   NEBULA — Identity beyond color: shape, radius, glow
+   Give the theme real character, not just a tint
+   ══════════════════════════════════════════════════════════ */
+
+/* More rounded corners — organic, space-age feeling */
+[data-edition="glass"] .kpi,
+[data-edition="glass"] .intel-wrap,
+[data-edition="glass"] .intel-card,
+[data-edition="glass"] .aff-card,
+[data-edition="glass"] .user-card,
+[data-edition="glass"] .tk,
+[data-edition="glass"] .st-card,
+[data-edition="glass"] .ac-card,
+[data-edition="glass"] .modal,
+[data-edition="glass"] .kanban-col,
+[data-edition="glass"] .kanban-card{
+  border-radius: 18px !important;
+}
+[data-edition="glass"] .btn,
+[data-edition="glass"] .btn-theme,
+[data-edition="glass"] .btn-outline,
+[data-edition="glass"] .fi,
+[data-edition="glass"] .search-pill,
+[data-edition="glass"] .hdr-btn,
+[data-edition="glass"] .hub-icon-btn{
+  border-radius: 12px !important;
+}
+[data-edition="glass"] .hub-app{
+  border-radius: 20px !important;
+}
+
+/* Subtle violet glow on hover — signature of Nebula */
+[data-edition="glass"] .kpi:hover,
+[data-edition="glass"] .intel-card:hover{
+  transform: translateY(-2px);
+  border-color: var(--theme-b) !important;
+  box-shadow: 0 8px 24px rgba(167,139,250,0.10), 0 0 0 1px var(--theme-b) !important;
+  transition: all 0.2s ease;
+}
+[data-edition="glass"][data-theme="light"] .kpi:hover,
+[data-edition="glass"][data-theme="light"] .intel-card:hover{
+  box-shadow: 0 8px 24px rgba(124,58,237,0.08), 0 0 0 1px var(--theme-b) !important;
+}
+
+/* Typography: slightly wider kerning on headings for gravitas */
+[data-edition="glass"] .kpi-val{
+  letter-spacing: -0.02em !important;
+  font-weight: 700 !important;
+}
+[data-edition="glass"] .hero-title{
+  letter-spacing: -0.03em !important;
+  font-weight: 800 !important;
+}
+[data-edition="glass"] .hero-eyebrow,
+[data-edition="glass"] .kpi-lbl,
+[data-edition="glass"] .sec-lbl{
+  letter-spacing: 0.16em !important;
+}
+
+/* Tags + badges: rounder */
+[data-edition="glass"] .aff-tag,
+[data-edition="glass"] .pb,
+[data-edition="glass"] .ct-badge,
+[data-edition="glass"] .role-badge,
+[data-edition="glass"] .pri{
+  border-radius: 999px !important;
+}
+
+/* Section headers get a violet underline accent */
+[data-edition="glass"] .sec-hdr{
+  position: relative;
+}
+[data-edition="glass"] .sec-hdr .sec-lbl::before{
+  background: var(--theme) !important;
+  opacity: 0.8;
+}
+
+/* Copilot: fully adopt the theme's violet */
+[data-edition="glass"] #copilot-fab{
+  background: linear-gradient(135deg, #a78bfa, #7c3aed) !important;
+  box-shadow: 0 8px 24px rgba(124,58,237,0.35), 0 2px 6px rgba(0,0,0,0.2),
+              inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  border-radius: 16px !important;
+}
+[data-edition="glass"][data-theme="light"] #copilot-fab{
+  box-shadow: 0 8px 24px rgba(124,58,237,0.28), 0 2px 6px rgba(0,0,0,0.08),
+              inset 0 1px 0 rgba(255,255,255,0.3) !important;
+}
+[data-edition="glass"] #copilot-fab:hover{
+  box-shadow: 0 12px 32px rgba(124,58,237,0.45), 0 2px 6px rgba(0,0,0,0.2) !important;
+}
+[data-edition="glass"] .cp-fab-pulse{background: #a78bfa !important;}
+[data-edition="glass"] .cp-title-icon{
+  background: linear-gradient(135deg, #a78bfa, #7c3aed) !important;
+  box-shadow: 0 4px 12px rgba(124,58,237,0.25),inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  border-radius: 12px !important;
+}
+[data-edition="glass"] .cp-welcome-icon{
+  background: linear-gradient(135deg, #a78bfa, #7c3aed) !important;
+  box-shadow: 0 6px 18px rgba(124,58,237,0.30) !important;
+  border-radius: 16px !important;
+}
+[data-edition="glass"] .cp-msg-avatar .cp-gemini-icon{fill: #a78bfa !important;}
+[data-edition="glass"] .cp-msg-user .cp-bubble{
+  background: linear-gradient(135deg, #a78bfa, #7c3aed) !important;
+  color: #fff !important;
+}
+[data-edition="glass"] .cp-hdr{
+  background: linear-gradient(135deg, rgba(167,139,250,0.06), transparent 70%) !important;
+}
+[data-edition="glass"] .cp-send{
+  background: linear-gradient(135deg, #a78bfa, #7c3aed) !important;
+  border-radius: 12px !important;
+}
+[data-edition="glass"] .cp-sug:hover{
+  border-color: var(--theme) !important;
+  background: var(--theme-dim) !important;
+  color: var(--text) !important;
+}
+[data-edition="glass"] .cp-input:focus{border-color: var(--theme) !important;}
+[data-edition="glass"] .cp-hist-item.on{
+  background: var(--theme-dim) !important;
+  border-left-color: var(--theme) !important;
+}
+
+/* Beta pill: violet in nebula */
+[data-edition="glass"] .beta-pill{
+  background: rgba(167,139,250,0.10) !important;
+  border-color: rgba(167,139,250,0.24) !important;
+}
+[data-edition="glass"] .beta-pill-dot{background: #a78bfa !important;}
+[data-edition="glass"] .beta-pill-txt{color: #a78bfa !important;}
+
+/* Sync pill: keep green as it's a semantic "connected" signal */
+
+/* Settings toggles: violet when on */
+[data-edition="glass"] .st-switch input:checked + .st-switch-track{
+  background: var(--theme) !important;
+  border-color: var(--theme) !important;
+}
+
+/* Settings theme cards get violet border when active */
+[data-edition="glass"] .st-theme-card.on{
+  border-color: var(--theme) !important;
+  box-shadow: 0 0 0 1px var(--theme) inset !important;
+  background: linear-gradient(135deg, var(--theme-dim), transparent 70%) !important;
+}
+
+/* Settings segmented button active */
+[data-edition="glass"] .st-seg.on{
+  background: var(--bg) !important;
+  color: var(--theme) !important;
+  box-shadow: 0 0 0 1px var(--theme-b), 0 1px 3px rgba(0,0,0,0.2) !important;
+}
+
+/* Settings section icon boxes: violet tint */
+[data-edition="glass"] .st-section-icon{
+  background: var(--theme-dim) !important;
+  border-color: var(--theme-b) !important;
+}
+[data-edition="glass"] .st-section-icon svg{stroke: var(--theme) !important;}
+
+/* Hub app icon gradient bg when hovered */
+[data-edition="glass"][data-theme="dark"] .hub-bg{
+  background: radial-gradient(circle at 50% 30%, rgba(167,139,250,0.08), transparent 60%) !important;
+}
 
 /* ══════════════════════════════════════════════════════════
    UX SWEEP — Typography harmony + icon visibility + calendar

@@ -80,12 +80,21 @@ module.exports = async function handler(req, res) {
     }
 
     const contextText = JSON.stringify(context, null, 2);
-    const systemText = `${SYSTEM_PROMPT}\n\n---\nDADOS ATUAIS DO USUÁRIO (snapshot do STATE):\n\n${contextText}`;
+    const systemText = `${SYSTEM_PROMPT}\n\n---\nDADOS ATUAIS DO USUÁRIO (snapshot completo do STATE — use isso como fonte de verdade para responder):\n\n${contextText}`;
 
-    const contents = messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }));
+    // Belt and suspenders: also prefix the FIRST user message with a
+    // reminder of the data, so even if the model ignores systemInstruction
+    // the context is guaranteed to reach the prompt.
+    const contents = messages.map((m, i) => {
+      let text = m.content;
+      if (i === 0 && m.role === 'user') {
+        text = `[Contexto: você tem acesso aos dados do 3C OS via systemInstruction acima. Consulte o JSON do snapshot para responder. Dados incluem: afiliados (com profit, commission, ftds, qftds, deposits, netRev), contratos, pagamentos por status, tarefas abertas, pipeline, relatórios recentes.]\n\n${m.content}`;
+      }
+      return {
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text }],
+      };
+    });
 
     // Build ordered model list: primary first, then fallbacks (deduped)
     const tryOrder = [MODEL, ...FALLBACK_MODELS.filter(m => m !== MODEL)];
@@ -97,7 +106,7 @@ module.exports = async function handler(req, res) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemText }] },
+          systemInstruction: { parts: [{ text: systemText }] },
           contents,
           generationConfig: { maxOutputTokens: MAX_TOKENS, temperature: 0.4 },
         }),
