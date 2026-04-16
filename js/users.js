@@ -396,17 +396,11 @@ async function _validateSession() {
         }
         await loadFromCloud();
         fixBrandLogos();
-        // Only rebuild if hub is currently the visible screen (not if user is inside a module)
-        const hub = document.getElementById('hub');
-        const activeModule = document.querySelector('.mod.active');
-        if (hub && hub.style.display === 'flex' && !activeModule) {
-          try { buildHubCards(); buildMobileHome(); } catch(e){}
-          updateNotifBadge(); lucide.createIcons();
-        } else if (activeModule) {
-          // Re-render the active module with fresh data
-          const modId = activeModule.id?.replace('mod-','');
-          if (modId) { try { buildMod(modId, activeModule); lucide.createIcons(); } catch(e){} }
-        }
+        // DON'T rebuild UI here — the initial session restore already
+        // rendered from cache. Fresh data will show on next navigation.
+        // Rebuilding here causes flickering (double render).
+        updateNotifBadge();
+        if (typeof updateLabButton === 'function') updateLabButton();
         setTimeout(() => { if (typeof runPaymentWatchdog === 'function') runPaymentWatchdog(); }, 2000);
         return true; // Session is valid, do not fall through to Firebase
       }
