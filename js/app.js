@@ -814,7 +814,7 @@ function modHdr(label){
       <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
       <div class="mod-hdr-sep"></div>
       <div class="mod-hdr-name">${label}</div>
-      ${STATE.betaMode?'<span class="beta-chip" title="Modo Beta ativo">β</span>':''}
+      ${STATE.betaMode?'<div class="beta-pill" title="Modo Beta ativo — recursos experimentais habilitados"><div class="beta-pill-dot"></div><span class="beta-pill-txt">Beta</span></div>':''}
     </div>
     <div class="mod-hdr-c">
       <div class="search-pill search-pill-sm" onclick="focusSearchInput(this)">
