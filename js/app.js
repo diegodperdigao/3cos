@@ -185,9 +185,11 @@ window.refreshActiveModule = () => {
   const active = document.querySelector('.mod.active');
   if (!active) return;
   const id = active.id?.replace('mod-', '');
-  if (id && typeof window.openMod === 'function') {
-    // Re-build the module from scratch with new data
-    if (typeof buildMod === 'function') buildMod(id, active);
+  if (id && typeof buildMod === 'function') {
+    try { buildMod(id, active); } catch (e) { console.error('[refreshActiveModule]', e); return; }
+    // Re-paint mosaic background + Lucide icons (fresh DOM wipes them)
+    if (typeof initMosaics === 'function') initMosaics();
+    if (window.lucide?.createIcons) lucide.createIcons();
   }
 };
 
@@ -226,7 +228,11 @@ loadFromLocal();
 const fc=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0}).format(v||0);
 const pct=(a,b)=>b>0?Math.round(a/b*100):0;
 const cvC=p=>p>=60?'#10b981':p>=30?'#f59e0b':'#ef4444';
-const medal=i=>['🥇','🥈','🥉'][i]||'#'+(i+1);
+const medal=i=>{
+  const tier=i<3?['gold','silver','bronze'][i]:'';
+  const n=String(i+1).padStart(2,'0');
+  return `<span class="rank-badge${tier?' rank-'+tier:''}">${n}</span>`;
+};
 const od=(d,s)=>d&&s!=='pago'&&new Date(d)<new Date();
 const sl=s=>({ativo:'Ativo',negociação:'Negociação',encerrado:'Encerrado'}[s]||s||'Ativo');
 const pl=s=>({pendente:'Pendente',aprovado:'Aprovado',pago:'Pago',parcial:'Parcial',recusado:'Recusado',ajuste:'Ajuste Necessário',atrasado:'Atrasado',vencido:'Vencido'}[s]||s);
