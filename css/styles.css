@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '3.4';
+  --3cos-version: '3.5';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -2486,6 +2486,147 @@ textarea.fi{resize:vertical;min-height:60px;}
   box-shadow: 0 0 0 3px var(--theme-dim) !important;
 }
 
+/* ── Hub: app cards with green glow ── */
+[data-edition="glass"] .hub-app{
+  --app-border: rgba(34,197,94,0.24) !important;
+  --app-glow: rgba(34,197,94,0.08) !important;
+  --app-bg: rgba(34,197,94,0.05) !important;
+}
+[data-edition="glass"] .hub-app-icon svg{stroke: var(--theme) !important;}
+[data-edition="glass"] .hub-app:hover{
+  --app-border: rgba(34,197,94,0.45) !important;
+  box-shadow: 0 12px 28px rgba(34,197,94,0.12) !important;
+}
+[data-edition="glass"] .hub-apps-label{color: var(--text2) !important;}
+[data-edition="glass"] .hub-apps-label::after{background: var(--gb) !important;}
+[data-edition="glass"] .hub-icon-btn:hover{background: var(--theme-dim) !important;}
+[data-edition="glass"] .hub-icon-btn:hover svg{stroke: var(--theme) !important;}
+[data-edition="glass"] .hub-logout-btn{color: var(--text2) !important;border-color: var(--gb) !important;}
+[data-edition="glass"] .hub-logout-btn:hover{color: var(--text) !important;border-color: var(--theme) !important;}
+[data-edition="glass"] .hub-wordmark em{color: var(--theme) !important;}
+[data-edition="glass"] .mod-hdr-logo em{color: var(--theme) !important;}
+[data-edition="glass"] .hub-id-name span{color: var(--theme) !important;}
+
+/* ── Hero: green accent, consistent text ── */
+[data-edition="glass"] .hero{overflow:hidden;}
+[data-edition="glass"] .hero-eyebrow{color: var(--theme) !important;}
+[data-edition="glass"] .hero-title{color: var(--text) !important;}
+[data-edition="glass"] .hero-sub{color: var(--text2) !important;}
+
+/* ── Buttons: all variants ── */
+[data-edition="glass"] .btn-outline{
+  border-color: var(--gb2) !important;
+  color: var(--text2) !important;
+}
+[data-edition="glass"] .btn-outline:hover{
+  border-color: var(--theme) !important;
+  color: var(--theme) !important;
+  background: var(--theme-dim) !important;
+}
+[data-edition="glass"] .btn-ghost{color: var(--text2) !important;}
+[data-edition="glass"] .btn-ghost:hover{color: var(--theme) !important;}
+
+/* ── Search: green tinted ── */
+[data-edition="glass"] .search-pill:focus-within{border-color: var(--theme) !important;}
+[data-edition="glass"] .search-item:hover::before{background: var(--theme) !important;}
+[data-edition="glass"] .search-group-accent{color: var(--theme) !important;}
+
+/* ── Intel section ── */
+[data-edition="glass"] .intel-eye{color: var(--theme) !important;}
+
+/* ── Tabs: all states ── */
+[data-edition="glass"] .tab{border-color: var(--gb) !important;color: var(--text2) !important;}
+[data-edition="glass"] .tab:hover{color: var(--text) !important;border-color: var(--gb2) !important;}
+
+/* ── Pills: full coverage ── */
+[data-edition="glass"] .pill{border-color: var(--gb) !important;color: var(--text2) !important;}
+[data-edition="glass"] .pill:hover{border-color: var(--theme-b) !important;color: var(--text) !important;}
+[data-edition="glass"] .pill-tag.on{
+  background: var(--theme-dim) !important;
+  color: var(--theme) !important;
+  border-color: var(--theme-b) !important;
+}
+
+/* ── Form inputs ── */
+[data-edition="glass"] .fi{
+  background: var(--bg3) !important;
+  border-color: var(--gb) !important;
+  color: var(--text) !important;
+}
+[data-edition="glass"] .fi::placeholder{color: var(--text3) !important;}
+
+/* ── Kanban ── */
+[data-edition="glass"] .kanban-col{background: var(--bg2) !important;border-color: var(--gb) !important;}
+[data-edition="glass"] .kanban-card{
+  background: var(--bg3) !important;border-color: var(--gb) !important;
+}
+[data-edition="glass"] .kanban-card:hover{border-color: var(--theme-b) !important;}
+[data-edition="glass"] .kanban-add:hover{color: var(--theme) !important;border-color: var(--theme) !important;}
+
+/* ── Status badges ── */
+[data-edition="glass"] .pb-pago{background: rgba(34,197,94,0.12) !important;color: var(--green) !important;}
+[data-edition="glass"] .pb-pendente{background: rgba(245,158,11,0.12) !important;color: var(--amber) !important;}
+[data-edition="glass"] .pb-vencido{background: rgba(239,68,68,0.12) !important;color: var(--red) !important;}
+[data-edition="glass"] .pb-atrasado{background: rgba(245,158,11,0.15) !important;color: var(--amber) !important;}
+[data-edition="glass"] .pb-aprovado{background: rgba(59,130,246,0.12) !important;color: var(--blue) !important;}
+
+/* ── Tasks ── */
+[data-edition="glass"] .tk{background: var(--bg3) !important;border-color: var(--gb) !important;}
+[data-edition="glass"] .tk-chk:hover{border-color: var(--theme) !important;}
+[data-edition="glass"] .tk-chk.dn{background: var(--theme) !important;border-color: var(--theme) !important;}
+[data-edition="glass"] .tk-linked:hover{color: var(--theme) !important;}
+
+/* ── Ranking badges ── */
+[data-edition="glass"] .rank-badge{background: var(--bg3) !important;color: var(--text2) !important;border-color: var(--gb) !important;}
+[data-edition="glass"] .rank-badge.rank-gold{
+  background: linear-gradient(135deg,#facc15,#eab308) !important;color: #3f2d00 !important;border-color: #eab308 !important;
+}
+[data-edition="glass"] .rank-badge.rank-silver{
+  background: linear-gradient(135deg,#e2e8f0,#cbd5e1) !important;color: #1e293b !important;border-color: #cbd5e1 !important;
+}
+[data-edition="glass"] .rank-badge.rank-bronze{
+  background: linear-gradient(135deg,#d97706,#b45309) !important;color: #2a1600 !important;border-color: #b45309 !important;
+}
+
+/* ── Affiliates ── */
+[data-edition="glass"] .aff-card:hover{border-color: var(--theme-b) !important;
+  box-shadow: 0 4px 16px rgba(34,197,94,0.08) !important;}
+
+/* ── Audit log ── */
+[data-edition="glass"] .audit-icon{background: var(--bg3) !important;border-color: var(--gb) !important;}
+
+/* ── Action center ── */
+[data-edition="glass"] .ac-title i{stroke: var(--theme) !important;}
+[data-edition="glass"] .ac-card:hover{border-color: var(--theme-b) !important;}
+
+/* ── Financial calendar ── */
+[data-edition="glass"] .fin-cal-day{background: var(--bg3) !important;border-color: var(--gb) !important;}
+[data-edition="glass"] .fin-cal-day-today{
+  border-color: var(--theme) !important;
+  box-shadow: inset 0 0 0 1px var(--theme) !important;
+}
+[data-edition="glass"] .fin-cal-day-today .fin-cal-day-num{color: var(--theme) !important;}
+
+/* ── Sync pill ── */
+[data-edition="glass"] .sync-dot{background: var(--theme) !important;box-shadow: 0 0 6px var(--theme) !important;}
+
+/* ── Modal ── */
+[data-edition="glass"] .modal-ttl{color: var(--text) !important;}
+[data-edition="glass"] #modal-ov{background: rgba(7,9,11,0.7) !important;}
+[data-theme="light"][data-edition="glass"] #modal-ov{background: rgba(10,26,16,0.35) !important;}
+
+/* ── Toast ── */
+[data-edition="glass"] .toast{border-color: var(--gb) !important;}
+
+/* ── Scrollbar ── */
+[data-edition="glass"]::-webkit-scrollbar-thumb{background: var(--gb2) !important;}
+
+/* ── Table rows ── */
+[data-edition="glass"] .tr:hover{background: var(--theme-dim) !important;}
+
+/* ── Section labels ── */
+[data-edition="glass"] .sec-lbl{color: var(--text2) !important;}
+
 /* ══════════════════════════════════════════════════════════
    UX SWEEP — Typography harmony + icon visibility + calendar
    ══════════════════════════════════════════════════════════ */
@@ -2761,13 +2902,16 @@ table td{font-weight:400;}
   .st-theme-grid{grid-template-columns:1fr;}
 }
 
-/* Reduced motion — exclude mosaic (needs its CSS animation to tile) */
-[data-motion="reduced"] *:not(.mosaic-pattern):not(.mosaic-container):not(.mosaic-wrapper),
-[data-motion="reduced"] *:not(.mosaic-pattern):not(.mosaic-container):not(.mosaic-wrapper)::before,
-[data-motion="reduced"] *:not(.mosaic-pattern):not(.mosaic-container):not(.mosaic-wrapper)::after{
+/* Reduced motion — kill transitions AND hide infinite mosaic (solid bg) */
+[data-motion="reduced"] *,
+[data-motion="reduced"] *::before,
+[data-motion="reduced"] *::after{
   animation-duration:0.01ms !important;
   transition-duration:0.01ms !important;
 }
+[data-motion="reduced"] .mosaic-wrapper{display:none !important;}
+[data-motion="reduced"] .hero{background:var(--bg2) !important;}
+[data-motion="reduced"] .hub-bg{background:var(--bg) !important;}
 
 /* Compact density */
 [data-density="compact"] .mod-body{padding:16px 18px;}
@@ -2856,6 +3000,12 @@ table td{font-weight:400;}
 .cp-msg{display:flex;}
 .cp-msg-user{justify-content:flex-end;}
 .cp-msg-assist{justify-content:flex-start;}
+.cp-gemini-icon{width:22px;height:22px;fill:currentColor;flex-shrink:0;}
+.cp-welcome-icon .cp-gemini-icon{width:28px;height:28px;fill:#fff;}
+.cp-msg-avatar{width:24px;height:24px;border-radius:50%;background:var(--bg3);border:1px solid var(--gb);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.cp-msg-avatar .cp-gemini-icon{width:12px;height:12px;fill:var(--theme);}
+
 .cp-bubble{
   max-width:82%;padding:11px 14px;border-radius:14px;font-size:13px;line-height:1.55;
   word-wrap:break-word;white-space:normal;
