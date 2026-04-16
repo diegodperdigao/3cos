@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=37">
+<link rel="stylesheet" href="css/styles.css?v=38">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <div id="copilot-drawer">
   <div class="cp-hdr">
     <div class="cp-title">
+      <button class="cp-hdr-btn cp-hist-toggle" onclick="toggleCopilotHistory()" title="Histórico de conversas"><i data-lucide="menu"></i></button>
       <div class="cp-title-icon"><svg viewBox="0 0 24 24" class="cp-gemini-icon"><path d="M12 2C12 8.627 15.373 12 22 12C15.373 12 12 15.373 12 22C12 15.373 8.627 12 2 12C8.627 12 12 8.627 12 2Z" fill="currentColor"/></svg></div>
       <div>
         <div class="cp-title-main">3C Copilot</div>
@@ -184,10 +185,21 @@ document.addEventListener('DOMContentLoaded',()=>{
       <button class="cp-hdr-btn" onclick="closeCopilot()" title="Fechar"><i data-lucide="x"></i></button>
     </div>
   </div>
-  <div class="cp-body" id="copilot-body"></div>
-  <div class="cp-input-row">
-    <textarea id="copilot-input" class="cp-input" rows="1" placeholder="Pergunte ao Copilot..." onkeydown="onCopilotKeydown(event)"></textarea>
-    <button class="cp-send" onclick="sendCopilotMessage()" title="Enviar"><i data-lucide="send"></i></button>
+  <div class="cp-main">
+    <div class="cp-history-panel">
+      <div class="cp-history-hdr">
+        <span>Conversas</span>
+        <button class="cp-hdr-btn" onclick="newCopilotChat()" title="Nova conversa"><i data-lucide="plus"></i></button>
+      </div>
+      <div class="cp-history-list" id="copilot-history"></div>
+    </div>
+    <div class="cp-chat">
+      <div class="cp-body" id="copilot-body"></div>
+      <div class="cp-input-row">
+        <textarea id="copilot-input" class="cp-input" rows="1" placeholder="Pergunte ao Copilot..." onkeydown="onCopilotKeydown(event)"></textarea>
+        <button class="cp-send" onclick="sendCopilotMessage()" title="Enviar"><i data-lucide="send"></i></button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -215,26 +227,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=37"></script>
+<script src="js/app.js?v=38"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=37"></script>
-<script src="js/data.js?v=37"></script>
+<script src="js/supabase-client.js?v=38"></script>
+<script src="js/data.js?v=38"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=37"></script>
+<script src="js/lab.js?v=38"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=37"></script>
+<script src="js/search.js?v=38"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=37"></script>
-<script src="js/affiliates.js?v=37"></script>
-<script src="js/brands.js?v=37"></script>
-<script src="js/payments.js?v=37"></script>
-<script src="js/tasks.js?v=37"></script>
-<script src="js/pipeline.js?v=37"></script>
-<script src="js/import.js?v=37"></script>
-<script src="js/watchdog.js?v=37"></script>
-<script src="js/audit.js?v=37"></script>
-<script src="js/users.js?v=37"></script>
-<script src="js/settings.js?v=37"></script>
-<script src="js/copilot.js?v=37"></script>
+<script src="js/dashboard.js?v=38"></script>
+<script src="js/affiliates.js?v=38"></script>
+<script src="js/brands.js?v=38"></script>
+<script src="js/payments.js?v=38"></script>
+<script src="js/tasks.js?v=38"></script>
+<script src="js/pipeline.js?v=38"></script>
+<script src="js/import.js?v=38"></script>
+<script src="js/watchdog.js?v=38"></script>
+<script src="js/audit.js?v=38"></script>
+<script src="js/users.js?v=38"></script>
+<script src="js/settings.js?v=38"></script>
+<script src="js/copilot.js?v=38"></script>
 </body>
 </html>

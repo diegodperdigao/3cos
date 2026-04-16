@@ -3,35 +3,90 @@
 // ══════════════════════════════════════════════════════════
 // Floating button + chat drawer. Visible only when STATE.betaMode = true.
 // Talks to /api/ai (Vercel serverless → Google Gemini, free tier).
-// Conversation persists in localStorage across page reloads.
+// Conversations persist in localStorage with Gemini-style history sidebar.
 // ══════════════════════════════════════════════════════════
 
-const COPILOT_STORAGE_KEY = '3cos_copilot_msgs';
-let _copilotMessages = [];
+const COPILOT_CONVS_KEY = '3cos_copilot_convs';
+const COPILOT_ACTIVE_KEY = '3cos_copilot_active';
+const COPILOT_LEGACY_KEY = '3cos_copilot_msgs';  // old format
+
+let _copilotConvs = [];       // [{ id, title, messages, createdAt, updatedAt }]
+let _copilotActiveId = null;  // id of active conversation
 let _copilotOpen = false;
 let _copilotSending = false;
+let _copilotHistoryOpen = false;
 
-function _loadCopilotMessages() {
+function _loadConvs() {
   try {
-    const raw = localStorage.getItem(COPILOT_STORAGE_KEY);
-    _copilotMessages = raw ? JSON.parse(raw) : [];
-  } catch(e) { _copilotMessages = []; }
+    // Migrate legacy single-thread format if present
+    const legacy = localStorage.getItem(COPILOT_LEGACY_KEY);
+    if (legacy && !localStorage.getItem(COPILOT_CONVS_KEY)) {
+      const oldMsgs = JSON.parse(legacy);
+      if (Array.isArray(oldMsgs) && oldMsgs.length) {
+        const conv = _makeConv(oldMsgs);
+        _copilotConvs = [conv];
+        _copilotActiveId = conv.id;
+        _saveConvs();
+      }
+      localStorage.removeItem(COPILOT_LEGACY_KEY);
+    }
+    const raw = localStorage.getItem(COPILOT_CONVS_KEY);
+    _copilotConvs = raw ? JSON.parse(raw) : [];
+    _copilotActiveId = localStorage.getItem(COPILOT_ACTIVE_KEY) || null;
+    // Validate active id still exists
+    if (_copilotActiveId && !_copilotConvs.find(c => c.id === _copilotActiveId)) {
+      _copilotActiveId = _copilotConvs[0]?.id || null;
+    }
+  } catch (e) {
+    _copilotConvs = [];
+    _copilotActiveId = null;
+  }
 }
-function _saveCopilotMessages() {
+
+function _saveConvs() {
   try {
-    localStorage.setItem(COPILOT_STORAGE_KEY, JSON.stringify(_copilotMessages));
-  } catch(e) {}
+    localStorage.setItem(COPILOT_CONVS_KEY, JSON.stringify(_copilotConvs));
+    if (_copilotActiveId) localStorage.setItem(COPILOT_ACTIVE_KEY, _copilotActiveId);
+    else localStorage.removeItem(COPILOT_ACTIVE_KEY);
+  } catch (e) {}
 }
 
-_loadCopilotMessages();
+function _makeConv(messages = []) {
+  const now = Date.now();
+  return {
+    id: `cv_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    title: messages[0]?.content ? _titleFromText(messages[0].content) : 'Nova conversa',
+    messages,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
-// ── Open / Close (direct, NOT toggle) ──
+function _titleFromText(text) {
+  const clean = String(text || '').trim().replace(/\s+/g, ' ');
+  return clean.length > 40 ? clean.substring(0, 40) + '…' : (clean || 'Nova conversa');
+}
+
+function _getActiveConv() {
+  if (!_copilotActiveId) return null;
+  return _copilotConvs.find(c => c.id === _copilotActiveId) || null;
+}
+
+function _activeMessages() {
+  return _getActiveConv()?.messages || [];
+}
+
+_loadConvs();
+
+// ── OPEN / CLOSE ──
 window.openCopilot = () => {
   _copilotOpen = true;
   const drawer = document.getElementById('copilot-drawer');
   const overlay = document.getElementById('copilot-overlay');
   if (!drawer) return;
-  _loadCopilotMessages();
+  _loadConvs();
+  // If no active conv exists, start fresh (but don't persist empty conv yet)
+  if (!_copilotActiveId && _copilotConvs.length) _copilotActiveId = _copilotConvs[0].id;
   renderCopilot();
   drawer.classList.add('open');
   overlay?.classList.add('open');
@@ -40,9 +95,11 @@ window.openCopilot = () => {
 
 window.closeCopilot = () => {
   _copilotOpen = false;
+  _copilotHistoryOpen = false;
   const drawer = document.getElementById('copilot-drawer');
   const overlay = document.getElementById('copilot-overlay');
   drawer?.classList.remove('open');
+  drawer?.classList.remove('history-open');
   overlay?.classList.remove('open');
 };
 
@@ -51,20 +108,64 @@ window.toggleCopilot = () => {
   else openCopilot();
 };
 
+// ── HISTORY SIDEBAR ──
+window.toggleCopilotHistory = () => {
+  _copilotHistoryOpen = !_copilotHistoryOpen;
+  const drawer = document.getElementById('copilot-drawer');
+  drawer?.classList.toggle('history-open', _copilotHistoryOpen);
+  renderCopilotHistory();
+};
+
 window.newCopilotChat = () => {
-  _copilotMessages = [];
-  _saveCopilotMessages();
+  // If current active is already empty, reuse it
+  const active = _getActiveConv();
+  if (active && active.messages.length === 0) {
+    _copilotHistoryOpen = false;
+    document.getElementById('copilot-drawer')?.classList.remove('history-open');
+    renderCopilot();
+    setTimeout(() => document.getElementById('copilot-input')?.focus(), 100);
+    return;
+  }
+  const conv = _makeConv([]);
+  _copilotConvs.unshift(conv);
+  _copilotActiveId = conv.id;
+  _saveConvs();
+  _copilotHistoryOpen = false;
+  document.getElementById('copilot-drawer')?.classList.remove('history-open');
   renderCopilot();
   setTimeout(() => document.getElementById('copilot-input')?.focus(), 100);
 };
 
-// Custom Gemini-style sparkle SVG (4-pointed star)
+window.switchCopilotConv = (id) => {
+  _copilotActiveId = id;
+  _saveConvs();
+  _copilotHistoryOpen = false;
+  document.getElementById('copilot-drawer')?.classList.remove('history-open');
+  renderCopilot();
+};
+
+window.deleteCopilotConv = (id, ev) => {
+  if (ev) ev.stopPropagation();
+  const conv = _copilotConvs.find(c => c.id === id);
+  if (!conv) return;
+  if (!confirm(`Apagar a conversa "${conv.title}"?`)) return;
+  _copilotConvs = _copilotConvs.filter(c => c.id !== id);
+  if (_copilotActiveId === id) {
+    _copilotActiveId = _copilotConvs[0]?.id || null;
+  }
+  _saveConvs();
+  renderCopilot();
+  renderCopilotHistory();
+};
+
+// ── RENDERING ──
 const COPILOT_ICON_SVG = `<svg viewBox="0 0 24 24" class="cp-gemini-icon"><path d="M12 2C12 8.627 15.373 12 22 12C15.373 12 12 15.373 12 22C12 15.373 8.627 12 2 12C8.627 12 12 8.627 12 2Z" fill="currentColor"/></svg>`;
 
 function renderCopilot() {
   const body = document.getElementById('copilot-body');
   if (!body) return;
-  if (!_copilotMessages.length) {
+  const msgs = _activeMessages();
+  if (!msgs.length) {
     body.innerHTML = `
       <div class="cp-welcome">
         <div class="cp-welcome-icon">${COPILOT_ICON_SVG}</div>
@@ -78,11 +179,58 @@ function renderCopilot() {
         </div>
       </div>`;
   } else {
-    body.innerHTML = _copilotMessages.map(m => renderCopilotMessage(m)).join('');
-    if (_copilotSending) body.innerHTML += `<div class="cp-msg cp-msg-assist"><div class="cp-bubble cp-typing"><span></span><span></span><span></span></div></div>`;
+    body.innerHTML = msgs.map(m => renderCopilotMessage(m)).join('');
+    if (_copilotSending) body.innerHTML += `<div class="cp-msg cp-msg-assist"><div class="cp-msg-avatar">${COPILOT_ICON_SVG}</div><div class="cp-bubble cp-typing"><span></span><span></span><span></span></div></div>`;
   }
   if (window.lucide?.createIcons) lucide.createIcons();
   body.scrollTop = body.scrollHeight;
+  renderCopilotHistory();
+}
+
+function renderCopilotHistory() {
+  const panel = document.getElementById('copilot-history');
+  if (!panel) return;
+  if (!_copilotConvs.length) {
+    panel.innerHTML = `<div class="cp-hist-empty">
+      <i data-lucide="message-square"></i>
+      <div>Sem conversas ainda</div>
+      <div class="cp-hist-empty-sub">Comece uma nova conversa</div>
+    </div>`;
+    if (window.lucide?.createIcons) lucide.createIcons();
+    return;
+  }
+  // Sort by updatedAt descending
+  const sorted = [..._copilotConvs].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  panel.innerHTML = sorted.map(c => {
+    const isActive = c.id === _copilotActiveId;
+    const timeAgo = formatRelativeTime(c.updatedAt);
+    const msgCount = c.messages.length;
+    return `<div class="cp-hist-item ${isActive ? 'on' : ''}" onclick="switchCopilotConv('${c.id}')">
+      <div class="cp-hist-item-title">${escapeHTML(c.title)}</div>
+      <div class="cp-hist-item-meta">${timeAgo}${msgCount ? ` · ${msgCount} msg` : ''}</div>
+      <button class="cp-hist-del" onclick="deleteCopilotConv('${c.id}', event)" title="Apagar conversa">
+        <i data-lucide="trash-2"></i>
+      </button>
+    </div>`;
+  }).join('');
+  if (window.lucide?.createIcons) lucide.createIcons();
+}
+
+function formatRelativeTime(ts) {
+  if (!ts) return '—';
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(mins / 60);
+  const days = Math.floor(hours / 24);
+  if (mins < 1) return 'agora';
+  if (mins < 60) return `há ${mins}m`;
+  if (hours < 24) return `há ${hours}h`;
+  if (days < 7) return `há ${days}d`;
+  return new Date(ts).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
+
+function escapeHTML(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 function renderCopilotMessage(m) {
@@ -124,10 +272,21 @@ window.sendCopilotMessage = async () => {
   const text = input.value.trim();
   if (!text || _copilotSending) return;
 
-  _copilotMessages.push({ role: 'user', content: text });
+  // If no active conv, create one
+  let conv = _getActiveConv();
+  if (!conv) {
+    conv = _makeConv([]);
+    _copilotConvs.unshift(conv);
+    _copilotActiveId = conv.id;
+  }
+
+  conv.messages.push({ role: 'user', content: text });
+  // Auto-set title from first user message
+  if (conv.messages.length === 1) conv.title = _titleFromText(text);
+  conv.updatedAt = Date.now();
   input.value = '';
   _copilotSending = true;
-  _saveCopilotMessages();
+  _saveConvs();
   renderCopilot();
 
   try {
@@ -135,28 +294,27 @@ window.sendCopilotMessage = async () => {
     const res = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: _copilotMessages, context }),
+      body: JSON.stringify({ messages: conv.messages, context }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    _copilotMessages.push({ role: 'assistant', content: data.reply || '(sem resposta)' });
+    conv.messages.push({ role: 'assistant', content: data.reply || '(sem resposta)' });
   } catch (err) {
     console.error('[copilot]', err);
     const msg = err.message || 'Erro desconhecido';
     const hint = msg.includes('GEMINI_API_KEY')
-      ? '\n\n*Pegue uma chave grátis em aistudio.google.com/apikey e configure no Vercel: Settings → Environment Variables → GEMINI_API_KEY*'
+      ? '\n\n*Configure a chave em aistudio.google.com/apikey e adicione como GEMINI_API_KEY no Vercel.*'
       : '';
-    _copilotMessages.push({ role: 'assistant', content: `**Falha na conexão**: ${msg}${hint}` });
+    conv.messages.push({ role: 'assistant', content: `**Falha na conexão**: ${msg}${hint}` });
   } finally {
     _copilotSending = false;
-    _saveCopilotMessages();
+    conv.updatedAt = Date.now();
+    _saveConvs();
     renderCopilot();
   }
 };
 
 // ── DATA CONTEXT ──
-// Sends a compact snapshot of the entire STATE to the AI.
-// Includes ALL affiliates (not just top 20), all payments, all contracts.
 function buildCopilotContext() {
   const s = window.STATE || {};
   const today = new Date().toISOString().split('T')[0];

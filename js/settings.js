@@ -41,8 +41,8 @@ function bSettings(el){
               </div>
               <div class="st-theme-card ${themeName==='glass'?'on':''}" onclick="setAppTheme('glass')">
                 <div class="st-theme-preview st-theme-glass"></div>
-                <div class="st-theme-name">Cosmic</div>
-                <div class="st-theme-desc">Neon fluido da 3C Gaming — verde, roxo, magenta</div>
+                <div class="st-theme-name">Nebula</div>
+                <div class="st-theme-desc">Espaço profundo com um toque de violeta</div>
               </div>
             </div>
           </div>
@@ -297,7 +297,7 @@ window.setAppTheme = (name) => {
   STATE.settings.theme = name;
   applyAppTheme();
   saveToLocal();
-  toast(`Tema ${({default:'Default',mono:'Mono',glass:'Cosmic'})[name]||name} aplicado`, 's');
+  toast(`Tema ${({default:'Default',mono:'Mono',glass:'Nebula'})[name]||name} aplicado`, 's');
   // Re-render settings to update selection UI
   rerenderSettings();
 };
