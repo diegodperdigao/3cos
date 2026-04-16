@@ -377,23 +377,16 @@ window.navigateFromNotification=(notifId)=>{
   if(!action){toggleActionCenter();return;}
 
   toggleActionCenter();
+  // Pre-set payments tab so module builds with correct tab from the start (no flash)
+  if(action.tab&&action.module==='payments'){try{_pyTab=action.tab;}catch(e){}}
   setTimeout(()=>{
     if(typeof openMod==='function')openMod(action.module);
-    // Tab switch inside payments module
-    if(action.tab&&action.module==='payments'){
-      setTimeout(()=>{
-        if(typeof showPayTab==='function'){
-          const tabBtn=document.querySelector(`#pay-tabs [onclick*="showPayTab('${action.tab}'"]`);
-          if(tabBtn)showPayTab(action.tab,tabBtn);
-        }
-      },360);
-    }
-    // Payment status filter
+    // Payment status filter (applied after table renders)
     if(action.filter&&action.module==='payments'){
       setTimeout(()=>{
         const filterBtn=document.querySelector(`[onclick*="pilPy('${action.filter}'"]`);
         if(filterBtn&&typeof pilPy==='function')pilPy(action.filter,filterBtn);
-      },520);
+      },360);
     }
   },300);
   saveToLocal();

@@ -2,6 +2,7 @@
 // 4. PAYMENTS
 // ══════════════════════════════════════════════════════════
 let _pyF=null;
+let _pyTab='closing';
 function bPayments(el){
   // Compute KPIs using computed status (vencido/atrasado are time-based)
   const byStatus=STATE.payments.reduce((acc,p)=>{
@@ -40,12 +41,12 @@ function bPayments(el){
           <div style="font-size:9px;color:var(--text3);margin-top:3px">${byStatus.pago?.count||0} pgto(s)</div></div>
       </div>
       <div class="tabs" id="pay-tabs">
-        <button class="tab on" style="--tab-color:var(--pink)" onclick="showPayTab('closing',this)"><div class="tab-dot" style="background:var(--pink)"></div>Fechamento</button>
-        <button class="tab" style="--tab-color:var(--blue)" onclick="showPayTab('queue',this)"><div class="tab-dot" style="background:var(--blue)"></div>Pagamentos</button>
-        <button class="tab" style="--tab-color:var(--amber)" onclick="showPayTab('deadlines',this)"><div class="tab-dot" style="background:var(--amber)"></div>Prazos & Calendário</button>
+        <button class="tab${_pyTab==='closing'?' on':''}" style="--tab-color:var(--pink)" onclick="showPayTab('closing',this)"><div class="tab-dot" style="background:var(--pink)"></div>Fechamento</button>
+        <button class="tab${_pyTab==='queue'?' on':''}" style="--tab-color:var(--blue)" onclick="showPayTab('queue',this)"><div class="tab-dot" style="background:var(--blue)"></div>Pagamentos</button>
+        <button class="tab${_pyTab==='deadlines'?' on':''}" style="--tab-color:var(--amber)" onclick="showPayTab('deadlines',this)"><div class="tab-dot" style="background:var(--amber)"></div>Prazos & Calendário</button>
       </div>
-      <div id="pay-tab-closing"></div>
-      <div id="pay-tab-queue" style="display:none">
+      <div id="pay-tab-closing" style="display:${_pyTab==='closing'?'block':'none'}"></div>
+      <div id="pay-tab-queue" style="display:${_pyTab==='queue'?'block':'none'}">
       <div style="padding:12px 16px;background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);margin-bottom:16px;font-size:11px;color:var(--text2);line-height:1.6">
         <strong style="color:var(--text)">Como funciona:</strong> Pagamentos são criados automaticamente ao executar um <strong>Fechamento</strong>, ou manualmente com o botão "Novo Pagamento". Todos passam pelo fluxo: <span style="color:var(--red)">Pendente</span> → <span style="color:var(--amber)">Aprovado</span> → <span style="color:var(--green)">Pago</span>.
       </div>
@@ -65,7 +66,7 @@ function bPayments(el){
       </div>
       <div class="tbl-wrap" id="py-tbl"></div>
       </div>
-      <div id="pay-tab-deadlines" style="display:none"></div>
+      <div id="pay-tab-deadlines" style="display:${_pyTab==='deadlines'?'block':'none'}"></div>
     </div></div>`;
   renderPyTbl(STATE.payments);
   renderClosingTab();
@@ -527,6 +528,7 @@ window.sendBatch=()=>{
 // PRAZOS & CALENDÁRIO + AUTO-TASK GENERATOR
 // ══════════════════════════════════════════════════════════
 window.showPayTab=(tab,btn)=>{
+  _pyTab=tab;
   btn.closest('.tabs').querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
   document.getElementById('pay-tab-closing').style.display=tab==='closing'?'block':'none';
   document.getElementById('pay-tab-queue').style.display=tab==='queue'?'block':'none';
@@ -925,7 +927,7 @@ function _buildCalEvents(year,month){
       label:`${p.affiliate} — ${fc(p.amount)}`,
       sub:`${p.brand} · ${pl(p.status)}`,
       id:p.id,
-      action:`closeModal();openMod('payments');setTimeout(()=>{const tb=document.querySelector('[onclick*="showPayTab(\\'queue\\'"]');if(tb)showPayTab('queue',tb);},320);`
+      action:`closeModal();_pyTab='queue';openMod('payments');`
     });
   });
 
