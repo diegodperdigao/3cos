@@ -1,17 +1,18 @@
 // ══════════════════════════════════════════════════════════
-// Vercel Serverless Function — Claude API proxy
+// Vercel Serverless Function — Google Gemini proxy
 // ══════════════════════════════════════════════════════════
-// POST /api/claude
+// POST /api/ai
 // Body: { messages: [...], context: {...} }
 // Returns: { reply: "...", usage: {...} }
 //
-// Keeps ANTHROPIC_API_KEY server-side (never exposed to browser).
-// Requires env var ANTHROPIC_API_KEY in Vercel project settings.
+// Uses Google Gemini 2.0 Flash via REST API (no SDK needed).
+// Free tier: 15 RPM, 1M TPM, 1500 RPD — ideal for internal team use.
+//
+// Get API key: https://aistudio.google.com/apikey
+// Configure in Vercel: Settings → Environment Variables → GEMINI_API_KEY
 // ══════════════════════════════════════════════════════════
 
-const Anthropic = require('@anthropic-ai/sdk');
-
-const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-4-7';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 const MAX_TOKENS = 2048;
 
 const SYSTEM_PROMPT = `Você é o 3C Copilot, um assistente de IA integrado ao 3C OS Pro — um CRM para gestão de afiliados na indústria de iGaming (apostas online).
@@ -47,7 +48,6 @@ COMO RESPONDER:
 - Se faltar dado no contexto pra responder, diga isso claramente e sugira onde o usuário pode encontrar`;
 
 module.exports = async function handler(req, res) {
-  // CORS for same-origin (Vercel auto-handles same-origin; this is defensive)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -55,58 +55,71 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
-      error: 'ANTHROPIC_API_KEY não configurada',
-      hint: 'Configure a variável de ambiente no painel Vercel: Settings → Environment Variables'
+      error: 'GEMINI_API_KEY não configurada',
+      hint: 'Pegue uma chave grátis em aistudio.google.com/apikey e configure no Vercel: Settings → Environment Variables'
     });
   }
 
   try {
     const { messages = [], context = {} } = req.body || {};
-
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'messages array obrigatório' });
     }
 
-    // Build the initial system + context message
-    // Put the data context as the first cacheable system block so prompt caching works
+    // Build system instruction with embedded data context
     const contextText = JSON.stringify(context, null, 2);
-    const systemBlocks = [
-      { type: 'text', text: SYSTEM_PROMPT },
-      {
-        type: 'text',
-        text: `\n\n---\nDADOS ATUAIS DO USUÁRIO (snapshot do STATE):\n\n${contextText}`,
-        cache_control: { type: 'ephemeral' },
-      },
-    ];
+    const systemText = `${SYSTEM_PROMPT}\n\n---\nDADOS ATUAIS DO USUÁRIO (snapshot do STATE):\n\n${contextText}`;
 
-    const client = new Anthropic({ apiKey });
+    // Gemini uses 'user' and 'model' roles (not 'user' and 'assistant')
+    const contents = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
 
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: systemBlocks,
-      messages,
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemText }] },
+        contents,
+        generationConfig: {
+          maxOutputTokens: MAX_TOKENS,
+          temperature: 0.4,
+        },
+      }),
     });
 
-    // Extract the text reply
-    const textBlock = response.content.find(b => b.type === 'text');
-    const reply = textBlock ? textBlock.text : '';
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('[api/ai] Gemini error:', data);
+      return res.status(response.status).json({
+        error: data?.error?.message || `HTTP ${response.status}`,
+        type: data?.error?.status || 'GeminiError',
+      });
+    }
+
+    // Extract text from Gemini response
+    const reply =
+      data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') ||
+      '(sem resposta)';
 
     return res.status(200).json({
       reply,
-      usage: response.usage,
-      model: response.model,
-      stop_reason: response.stop_reason,
+      usage: data?.usageMetadata,
+      model: MODEL,
+      finish_reason: data?.candidates?.[0]?.finishReason,
     });
   } catch (err) {
-    console.error('[api/claude]', err);
-    const status = err.status || 500;
-    return res.status(status).json({
+    console.error('[api/ai] Exception:', err);
+    return res.status(500).json({
       error: err.message || 'Erro interno',
       type: err.constructor?.name || 'UnknownError',
     });
   }
-}
+};

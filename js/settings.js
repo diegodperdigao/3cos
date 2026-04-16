@@ -41,8 +41,8 @@ function bSettings(el){
               </div>
               <div class="st-theme-card ${themeName==='glass'?'on':''}" onclick="setAppTheme('glass')">
                 <div class="st-theme-preview st-theme-glass"></div>
-                <div class="st-theme-name">Aurora</div>
-                <div class="st-theme-desc">Índigo com gradientes de violeta e ciano</div>
+                <div class="st-theme-name">Signature</div>
+                <div class="st-theme-desc">Identidade 3C Gaming — verde neon sobre preto</div>
               </div>
             </div>
           </div>
@@ -297,7 +297,7 @@ window.setAppTheme = (name) => {
   STATE.settings.theme = name;
   applyAppTheme();
   saveToLocal();
-  toast(`Tema ${({default:'Default',mono:'Mono',glass:'Aurora'})[name]||name} aplicado`, 's');
+  toast(`Tema ${({default:'Default',mono:'Mono',glass:'Signature'})[name]||name} aplicado`, 's');
   // Re-render settings to update selection UI
   rerenderSettings();
 };

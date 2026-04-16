@@ -40,7 +40,7 @@ function renderCopilot() {
   if (!_copilotMessages.length) {
     body.innerHTML = `
       <div class="cp-welcome">
-        <div class="cp-welcome-icon"><i data-lucide="brain-circuit"></i></div>
+        <div class="cp-welcome-icon"><i data-lucide="sparkles"></i></div>
         <div class="cp-welcome-title">Olá! Sou o Copilot 3C</div>
         <div class="cp-welcome-sub">Pergunte qualquer coisa sobre afiliados, pagamentos, performance ou o estado da operação.</div>
         <div class="cp-suggestions">
@@ -111,7 +111,7 @@ window.sendCopilotMessage = async () => {
 
   try {
     const context = buildCopilotContext();
-    const res = await fetch('/api/claude', {
+    const res = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: _copilotMessages, context }),
@@ -124,8 +124,8 @@ window.sendCopilotMessage = async () => {
   } catch (err) {
     console.error('[copilot]', err);
     const msg = err.message || 'Erro desconhecido';
-    const hint = msg.includes('ANTHROPIC_API_KEY')
-      ? '\n\n*Configure a chave no painel Vercel: Settings → Environment Variables → ANTHROPIC_API_KEY*'
+    const hint = msg.includes('GEMINI_API_KEY')
+      ? '\n\n*Pegue uma chave grátis em aistudio.google.com/apikey e configure no Vercel: Settings → Environment Variables → GEMINI_API_KEY*'
       : '';
     _copilotMessages.push({ role: 'assistant', content: `❌ **Falha na conexão**: ${msg}${hint}` });
   } finally {

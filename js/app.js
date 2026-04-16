@@ -808,13 +808,13 @@ function initMosaics(){
 }
 
 function modHdr(label){
-  return `${STATE.betaMode?'<div class="beta-banner"><i data-lucide="flask-conical"></i> Modo Beta ativo — recursos experimentais habilitados</div>':''}
-    <div class="mod-hdr">
+  return `<div class="mod-hdr">
     <div class="mod-hdr-l">
       <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
       <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
       <div class="mod-hdr-sep"></div>
       <div class="mod-hdr-name">${label}</div>
+      ${STATE.betaMode?'<span class="beta-chip" title="Modo Beta ativo">β</span>':''}
     </div>
     <div class="mod-hdr-c">
       <div class="search-pill search-pill-sm" onclick="focusSearchInput(this)">
