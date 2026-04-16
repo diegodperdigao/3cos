@@ -334,11 +334,7 @@ window.toggleTheme = _wrapToggleTheme;
 })();
 
 // ── AUTO SESSION RESTORE ──
-// 1) Instantly restore from localStorage (no flash, no delay)
-// PHASE 3 fix: always go to hub on boot, never restore the previously
-// active module. The active-mod restore was causing a "dashboard flash"
-// + silent failures in buildMod() that left the UI in a broken state.
-sessionStorage.removeItem('3cos_activeMod');
+// Restore session from localStorage + return to the active module
 
 (function(){
   const sess=localStorage.getItem('3cos_sess');
@@ -354,12 +350,16 @@ sessionStorage.removeItem('3cos_activeMod');
         document.getElementById('hub-uname').textContent=STATE.user.name;
         document.getElementById('hub-urole').textContent=ROLES[STATE.user.role]?.label||STATE.user.role;
         document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
-        // Always show hub on boot (no active-mod restore)
+        // Show hub first (always stable)
         const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
         try { buildHubCards(); buildMobileHome(); } catch(e){ console.error('[boot] buildHub failed:', e); }
         updateNotifBadge();initMosaics();lucide.createIcons();
-        // Apply beta edition skin only after authentication
         if (typeof applyBetaEdition === 'function') applyBetaEdition();
+        // Restore active module (openMod has try/catch safety net)
+        const savedMod=sessionStorage.getItem('3cos_activeMod');
+        if(savedMod && typeof openMod === 'function'){
+          setTimeout(()=>{ try{openMod(savedMod);}catch(e){console.error('[boot] module restore failed:',e);} },200);
+        }
         return;
       }
     }catch(e){ console.error('[boot] session restore failed:', e); }
@@ -396,9 +396,16 @@ async function _validateSession() {
         }
         await loadFromCloud();
         fixBrandLogos();
+        // Only rebuild if hub is currently the visible screen (not if user is inside a module)
         const hub = document.getElementById('hub');
-        if (hub && hub.style.display === 'flex') {
-          buildHubCards(); buildMobileHome(); updateNotifBadge(); lucide.createIcons();
+        const activeModule = document.querySelector('.mod.active');
+        if (hub && hub.style.display === 'flex' && !activeModule) {
+          try { buildHubCards(); buildMobileHome(); } catch(e){}
+          updateNotifBadge(); lucide.createIcons();
+        } else if (activeModule) {
+          // Re-render the active module with fresh data
+          const modId = activeModule.id?.replace('mod-','');
+          if (modId) { try { buildMod(modId, activeModule); lucide.createIcons(); } catch(e){} }
         }
         setTimeout(() => { if (typeof runPaymentWatchdog === 'function') runPaymentWatchdog(); }, 2000);
         return true; // Session is valid, do not fall through to Firebase

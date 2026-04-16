@@ -2422,3 +2422,64 @@ table th{font-size:9px !important;font-weight:700 !important;letter-spacing:0.12
   .fin-cal-dot{width:6px;height:6px;}
   .fin-cal-event-count{min-width:16px;height:16px;font-size:8px;}
 }
+
+/* ══════════════════════════════════════════════════════════
+   CLEAN PALETTE — reduce color noise, professional restraint
+   ══════════════════════════════════════════════════════════
+   Design rule: color only means something functional.
+   Body text, labels, and structural elements use neutral
+   (--text, --text2, --text3). No decorative coloring. */
+
+/* Section eyebrows/labels: neutral, not theme-colored */
+.hero-eyebrow{color:var(--text2) !important;}
+.intel-eye{color:var(--text2) !important;}
+.sec-lbl::before{background:var(--text3) !important;}
+
+/* Stat labels: always neutral gray, never colored */
+.aff-stat-l{color:var(--text3) !important;}
+.kpi-lbl{color:var(--text2) !important;}
+
+/* Stat values: use --text (white/black) by default.
+   Only KPIs and explicitly functional values get color. */
+.aff-stat-v{color:var(--text) !important;}
+.td-money{color:var(--text) !important;}
+
+/* Modal content: consistent neutral text */
+.modal-bd .dr span:first-child{color:var(--text2) !important;}
+.modal-bd .dr strong{color:var(--text) !important;font-weight:700 !important;}
+
+/* Reduce excessive bold — only headings and primary values */
+.aff-type{font-weight:500 !important;}
+.aff-contact{font-weight:400 !important;}
+.user-email{font-weight:400 !important;}
+.audit-detail{font-weight:400 !important;}
+.tk-desc{font-weight:400 !important;}
+.tk-as,.tk-du{font-weight:500 !important;}
+
+/* Hub app card sub text: lighter weight, neutral */
+.hub-app-sub{font-weight:400 !important;color:var(--text3) !important;}
+
+/* Table content: regular weight (not bold by default) */
+table td{font-weight:400;}
+.td-name{font-weight:600 !important;}
+.td-money{font-weight:700 !important;}
+
+/* Smart list pills: neutral in default state, colored only when active */
+.pill-smart{color:var(--text2) !important;border-color:var(--gb2) !important;}
+.pill-smart svg{stroke:var(--text2) !important;}
+.pill-smart:hover{color:var(--text) !important;border-color:var(--text) !important;}
+.pill-smart:hover svg{stroke:var(--text) !important;}
+
+/* Last contact badge: softer colors */
+.lc-ok{background:transparent !important;border:1px solid rgba(16,185,129,0.3);color:var(--green);}
+.lc-warn{background:transparent !important;border:1px solid rgba(245,158,11,0.3);color:var(--amber);}
+.lc-danger{background:transparent !important;border:1px solid rgba(239,68,68,0.3);color:var(--red);}
+.lc-never{background:transparent !important;border:1px solid var(--gb);color:var(--text3);}
+
+/* Scrollbar: less prominent */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--gb2);border-radius:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* Remove all decorative text-shadows / letter-spacing overuse */
+.hub-wordmark{letter-spacing:0.06em !important;}
