@@ -356,6 +356,7 @@ window.toggleTheme = _wrapToggleTheme;
         updateNotifBadge();initMosaics();lucide.createIcons();
         if (typeof applyAppTheme === 'function') applyAppTheme();
         else if (typeof applyBetaEdition === 'function') applyBetaEdition();
+        if (typeof updateCopilotVisibility === 'function') updateCopilotVisibility();
         // Restore active module (openMod has try/catch safety net)
         const savedMod=sessionStorage.getItem('3cos_activeMod');
         if(savedMod && typeof openMod === 'function'){

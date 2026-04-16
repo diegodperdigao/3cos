@@ -627,6 +627,7 @@ window.doLogout=async ()=>{
   STATE.user=null;localStorage.removeItem('3cos_sess');
   // Force clear theme edition on logout (lock screen should always be default)
   document.documentElement.removeAttribute('data-edition');
+  if (window.updateCopilotVisibility) updateCopilotVisibility();
   const hub=document.getElementById('hub');hub.style.opacity='0';
   setTimeout(()=>{hub.style.display='none';
     document.querySelectorAll('.mod').forEach(m=>{m.classList.remove('active');m.style.display='none';m.style.opacity='0';});
@@ -645,6 +646,7 @@ function showHub(){
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
     if(window.updateLabButton)updateLabButton();
+    if(window.updateCopilotVisibility)updateCopilotVisibility();
     if(window.applyAppTheme)applyAppTheme();
     initMosaics();lucide.createIcons();
     // Run payment watchdog silently after hub is fully visible.

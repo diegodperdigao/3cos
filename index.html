@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=32">
+<link rel="stylesheet" href="css/styles.css?v=33">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -164,6 +164,32 @@ document.addEventListener('DOMContentLoaded',()=>{
   <div class="ac-body" id="ac-body-content"></div>
 </div>
 
+<!-- COPILOT (Beta — AI chat) -->
+<button id="copilot-fab" onclick="toggleCopilot()" title="3C Copilot — Pergunte qualquer coisa" style="display:none">
+  <i data-lucide="brain-circuit"></i>
+</button>
+<div id="copilot-overlay" onclick="closeCopilot()"></div>
+<div id="copilot-drawer">
+  <div class="cp-hdr">
+    <div class="cp-title">
+      <i data-lucide="brain-circuit"></i>
+      <div>
+        <div class="cp-title-main">3C Copilot</div>
+        <div class="cp-title-sub">IA conectada aos seus dados</div>
+      </div>
+    </div>
+    <div class="cp-hdr-actions">
+      <button class="cp-hdr-btn" onclick="clearCopilotChat()" title="Limpar conversa"><i data-lucide="trash-2"></i></button>
+      <button class="cp-hdr-btn" onclick="closeCopilot()" title="Fechar"><i data-lucide="x"></i></button>
+    </div>
+  </div>
+  <div class="cp-body" id="copilot-body"></div>
+  <div class="cp-input-row">
+    <textarea id="copilot-input" class="cp-input" rows="1" placeholder="Pergunte ao Copilot..." onkeydown="onCopilotKeydown(event)"></textarea>
+    <button class="cp-send" onclick="sendCopilotMessage()" title="Enviar"><i data-lucide="send"></i></button>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div id="modal-ov" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -188,25 +214,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=32"></script>
+<script src="js/app.js?v=33"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=32"></script>
-<script src="js/data.js?v=32"></script>
+<script src="js/supabase-client.js?v=33"></script>
+<script src="js/data.js?v=33"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=32"></script>
+<script src="js/lab.js?v=33"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=32"></script>
+<script src="js/search.js?v=33"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=32"></script>
-<script src="js/affiliates.js?v=32"></script>
-<script src="js/brands.js?v=32"></script>
-<script src="js/payments.js?v=32"></script>
-<script src="js/tasks.js?v=32"></script>
-<script src="js/pipeline.js?v=32"></script>
-<script src="js/import.js?v=32"></script>
-<script src="js/watchdog.js?v=32"></script>
-<script src="js/audit.js?v=32"></script>
-<script src="js/users.js?v=32"></script>
-<script src="js/settings.js?v=32"></script>
+<script src="js/dashboard.js?v=33"></script>
+<script src="js/affiliates.js?v=33"></script>
+<script src="js/brands.js?v=33"></script>
+<script src="js/payments.js?v=33"></script>
+<script src="js/tasks.js?v=33"></script>
+<script src="js/pipeline.js?v=33"></script>
+<script src="js/import.js?v=33"></script>
+<script src="js/watchdog.js?v=33"></script>
+<script src="js/audit.js?v=33"></script>
+<script src="js/users.js?v=33"></script>
+<script src="js/settings.js?v=33"></script>
+<script src="js/copilot.js?v=33"></script>
 </body>
 </html>

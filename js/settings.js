@@ -237,8 +237,8 @@ function bSettings(el){
           </div>
           <div class="st-divider"></div>
           <div class="st-lab-roadmap">
-            <div class="st-lab-roadmap-title">Próximos recursos no forno</div>
-            <div class="st-lab-item"><i data-lucide="brain-circuit"></i><div><strong>AI Copilot <span class="st-badge-soon">Em breve</span></strong><span>Análise conversacional de afiliados e pagamentos</span></div></div>
+            <div class="st-lab-roadmap-title">Recursos em teste (Beta)</div>
+            <div class="st-lab-item"><i data-lucide="brain-circuit"></i><div><strong>3C Copilot <span class="st-badge-live">Ativo</span></strong><span>Chat com IA Claude conectado aos dados da sua operação. Botão flutuante aparece no canto inferior direito quando Beta está ativo.</span></div></div>
             <div class="st-lab-item"><i data-lucide="workflow"></i><div><strong>Pipeline Automations <span class="st-badge-soon">Em breve</span></strong><span>Regras automáticas entre estágios do kanban</span></div></div>
             <div class="st-lab-item"><i data-lucide="line-chart"></i><div><strong>Forecast de comissão <span class="st-badge-soon">Em breve</span></strong><span>Projeção financeira com base histórica</span></div></div>
             <div class="st-lab-item"><i data-lucide="alert-triangle"></i><div><strong>Detecção de anomalias <span class="st-badge-soon">Em breve</span></strong><span>Alertas automáticos em padrões suspeitos de QFTD</span></div></div>

@@ -21,7 +21,10 @@ window.toggleBetaMode = () => {
   logAction(`[BETA] Modo Beta ${on ? 'ATIVADO' : 'DESATIVADO'}`, '');
   saveToLocal();
   updateLabButton();
-  if (on) toast('Modo Beta ativado — aguardando novos recursos', 'i');
+  if (window.updateCopilotVisibility) updateCopilotVisibility();
+  // Refresh active module so the beta banner shows/hides
+  if (window.refreshActiveModule) refreshActiveModule();
+  if (on) toast('Modo Beta ativado — 3C Copilot disponível no canto inferior direito', 's');
   else toast('Modo Beta desativado', 'i');
 };
 

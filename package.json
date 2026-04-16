@@ -1,0 +1,9 @@
+{
+  "name": "3c-os-pro",
+  "version": "1.0.0",
+  "description": "3C OS Pro — CRM & Affiliate Management",
+  "private": true,
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1"
+  }
+}
