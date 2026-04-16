@@ -19,10 +19,6 @@ function bAffs(el){
         <button class="pill" onclick="filterAffType('tiered',this)">CPA Escalonado</button>
         <button class="pill" onclick="filterAffType('pct_deposit',this)">% de Depósitos</button>
       </div>
-      <div class="pills pills-smart" style="margin-top:6px">
-        <div class="pills-lbl">Smart Lists</div>
-        ${SMART_LISTS.map(sl=>`<button class="pill pill-smart" style="--sl-c:${sl.color}" onclick="applySmartFilter('${sl.key}',this)" title="${sl.desc}"><i data-lucide="${sl.icon}" style="width:10px;height:10px;stroke:${sl.color}"></i>${sl.name}</button>`).join('')}
-      </div>
       <div class="pills pills-tags" style="margin-top:6px">
         <div class="pills-lbl">Tags</div>
         ${(STATE.availableTags||[]).map(t=>{const count=(STATE.affiliates||[]).filter(a=>(a.tags||[]).includes(t.id)).length;return `<button class="pill pill-tag" style="--tag-c:${t.color}" onclick="applyTagFilter('${t.id}',this)"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}<span class="pill-count">${count}</span></button>`;}).join('')}
@@ -32,7 +28,6 @@ function bAffs(el){
   renderAffs(STATE.affiliates);
 }
 let _affTypeF=null;
-let _affSmartF=null;
 let _affTagF=null;
 function renderAffs(list){
   const g=document.getElementById('aff-grid');if(!g)return;
@@ -67,20 +62,11 @@ function renderAffs(list){
   lucide.createIcons();
 }
 window.filterAff=q=>renderAffs(_computeAffList().filter(a=>a.name.toLowerCase().includes(q.toLowerCase())));
-window.filterAffType=(t,btn)=>{_affTypeF=t;_affSmartF=null;_affTagF=null;btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.pills-smart .pill, .pills-tags .pill').forEach(b=>b.classList.remove('on'));renderAffs(_computeAffList());};
+window.filterAffType=(t,btn)=>{_affTypeF=t;_affTagF=null;btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.pills-tags .pill').forEach(b=>b.classList.remove('on'));renderAffs(_computeAffList());};
 
-// BETA: Smart list + tag filters
-window.applySmartFilter=(key,btn)=>{
-  _affSmartF=_affSmartF===key?null:key;
-  _affTagF=null;_affTypeF=null;
-  document.querySelectorAll('.pills .pill').forEach(b=>b.classList.remove('on'));
-  if(_affSmartF)btn.classList.add('on');
-  else document.querySelector('.pills .pill:first-child')?.classList.add('on');
-  renderAffs(_computeAffList());
-};
 window.applyTagFilter=(tagId,btn)=>{
   _affTagF=_affTagF===tagId?null:tagId;
-  _affSmartF=null;_affTypeF=null;
+  _affTypeF=null;
   document.querySelectorAll('.pills .pill').forEach(b=>b.classList.remove('on'));
   if(_affTagF)btn.classList.add('on');
   else document.querySelector('.pills .pill:first-child')?.classList.add('on');
@@ -89,7 +75,6 @@ window.applyTagFilter=(tagId,btn)=>{
 
 function _computeAffList(){
   let list=STATE.affiliates||[];
-  if(_affSmartF&&typeof applySmartList==='function')return applySmartList(_affSmartF);
   if(_affTagF)return list.filter(a=>(a.tags||[]).includes(_affTagF));
   if(_affTypeF)return list.filter(a=>a.contractType===_affTypeF);
   return list;

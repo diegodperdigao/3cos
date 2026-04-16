@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '3.1';
+  --3cos-version: '3.2';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -1275,14 +1275,9 @@ textarea.fi{resize:vertical;min-height:60px;}
    BETA: Smart Lists, Tag pills, Last Contact, Global Search
    ══════════════════════════════════════════════════════════ */
 
-/* Smart list + tag filter bars */
-.pills-smart, .pills-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+/* Tag filter bar */
+.pills-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .pills-lbl{font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);padding:6px 4px 6px 0;display:flex;align-items:center;gap:4px;}
-
-/* Smart list pills: ensure inline alignment and constrained icon */
-.pill-smart{border-color:var(--sl-c,#ec4899)33 !important;display:inline-flex;align-items:center;gap:5px;}
-.pill-smart svg{width:11px !important;height:11px !important;flex-shrink:0;stroke:var(--sl-c,#ec4899);stroke-width:2.2;}
-.pill-smart.on{background:var(--sl-c,#ec4899)15 !important;color:var(--sl-c,#ec4899) !important;border-color:var(--sl-c,#ec4899)66 !important;}
 
 /* Tag pills: dot + label + count */
 .pill-tag{border-color:var(--tag-c,#ec4899)33 !important;display:inline-flex;align-items:center;gap:5px;}
@@ -2154,16 +2149,7 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="mono"] .dr .b,
 [data-edition="mono"] .dr .pb{color:var(--text) !important;}
 
-/* ── Smart lists pills inside affiliates module (mono) ── */
-[data-edition="mono"] .pill-smart{
-  border-color:var(--gb2) !important;
-  color:var(--text) !important;}
-[data-edition="mono"] .pill-smart svg{stroke:var(--text) !important;}
-[data-edition="mono"] .pill-smart.on{
-  background:var(--text) !important;
-  color:var(--bg) !important;
-  border-color:var(--text) !important;}
-[data-edition="mono"] .pill-smart.on svg{stroke:var(--bg) !important;}
+/* ── Tag pills inside affiliates module (mono) ── */
 [data-edition="mono"] .pill-tag{
   border-color:var(--gb2) !important;
   color:var(--text) !important;}
@@ -2175,7 +2161,6 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="mono"] .pill-count{
   background:var(--bg3) !important;
   color:var(--text) !important;}
-[data-edition="mono"] .pill-smart.on .pill-count,
 [data-edition="mono"] .pill-tag.on .pill-count{
   background:var(--bg) !important;
   color:var(--text) !important;}
@@ -2343,76 +2328,130 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="mono"] .fin-cal-day-today .fin-cal-day-num{color:var(--text) !important;}
 
 /* ══════════════════════════════════════════════════════════
-   EDITION: GLASS — translucent frosted glass
+   EDITION: AURORA — vivid color-shifted theme (no blur)
+   Deep indigo base (dark) / soft lavender base (light)
+   Pink→violet→cyan gradients replace neutral greys on cards.
    ══════════════════════════════════════════════════════════ */
-[data-edition="glass"] .kpi,
-[data-edition="glass"] .intel-wrap,
-[data-edition="glass"] .intel-card,
-[data-edition="glass"] .aff-card,
-[data-edition="glass"] .user-card,
-[data-edition="glass"] .tk,
-[data-edition="glass"] .st-card,
-[data-edition="glass"] .ac-card{
-  background:rgba(255,255,255,0.04) !important;
-  backdrop-filter:blur(16px) saturate(1.4);
-  -webkit-backdrop-filter:blur(16px) saturate(1.4);
-  border-color:rgba(255,255,255,0.1) !important;
-  box-shadow:0 4px 24px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.06);
+
+/* Base palette override — dark mode */
+[data-edition="glass"][data-theme="dark"]{
+  --bg: #0a0b1e;
+  --bg2: #10122e;
+  --bg3: #1a1d45;
+  --gb: rgba(139, 92, 246, 0.14);
+  --gb2: rgba(139, 92, 246, 0.28);
+  --text: #ffffff;
+  --text2: #c4b5fd;
+  --text3: #8b7ed8;
+  --theme: #c084fc;
+  --theme-dim: rgba(192, 132, 252, 0.12);
+  --theme-b: rgba(192, 132, 252, 0.28);
 }
-[data-theme="light"][data-edition="glass"] .kpi,
-[data-theme="light"][data-edition="glass"] .intel-wrap,
-[data-theme="light"][data-edition="glass"] .intel-card,
-[data-theme="light"][data-edition="glass"] .aff-card,
-[data-theme="light"][data-edition="glass"] .user-card,
-[data-theme="light"][data-edition="glass"] .tk,
-[data-theme="light"][data-edition="glass"] .st-card,
-[data-theme="light"][data-edition="glass"] .ac-card{
-  background:rgba(255,255,255,0.45) !important;
-  border-color:rgba(255,255,255,0.6) !important;
-  box-shadow:0 4px 24px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.8);
+
+/* Base palette override — light mode */
+[data-edition="glass"][data-theme="light"]{
+  --bg: #f4f1fb;
+  --bg2: #faf7ff;
+  --bg3: #ece4fb;
+  --gb: rgba(139, 92, 246, 0.18);
+  --gb2: rgba(139, 92, 246, 0.35);
+  --text: #1a1333;
+  --text2: #5b4d8a;
+  --text3: #8578b3;
+  --theme: #7c3aed;
+  --theme-dim: rgba(124, 58, 237, 0.08);
+  --theme-b: rgba(124, 58, 237, 0.22);
 }
-[data-edition="glass"] .modal{
-  background:rgba(var(--bg-rgb,3,0,8),0.75) !important;
-  backdrop-filter:blur(24px) saturate(1.5);
-  -webkit-backdrop-filter:blur(24px) saturate(1.5);
-  border:1px solid rgba(255,255,255,0.08) !important;
+
+/* Cards: vivid gradient backgrounds instead of flat greys */
+[data-edition="glass"][data-theme="dark"] .kpi,
+[data-edition="glass"][data-theme="dark"] .intel-wrap,
+[data-edition="glass"][data-theme="dark"] .intel-card,
+[data-edition="glass"][data-theme="dark"] .aff-card,
+[data-edition="glass"][data-theme="dark"] .user-card,
+[data-edition="glass"][data-theme="dark"] .tk,
+[data-edition="glass"][data-theme="dark"] .st-card{
+  background:linear-gradient(135deg, rgba(99,102,241,0.14) 0%, rgba(168,85,247,0.08) 50%, rgba(14,165,233,0.10) 100%) !important;
+  border:1px solid rgba(168, 85, 247, 0.18) !important;
+  box-shadow:0 4px 20px rgba(124,58,237,0.08), inset 0 1px 0 rgba(255,255,255,0.04);
 }
-[data-edition="glass"] .mod-hdr{
-  background:rgba(var(--bg-rgb,3,0,8),0.6) !important;
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border-bottom:1px solid rgba(255,255,255,0.06) !important;
+[data-edition="glass"][data-theme="light"] .kpi,
+[data-edition="glass"][data-theme="light"] .intel-wrap,
+[data-edition="glass"][data-theme="light"] .intel-card,
+[data-edition="glass"][data-theme="light"] .aff-card,
+[data-edition="glass"][data-theme="light"] .user-card,
+[data-edition="glass"][data-theme="light"] .tk,
+[data-edition="glass"][data-theme="light"] .st-card{
+  background:linear-gradient(135deg, rgba(224,215,255,0.85) 0%, rgba(255,230,248,0.75) 50%, rgba(207,232,252,0.8) 100%) !important;
+  border:1px solid rgba(124, 58, 237, 0.16) !important;
+  box-shadow:0 4px 18px rgba(124,58,237,0.06), inset 0 1px 0 #fff;
 }
-[data-edition="glass"] .hero{
-  border:1px solid rgba(255,255,255,0.06);
-  overflow:hidden;
+
+/* KPI accent strip stays vivid */
+[data-edition="glass"] .kpi::before{opacity:1;width:3px;}
+
+/* Tabs: iridescent active state */
+[data-edition="glass"] .tab.on{
+  background:linear-gradient(180deg, rgba(192,132,252,0.18), rgba(14,165,233,0.08)) !important;
+  border-color:var(--theme) !important;
 }
-[data-edition="glass"] .hero-overlay{
-  background:rgba(var(--bg-rgb,3,0,8),0.3) !important;
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-}
-[data-edition="glass"] .tabs .tab{
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.08) !important;
-}
-[data-edition="glass"] .tabs .tab.on{
-  background:rgba(255,255,255,0.08) !important;
-  border-color:rgba(255,255,255,0.15) !important;
-}
-[data-edition="glass"] .pill{
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1) !important;
-}
+
+/* Pills: active state uses aurora tint */
 [data-edition="glass"] .pill.on{
-  background:rgba(236,72,153,0.12) !important;
-  border-color:rgba(236,72,153,0.25) !important;
+  background:linear-gradient(135deg, rgba(192,132,252,0.14), rgba(236,72,153,0.10)) !important;
+  border-color:var(--theme-b) !important;
+  color:var(--theme) !important;
 }
-[data-edition="glass"] .kpi::before{opacity:0.7;}
-[data-edition="glass"] table{
-  background:rgba(255,255,255,0.02);border-radius:var(--radius);overflow:hidden;
+
+/* Modal: solid themed background (no blur, no mosaic interference) */
+[data-edition="glass"][data-theme="dark"] .modal{
+  background:linear-gradient(135deg, #1a1d45 0%, #2a1b5c 100%) !important;
+  border:1px solid rgba(192,132,252,0.22) !important;
 }
-[data-edition="glass"] .tbl-wrap{
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);
+[data-edition="glass"][data-theme="light"] .modal{
+  background:linear-gradient(135deg, #faf7ff 0%, #f0e8ff 100%) !important;
+  border:1px solid rgba(124,58,237,0.2) !important;
+}
+
+/* Hero: keep mosaic visible, just add aurora accent gradient */
+[data-edition="glass"] .hero-accent{
+  background:linear-gradient(135deg, rgba(192,132,252,0.24), rgba(236,72,153,0.12) 45%, rgba(14,165,233,0.16) 80%) !important;
+}
+
+/* Buttons: themed */
+[data-edition="glass"] .btn-theme{
+  background:linear-gradient(135deg, #a855f7, #7c3aed) !important;
+  border:none !important;color:#fff !important;
+  box-shadow:0 4px 12px rgba(124,58,237,0.3);
+}
+[data-edition="glass"] .btn-theme:hover{
+  box-shadow:0 6px 16px rgba(124,58,237,0.4);
+  transform:translateY(-1px);
+}
+
+/* Tables: subtle violet tint */
+[data-edition="glass"] table thead{
+  background:linear-gradient(90deg, rgba(168,85,247,0.06), rgba(14,165,233,0.04)) !important;
+}
+
+/* Action center: themed panel */
+[data-edition="glass"][data-theme="dark"] #action-center{
+  background:linear-gradient(180deg, #10122e 0%, #1a1d45 100%) !important;
+  border-left:1px solid rgba(192,132,252,0.2) !important;
+}
+[data-edition="glass"][data-theme="light"] #action-center{
+  background:linear-gradient(180deg, #faf7ff 0%, #ece4fb 100%) !important;
+  border-left:1px solid rgba(124,58,237,0.18) !important;
+}
+
+/* Module header: subtle aurora gradient (no blur) */
+[data-edition="glass"][data-theme="dark"] .mod-hdr{
+  background:linear-gradient(90deg, rgba(26,29,69,0.9), rgba(42,27,92,0.85)) !important;
+  border-bottom:1px solid rgba(192,132,252,0.18) !important;
+}
+[data-edition="glass"][data-theme="light"] .mod-hdr{
+  background:linear-gradient(90deg, rgba(250,247,255,0.95), rgba(240,232,255,0.9)) !important;
+  border-bottom:1px solid rgba(124,58,237,0.15) !important;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -2551,11 +2590,6 @@ table td{font-weight:400;}
 .td-name{font-weight:600 !important;}
 .td-money{font-weight:700 !important;}
 
-/* Smart list pills: neutral in default state, colored only when active */
-.pill-smart{color:var(--text2) !important;border-color:var(--gb2) !important;}
-.pill-smart svg{stroke:var(--text2) !important;}
-.pill-smart:hover{color:var(--text) !important;border-color:var(--text) !important;}
-.pill-smart:hover svg{stroke:var(--text) !important;}
 
 /* Last contact badge: softer colors */
 .lc-ok{background:transparent !important;border:1px solid rgba(16,185,129,0.3);color:var(--green);}
@@ -2628,10 +2662,9 @@ table td{font-weight:400;}
   background:linear-gradient(0deg,rgba(0,0,0,0.25),transparent);}
 .st-theme-mono{background:linear-gradient(135deg,#1a1a1a,#3a3a3a 50%,#e5e5e5 100%);}
 [data-theme="light"] .st-theme-mono{background:linear-gradient(135deg,#111,#777 50%,#f5f5f5 100%);}
-.st-theme-glass{background:linear-gradient(135deg,rgba(59,130,246,0.25),rgba(168,85,247,0.2) 50%,rgba(236,72,153,0.15));
-  backdrop-filter:blur(8px);}
-.st-theme-glass::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(255,255,255,0.15) 0%,transparent 50%);border-radius:inherit;}
+.st-theme-glass{background:linear-gradient(135deg,#6366f1 0%,#a855f7 45%,#0ea5e9 100%);position:relative;}
+.st-theme-glass::after{content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,transparent 55%);}
 .st-theme-grid-3{grid-template-columns:repeat(3,1fr);}
 @media(max-width:720px){.st-theme-grid-3{grid-template-columns:1fr;}}
 .st-theme-name{font-family:var(--fd);font-size:13px;font-weight:800;color:var(--text);margin-bottom:2px;}
