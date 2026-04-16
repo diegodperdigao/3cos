@@ -2316,3 +2316,109 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-color:var(--text) !important;
   box-shadow:0 0 0 1px var(--text) inset !important;}
 [data-edition="mono"] .fin-cal-day-today .fin-cal-day-num{color:var(--text) !important;}
+
+/* ══════════════════════════════════════════════════════════
+   UX SWEEP — Typography harmony + icon visibility + calendar
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Normalize KPI values to consistent sizes ── */
+.kpi-val{font-size:28px !important;}
+.kpi-val.sm{font-size:22px !important;}
+@media (max-width: 720px) {
+  .kpi-val{font-size:22px !important;}
+  .kpi-val.sm{font-size:18px !important;}
+}
+
+/* ── Force all Lucide SVGs to inherit text color in dark mode ──
+   Fixes black icons on dark backgrounds (calendar, etc) */
+svg[class="lucide"],
+i[data-lucide] svg{
+  stroke:var(--text2);
+}
+/* But keep explicitly colored icons (status/functional colors) */
+.kpi-icon-row svg{stroke:inherit;}
+.ibt svg{stroke:inherit;}
+.aff-contact svg,.tk-as svg,.tk-du svg,.tk-linked svg,.tk-chk svg{stroke:var(--text2);}
+
+/* ── Affiliate stat cards: consistent sizing ── */
+.aff-stat-v{font-size:14px !important;font-weight:800 !important;}
+.aff-stat-l{font-size:8px !important;font-weight:700 !important;letter-spacing:0.12em !important;}
+
+/* ── Table body text: consistent ── */
+table td{font-size:12px;}
+table th{font-size:9px !important;font-weight:700 !important;letter-spacing:0.12em !important;
+  text-transform:uppercase !important;color:var(--text2) !important;}
+
+/* ── Mini text labels should be consistent ── */
+.dtl{font-size:10px !important;font-weight:700 !important;letter-spacing:0.16em !important;
+  text-transform:uppercase !important;color:var(--text2) !important;}
+
+/* ── Financial calendar: MUCH more prominent events ── */
+.fin-cal-day{min-height:72px;padding:8px 6px 6px;}
+.fin-cal-dots{gap:4px;margin-top:4px;}
+.fin-cal-dot{width:8px;height:8px;border-radius:50%;
+  box-shadow:0 0 6px currentColor,0 0 12px currentColor;}
+.fin-cal-day-hasevents{
+  background:rgba(236,72,153,0.04) !important;
+  border-color:var(--gb2) !important;}
+.fin-cal-day-hasevents .fin-cal-day-num{font-weight:900 !important;}
+
+/* Event count badge on calendar days */
+.fin-cal-event-count{
+  position:absolute;top:4px;right:4px;
+  min-width:18px;height:18px;border-radius:9px;
+  background:var(--theme);color:#fff;
+  font-size:9px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 4px;
+  box-shadow:0 2px 6px rgba(236,72,153,0.4);}
+
+/* Calendar day hover: show bigger tooltip */
+.fin-cal-day-hasevents:hover{
+  background:var(--theme-dim) !important;
+  border-color:var(--theme-b) !important;
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(0,0,0,0.2) !important;
+  z-index:5;}
+.fin-cal-day-hasevents:hover .fin-cal-dots{transform:scale(1.15);}
+
+/* Overdue day: red tint with strong border */
+.fin-cal-day-alert{
+  background:rgba(239,68,68,0.06) !important;
+  border-color:rgba(239,68,68,0.3) !important;}
+.fin-cal-day-alert .fin-cal-event-count{
+  background:var(--red);}
+
+/* Today: stronger pink ring */
+.fin-cal-day-today{
+  box-shadow:0 0 0 2px var(--theme),inset 0 0 6px var(--theme-dim) !important;
+  border-color:var(--theme) !important;}
+
+/* Legend: slightly bigger dots */
+.fin-cal-legend-item .fin-cal-dot{width:8px;height:8px;}
+
+/* ── Clean up excessive decorative shadows ── */
+.aff-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.12) !important;}
+.kpi:hover{transform:none;box-shadow:none;}
+.user-card:hover{box-shadow:none;}
+
+/* ── Consistent section header sizing across all modules ── */
+.sec-lbl{font-size:10px !important;}
+
+/* ── Modal content: consistent base font ── */
+.modal-bd{font-size:13px;}
+.modal-bd .dr span:first-child{font-size:12px;}
+.modal-bd .dr strong{font-size:13px;}
+
+/* ── Event cards in day modal: cleaner ── */
+.fin-cal-event{padding:14px 16px;}
+.fin-cal-event-label{font-size:13px !important;font-weight:700 !important;}
+.fin-cal-event-sub{font-size:11px !important;}
+
+/* ── Mobile: tighter but still readable ── */
+@media (max-width: 720px) {
+  .aff-stat-v{font-size:13px !important;}
+  .fin-cal-day{min-height:58px;padding:6px 4px 4px;}
+  .fin-cal-dot{width:6px;height:6px;}
+  .fin-cal-event-count{min-width:16px;height:16px;font-size:8px;}
+}

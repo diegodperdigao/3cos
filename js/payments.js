@@ -992,9 +992,9 @@ function renderMonthlyCalendar(){
            ${hasEvents?`onclick="calShowDay(${day})"`:''}>
         <div class="fin-cal-day-num">${day}</div>
         ${hasEvents?`
+          <div class="fin-cal-event-count">${dayEvents.length}</div>
           <div class="fin-cal-dots">
             ${dayEvents.slice(0,4).map(e=>`<span class="fin-cal-dot" style="background:${e.color}" title="${e.label}"></span>`).join('')}
-            ${dayEvents.length>4?`<span class="fin-cal-more">+${dayEvents.length-4}</span>`:''}
           </div>
         `:''}
       </div>`;
