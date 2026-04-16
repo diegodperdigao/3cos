@@ -54,7 +54,7 @@ window.performGlobalSearch = (query) => {
 
   // BRANDS
   Object.entries(STATE.brands || {}).forEach(([name, b]) => {
-    const levelsStr = (b.levels || []).map(l => `${l.name} ${l.cpa} ${l.baseline}`).join(' ');
+    const levelsStr = (b.levels || []).map(l => `${l.name||l.key||''} ${l.cpa} ${l.baseline}`).join(' ');
     if (matches(name, b.type, `cpa ${b.cpa || 0}`, `rs ${b.rs || 0}`, levelsStr)) {
       results.brands.push({
         title: name,

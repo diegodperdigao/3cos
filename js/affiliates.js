@@ -151,7 +151,7 @@ window.openAffDetail=id=>{
       <div style="margin-top:14px"><div class="dtl" style="margin-bottom:8px">Deals por Marca</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           ${brands.map(brand=>{const deal=a.deals[brand];const br=STATE.brands[brand]||{color:'#888',rgb:'136,136,136'};
-            let info=a.contractType==='tiered'?`CPA Escalonado: ${(deal.levels||[]).map(l=>`${l.name} R$${l.cpa} (base ${l.baseline})`).join(' | ')} + RS ${deal.rs||br.rs}%`:
+            let info=a.contractType==='tiered'?`CPA Escalonado: ${(deal.levels||[]).map(l=>`${l.name||l.key?.toUpperCase()||''} R$${l.cpa} (base ${l.baseline})`).join(' | ')} + RS ${deal.rs||br.rs}%`:
               a.contractType==='pct_deposit'?`% de Depósitos: ${deal.pctDeposit||0}% + CPA R$${deal.cpa||0}`:
               `CPA: R$${deal.cpa||br.cpa} + RS: ${deal.rs||br.rs}%`;
             return `<div style="padding:10px 13px;background:rgba(${br.rgb},0.08);border:1px solid rgba(${br.rgb},0.2);border-radius:10px">

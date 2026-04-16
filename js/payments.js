@@ -407,7 +407,7 @@ window.generateClosingPDF=(affiliate,affiliatesList,filterBrand,filterMonth,clos
     brands.forEach(b=>{
       const deal=a.deals[b];const br=STATE.brands[b]||{color:'#888'};
       let dealDesc='';
-      if(a.contractType==='tiered')dealDesc=(deal.levels||[]).map(l=>`${l.name}: R$ ${l.cpa} (base ${l.baseline})`).join(' | ')+` + RS ${deal.rs||0}%`;
+      if(a.contractType==='tiered')dealDesc=(deal.levels||[]).map(l=>`${l.name||l.key?.toUpperCase()||''}: R$ ${l.cpa} (base ${l.baseline})`).join(' | ')+` + RS ${deal.rs||0}%`;
       else if(a.contractType==='deposit')dealDesc=`Meta: R$ ${(deal.depositTarget||0).toLocaleString('pt-BR')}/mês`;
       else if(a.contractType==='pct_deposit')dealDesc=`${deal.pctDeposit||0}% dos depósitos + CPA R$ ${deal.cpa||0}`;
       else if(a.contractType==='rs')dealDesc=`Revenue Share: ${deal.rs||0}%`;
@@ -727,7 +727,7 @@ window.previewClosing=()=>{
   const br=STATE.brands[brand]||{color:'#888'};
 
   let dealInfo='';
-  if(a.contractType==='tiered')dealInfo=(deal?.levels||[]).map(l=>`${l.name}: R$ ${l.cpa} (base ${l.baseline})`).join(' | ')+` + RS ${deal?.rs||0}%`;
+  if(a.contractType==='tiered')dealInfo=(deal?.levels||[]).map(l=>`${l.name||l.key?.toUpperCase()||''}: R$ ${l.cpa} (base ${l.baseline})`).join(' | ')+` + RS ${deal?.rs||0}%`;
   else if(a.contractType==='deposit')dealInfo=`Meta: R$ ${(deal?.depositTarget||0).toLocaleString('pt-BR')}/mês`;
   else if(a.contractType==='pct_deposit')dealInfo=`${deal?.pctDeposit||0}% dos depósitos + CPA R$ ${deal?.cpa||0}`;
   else if(a.contractType==='rs')dealInfo=`RS: ${deal?.rs||0}%`;
