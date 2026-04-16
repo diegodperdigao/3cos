@@ -251,14 +251,14 @@ window.refreshDash=()=>{
     <div class="tbl-wrap"><table><thead><tr>
       <th>Afiliado</th><th>Tipo</th><th style="text-align:center">FTDs</th>
       <th style="text-align:center" class="col-theme">QFTDs</th>
-      <th>Depósitos</th>${isAllTime&&brand==='all'?'<th class="col-theme">Comissão</th><th style="color:var(--green)">Lucro 3C</th>':''}
+      <th>Depósitos</th>${isAllTime&&brand==='all'?'<th>Comissão</th><th>Lucro 3C</th>':''}
     </tr></thead><tbody>
       ${ranked.map((a,i)=>`<tr class="tr" onclick="openAffDetail('${a.id}')">
         <td><span class="td-rank">${medal(i)}</span> <span class="td-name">${a.name}</span></td>
         <td><span class="ct-badge ${CONTRACT_TYPES[a.contractType]?.css||''}">${CONTRACT_TYPES[a.contractType]?.label||''}</span></td>
-        <td class="td-num">${a.ftds}</td><td class="td-pink">${a.qftds}</td>
+        <td class="td-num">${a.ftds}</td><td class="td-num">${a.qftds}</td>
         <td class="td-money">${fc(a.deposits)}</td>${isAllTime&&brand==='all'?`
-        <td class="td-red" style="color:var(--red)">${fc(a.commission)}</td><td class="td-green" style="color:var(--green)">${fc(a.profit)}</td>`:''}
+        <td class="td-money">${fc(a.commission)}</td><td class="td-money">${fc(a.profit)}</td>`:''}
       </tr>`).join('')}
     </tbody></table></div>`:''}`;
   lucide.createIcons();
@@ -404,7 +404,7 @@ function renderReportsHistory(){
           <td><span style="font-size:10px;font-weight:700;color:${STATE.brands[r.brand]?.color||'#888'}">${r.brand}</span></td>
           <td style="font-size:11px">${aff?.name||'—'}</td>
           <td class="td-num">${r.ftd||0}</td>
-          <td class="td-num" style="color:var(--pink)">${q}</td>
+          <td class="td-num">${q}</td>
           <td class="td-money">${fc(r.deposits||0)}</td>
           <td style="color:${(r.netRev||0)>=0?'var(--green)':'var(--red)'};font-weight:600;font-size:11px">${fc(r.netRev||0)}</td>
           <td style="white-space:nowrap">
