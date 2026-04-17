@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '4.3';
+  --3cos-version: '4.4';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -3048,6 +3048,77 @@ textarea.fi{resize:vertical;min-height:60px;}
   background: linear-gradient(135deg,#e2e8f0,#cbd5e1) !important;color: #1e293b !important;border-color: #cbd5e1 !important;}
 [data-edition="neonflow"] .rank-badge.rank-bronze{
   background: linear-gradient(135deg,#d97706,#b45309) !important;color: #2a1600 !important;border-color: #b45309 !important;}
+
+/* ══════════════════════════════════════════════════════════
+   HIDE MOSAIC in Nebula and Neon Flow — themes replace the
+   3C logo wallpaper with their own visual identity
+   ══════════════════════════════════════════════════════════ */
+
+/* NEBULA — hide mosaic, show starfield + violet glow */
+[data-edition="glass"] .hub-bg .mosaic-wrapper,
+[data-edition="glass"] .hero .mosaic-wrapper{
+  display: none !important;
+}
+[data-edition="glass"][data-theme="dark"] .hub-bg{
+  background:
+    radial-gradient(circle at 20% 30%, rgba(167,139,250,0.10), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(236,72,153,0.06), transparent 40%),
+    #07070c !important;
+}
+[data-edition="glass"][data-theme="light"] .hub-bg{
+  background:
+    radial-gradient(circle at 20% 30%, rgba(124,58,237,0.06), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(167,139,250,0.04), transparent 45%),
+    #fafaff !important;
+}
+[data-edition="glass"] .hero{
+  background: var(--bg2) !important;
+  overflow: hidden;
+}
+[data-edition="glass"][data-theme="dark"] .hero::before{
+  content: '';position: absolute;inset: 0;pointer-events: none;
+  background:
+    radial-gradient(1px 1px at 15% 40%, rgba(255,255,255,0.6), transparent 50%),
+    radial-gradient(1px 1px at 60% 25%, rgba(255,255,255,0.4), transparent 50%),
+    radial-gradient(1px 1px at 85% 70%, rgba(167,139,250,0.5), transparent 50%),
+    radial-gradient(1px 1px at 35% 80%, rgba(255,255,255,0.4), transparent 50%);
+  background-size: 600px 400px;opacity: 0.6;
+}
+
+/* NEON FLOW — hide mosaic, show magenta+cyan liquid neon background */
+[data-edition="neonflow"] .hub-bg .mosaic-wrapper,
+[data-edition="neonflow"] .hero .mosaic-wrapper{
+  display: none !important;
+}
+[data-edition="neonflow"][data-theme="dark"] .hub-bg{
+  background:
+    radial-gradient(ellipse 800px 500px at 10% 20%, rgba(232,28,255,0.18), transparent 60%),
+    radial-gradient(ellipse 700px 400px at 90% 80%, rgba(0,240,255,0.15), transparent 60%),
+    radial-gradient(ellipse 600px 300px at 50% 50%, rgba(176,38,255,0.08), transparent 70%),
+    #050508 !important;
+}
+[data-edition="neonflow"][data-theme="light"] .hub-bg{
+  background:
+    radial-gradient(ellipse 800px 500px at 10% 20%, rgba(197,0,217,0.08), transparent 60%),
+    radial-gradient(ellipse 700px 400px at 90% 80%, rgba(0,184,194,0.08), transparent 60%),
+    #f4f5f9 !important;
+}
+[data-edition="neonflow"] .hero{
+  background: var(--bg2) !important;
+  overflow: hidden;
+}
+[data-edition="neonflow"][data-theme="dark"] .hero::before{
+  content: '';position: absolute;inset: 0;pointer-events: none;
+  background:
+    radial-gradient(ellipse 400px 200px at 30% 40%, rgba(232,28,255,0.12), transparent 60%),
+    radial-gradient(ellipse 300px 150px at 70% 60%, rgba(0,240,255,0.10), transparent 60%);
+}
+
+/* Hide hub-overlay (vignette) in themed modes — themes control their own lighting */
+[data-edition="glass"] .hub-overlay,
+[data-edition="neonflow"] .hub-overlay{
+  display: none !important;
+}
 
 /* ══════════════════════════════════════════════════════════
    UX SWEEP — Typography harmony + icon visibility + calendar
