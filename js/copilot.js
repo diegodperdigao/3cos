@@ -280,17 +280,34 @@ window.sendCopilotMessage = async () => {
     _copilotActiveId = conv.id;
   }
 
-  // Defensive check: warn if STATE is empty (user opened Copilot before data loaded)
-  const s = window.STATE || {};
-  if (!s.user || !(s.affiliates || []).length) {
-    console.warn('[Copilot] STATE não carregado completamente:', {
-      hasUser: !!s.user,
-      affiliatesCount: (s.affiliates || []).length,
-    });
+  // If STATE is empty, try to re-sync from Supabase before asking the AI.
+  // Avoids the "tenho dados stale" case when user opens Copilot during/after a fresh login.
+  const sBefore = window.STATE || {};
+  const hasData = (sBefore.affiliates || []).length > 0 || (sBefore.payments || []).length > 0;
+  if (!hasData && window.Data?.loadAll) {
+    console.log('[Copilot] STATE parece vazio, re-sincronizando com Supabase...');
+    try {
+      await Data.loadAll();
+      console.log('[Copilot] Re-sync done. Afiliados:', (STATE.affiliates || []).length,
+        'Pagamentos:', (STATE.payments || []).length);
+    } catch (e) {
+      console.warn('[Copilot] Re-sync falhou:', e);
+    }
   }
 
+  const s = window.STATE || {};
+  const stateStats = {
+    hasUser: !!s.user,
+    affiliates: (s.affiliates || []).length,
+    payments: (s.payments || []).length,
+    contracts: (s.contracts || []).length,
+    tasks: (s.tasks || []).length,
+    brands: Object.keys(s.brands || {}).length,
+    reports: (s.reports || []).length,
+  };
+  console.log('[Copilot] STATE antes de enviar:', JSON.stringify(stateStats));
+
   conv.messages.push({ role: 'user', content: text });
-  // Auto-set title from first user message
   if (conv.messages.length === 1) conv.title = _titleFromText(text);
   conv.updatedAt = Date.now();
   input.value = '';
@@ -300,17 +317,7 @@ window.sendCopilotMessage = async () => {
 
   try {
     const context = buildCopilotContext();
-    // DEBUG: dump context to console so user can verify data is being sent
-    console.log('[Copilot] Enviando contexto com:', {
-      affiliates: (context.affiliates || []).length,
-      contracts: (context.contracts || []).length,
-      payments_statuses: Object.keys(context.payments_by_status || {}),
-      payments_total: Object.values(context.payments_by_status || {}).reduce((s, b) => s + (b.count || 0), 0),
-      tasks: (context.tasks || []).length,
-      brands: Object.keys(context.brands || {}),
-      reports: (context.recent_reports || []).length,
-      full_context_bytes: JSON.stringify(context).length,
-    });
+    console.log('[Copilot] Contexto enviado — empty?', context._empty_state, 'bytes:', JSON.stringify(context).length);
 
     const res = await fetch('/api/ai', {
       method: 'POST',
@@ -318,7 +325,7 @@ window.sendCopilotMessage = async () => {
       body: JSON.stringify({ messages: conv.messages, context }),
     });
     const data = await res.json();
-    console.log('[Copilot] Resposta da API:', data);
+    console.log('[Copilot] build_id:', data._build_id, '| stats:', JSON.stringify(data._debug_context_stats));
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     conv.messages.push({ role: 'assistant', content: data.reply || '(sem resposta)' });
   } catch (err) {
@@ -340,6 +347,11 @@ window.sendCopilotMessage = async () => {
 function buildCopilotContext() {
   const s = window.STATE || {};
   const today = new Date().toISOString().split('T')[0];
+
+  // Flag empty state so AI knows the platform has no data yet
+  const isEmpty = (s.affiliates || []).length === 0 &&
+                  (s.payments || []).length === 0 &&
+                  (s.tasks || []).length === 0;
 
   const paymentsByStatus = {};
   (s.payments || []).forEach(p => {
@@ -402,6 +414,10 @@ function buildCopilotContext() {
       deposits: r.deposits, netRev: r.netRev,
     })),
     deadlines: s.deadlines,
+    _empty_state: isEmpty,
+    _empty_note: isEmpty
+      ? 'IMPORTANTE: A plataforma não tem dados cadastrados ainda (zero afiliados, zero pagamentos, zero tarefas). O usuário acabou de configurar o sistema e ainda não populou com dados reais. Oriente-o a começar cadastrando marcas parceiras, afiliados e lançando dados de performance nos módulos correspondentes. NÃO diga que não tem acesso — explique que o sistema está vazio e precisa ser populado.'
+      : null,
   };
 }
 

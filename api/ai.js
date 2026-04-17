@@ -62,6 +62,21 @@ COMO RESPONDER:
 // "say" these numbers in its prior turn, it treats them as known truth
 // and answers subsequent questions using them.
 function _buildAckMessage(ctx) {
+  // If the platform is empty (fresh setup, no data yet), acknowledge that
+  // and pivot to helpful onboarding instead of complaining about missing data.
+  if (ctx._empty_state) {
+    return `Recebi o snapshot da sua plataforma. Ela está recém-configurada — ainda não tem dados cadastrados (zero afiliados, zero pagamentos, zero tarefas).
+
+Posso te ajudar a começar. Os passos típicos são:
+
+1. **Cadastrar marcas parceiras** no módulo *Marcas* (Vupi, Novibet, etc — com CPA base e Rev Share)
+2. **Cadastrar afiliados** no módulo *Afiliados* (com os deals negociados por marca)
+3. **Lançar performance** no módulo *Dashboard* (FTDs, QFTDs, depósitos por dia)
+4. **Executar fechamento** mensal no módulo *Financeiro* (gera pagamentos automaticamente)
+
+Depois que tiver dados lançados, posso te ajudar com análises: top afiliados, pagamentos vencidos, performance por marca, previsões, etc. O que você quer fazer primeiro?`;
+  }
+
   const affCount = (ctx.affiliates || []).length;
   const payBuckets = ctx.payments_by_status || {};
   const totalPayments = Object.values(payBuckets).reduce((s, b) => s + (b.count || 0), 0);
