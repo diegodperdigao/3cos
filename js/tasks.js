@@ -60,7 +60,7 @@ function renderTasks(list){
       ${aff?`<div class="tk-linked" onclick="openAffDetail('${aff.id}')"><i data-lucide="user"></i>${aff.name}</div>`:''}
       <div class="tk-ft">
         <div style="display:flex;gap:12px">
-          <div class="tk-as"><i data-lucide="user"></i>${t.assignee||'—'}</div>
+          <div class="tk-as">${t.assignee?userAvatar(t.assignee,20):'<i data-lucide="user"></i>'}<span>${t.assignee||'—'}</span></div>
           ${t.dueDate?`<div class="tk-du" style="${od(t.dueDate,t.status==='concluída'?'pago':'pendente')?'color:var(--red)':''}"><i data-lucide="calendar"></i>${new Date(t.dueDate).toLocaleDateString('pt-BR')}</div>`:''}
         </div>
         ${t.linkedModule?`<button class="btn btn-outline" style="padding:4px 10px;font-size:9px" onclick="openMod('${t.linkedModule}')">Abrir Módulo <i data-lucide="external-link" style="width:10px;height:10px;margin-left:2px"></i></button>`:''}

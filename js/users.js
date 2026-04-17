@@ -10,10 +10,10 @@ function bUsers(el){
       </div>
       <div class="user-grid">
         ${STATE.users.map(u=>`<div class="user-card" style="border:1px solid var(--gb)">
-          <div class="user-av" style="color:${ROLES[u.role]?.color};background:${ROLES[u.role]?.color}22;border-color:${ROLES[u.role]?.color}44">${u.name[0]}</div>
+          ${userAvatar(u,44)}
           <div class="user-info">
             <div class="user-name">${u.name} <span class="role-badge role-${u.role}" style="margin-left:8px">${ROLES[u.role]?.label}</span></div>
-            <div class="user-email">${u.email} · Criado em ${new Date(u.createdAt).toLocaleDateString('pt-BR')}</div>
+            <div class="user-email">${u.title?u.title+' · ':''}${u.email} · Criado em ${new Date(u.createdAt).toLocaleDateString('pt-BR')}</div>
             <div class="user-mods">${u.modules.map(m=>`<span class="mod-chip">${MODS.find(x=>x.id===m)?.label||m}</span>`).join('')}</div>
           </div>
           <div style="display:flex;gap:4px">

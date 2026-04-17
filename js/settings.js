@@ -49,6 +49,11 @@ function bSettings(el){
                 <div class="st-theme-name">Neon Flow</div>
                 <div class="st-theme-desc">Gaming premium — neon líquido e glassmorphism</div>
               </div>
+              <div class="st-theme-card ${themeName==='bento'?'on':''}" onclick="setAppTheme('bento')">
+                <div class="st-theme-preview st-theme-bento"></div>
+                <div class="st-theme-name">Bento</div>
+                <div class="st-theme-desc">Neo-Brutalism fintech — bordas duras, pastéis vívidos</div>
+              </div>
             </div>
           </div>
           <div class="st-divider"></div>
@@ -302,7 +307,7 @@ window.setAppTheme = (name) => {
   STATE.settings.theme = name;
   applyAppTheme();
   saveToLocal();
-  toast(`Tema ${({default:'Default',mono:'Mono',glass:'Nebula',neonflow:'Neon Flow'})[name]||name} aplicado`, 's');
+  toast(`Tema ${({default:'Default',mono:'Mono',glass:'Nebula',neonflow:'Neon Flow',bento:'Bento'})[name]||name} aplicado`, 's');
   // Re-render settings to update selection UI
   rerenderSettings();
 };
@@ -310,8 +315,8 @@ window.setAppTheme = (name) => {
 window.applyAppTheme = () => {
   const root = document.documentElement;
   const theme = STATE.settings?.theme || 'default';
-  // Apply edition attribute: 'mono', 'glass', 'neonflow', or remove for default
-  if (['mono', 'glass', 'neonflow'].includes(theme) && STATE.user) root.setAttribute('data-edition', theme);
+  // Apply edition attribute: 'mono', 'glass', 'neonflow', 'bento', or remove for default
+  if (['mono', 'glass', 'neonflow', 'bento'].includes(theme) && STATE.user) root.setAttribute('data-edition', theme);
   else root.removeAttribute('data-edition');
   // Reduced motion
   if (STATE.settings?.reducedMotion) root.setAttribute('data-motion', 'reduced');

@@ -36,10 +36,10 @@ const DEFAULT_STATE={
     Superbet:{color:'#e80104',rgb:'232,1,4',cpa:60,rs:25,type:'standard', logo: 'https://i.ibb.co/qL0KMg8k/logosuperbet.webp'},
   },
   users:[
-    {id:'u1',name:'Diego Perdigão',email:'diego@3c.gg',role:'admin',status:'ativo',modules:ALL_MODS,createdAt:'2026-01-01'},
-    {id:'u2',name:'Financeiro 3C',email:'fin@3c.gg',role:'financeiro',status:'ativo',modules:['dashboard','payments','audit'],createdAt:'2026-01-15'},
-    {id:'u3',name:'Operações 3C',email:'op@3c.gg',role:'operacao',status:'ativo',modules:['dashboard','affiliates','brands','tasks'],createdAt:'2026-02-01'},
-    {id:'u4',name:'Viewer Externo',email:'view@3c.gg',role:'viewer',status:'ativo',modules:['dashboard'],createdAt:'2026-03-01'},
+    {id:'u1',name:'Diego Perdigão',email:'diego@3c.gg',role:'admin',status:'ativo',modules:ALL_MODS,createdAt:'2026-01-01',title:'CEO & Head of BizDev',avatar:''},
+    {id:'u2',name:'Financeiro 3C',email:'fin@3c.gg',role:'financeiro',status:'ativo',modules:['dashboard','payments','audit'],createdAt:'2026-01-15',title:'Financeiro',avatar:''},
+    {id:'u3',name:'Operações 3C',email:'op@3c.gg',role:'operacao',status:'ativo',modules:['dashboard','affiliates','brands','tasks'],createdAt:'2026-02-01',title:'Operações',avatar:''},
+    {id:'u4',name:'Viewer Externo',email:'view@3c.gg',role:'viewer',status:'ativo',modules:['dashboard'],createdAt:'2026-03-01',title:'Consultor',avatar:''},
   ],
   affiliates:[
     {id:'a1',name:'Agência FMG',type:'afiliado',status:'ativo',contactName:'Felipe Mendes',contactEmail:'fmg@3c.gg',contractType:'tiered',
@@ -261,6 +261,23 @@ const medal=i=>{
   const n=String(i+1).padStart(2,'0');
   return `<span class="rank-badge${tier?' rank-'+tier:''}">${n}</span>`;
 };
+
+// User avatar helper: returns img if URL, else colored initials circle
+window.userAvatar=(nameOrUser,size=28)=>{
+  const u=typeof nameOrUser==='object'?nameOrUser:(STATE.users||[]).find(x=>x.name===nameOrUser||x.id===nameOrUser);
+  const name=(u?.name)||(typeof nameOrUser==='string'?nameOrUser:'?');
+  const avatar=u?.avatar||'';
+  const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(s=>s[0]).join('').toUpperCase();
+  // deterministic color from name
+  let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))|0;
+  const hue=Math.abs(h)%360;
+  const bg=`hsl(${hue},60%,45%)`;
+  const s=size;
+  if(avatar){
+    return `<img class="u-avatar" src="${avatar}" alt="${name}" title="${name}${u?.title?' · '+u.title:''}" style="width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;flex-shrink:0">`;
+  }
+  return `<span class="u-avatar u-avatar-init" title="${name}${u?.title?' · '+u.title:''}" style="width:${s}px;height:${s}px;background:${bg};color:#fff;font-size:${Math.round(s*0.38)}px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;font-family:var(--fd)">${initials}</span>`;
+};
 const od=(d,s)=>d&&s!=='pago'&&new Date(d)<new Date();
 const sl=s=>({ativo:'Ativo',negociação:'Negociação',encerrado:'Encerrado'}[s]||s||'Ativo');
 const pl=s=>({pendente:'Pendente',aprovado:'Aprovado',pago:'Pago',parcial:'Parcial',recusado:'Recusado',ajuste:'Ajuste Necessário',atrasado:'Atrasado',vencido:'Vencido'}[s]||s);
@@ -272,7 +289,7 @@ const pl=s=>({pendente:'Pendente',aprovado:'Aprovado',pago:'Pago',parcial:'Parci
 window.applyAppTheme = () => {
   const root = document.documentElement;
   const theme = STATE.settings?.theme || 'default';
-  if (['mono', 'glass', 'neonflow'].includes(theme) && STATE.user) root.setAttribute('data-edition', theme);
+  if (['mono', 'glass', 'neonflow', 'bento'].includes(theme) && STATE.user) root.setAttribute('data-edition', theme);
   else root.removeAttribute('data-edition');
   if (STATE.settings?.reducedMotion) root.setAttribute('data-motion', 'reduced');
   else root.removeAttribute('data-motion');

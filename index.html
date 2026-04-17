@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=45">
+<link rel="stylesheet" href="css/styles.css?v=46">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -34,7 +34,7 @@
       if(s&&s.settings&&s.settings.showIntroVideo===false) return;
     }
   }catch(e){}
-  document.write('<div id="splash" style="position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.6s" onclick="skipIntro()"><video id="splash-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover"><source src="assets/intro.mp4" type="video/mp4"></video></div>');
+  document.write('<div id="splash" style="position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.6s" onclick="skipIntro()"><video id="splash-video" autoplay muted playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture style="width:100%;height:100%;object-fit:cover"><source src="assets/intro.mp4" type="video/mp4"></video></div>');
 })();
 function skipIntro(){
   const s=document.getElementById('splash');if(!s||s.style.opacity==='0')return;
@@ -42,9 +42,19 @@ function skipIntro(){
 }
 document.addEventListener('DOMContentLoaded',()=>{
   const v=document.getElementById('splash-video');
-  if(v){v.addEventListener('ended',skipIntro);
-    setTimeout(skipIntro,8000);
+  if(!v)return;
+  v.addEventListener('ended',skipIntro);
+  // Force muted before play (iOS requirement) + try play explicitly
+  v.muted=true;v.playsInline=true;
+  var playPromise=v.play();
+  if(playPromise&&playPromise.catch){
+    playPromise.catch(function(){
+      // Autoplay blocked (Low Power Mode, old iOS, etc) — skip splash right away
+      setTimeout(skipIntro,100);
+    });
   }
+  // Hard ceiling: 8s no matter what
+  setTimeout(skipIntro,8000);
 });
 </script>
 
@@ -227,26 +237,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=45"></script>
+<script src="js/app.js?v=46"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=45"></script>
-<script src="js/data.js?v=45"></script>
+<script src="js/supabase-client.js?v=46"></script>
+<script src="js/data.js?v=46"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=45"></script>
+<script src="js/lab.js?v=46"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=45"></script>
+<script src="js/search.js?v=46"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=45"></script>
-<script src="js/affiliates.js?v=45"></script>
-<script src="js/brands.js?v=45"></script>
-<script src="js/payments.js?v=45"></script>
-<script src="js/tasks.js?v=45"></script>
-<script src="js/pipeline.js?v=45"></script>
-<script src="js/import.js?v=45"></script>
-<script src="js/watchdog.js?v=45"></script>
-<script src="js/audit.js?v=45"></script>
-<script src="js/users.js?v=45"></script>
-<script src="js/settings.js?v=45"></script>
-<script src="js/copilot.js?v=45"></script>
+<script src="js/dashboard.js?v=46"></script>
+<script src="js/affiliates.js?v=46"></script>
+<script src="js/brands.js?v=46"></script>
+<script src="js/payments.js?v=46"></script>
+<script src="js/tasks.js?v=46"></script>
+<script src="js/pipeline.js?v=46"></script>
+<script src="js/import.js?v=46"></script>
+<script src="js/watchdog.js?v=46"></script>
+<script src="js/audit.js?v=46"></script>
+<script src="js/users.js?v=46"></script>
+<script src="js/settings.js?v=46"></script>
+<script src="js/copilot.js?v=46"></script>
 </body>
 </html>

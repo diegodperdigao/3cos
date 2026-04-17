@@ -263,9 +263,12 @@ window.saveNewUser=async ()=>{
 window.openEditUser=id=>{
   const u=STATE.users.find(x=>x.id===id);if(!u)return;
   openModal('Editar Usuário',`<div class="fg">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">${userAvatar(u,56)}<div><div style="font-weight:700;font-size:14px">${u.name}</div><div style="font-size:11px;color:var(--text3)">${u.email}</div></div></div>
     <div class="fgp ff"><label>Nome *</label><input class="fi" id="eu-name" value="${u.name}"></div>
+    <div class="fgp"><label>Cargo / Título</label><input class="fi" id="eu-title" value="${u.title||''}" placeholder="Ex: Head de BizDev, Analista Financeiro..."></div>
+    <div class="fgp ff"><label>Avatar (URL da foto)</label><input class="fi" id="eu-avatar" value="${u.avatar||''}" placeholder="https://..."></div>
     <div class="fgp"><label>Email</label><input class="fi" id="eu-email" value="${u.email}" disabled></div>
-    <div class="fgp"><label>Cargo</label><select class="fi" id="eu-role">
+    <div class="fgp"><label>Permissão</label><select class="fi" id="eu-role">
       <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
       <option value="financeiro" ${u.role==='financeiro'?'selected':''}>Financeiro</option>
       <option value="operacao" ${u.role==='operacao'?'selected':''}>Operação</option>
@@ -281,6 +284,8 @@ window.openEditUser=id=>{
 window.saveEditUser=async id=>{
   const u=STATE.users.find(x=>x.id===id);if(!u)return;
   u.name=document.getElementById('eu-name')?.value.trim()||u.name;
+  u.title=document.getElementById('eu-title')?.value.trim()||'';
+  u.avatar=document.getElementById('eu-avatar')?.value.trim()||'';
   u.role=document.getElementById('eu-role')?.value||u.role;
   u.modules=[...document.querySelectorAll('#mbd .mod-check input:checked')].map(c=>c.value);
 
