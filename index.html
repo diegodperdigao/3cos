@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=49">
+<link rel="stylesheet" href="css/styles.css?v=50">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -130,9 +130,12 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div class="hub-notif-badge" id="hub-notif-count" style="display:none">0</div>
       </button>
       <button class="hub-icon-btn" onclick="toggleTheme()"><i data-lucide="sun" id="theme-icon"></i></button>
-      <div style="text-align:right; margin-left: 8px;">
-        <div class="hub-user-name" id="hub-uname">—</div>
-        <span class="hub-user-role" id="hub-urole">Admin</span>
+      <div class="hub-user-chip" id="hub-user-chip">
+        <div class="hub-user-avatar" id="hub-user-avatar"></div>
+        <div class="hub-user-info">
+          <div class="hub-user-name" id="hub-uname">—</div>
+          <span class="hub-user-role" id="hub-urole">Admin</span>
+        </div>
       </div>
       <button class="hub-logout-btn" style="margin-left: 8px;" onclick="doLogout()">SAIR</button>
     </div>
@@ -236,26 +239,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=49"></script>
+<script src="js/app.js?v=50"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=49"></script>
-<script src="js/data.js?v=49"></script>
+<script src="js/supabase-client.js?v=50"></script>
+<script src="js/data.js?v=50"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=49"></script>
+<script src="js/lab.js?v=50"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=49"></script>
+<script src="js/search.js?v=50"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=49"></script>
-<script src="js/affiliates.js?v=49"></script>
-<script src="js/brands.js?v=49"></script>
-<script src="js/payments.js?v=49"></script>
-<script src="js/tasks.js?v=49"></script>
-<script src="js/pipeline.js?v=49"></script>
-<script src="js/import.js?v=49"></script>
-<script src="js/watchdog.js?v=49"></script>
-<script src="js/audit.js?v=49"></script>
-<script src="js/users.js?v=49"></script>
-<script src="js/settings.js?v=49"></script>
-<script src="js/copilot.js?v=49"></script>
+<script src="js/dashboard.js?v=50"></script>
+<script src="js/affiliates.js?v=50"></script>
+<script src="js/brands.js?v=50"></script>
+<script src="js/payments.js?v=50"></script>
+<script src="js/tasks.js?v=50"></script>
+<script src="js/pipeline.js?v=50"></script>
+<script src="js/import.js?v=50"></script>
+<script src="js/watchdog.js?v=50"></script>
+<script src="js/audit.js?v=50"></script>
+<script src="js/users.js?v=50"></script>
+<script src="js/settings.js?v=50"></script>
+<script src="js/copilot.js?v=50"></script>
 </body>
 </html>

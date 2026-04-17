@@ -206,6 +206,14 @@ function bSettings(el){
           <div class="st-divider"></div>
           <div class="st-row">
             <div>
+              <div class="st-label">Importar do 3C Dash</div>
+              <div class="st-hint">Carrega um JSON do dashboard antigo (substitui os dados atuais)</div>
+            </div>
+            <button class="btn btn-outline" onclick="openImport3CDash()"><i data-lucide="file-up"></i> Importar JSON</button>
+          </div>
+          <div class="st-divider"></div>
+          <div class="st-row">
+            <div>
               <div class="st-label">Exportar meus dados</div>
               <div class="st-hint">Download de todo o estado local em JSON</div>
             </div>
@@ -458,4 +466,162 @@ window.clearLocalCache = () => {
   localStorage.removeItem('3C_OS_DATA');
   toast('Cache local limpo — recarregando...', 's');
   setTimeout(() => location.reload(), 600);
+};
+
+// ── IMPORT FROM 3C DASH (legacy JSON format) ──
+window.openImport3CDash = () => {
+  openModal('Importar dados do 3C Dash (JSON)', `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">
+      Cole abaixo o JSON exportado do 3C Dash. Vou converter automaticamente brands, afiliados (com totais agregados dos reports), reports diários e audit log. Isso SUBSTITUI os dados atuais de demo.
+    </div>
+    <textarea id="imp-json" class="fi" rows="10" style="font-family:monospace;font-size:11px;resize:vertical" placeholder='{"brands":{...},"affiliates":[...],"dailyReports":[...]}'></textarea>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="run3CDashImport()"><i data-lucide="upload"></i> Importar</button>
+  `);
+};
+
+window.run3CDashImport = async () => {
+  const raw = document.getElementById('imp-json')?.value?.trim();
+  if (!raw) { toast('Cole o JSON antes de importar', 'e'); return; }
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (e) { toast(`JSON inválido: ${e.message}`, 'e'); return; }
+
+  const hexToRgb = h => {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h || '');
+    return m ? `${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)}` : '136,136,136';
+  };
+
+  // ── BRANDS ──
+  const brands = {};
+  Object.entries(data.brands || {}).forEach(([name, b]) => {
+    brands[name] = {
+      color: b.color || '#888',
+      rgb: hexToRgb(b.color),
+      cpa: b.cpa || 0,
+      rs: b.rs || 0,
+      type: b.type || 'standard',
+      logo: b.logo || '',
+      ...(b.levels ? { levels: b.levels } : {}),
+    };
+  });
+
+  // ── REPORTS (index by affiliate for total computation) ──
+  const reportsByAff = {};
+  const reports = (data.dailyReports || []).map(r => {
+    if (!reportsByAff[r.affiliateId]) reportsByAff[r.affiliateId] = [];
+    reportsByAff[r.affiliateId].push(r);
+    return {
+      brand: r.brand, affiliateId: r.affiliateId, date: r.date,
+      ftd: r.ftd || 0, qftd: r.qftd || 0,
+      deposits: r.deposits || 0, netRev: r.netRev || 0,
+    };
+  });
+
+  // ── AFFILIATES (aggregate totals from reports) ──
+  const affiliates = (data.affiliates || []).map(a => {
+    const rows = reportsByAff[a.id] || [];
+    const ftds = rows.reduce((s, r) => s + (r.ftd || 0), 0);
+    const qftds = rows.reduce((s, r) => {
+      if (typeof r.qftd === 'number') return s + r.qftd;
+      if (typeof r.qftd === 'object' && r.qftd) return s + Object.values(r.qftd).reduce((x, v) => x + (v || 0), 0);
+      return s;
+    }, 0);
+    const deposits = rows.reduce((s, r) => s + (r.deposits || 0), 0);
+    const netRev = rows.reduce((s, r) => s + (r.netRev || 0), 0);
+
+    // Infer contractType from deals
+    let contractType = 'cpa';
+    const deals = {};
+    Object.entries(a.deals || {}).forEach(([bname, d]) => {
+      if (d.cpa_l1 !== undefined || d.cpa_l2 !== undefined || d.cpa_l3 !== undefined) {
+        contractType = 'tiered';
+        // Convert legacy tiered format to our levels array using brand's baselines
+        const brandLevels = (brands[bname]?.levels) || [
+          { key: 'l1', baseline: 30 }, { key: 'l2', baseline: 300 }, { key: 'l3', baseline: 1200 },
+        ];
+        deals[bname] = {
+          rs: d.rs || 0,
+          levels: brandLevels.map(bl => ({
+            key: bl.key,
+            name: bl.name || bl.key.toUpperCase(),
+            cpa: d['cpa_' + bl.key] || d.cpa || bl.cpa || 0,
+            baseline: bl.baseline,
+          })),
+        };
+      } else {
+        deals[bname] = {
+          cpa: d.cpa || 0, rs: d.rs || 0,
+          ...(d.baseline !== undefined ? { baseline: d.baseline } : {}),
+        };
+        if ((d.cpa === 0 || !d.cpa) && d.rs > 0) contractType = 'rs';
+      }
+    });
+
+    // Compute a rough commission + profit (CPA*QFTDs + RS*NetRev — best effort)
+    const commission = rows.reduce((s, r) => {
+      const dealForBrand = deals[r.brand];
+      if (!dealForBrand) return s;
+      const qf = typeof r.qftd === 'number' ? r.qftd : (typeof r.qftd === 'object' ? Object.values(r.qftd).reduce((x, v) => x + (v || 0), 0) : 0);
+      const cpaPart = (dealForBrand.cpa || 0) * qf;
+      const rsPart = (dealForBrand.rs || 0) / 100 * (r.netRev || 0);
+      return s + cpaPart + Math.max(0, rsPart);
+    }, 0);
+    const profit = netRev - commission;
+
+    return {
+      id: a.id, name: a.name,
+      type: 'afiliado', status: 'ativo',
+      contractType,
+      contactName: a.name, contactEmail: '',
+      social: a.social || '',
+      deals, notes: a.notes || '',
+      ftds, qftds, deposits: Math.round(deposits * 100) / 100,
+      netRev: Math.round(netRev * 100) / 100,
+      commission: Math.round(commission * 100) / 100,
+      profit: Math.round(profit * 100) / 100,
+      createdAt: a.createdAt,
+      tags: [],
+    };
+  });
+
+  // ── AUDIT LOG (last 50) ──
+  const auditLog = (data.auditLogs || []).slice(0, 100).map(l => ({
+    id: l.id,
+    action: l.action,
+    detail: l.details || '',
+    user: 'Sistema',
+    time: new Date(l.timestamp || Date.now()).toLocaleString('pt-BR'),
+  }));
+
+  // ── APPLY to STATE ──
+  STATE.brands = brands;
+  STATE.affiliates = affiliates;
+  STATE.reports = reports;
+  STATE.auditLog = auditLog;
+  STATE.contracts = [];
+  STATE.payments = [];
+  STATE.tasks = [];
+  STATE.closings = [];
+  STATE.pipeline = STATE.pipeline || { stages: [], cards: [] };
+
+  saveToLocal();
+
+  // Sync to Supabase if configured
+  if (window.SUPABASE_CONFIGURED && window.Data?.syncAll) {
+    toast('Sincronizando com Supabase...', 'i');
+    try {
+      await Data.syncAll();
+      toast(`Importado com sucesso: ${affiliates.length} afiliados, ${reports.length} reports`, 's');
+    } catch (e) {
+      console.error('[import] sync failed:', e);
+      toast(`Importado local, mas sync falhou: ${e.message}`, 'e');
+    }
+  } else {
+    toast(`Importado: ${affiliates.length} afiliados, ${reports.length} reports`, 's');
+  }
+
+  closeModal();
+  setTimeout(() => location.reload(), 1200);
 };

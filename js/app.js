@@ -694,7 +694,10 @@ function showHub(){
     document.getElementById('lock').style.display='none';
     const fn=STATE.user.name.split(' ')[0];
     document.getElementById('hub-uname').textContent=STATE.user.name;
-    document.getElementById('hub-urole').textContent=ROLES[STATE.user.role]?.label||STATE.user.role;
+    document.getElementById('hub-urole').textContent=STATE.user.title||ROLES[STATE.user.role]?.label||STATE.user.role;
+    // Avatar (foto se tiver URL, senão iniciais coloridas)
+    const avEl=document.getElementById('hub-user-avatar');
+    if (avEl) avEl.innerHTML=window.userAvatar?window.userAvatar(STATE.user,34):'';
     document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
     const hub=document.getElementById('hub');hub.style.display='flex';
     setTimeout(()=>hub.style.opacity='1',50);

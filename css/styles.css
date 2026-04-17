@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '4.9';
+  --3cos-version: '5.0';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -181,8 +181,14 @@ body::before {
   display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);}
 [data-theme="light"] .hub-notif-badge { border-color: #fff; }
 
-.hub-user-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.2;white-space:nowrap;}
-.hub-user-role{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);display:block;margin-top:2px;line-height:1.2;white-space:nowrap;}
+.hub-user-chip{display:flex;align-items:center;gap:10px;margin-left:10px;padding:4px 10px 4px 4px;
+  background:var(--bg3);border:1px solid var(--gb);border-radius:20px;}
+.hub-user-avatar{display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hub-user-avatar .u-avatar{box-shadow:0 1px 3px rgba(0,0,0,0.2);}
+.hub-user-info{display:flex;flex-direction:column;justify-content:center;}
+.hub-user-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.1;white-space:nowrap;}
+.hub-user-role{font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);display:block;margin-top:2px;line-height:1.1;white-space:nowrap;}
+@media(max-width:720px){.hub-user-chip{padding:3px;}.hub-user-info{display:none;}}
 
 .hub-logout-btn{padding:6px 14px;border:1px solid var(--gb2);border-radius:9px;
   font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
@@ -418,12 +424,19 @@ body::before {
 .tab{padding:7px 16px;border-radius:10px 10px 0 0;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
   cursor:pointer;background:transparent;border:1px solid var(--gb);border-bottom:none;
   color:var(--text2);font-family:var(--fb);transition:all 0.15s;display:flex;align-items:center;gap:6px;}
-[data-theme="light"] .tab { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.3); }
+[data-theme="light"] .tab { border-color: rgba(0,0,0,0.08); background: rgba(255,255,255,0.5); }
 .tab:hover{color:var(--text);}
-[data-theme="light"] .tab:hover { background: rgba(255,255,255,0.6); }
+[data-theme="light"] .tab:hover { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.14); }
 .tab.on{color:var(--text);border-color:var(--tab-color,var(--theme));
   background:linear-gradient(to bottom,rgba(var(--tab-rgb,236,72,153),0.1),rgba(var(--tab-rgb,236,72,153),0.04));}
-[data-theme="light"] .tab.on{color:#0f172a; background: rgba(255,255,255,0.85); border-color: var(--theme) rgba(255,255,255,0.6) rgba(255,255,255,0.6) rgba(255,255,255,0.6); box-shadow: 0 -4px 10px rgba(0,0,0,0.02);}
+[data-theme="light"] .tab.on{
+  color:#0f172a;
+  background:#fff;
+  /* Mesma cor em todos os lados da borda — antes, laterais brancas sobre fundo claro viravam invisíveis e cortavam o retângulo */
+  border-color: var(--tab-color, var(--theme));
+  border-width: 1px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+}
 .tab-dot{display:none;}
 
 .pills{display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap;}
@@ -3154,12 +3167,17 @@ textarea.fi{resize:vertical;min-height:60px;}
 }
 
 /* Hub apps get the distinct accent colors per card (the bento grid look) */
-[data-edition="bento"] .hub-app:nth-child(6n+1){--app-accent: var(--red);}
-[data-edition="bento"] .hub-app:nth-child(6n+2){--app-accent: var(--blue);}
-[data-edition="bento"] .hub-app:nth-child(6n+3){--app-accent: var(--purple);}
-[data-edition="bento"] .hub-app:nth-child(6n+4){--app-accent: var(--amber);}
-[data-edition="bento"] .hub-app:nth-child(6n+5){--app-accent: var(--green);}
-[data-edition="bento"] .hub-app:nth-child(6n+6){--app-accent: var(--pink);}
+/* Hub apps: 10 distinct pastel accents so nothing repeats in the 10-card grid */
+[data-edition="bento"] .hub-app:nth-child(10n+1){--app-accent: var(--red);}
+[data-edition="bento"] .hub-app:nth-child(10n+2){--app-accent: var(--blue);}
+[data-edition="bento"] .hub-app:nth-child(10n+3){--app-accent: var(--purple);}
+[data-edition="bento"] .hub-app:nth-child(10n+4){--app-accent: var(--amber);}
+[data-edition="bento"] .hub-app:nth-child(10n+5){--app-accent: var(--green);}
+[data-edition="bento"] .hub-app:nth-child(10n+6){--app-accent: var(--pink);}
+[data-edition="bento"] .hub-app:nth-child(10n+7){--app-accent: var(--theme);}
+[data-edition="bento"] .hub-app:nth-child(10n+8){--app-accent: #fca5a5;}  /* pêssego */
+[data-edition="bento"] .hub-app:nth-child(10n+9){--app-accent: #5eead4;}  /* turquesa */
+[data-edition="bento"] .hub-app:nth-child(10n+10){--app-accent: var(--lime);}
 [data-edition="bento"] .hub-app .hub-app-icon{
   background: var(--app-accent, var(--theme)) !important;
   border: 2px solid var(--text) !important;
