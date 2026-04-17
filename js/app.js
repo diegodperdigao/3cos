@@ -133,7 +133,7 @@ const DEFAULT_STATE={
   betaMode:false,
   // ── USER SETTINGS (persisted in localStorage + Supabase user_settings) ──
   settings:{
-    theme:'default',           // 'default' | 'mono'
+    theme:'default-dark',      // 'default-dark' | 'default-light' | 'mono-dark' | 'mono-light' | 'bento-dark' | 'bento-light'
     density:'comfortable',     // 'comfortable' | 'compact'
     showIntroVideo:true,
     reducedMotion:false,
@@ -288,8 +288,24 @@ const pl=s=>({pendente:'Pendente',aprovado:'Aprovado',pago:'Pago',parcial:'Parci
 // settings.js and copilot.js have loaded.
 window.applyAppTheme = () => {
   const root = document.documentElement;
-  const theme = STATE.settings?.theme || 'default';
-  if (['mono', 'glass', 'neonflow', 'bento'].includes(theme) && STATE.user) root.setAttribute('data-edition', theme);
+  // Decoding table for "name-mode" theme keys (copy kept here in sync with settings.js)
+  const MAP = {
+    'default-dark':  { edition: '',     theme: 'dark'  },
+    'default-light': { edition: '',     theme: 'light' },
+    'mono-dark':     { edition: 'mono', theme: 'dark'  },
+    'mono-light':    { edition: 'mono', theme: 'light' },
+    'bento-light':   { edition: 'bento',theme: 'light' },
+    'bento-dark':    { edition: 'bento',theme: 'dark'  },
+    'default':       { edition: '',     theme: 'dark'  },
+    'mono':          { edition: 'mono', theme: 'dark'  },
+    'glass':         { edition: '',     theme: 'dark'  },
+    'neonflow':      { edition: '',     theme: 'dark'  },
+    'bento':         { edition: 'bento',theme: 'light' },
+  };
+  const themeKey = STATE.settings?.theme || 'default-dark';
+  const pair = MAP[themeKey] || MAP['default-dark'];
+  root.setAttribute('data-theme', pair.theme);
+  if (pair.edition && STATE.user) root.setAttribute('data-edition', pair.edition);
   else root.removeAttribute('data-edition');
   if (STATE.settings?.reducedMotion) root.setAttribute('data-motion', 'reduced');
   else root.removeAttribute('data-motion');

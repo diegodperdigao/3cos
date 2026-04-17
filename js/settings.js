@@ -29,42 +29,36 @@ function bSettings(el){
           <div class="st-row st-row-col">
             <div class="st-label">Tema</div>
             <div class="st-theme-grid st-theme-grid-3">
-              <div class="st-theme-card ${themeName==='default'?'on':''}" onclick="setAppTheme('default')">
-                <div class="st-theme-preview st-theme-default"></div>
-                <div class="st-theme-name">Default</div>
-                <div class="st-theme-desc">Cores vibrantes da marca 3C</div>
+              <div class="st-theme-card ${themeName==='default-dark'?'on':''}" onclick="setAppTheme('default-dark')">
+                <div class="st-theme-preview st-theme-default-dark"></div>
+                <div class="st-theme-name">Default Dark</div>
+                <div class="st-theme-desc">Cores vibrantes da 3C sobre preto</div>
               </div>
-              <div class="st-theme-card ${themeName==='mono'?'on':''}" onclick="setAppTheme('mono')">
-                <div class="st-theme-preview st-theme-mono"></div>
-                <div class="st-theme-name">Mono</div>
-                <div class="st-theme-desc">Monocromático, foco em conteúdo</div>
+              <div class="st-theme-card ${themeName==='default-light'?'on':''}" onclick="setAppTheme('default-light')">
+                <div class="st-theme-preview st-theme-default-light"></div>
+                <div class="st-theme-name">Default Light</div>
+                <div class="st-theme-desc">Versão clara do tema padrão</div>
               </div>
-              <div class="st-theme-card ${themeName==='glass'?'on':''}" onclick="setAppTheme('glass')">
-                <div class="st-theme-preview st-theme-glass"></div>
-                <div class="st-theme-name">Nebula</div>
-                <div class="st-theme-desc">Espaço profundo com um toque de violeta</div>
+              <div class="st-theme-card ${themeName==='mono-dark'?'on':''}" onclick="setAppTheme('mono-dark')">
+                <div class="st-theme-preview st-theme-mono-dark"></div>
+                <div class="st-theme-name">Mono Dark</div>
+                <div class="st-theme-desc">Monocromático — foco máximo</div>
               </div>
-              <div class="st-theme-card ${themeName==='neonflow'?'on':''}" onclick="setAppTheme('neonflow')">
-                <div class="st-theme-preview st-theme-neonflow"></div>
-                <div class="st-theme-name">Neon Flow</div>
-                <div class="st-theme-desc">Gaming premium — neon líquido e glassmorphism</div>
+              <div class="st-theme-card ${themeName==='mono-light'?'on':''}" onclick="setAppTheme('mono-light')">
+                <div class="st-theme-preview st-theme-mono-light"></div>
+                <div class="st-theme-name">Mono Light</div>
+                <div class="st-theme-desc">Monocromático em base clara</div>
               </div>
-              <div class="st-theme-card ${themeName==='bento'?'on':''}" onclick="setAppTheme('bento')">
-                <div class="st-theme-preview st-theme-bento"></div>
-                <div class="st-theme-name">Bento</div>
-                <div class="st-theme-desc">Neo-Brutalism fintech — bordas duras, pastéis vívidos</div>
+              <div class="st-theme-card ${themeName==='bento-light'?'on':''}" onclick="setAppTheme('bento-light')">
+                <div class="st-theme-preview st-theme-bento-light"></div>
+                <div class="st-theme-name">Bento Light</div>
+                <div class="st-theme-desc">Neo-brutalismo suave, pastéis vívidos</div>
               </div>
-            </div>
-          </div>
-          <div class="st-divider"></div>
-          <div class="st-row">
-            <div>
-              <div class="st-label">Modo de contraste</div>
-              <div class="st-hint">Dark reduz fadiga ocular; Light é mais legível em ambientes claros</div>
-            </div>
-            <div class="st-segmented">
-              <button class="st-seg ${dark?'on':''}" onclick="setColorMode('dark')"><i data-lucide="moon"></i> Dark</button>
-              <button class="st-seg ${!dark?'on':''}" onclick="setColorMode('light')"><i data-lucide="sun"></i> Light</button>
+              <div class="st-theme-card ${themeName==='bento-dark'?'on':''}" onclick="setAppTheme('bento-dark')">
+                <div class="st-theme-preview st-theme-bento-dark"></div>
+                <div class="st-theme-name">Bento Dark</div>
+                <div class="st-theme-desc">Bento em charcoal profundo</div>
+              </div>
             </div>
           </div>
           <div class="st-divider"></div>
@@ -307,23 +301,47 @@ window.setAppTheme = (name) => {
   STATE.settings.theme = name;
   applyAppTheme();
   saveToLocal();
-  toast(`Tema ${({default:'Default',mono:'Mono',glass:'Nebula',neonflow:'Neon Flow',bento:'Bento'})[name]||name} aplicado`, 's');
+  const labels={'default-dark':'Default Dark','default-light':'Default Light','mono-dark':'Mono Dark','mono-light':'Mono Light','bento-dark':'Bento Dark','bento-light':'Bento Light'};
+  toast(`Tema ${labels[name]||name} aplicado`, 's');
   // Re-render settings to update selection UI
   rerenderSettings();
 };
 
+// Theme name encodes edition + mode, e.g. "bento-dark", "mono-light".
+// Decodes into data-edition + data-theme pair.
+window.THEME_MAP = {
+  'default-dark':  { edition: '',         theme: 'dark'  },
+  'default-light': { edition: '',         theme: 'light' },
+  'mono-dark':     { edition: 'mono',     theme: 'dark'  },
+  'mono-light':    { edition: 'mono',     theme: 'light' },
+  'bento-light':   { edition: 'bento',    theme: 'light' },
+  'bento-dark':    { edition: 'bento',    theme: 'dark'  },
+  // Legacy keys (migrated on first load)
+  'default':       { edition: '',         theme: 'dark'  },
+  'mono':          { edition: 'mono',     theme: 'dark'  },
+  'glass':         { edition: '',         theme: 'dark'  },
+  'neonflow':      { edition: '',         theme: 'dark'  },
+  'bento':         { edition: 'bento',    theme: 'light' },
+};
+
 window.applyAppTheme = () => {
   const root = document.documentElement;
-  const theme = STATE.settings?.theme || 'default';
-  // Apply edition attribute: 'mono', 'glass', 'neonflow', 'bento', or remove for default
-  if (['mono', 'glass', 'neonflow', 'bento'].includes(theme) && STATE.user) root.setAttribute('data-edition', theme);
+  const themeKey = STATE.settings?.theme || 'default-dark';
+  const pair = THEME_MAP[themeKey] || THEME_MAP['default-dark'];
+
+  // Set data-theme (dark/light)
+  root.setAttribute('data-theme', pair.theme);
+
+  // Set data-edition (only when user is logged in — lock screen stays default)
+  if (pair.edition && STATE.user) root.setAttribute('data-edition', pair.edition);
   else root.removeAttribute('data-edition');
+
   // Reduced motion
   if (STATE.settings?.reducedMotion) root.setAttribute('data-motion', 'reduced');
   else root.removeAttribute('data-motion');
+
   // Density
-  const d = STATE.settings?.density || 'comfortable';
-  root.setAttribute('data-density', d);
+  root.setAttribute('data-density', STATE.settings?.density || 'comfortable');
 };
 
 // Legacy alias so old callers (users.js) still work
