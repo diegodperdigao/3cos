@@ -59,6 +59,16 @@ function bSettings(el){
                 <div class="st-theme-name">Bento Dark</div>
                 <div class="st-theme-desc">Bento em charcoal profundo</div>
               </div>
+              <div class="st-theme-card ${themeName==='meridian-light'?'on':''}" onclick="setAppTheme('meridian-light')">
+                <div class="st-theme-preview st-theme-meridian-light"></div>
+                <div class="st-theme-name">Meridian Light</div>
+                <div class="st-theme-desc">Editorial, serifa, vermelho de revista</div>
+              </div>
+              <div class="st-theme-card ${themeName==='meridian-dark'?'on':''}" onclick="setAppTheme('meridian-dark')">
+                <div class="st-theme-preview st-theme-meridian-dark"></div>
+                <div class="st-theme-name">Meridian Dark</div>
+                <div class="st-theme-desc">Meridian em tinta escura</div>
+              </div>
             </div>
           </div>
           <div class="st-divider"></div>
@@ -309,7 +319,7 @@ window.setAppTheme = (name) => {
   STATE.settings.theme = name;
   applyAppTheme();
   saveToLocal();
-  const labels={'default-dark':'Default Dark','default-light':'Default Light','mono-dark':'Mono Dark','mono-light':'Mono Light','bento-dark':'Bento Dark','bento-light':'Bento Light'};
+  const labels={'default-dark':'Default Dark','default-light':'Default Light','mono-dark':'Mono Dark','mono-light':'Mono Light','bento-dark':'Bento Dark','bento-light':'Bento Light','meridian-light':'Meridian Light','meridian-dark':'Meridian Dark'};
   toast(`Tema ${labels[name]||name} aplicado`, 's');
   // Re-render settings to update selection UI
   rerenderSettings();
@@ -318,18 +328,20 @@ window.setAppTheme = (name) => {
 // Theme name encodes edition + mode, e.g. "bento-dark", "mono-light".
 // Decodes into data-edition + data-theme pair.
 window.THEME_MAP = {
-  'default-dark':  { edition: '',         theme: 'dark'  },
-  'default-light': { edition: '',         theme: 'light' },
-  'mono-dark':     { edition: 'mono',     theme: 'dark'  },
-  'mono-light':    { edition: 'mono',     theme: 'light' },
-  'bento-light':   { edition: 'bento',    theme: 'light' },
-  'bento-dark':    { edition: 'bento',    theme: 'dark'  },
+  'default-dark':   { edition: '',         theme: 'dark'  },
+  'default-light':  { edition: '',         theme: 'light' },
+  'mono-dark':      { edition: 'mono',     theme: 'dark'  },
+  'mono-light':     { edition: 'mono',     theme: 'light' },
+  'bento-light':    { edition: 'bento',    theme: 'light' },
+  'bento-dark':     { edition: 'bento',    theme: 'dark'  },
+  'meridian-light': { edition: 'meridian', theme: 'light' },
+  'meridian-dark':  { edition: 'meridian', theme: 'dark'  },
   // Legacy keys (migrated on first load)
-  'default':       { edition: '',         theme: 'dark'  },
-  'mono':          { edition: 'mono',     theme: 'dark'  },
-  'glass':         { edition: '',         theme: 'dark'  },
-  'neonflow':      { edition: '',         theme: 'dark'  },
-  'bento':         { edition: 'bento',    theme: 'light' },
+  'default':        { edition: '',         theme: 'dark'  },
+  'mono':           { edition: 'mono',     theme: 'dark'  },
+  'glass':          { edition: '',         theme: 'dark'  },
+  'neonflow':       { edition: '',         theme: 'dark'  },
+  'bento':          { edition: 'bento',    theme: 'light' },
 };
 
 window.applyAppTheme = () => {
@@ -481,12 +493,32 @@ window.openImport3CDash = () => {
   `);
 };
 
+// Wipes previous data from Supabase so the import starts fresh.
+// Uses neq on a fake id to match all rows (Supabase requires a filter on deletes).
+async function _clearSupabaseForImport() {
+  if (!window.sb) return;
+  const tables = [
+    'reports', 'payments', 'contracts', 'tasks', 'closings',
+    'pipeline_cards', 'pipeline_stages', 'available_tags',
+    'affiliates', 'brands', 'audit_log', 'notifications',
+  ];
+  for (const t of tables) {
+    try {
+      const { error } = await sb.from(t).delete().neq('id', '__never__');
+      if (error) console.warn(`[clear] ${t}:`, error.message);
+    } catch (e) {
+      console.warn(`[clear] ${t} exception:`, e.message);
+    }
+  }
+}
+
 window.run3CDashImport = async () => {
   const raw = document.getElementById('imp-json')?.value?.trim();
   if (!raw) { toast('Cole o JSON antes de importar', 'e'); return; }
   let data;
   try { data = JSON.parse(raw); }
   catch (e) { toast(`JSON inválido: ${e.message}`, 'e'); return; }
+  if (!confirm('Isso vai APAGAR todos os dados atuais (demo ou reais) e substituir pelos do JSON. Confirma?')) return;
 
   const hexToRgb = h => {
     const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h || '');
@@ -608,9 +640,11 @@ window.run3CDashImport = async () => {
 
   saveToLocal();
 
-  // Sync to Supabase if configured
+  // Sync to Supabase if configured — clear old data first, then upsert new
   if (window.SUPABASE_CONFIGURED && window.Data?.syncAll) {
-    toast('Sincronizando com Supabase...', 'i');
+    toast('Limpando dados antigos do Supabase...', 'i');
+    await _clearSupabaseForImport();
+    toast('Enviando novos dados...', 'i');
     try {
       await Data.syncAll();
       toast(`Importado com sucesso: ${affiliates.length} afiliados, ${reports.length} reports`, 's');

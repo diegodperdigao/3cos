@@ -290,17 +290,19 @@ window.applyAppTheme = () => {
   const root = document.documentElement;
   // Decoding table for "name-mode" theme keys (copy kept here in sync with settings.js)
   const MAP = {
-    'default-dark':  { edition: '',     theme: 'dark'  },
-    'default-light': { edition: '',     theme: 'light' },
-    'mono-dark':     { edition: 'mono', theme: 'dark'  },
-    'mono-light':    { edition: 'mono', theme: 'light' },
-    'bento-light':   { edition: 'bento',theme: 'light' },
-    'bento-dark':    { edition: 'bento',theme: 'dark'  },
-    'default':       { edition: '',     theme: 'dark'  },
-    'mono':          { edition: 'mono', theme: 'dark'  },
-    'glass':         { edition: '',     theme: 'dark'  },
-    'neonflow':      { edition: '',     theme: 'dark'  },
-    'bento':         { edition: 'bento',theme: 'light' },
+    'default-dark':   { edition: '',         theme: 'dark'  },
+    'default-light':  { edition: '',         theme: 'light' },
+    'mono-dark':      { edition: 'mono',     theme: 'dark'  },
+    'mono-light':     { edition: 'mono',     theme: 'light' },
+    'bento-light':    { edition: 'bento',    theme: 'light' },
+    'bento-dark':     { edition: 'bento',    theme: 'dark'  },
+    'meridian-light': { edition: 'meridian', theme: 'light' },
+    'meridian-dark':  { edition: 'meridian', theme: 'dark'  },
+    'default':        { edition: '',         theme: 'dark'  },
+    'mono':           { edition: 'mono',     theme: 'dark'  },
+    'glass':          { edition: '',         theme: 'dark'  },
+    'neonflow':       { edition: '',         theme: 'dark'  },
+    'bento':          { edition: 'bento',    theme: 'light' },
   };
   const themeKey = STATE.settings?.theme || 'default-dark';
   const pair = MAP[themeKey] || MAP['default-dark'];

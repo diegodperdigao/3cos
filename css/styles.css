@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '5.0';
+  --3cos-version: '5.1';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -3377,6 +3377,467 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="bento"] .cp-send svg{stroke: var(--text) !important;}
 
 /* ══════════════════════════════════════════════════════════
+   EDITION: MERIDIAN — Editorial magazine aesthetic
+   Serif titles (Playfair), horizontal-line separators instead of
+   boxes, wide gutters, editorial red accent. Inspired by premium
+   business publications (The New Yorker, Monocle).
+   ══════════════════════════════════════════════════════════ */
+
+/* ── LIGHT: ivory paper ── */
+[data-edition="meridian"][data-theme="light"]{
+  --bg: #f8f5ef;
+  --bg2: #ffffff;
+  --bg3: #f0ece3;
+  --gb: rgba(28, 24, 18, 0.10);
+  --gb2: rgba(28, 24, 18, 0.18);
+  --gb3: rgba(28, 24, 18, 0.28);
+  --text: #1a1612;
+  --text2: #554e42;
+  --text3: #8a8374;
+  --theme: #c2362d;    /* editorial red */
+  --theme-dim: rgba(194,54,45,0.06);
+  --theme-b: rgba(194,54,45,0.22);
+  --theme-glow: rgba(194,54,45,0.18);
+  --red: #c2362d;
+  --amber: #b8761b;
+  --green: #4d7c4b;
+  --blue: #2d5f8a;
+  --pink: #a63d7a;
+  --purple: #6d4b8a;
+  --lime: #8a8a1b;
+  --radius: 4px;
+  --fd: 'Playfair Display', 'Montserrat', serif;
+}
+
+/* ── DARK: deep ink ── */
+[data-edition="meridian"][data-theme="dark"]{
+  --bg: #14110d;
+  --bg2: #1d1914;
+  --bg3: #26211b;
+  --gb: rgba(245, 240, 230, 0.10);
+  --gb2: rgba(245, 240, 230, 0.18);
+  --gb3: rgba(245, 240, 230, 0.28);
+  --text: #f5f0e6;
+  --text2: #c4bba8;
+  --text3: #7a7263;
+  --theme: #e85548;
+  --theme-dim: rgba(232,85,72,0.08);
+  --theme-b: rgba(232,85,72,0.24);
+  --theme-glow: rgba(232,85,72,0.22);
+  --red: #e85548;
+  --amber: #e8a33c;
+  --green: #7dbd7b;
+  --blue: #6ca4d4;
+  --pink: #d47dae;
+  --purple: #b090d4;
+  --lime: #d4d468;
+  --radius: 4px;
+  --fd: 'Playfair Display', 'Montserrat', serif;
+}
+
+/* Hide the 3C mosaic — Meridian owns the whole canvas */
+[data-edition="meridian"] .hub-bg .mosaic-wrapper,
+[data-edition="meridian"] .hero .mosaic-wrapper,
+[data-edition="meridian"] .hub-overlay{display:none !important;}
+[data-edition="meridian"] body{background: var(--bg) !important;}
+[data-edition="meridian"] .hub-bg{background: var(--bg) !important;}
+[data-edition="meridian"] .mod-body{background: var(--bg) !important;}
+
+/* Body font stays Inter. Display font (Playfair) is applied ONLY to headlines */
+[data-edition="meridian"] .hero-title,
+[data-edition="meridian"] .hub-id-tagline,
+[data-edition="meridian"] .intel-title,
+[data-edition="meridian"] .modal-ttl{
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  text-transform: none !important;
+}
+[data-edition="meridian"] .hero-title{
+  font-size: 44px !important;
+  line-height: 1.1 !important;
+  font-weight: 800 !important;
+}
+[data-edition="meridian"] .hero-eyebrow{
+  font-family: var(--fb) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.24em !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--theme) !important;
+}
+[data-edition="meridian"] .hub-id-tagline{
+  text-transform: none !important;
+  font-size: 14px !important;
+  letter-spacing: 0.02em !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  color: var(--text2) !important;
+}
+[data-edition="meridian"] .hub-greeting{
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-size: 18px !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+}
+[data-edition="meridian"] .hub-greeting strong{font-weight: 700 !important;font-style: normal !important;}
+
+/* Cards: NO boxes — just generous padding + top horizontal hairline as separator */
+[data-edition="meridian"] .kpi,
+[data-edition="meridian"] .intel-card,
+[data-edition="meridian"] .intel-wrap,
+[data-edition="meridian"] .aff-card,
+[data-edition="meridian"] .user-card,
+[data-edition="meridian"] .tk,
+[data-edition="meridian"] .st-card,
+[data-edition="meridian"] .ac-card{
+  background: var(--bg2) !important;
+  border: none !important;
+  border-top: 2px solid var(--text) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03), 0 8px 24px -12px rgba(0,0,0,0.08) !important;
+  padding-top: 20px !important;
+  transition: all 0.3s ease;
+}
+[data-edition="meridian"][data-theme="dark"] .kpi,
+[data-edition="meridian"][data-theme="dark"] .intel-card,
+[data-edition="meridian"][data-theme="dark"] .intel-wrap,
+[data-edition="meridian"][data-theme="dark"] .aff-card,
+[data-edition="meridian"][data-theme="dark"] .user-card,
+[data-edition="meridian"][data-theme="dark"] .tk,
+[data-edition="meridian"][data-theme="dark"] .st-card,
+[data-edition="meridian"][data-theme="dark"] .ac-card{
+  box-shadow: 0 8px 32px -16px rgba(0,0,0,0.6) !important;
+}
+[data-edition="meridian"] .aff-card:hover,
+[data-edition="meridian"] .kpi:hover,
+[data-edition="meridian"] .intel-card:hover{
+  transform: translateY(-3px);
+  border-top-color: var(--theme) !important;
+  box-shadow: 0 12px 32px -8px rgba(0,0,0,0.12), 0 0 0 1px var(--theme-b) !important;
+}
+
+/* KPI values get the serif treatment — large, bold, italicized number */
+[data-edition="meridian"] .kpi-val{
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-weight: 800 !important;
+  font-size: 38px !important;
+  letter-spacing: -0.02em !important;
+}
+[data-edition="meridian"] .kpi-lbl{
+  font-family: var(--fb) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.18em !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  color: var(--text3) !important;
+}
+[data-edition="meridian"] .kpi::before{display: none !important;}  /* no side accent strip */
+
+/* Hub apps: horizontal divider above each card, serif name, accent red icon on hover */
+[data-edition="meridian"] .hub-app{
+  background: transparent !important;
+  border: none !important;
+  border-top: 1px solid var(--gb2) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 20px 16px !important;
+  transition: all 0.25s ease;
+}
+[data-edition="meridian"] .hub-app:hover{
+  background: var(--bg2) !important;
+  border-top-color: var(--theme) !important;
+  transform: none;
+}
+[data-edition="meridian"] .hub-app-icon{
+  background: transparent !important;
+  border: 1px solid var(--text) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transition: background 0.25s;
+}
+[data-edition="meridian"] .hub-app:hover .hub-app-icon{
+  background: var(--theme) !important;
+  border-color: var(--theme) !important;
+}
+[data-edition="meridian"] .hub-app:hover .hub-app-icon svg{stroke: #fff !important;}
+[data-edition="meridian"] .hub-app-name{
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 15px !important;
+}
+[data-edition="meridian"] .hub-apps-label{
+  font-family: var(--fb) !important;
+  font-style: italic !important;
+  font-size: 11px !important;
+  text-transform: none !important;
+  letter-spacing: 0.04em !important;
+}
+[data-edition="meridian"] .hub-apps-label::after{background: var(--text) !important;height: 1px !important;}
+
+/* Buttons: editorial, rectangular, letter-spaced */
+[data-edition="meridian"] .btn,
+[data-edition="meridian"] .btn-theme,
+[data-edition="meridian"] .btn-outline,
+[data-edition="meridian"] .btn-ghost{
+  border-radius: 2px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  font-size: 10px !important;
+  padding: 10px 18px !important;
+}
+[data-edition="meridian"] .btn-theme{
+  background: var(--theme) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+[data-edition="meridian"] .btn-theme:hover{
+  background: #a12a22 !important;
+  transform: none;
+}
+[data-edition="meridian"][data-theme="dark"] .btn-theme:hover{
+  background: #d14438 !important;
+}
+[data-edition="meridian"] .btn-outline{
+  background: transparent !important;
+  border: 1px solid var(--text) !important;
+  color: var(--text) !important;
+}
+[data-edition="meridian"] .btn-outline:hover{
+  background: var(--text) !important;
+  color: var(--bg) !important;
+}
+
+/* Tabs: underlined (not boxed) */
+[data-edition="meridian"] .tab{
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 10px 0 !important;
+  margin-right: 24px !important;
+  font-family: var(--fb) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  color: var(--text3) !important;
+}
+[data-edition="meridian"] .tab:hover{color: var(--text) !important;}
+[data-edition="meridian"] .tab.on{
+  border-bottom-color: var(--theme) !important;
+  color: var(--text) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+[data-edition="meridian"] .tabs{border-bottom: 1px solid var(--gb) !important;padding: 0 !important;}
+
+/* Pills: quiet, horizontal */
+[data-edition="meridian"] .pill{
+  border-radius: 0 !important;
+  border: none !important;
+  border-bottom: 1px solid transparent !important;
+  background: transparent !important;
+  padding: 4px 8px !important;
+  font-family: var(--fb) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  font-size: 9px !important;
+}
+[data-edition="meridian"] .pill:hover{border-bottom-color: var(--text3) !important;color: var(--text) !important;}
+[data-edition="meridian"] .pill.on{
+  border-bottom-color: var(--theme) !important;
+  background: transparent !important;
+  color: var(--theme) !important;
+}
+
+/* Section labels: serif italic */
+[data-edition="meridian"] .sec-lbl{
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 20px !important;
+  color: var(--text) !important;
+}
+[data-edition="meridian"] .sec-hdr{
+  border-bottom: 1px solid var(--gb) !important;
+  padding-bottom: 14px !important;
+  margin-bottom: 20px !important;
+}
+
+/* Hero: wide, magazine-spread look */
+[data-edition="meridian"] .hero{
+  background: var(--bg) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--gb) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 40px 0 30px !important;
+  height: auto !important;
+  min-height: 180px;
+}
+[data-edition="meridian"] .hero-accent{display:none !important;}
+[data-edition="meridian"] .hero-sub{
+  font-family: var(--fb) !important;
+  font-size: 13px !important;
+  color: var(--text2) !important;
+  max-width: 600px;
+}
+
+/* Logo em the wordmark: editorial red small caps */
+[data-edition="meridian"] .hub-wordmark em,
+[data-edition="meridian"] .mod-hdr-logo em{
+  color: var(--theme) !important;
+  background: none !important;
+  -webkit-text-fill-color: var(--theme) !important;
+  font-style: italic !important;
+}
+
+/* Status badges: quiet capsules */
+[data-edition="meridian"] .pb-pago,
+[data-edition="meridian"] .pb-pendente,
+[data-edition="meridian"] .pb-vencido,
+[data-edition="meridian"] .pb-atrasado,
+[data-edition="meridian"] .pb-aprovado{
+  border-radius: 0 !important;
+  border: 1px solid currentColor !important;
+  background: transparent !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+  font-weight: 600 !important;
+  font-size: 9px !important;
+  padding: 2px 6px !important;
+}
+
+/* Rank badges: serif italic numeral, no medal gradient */
+[data-edition="meridian"] .rank-badge{
+  border-radius: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 800 !important;
+  color: var(--text) !important;
+}
+[data-edition="meridian"] .rank-badge.rank-gold{color: var(--theme) !important;}
+
+/* Modals: full-page editorial spread */
+[data-edition="meridian"] .modal{
+  border-radius: 2px !important;
+  border: none !important;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.20) !important;
+}
+[data-edition="meridian"] .modal-hdr{
+  border-bottom: 1px solid var(--gb) !important;
+}
+[data-edition="meridian"] .modal-ttl{
+  font-size: 24px !important;
+  font-weight: 700 !important;
+}
+[data-edition="meridian"] #modal-ov{background: rgba(0,0,0,0.45) !important;}
+
+/* Action Center */
+[data-edition="meridian"] #action-center{
+  background: var(--bg) !important;
+  border-left: 1px solid var(--gb) !important;
+}
+
+/* Table rows: horizontal rule style */
+[data-edition="meridian"] table th,
+[data-edition="meridian"] table td{
+  border-bottom: 1px solid var(--gb) !important;
+}
+[data-edition="meridian"] table th{
+  font-family: var(--fb) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  font-size: 9px !important;
+  color: var(--text3) !important;
+  border-top: 2px solid var(--text) !important;
+}
+[data-edition="meridian"] .tr:hover{background: var(--bg2) !important;}
+
+/* Module header: minimal magazine masthead */
+[data-edition="meridian"] .mod-hdr{
+  background: var(--bg) !important;
+  border-bottom: 1px solid var(--gb) !important;
+}
+[data-edition="meridian"] .mod-hdr-name{
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 15px !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* Copilot: editorial quote-block vibe */
+[data-edition="meridian"] #copilot-fab{
+  background: var(--theme) !important;
+  border: none !important;
+  border-radius: 2px !important;
+  box-shadow: 0 8px 24px -4px var(--theme-glow) !important;
+}
+[data-edition="meridian"] #copilot-fab .cp-gemini-icon{fill: #fff !important;}
+[data-edition="meridian"] .cp-title-icon{
+  background: var(--theme) !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+[data-edition="meridian"] .cp-title-icon .cp-gemini-icon{fill: #fff !important;}
+[data-edition="meridian"] .cp-title-main{
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-weight: 700 !important;
+}
+[data-edition="meridian"] .cp-welcome-icon{
+  background: var(--theme) !important;
+  border-radius: 2px !important;
+}
+[data-edition="meridian"] .cp-welcome-icon .cp-gemini-icon{fill: #fff !important;}
+[data-edition="meridian"] .cp-welcome-title{
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 700 !important;
+  font-size: 22px !important;
+}
+[data-edition="meridian"] .cp-msg-user .cp-bubble{
+  background: var(--theme) !important;
+  color: #fff !important;
+  border-radius: 2px !important;
+}
+[data-edition="meridian"] .cp-msg-assist .cp-bubble{
+  border-radius: 2px !important;
+  border-left: 3px solid var(--theme) !important;
+}
+[data-edition="meridian"] .cp-send{background: var(--theme) !important;border-radius: 2px !important;}
+
+/* Form inputs: minimal underline */
+[data-edition="meridian"] .fi{
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--gb2) !important;
+  border-radius: 0 !important;
+  padding: 10px 0 !important;
+}
+[data-edition="meridian"] .fi:focus{
+  border-bottom-color: var(--theme) !important;
+  box-shadow: none !important;
+}
+
+/* Search pill: editorial */
+[data-edition="meridian"] .search-pill{
+  border-radius: 0 !important;
+  border: none !important;
+  border-bottom: 1px solid var(--gb2) !important;
+  background: transparent !important;
+}
+
+/* ══════════════════════════════════════════════════════════
    HIDE MOSAIC in Nebula and Neon Flow — themes replace the
    3C logo wallpaper with their own visual identity
    ══════════════════════════════════════════════════════════ */
@@ -3676,6 +4137,14 @@ table td{font-weight:400;}
 .st-theme-bento-dark::before{content:'';position:absolute;inset:10px;border-radius:6px;
   background:linear-gradient(135deg,#ff9f80 0%,#ff9f80 33%,#a5b4fc 33%,#a5b4fc 66%,#86efac 66%);
   border:2px solid #fafafa;box-shadow:3px 3px 0 #fafafa;}
+.st-theme-meridian-light{background:#f8f5ef;position:relative;overflow:hidden;}
+.st-theme-meridian-light::before{content:'';position:absolute;top:14px;left:14px;right:14px;height:2px;background:#1a1612;}
+.st-theme-meridian-light::after{content:'M';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:800;color:#c2362d;font-style:italic;}
+.st-theme-meridian-dark{background:#14110d;position:relative;overflow:hidden;}
+.st-theme-meridian-dark::before{content:'';position:absolute;top:14px;left:14px;right:14px;height:2px;background:#f5f0e6;}
+.st-theme-meridian-dark::after{content:'M';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',Georgia,serif;font-size:42px;font-weight:800;color:#e85548;font-style:italic;}
 .st-theme-name{font-family:var(--fd);font-size:13px;font-weight:800;color:var(--text);margin-bottom:2px;}
 .st-theme-desc{font-size:10px;color:var(--text3);line-height:1.4;}
 
