@@ -113,41 +113,50 @@ window.Data = (function () {
     }
 
     try {
+      // Helper: fetch + overwrite STATE only on success. Preserves existing
+      // data if Supabase errors (RLS, network, etc) — prevents the bug where
+      // a failed read would wipe STATE to an empty array.
+      async function loadInto(field, table, mapper, options) {
+        const q = sb().from(table).select('*');
+        if (options?.order) q.order(options.order.col, { ascending: options.order.asc });
+        if (options?.limit) q.limit(options.limit);
+        const { data, error } = await q;
+        if (error) {
+          console.warn(`[Data.loadAll] ${table} FAILED — mantendo STATE.${field} existente:`, error.message);
+          return false;
+        }
+        if (!Array.isArray(data)) {
+          console.warn(`[Data.loadAll] ${table} retornou não-array — mantendo STATE.${field}`);
+          return false;
+        }
+        STATE[field] = data.map(mapper);
+        console.log(`[Data.loadAll] ${table} ← ${data.length} registros`);
+        return true;
+      }
+
       // Brands → keyed object {Vupi:{...}, Novibet:{...}}
-      const { data: brands } = await sb().from('brands').select('*');
-      STATE.brands = {};
-      (brands || []).forEach(b => {
-        STATE.brands[b.name] = {
-          color: b.color, rgb: b.rgb, type: b.type,
-          cpa: b.cpa || 0, rs: b.rs || 0,
-          levels: b.levels || undefined,
-          logo: b.logo || '',
-        };
-      });
+      const { data: brands, error: brandsErr } = await sb().from('brands').select('*');
+      if (brandsErr) {
+        console.warn('[Data.loadAll] brands FAILED — mantendo STATE.brands existente:', brandsErr.message);
+      } else if (Array.isArray(brands) && brands.length > 0) {
+        STATE.brands = {};
+        brands.forEach(b => {
+          STATE.brands[b.name] = {
+            color: b.color, rgb: b.rgb, type: b.type,
+            cpa: b.cpa || 0, rs: b.rs || 0,
+            levels: b.levels || undefined,
+            logo: b.logo || '',
+          };
+        });
+        console.log(`[Data.loadAll] brands ← ${brands.length} marcas`);
+      }
 
-      // Affiliates
-      const { data: affs } = await sb().from('affiliates').select('*');
-      STATE.affiliates = (affs || []).map(r => toCamel('affiliates', r));
-
-      // Contracts
-      const { data: cts } = await sb().from('contracts').select('*');
-      STATE.contracts = (cts || []).map(r => toCamel('contracts', r));
-
-      // Payments
-      const { data: pys } = await sb().from('payments').select('*');
-      STATE.payments = (pys || []).map(r => toCamel('payments', r));
-
-      // Closings
-      const { data: cls } = await sb().from('closings').select('*').order('created_at', { ascending: false });
-      STATE.closings = (cls || []).map(r => toCamel('closings', r));
-
-      // Tasks
-      const { data: tks } = await sb().from('tasks').select('*');
-      STATE.tasks = (tks || []).map(r => toCamel('tasks', r));
-
-      // Reports
-      const { data: rps } = await sb().from('reports').select('*').order('date', { ascending: false });
-      STATE.reports = (rps || []).map(r => toCamel('reports', r));
+      await loadInto('affiliates', 'affiliates', r => toCamel('affiliates', r));
+      await loadInto('contracts', 'contracts', r => toCamel('contracts', r));
+      await loadInto('payments', 'payments', r => toCamel('payments', r));
+      await loadInto('closings', 'closings', r => toCamel('closings', r), { order: { col: 'created_at', asc: false } });
+      await loadInto('tasks', 'tasks', r => toCamel('tasks', r));
+      await loadInto('reports', 'reports', r => toCamel('reports', r), { order: { col: 'date', asc: false } });
 
       // Audit log (keep last 100)
       const { data: log } = await sb().from('audit_log').select('*').order('created_at', { ascending: false }).limit(100);

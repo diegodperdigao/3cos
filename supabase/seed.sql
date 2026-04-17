@@ -79,7 +79,8 @@ insert into public.reports (brand, affiliate_id, date, ftd, qftd, deposits, net_
 ('Novibet','a1','2026-03-25',48,38,7800,42),
 ('Novibet','a4','2026-03-10',14,7,9200,220),
 ('Superbet','a5','2026-03-01',4,5,2400,-450),
-('Superbet','a5','2026-03-15',5,7,3200,-1128);
+('Superbet','a5','2026-03-15',5,7,3200,-1128)
+on conflict (brand, affiliate_id, date) do nothing;
 
 -- ── TASKS ──────────────────────────────────────────────────
 insert into public.tasks
