@@ -57,6 +57,41 @@ COMO RESPONDER:
 - Se o usuário pedir ação (criar tarefa, alterar pagamento, etc), responda que você ainda não pode executar alterações — apenas consultar e analisar dados
 - Se faltar dado no contexto pra responder, diga isso claramente e sugira onde o usuário pode encontrar`;
 
+// Generates the fake "model acknowledgement" message that primes the
+// conversation with concrete facts from the context. By making the model
+// "say" these numbers in its prior turn, it treats them as known truth
+// and answers subsequent questions using them.
+function _buildAckMessage(ctx) {
+  const affCount = (ctx.affiliates || []).length;
+  const payBuckets = ctx.payments_by_status || {};
+  const totalPayments = Object.values(payBuckets).reduce((s, b) => s + (b.count || 0), 0);
+  const taskCount = (ctx.tasks || []).filter(t => t.status !== 'concluída').length;
+  const contractCount = (ctx.contracts || []).length;
+  const brands = Object.keys(ctx.brands || {});
+
+  // List top 3 affiliates by profit so the model has them explicit
+  const top3 = [...(ctx.affiliates || [])]
+    .sort((a, b) => (b.profit || 0) - (a.profit || 0))
+    .slice(0, 3)
+    .map(a => `${a.name} (lucro R$${(a.profit || 0).toLocaleString('pt-BR')}, ${a.ftds || 0} FTDs, ${a.qftds || 0} QFTDs)`)
+    .join(', ') || 'nenhum';
+
+  const statusSummary = Object.entries(payBuckets)
+    .map(([k, v]) => `${v.count} ${k} (R$${(v.total || 0).toLocaleString('pt-BR')})`)
+    .join(', ') || 'nenhum';
+
+  return `Recebi e analisei o snapshot. Confirmação dos dados que tenho agora:
+
+- **Afiliados**: ${affCount} cadastrados
+- **Top 3 por lucro 3C**: ${top3}
+- **Marcas parceiras**: ${brands.join(', ') || 'nenhuma'}
+- **Contratos**: ${contractCount}
+- **Pagamentos**: ${totalPayments} no total — ${statusSummary}
+- **Tarefas abertas**: ${taskCount}
+
+Estou pronto para responder qualquer pergunta sobre esses dados. O que você quer saber?`;
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -80,21 +115,36 @@ module.exports = async function handler(req, res) {
     }
 
     const contextText = JSON.stringify(context, null, 2);
-    const systemText = `${SYSTEM_PROMPT}\n\n---\nDADOS ATUAIS DO USUÁRIO (snapshot completo do STATE — use isso como fonte de verdade para responder):\n\n${contextText}`;
 
-    // Belt and suspenders: also prefix the FIRST user message with a
-    // reminder of the data, so even if the model ignores systemInstruction
-    // the context is guaranteed to reach the prompt.
-    const contents = messages.map((m, i) => {
-      let text = m.content;
-      if (i === 0 && m.role === 'user') {
-        text = `[Contexto: você tem acesso aos dados do 3C OS via systemInstruction acima. Consulte o JSON do snapshot para responder. Dados incluem: afiliados (com profit, commission, ftds, qftds, deposits, netRev), contratos, pagamentos por status, tarefas abertas, pipeline, relatórios recentes.]\n\n${m.content}`;
+    // systemInstruction holds only the PERSONA (how to act, tone, rules).
+    // Data goes in the messages array as a primed user/model turn so the
+    // model treats it as concrete facts in the conversation, not easily
+    // dropped preamble. Works reliably on all Gemini flash variants.
+    const systemText = SYSTEM_PROMPT;
+
+    // Build primed context turn (user dumps data, model acknowledges).
+    // Then append the real conversation.
+    const primedContext = [
+      {
+        role: 'user',
+        parts: [{
+          text: `Aqui está o snapshot atual da plataforma 3C OS que você deve consultar para responder todas as minhas perguntas. Use este JSON como fonte única de verdade:\n\n\`\`\`json\n${contextText}\n\`\`\`\n\nConfirme que recebeu os dados listando brevemente quantos afiliados, pagamentos e tarefas eu tenho na plataforma agora.`
+        }]
+      },
+      {
+        role: 'model',
+        parts: [{
+          text: _buildAckMessage(context)
+        }]
       }
-      return {
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text }],
-      };
-    });
+    ];
+
+    const userMessages = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+
+    const contents = [...primedContext, ...userMessages];
 
     // Build ordered model list: primary first, then fallbacks (deduped)
     const tryOrder = [MODEL, ...FALLBACK_MODELS.filter(m => m !== MODEL)];
