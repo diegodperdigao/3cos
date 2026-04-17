@@ -265,6 +265,27 @@ const od=(d,s)=>d&&s!=='pago'&&new Date(d)<new Date();
 const sl=s=>({ativo:'Ativo',negociação:'Negociação',encerrado:'Encerrado'}[s]||s||'Ativo');
 const pl=s=>({pendente:'Pendente',aprovado:'Aprovado',pago:'Pago',parcial:'Parcial',recusado:'Recusado',ajuste:'Ajuste Necessário',atrasado:'Atrasado',vencido:'Vencido'}[s]||s);
 
+// ── THEME + COPILOT VISIBILITY (defined here so users.js can call them at boot) ──
+// Full implementations live in settings.js and copilot.js, but these stubs
+// MUST exist early because users.js session-restore calls them before
+// settings.js and copilot.js have loaded.
+window.applyAppTheme = () => {
+  const root = document.documentElement;
+  const theme = STATE.settings?.theme || 'default';
+  if (['mono', 'glass', 'neonflow'].includes(theme) && STATE.user) root.setAttribute('data-edition', theme);
+  else root.removeAttribute('data-edition');
+  if (STATE.settings?.reducedMotion) root.setAttribute('data-motion', 'reduced');
+  else root.removeAttribute('data-motion');
+  root.setAttribute('data-density', STATE.settings?.density || 'comfortable');
+};
+window.applyBetaEdition = window.applyAppTheme;
+
+window.updateCopilotVisibility = () => {
+  const btn = document.getElementById('copilot-fab');
+  if (!btn) return;
+  btn.style.display = (STATE?.betaMode === true && !!STATE?.user) ? 'flex' : 'none';
+};
+
 // ══════════════════════════════════════════════════════════
 // PAYMENT STATUS COMPUTATION
 // ══════════════════════════════════════════════════════════
