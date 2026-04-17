@@ -282,7 +282,7 @@ window.sendCopilotMessage = async () => {
 
   // If STATE is empty, try to re-sync from Supabase before asking the AI.
   // Avoids the "tenho dados stale" case when user opens Copilot during/after a fresh login.
-  const sBefore = window.STATE || {};
+  const sBefore = STATE || {};
   const hasData = (sBefore.affiliates || []).length > 0 || (sBefore.payments || []).length > 0;
   if (!hasData && window.Data?.loadAll) {
     console.log('[Copilot] STATE parece vazio, re-sincronizando com Supabase...');
@@ -295,7 +295,7 @@ window.sendCopilotMessage = async () => {
     }
   }
 
-  const s = window.STATE || {};
+  const s = STATE || {};
   const stateStats = {
     hasUser: !!s.user,
     affiliates: (s.affiliates || []).length,
@@ -345,7 +345,7 @@ window.sendCopilotMessage = async () => {
 
 // ── DATA CONTEXT ──
 function buildCopilotContext() {
-  const s = window.STATE || {};
+  const s = STATE || {};
   const today = new Date().toISOString().split('T')[0];
 
   // Flag empty state so AI knows the platform has no data yet
