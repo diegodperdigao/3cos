@@ -1,221 +1,266 @@
-# 3C OS — Especificação de Tema
+# 3C OS — Especificação de Tema (v2)
 
 Documento pra designer (ou IA de design) criar um novo tema completo para a plataforma **3C OS Pro**.
 
----
-
-## 1. Visão geral do sistema
-
-A plataforma já tem **3 temas** funcionando: `Default`, `Mono` e `Nebula`. Um novo tema é uma "skin" completa aplicada sobre a mesma estrutura HTML. Não é só trocar uma cor — é redesenhar a linguagem visual de todo o sistema mantendo a usabilidade.
-
-**Aplicação técnica:** O tema é ativado via atributo `data-edition="NOME"` no `<html>`. Todo o CSS fica num único arquivo (`css/styles.css`) no final. O designer entrega um **bloco CSS** que será colado no arquivo.
-
-**Dark + Light:** Cada tema precisa funcionar em **modo claro E escuro**. Seletor combinado: `[data-edition="novo"][data-theme="dark"]` vs `[data-edition="novo"][data-theme="light"]`.
+> **Leia isto antes de começar.** Os primeiros temas tentados falharam por não cobrirem o Hub principal e por serem visualmente "pesados". Esta versão do spec deixa essas regras explícitas.
 
 ---
 
-## 2. Variáveis CSS (obrigatórias)
+## ⚠️ Regras críticas (não-negociáveis)
 
-O tema PRECISA sobrescrever estas variáveis no seletor raiz. Cada uma controla uma categoria:
+### 1. O tema PRECISA transformar o Hub principal
+O Hub (tela inicial após login, com os 10 cards de módulos) é o primeiro contato do usuário. Um tema que não muda o Hub **não é um tema completo** — o usuário entra, vê a mesma tela de sempre, e acha que o tema não foi aplicado.
 
-### Backgrounds (fundos)
+**O que DEVE mudar no Hub:**
+- Fundo do Hub (`.hub-bg`) — o mosaico com logos repetidos. Temas diferentes devem ter fundos diferentes (ex: Mono substitui por cinza sólido, Nebula adiciona campo de estrelas, Default mantém o mosaico animado)
+- Hub app cards (`.hub-app`) — os 10 cards dos módulos. Mudar borda, hover, ícone, sombra — não deixar igual ao Default
+- Hub wordmark (`3C**OS**`) — especialmente o `em` do "OS" que costuma ter acento colorido
+- Hub identity (.hub-identity) — tagline e logo central
+- Hub icon buttons (sino, tema, etc)
+
+### 2. Substituir o mosaico infinito
+O `.mosaic-pattern` é o logo 3C repetido infinitamente como textura. Ele aparece:
+- No Hub principal (background)
+- Em cada módulo (dentro do `.hero`)
+- No lock screen
+
+**Cada tema define sua própria alternativa:**
+- Pode manter o mosaico mas com opacidade/cor diferente
+- Pode substituir por padrão geométrico, noise, gradiente, estrelas, etc.
+- Pode remover e deixar fundo sólido (Mono faz isso)
+- **Não pode simplesmente ignorar e deixar o mosaico rosa padrão no meio de um tema violeta**
+
+### 3. Tom CLEAN, não "cool"
+O 3C OS é um **CRM profissional** — afiliados ganhando dinheiro, gestão financeira, contratos. Não é um site de jogo nem landing page de startup.
+
+**DO:**
+- ✅ Restrição visual: **1 a 2 cores** de destaque, no máximo
+- ✅ Cor semântica preservada (vermelho = ruim, verde = bom, amarelo = atenção)
+- ✅ Ampla respiração entre elementos
+- ✅ Tipografia limpa, sem muitos pesos
+- ✅ Hovers e focos sutis, não agressivos
+
+**DON'T:**
+- ❌ Neon saturado em tudo (`#39ff14`, `#ff0066` espalhado) — cansa o olho em uso diário
+- ❌ Gradientes multi-color em cada card
+- ❌ Animações infinitas (pulse, shimmer) em elementos grandes
+- ❌ Bordas grossas coloridas (3px+ neon)
+- ❌ Backdrops borrados em tudo (peso de GPU)
+- ❌ Uppercase forçado em labels longos (ilegível)
+
+**Referência de "clean":** Linear, Vercel, Arc Browser, Superhuman, Notion. Temas que são bonitos em uso diário, não que impressionam em uma screenshot.
+
+### 4. Funcionar em dark E light mode
+Não aceita "só tem dark". Ambos modos precisam estar prontos. Seletor: `[data-edition="NOME"][data-theme="dark|light"]`.
+
+### 5. Acessibilidade WCAG AA
+- Contraste mínimo 4.5:1 para texto body
+- 3:1 para texto grande (>18px)
+- Foco visível em todos os inputs
+- Cores semânticas com intensidade similar à do Default
+
+---
+
+## Visão geral do sistema
+
+A plataforma tem **3 temas funcionando**: `Default`, `Mono` e `Nebula`. Um tema é aplicado via `data-edition="NOME"` no `<html>`, com overrides combinados com `data-theme="dark|light"`.
+
+O designer entrega um **bloco CSS** colado no fim de `css/styles.css`.
+
+---
+
+## Variáveis CSS (obrigatórias)
+
+Override TODAS estas no seletor raiz do tema:
+
+### Backgrounds
 | Variável | Uso | Exemplo (Default dark) |
 |---|---|---|
-| `--bg` | Fundo geral da página | `#060810` |
-| `--bg2` | Fundo de superfícies elevadas (cards, modais, action center) | `rgba(15,18,28,0.7)` |
-| `--bg3` | Fundo de inputs e superfícies terciárias | `rgba(255,255,255,0.04)` |
+| `--bg` | Fundo geral da página + hub | `#060810` |
+| `--bg2` | Superfícies elevadas (cards, modais, action center) | `rgba(15,18,28,0.7)` |
+| `--bg3` | Inputs, surfaces terciárias | `rgba(255,255,255,0.04)` |
 
 ### Bordas
-| Variável | Uso | Exemplo |
-|---|---|---|
-| `--gb` | Borda padrão (sutil) | `rgba(255,255,255,0.07)` |
+| `--gb` | Borda sutil padrão | `rgba(255,255,255,0.07)` |
 | `--gb2` | Borda média (hover, divisores) | `rgba(255,255,255,0.1)` |
-| `--gb3` | Borda forte (focus) | `rgba(255,255,255,0.14)` |
+| `--gb3` | Borda forte (focus ring) | `rgba(255,255,255,0.14)` |
 
-### Texto
-| Variável | Uso | Exemplo |
-|---|---|---|
-| `--text` | Texto principal (títulos, valores importantes) | `#f1f5f9` |
-| `--text2` | Texto secundário (labels, subtítulos) | `#94a3b8` |
-| `--text3` | Texto terciário (placeholder, meta info) | `#4b5563` |
+### Texto (hierarquia de 3 níveis)
+| `--text` | Texto principal | `#f1f5f9` |
+| `--text2` | Texto secundário | `#94a3b8` |
+| `--text3` | Texto terciário | `#4b5563` |
 
-### Cor do tema (accent principal)
-| Variável | Uso | Exemplo |
-|---|---|---|
-| `--theme` | Cor accent do tema (botões, links, active states) | `#ec4899` |
-| `--theme-dim` | Versão bem clara para backgrounds sutis | `rgba(236,72,153,0.08)` |
-| `--theme-b` | Versão média para bordas e estados hover | `rgba(236,72,153,0.15)` |
-| `--theme-glow` | Versão para box-shadow/glow effects | `rgba(236,72,153,0.2)` |
+### Accent (cor do tema)
+| `--theme` | Cor principal do tema (botões, links, active) | `#ec4899` |
+| `--theme-dim` | Bg sutil (8-10% alpha) | `rgba(236,72,153,0.08)` |
+| `--theme-b` | Borda média (15-25% alpha) | `rgba(236,72,153,0.15)` |
+| `--theme-glow` | Box-shadow glow (20-40% alpha) | `rgba(236,72,153,0.2)` |
 
-### Cores semânticas (NÃO MUDAR — são semânticas)
-Essas devem permanecer reconhecíveis em qualquer tema porque carregam significado:
-| Variável | Significado | Default |
-|---|---|---|
-| `--red` | Erro, pagamento vencido, ação destrutiva | `#ef4444` |
-| `--amber` | Aviso, pagamento atrasado | `#f59e0b` |
+### Cores semânticas (MANTER reconhecíveis)
+| `--red` | Erro, vencido, destrutivo | `#ef4444` |
+| `--amber` | Aviso, atrasado | `#f59e0b` |
 | `--green` | Sucesso, pago, conectado | `#10b981` |
 | `--blue` | Info, aprovado | `#3b82f6` |
-| `--pink` | Acento decorativo, QFTDs | `#ec4899` |
+| `--pink` | Acento decorativo | `#ec4899` |
 | `--purple` | Acento decorativo | `#a855f7` |
 | `--lime` | Auditoria | `#c8ff00` |
 
-> **Regra:** O tema pode ajustar o tom dessas cores (ex: verde mais escuro no light mode) mas não pode mudar radicalmente (não use roxo como "verde" porque quebra a leitura semântica).
+> Pode ajustar saturação/lightness pro modo (light precisa de cores mais escuras), mas mantém o significado: vermelho continua sendo vermelho.
 
 ### Outros
-| Variável | Uso | Exemplo |
-|---|---|---|
-| `--radius` | Raio de cantos padrão | `14px` |
+| `--radius` | Raio padrão de cantos | `14px` |
 | `--space` | Espaçamento padrão | `16px` |
 | `--fd` | Fonte display (números, títulos) | `'Montserrat', sans-serif` |
-| `--fb` | Fonte body (texto corrido) | `'Inter', sans-serif` |
+| `--fb` | Fonte body (texto) | `'Inter', sans-serif` |
 
 ---
 
-## 3. Elementos a serem estilizados
+## Elementos a estilizar (checklist)
 
-Lista completa dos componentes UI que o tema deve tratar. Cada item tem a(s) classe(s) CSS correspondente(s).
+Use esta lista pra garantir cobertura completa. O tema Mono cobre ~140 seletores. Um tema bom cobre **pelo menos 80**.
 
-### Navegação e estrutura
-- **Hub principal** (`.hub-main`, `.hub-bg`, `.hub-identity`) — tela inicial com cards dos módulos
-- **Hub cards** (`.hub-app`, `.hub-app-icon`, `.hub-app-name`) — botões dos 10 módulos
-- **Hub bar** (`.hub-bar`) — barra topo com logo, busca, ícones de ação
-- **Module header** (`.mod-hdr`, `.mod-hdr-name`, `.mod-hdr-logo`) — topo dentro dos módulos
-- **Hero** (`.hero`, `.hero-eyebrow`, `.hero-title`, `.hero-sub`, `.hero-accent`) — banner no topo de cada módulo
-- **Mobile sidebar** (`.mob-sidebar`, `.mob-sb-item`) — menu lateral no mobile
+### 🏠 Hub (prioridade ALTA — é o que o user vê primeiro)
+- [ ] `.hub-bg` — fundo geral (tratar mosaico!)
+- [ ] `.hub-bg::after` — camada de estrelas/padrão custom
+- [ ] `.hub-overlay` — vignette
+- [ ] `.hub-bar` — barra superior
+- [ ] `.hub-wordmark`, `.hub-wordmark em` — logo
+- [ ] `.hub-identity`, `.hub-id-logo`, `.hub-id-name`, `.hub-id-name span` — bloco central
+- [ ] `.hub-id-tagline`, `.hub-greeting` — tagline e boas-vindas
+- [ ] `.hub-app` — **10 cards dos módulos** (borda, bg, hover, sombra)
+- [ ] `.hub-app-icon`, `.hub-app-icon svg` — ícones dos cards
+- [ ] `.hub-app-name`, `.hub-app-sub` — texto dos cards
+- [ ] `.hub-apps-label`, `.hub-apps-label::after` — "Módulos disponíveis"
+- [ ] `.hub-icon-btn` (sino, tema) + `:hover` + svg
+- [ ] `.hub-notif-badge` — contador de notificações
+- [ ] `.hub-logout-btn` — botão SAIR
+- [ ] `.hub-user-name`, `.hub-user-role` — info do usuário
 
-### Cards e superfícies
-- **KPI cards** (`.kpi`, `.kpi-val`, `.kpi-lbl`, `.kpi::before`) — indicadores numéricos (ex: "Total Pago R$ 1M")
-- **Intelligence cards** (`.intel-wrap`, `.intel-card`, `.intel-eye`) — cards analíticos do dashboard
-- **Affiliate cards** (`.aff-card`, `.aff-name`, `.aff-stat-v`) — cards na listagem de afiliados
-- **User cards** (`.user-card`) — cards na tela de usuários
-- **Task cards** (`.tk`, `.tk-ttl`, `.tk-desc`) — cards de tarefas
-- **Kanban cards** (`.kanban-col`, `.kanban-card`) — pipeline de vendas
-- **Settings cards** (`.st-card`, `.st-section`) — tela de configurações
-- **Action Center cards** (`.ac-card`) — notificações
-- **Financial calendar** (`.fin-card`, `.fin-cal-day`) — calendário financeiro
+### 🎯 Module header (barra topo dentro dos módulos)
+- [ ] `.mod-hdr` — background
+- [ ] `.mod-hdr-logo em` — "OS" do logo
+- [ ] `.mod-hdr-name` — nome do módulo
+- [ ] `.hdr-btn` — ícones (sino, tema, sair)
+- [ ] `.hdr-divider` — divisor
+- [ ] `.sync-pill`, `.sync-dot`, `.sync-txt` — "Cloud Sync" (manter verde)
+- [ ] `.beta-pill` — indicador Beta ON (pode adotar cor do tema)
 
-### Controles
-- **Botões primary** (`.btn-theme`) — ação principal
-- **Botões outline** (`.btn-outline`) — ação secundária
-- **Botões ghost** (`.btn-ghost`) — ação terciária
-- **Icon buttons** (`.hdr-btn`, `.hub-icon-btn`, `.ibt`) — botões só com ícone
-- **Tabs** (`.tab`, `.tab.on`) — navegação por abas
-- **Pills** (`.pill`, `.pill.on`, `.pill-tag`) — filtros e tags
-- **Form inputs** (`.fi`, textarea) — campos de texto/select
-- **Search pill** (`.search-pill`, `.search-panel`) — campo busca global
-- **Toggle switches** (`.st-switch`, `.st-switch-track`) — on/off
-- **Segmented controls** (`.st-seg`) — dark/light, densidade
+### 🦸 Hero (banner topo de cada módulo)
+- [ ] `.hero`, `.hero .mosaic-wrapper` — bg + mosaico
+- [ ] `.hero-overlay`, `.hero-accent` — camadas de cor
+- [ ] `.hero-eyebrow` — pequeno texto superior
+- [ ] `.hero-title` — título grande
+- [ ] `.hero-sub` — subtítulo
 
-### Badges e indicadores
-- **Payment status** (`.pb-pago`, `.pb-pendente`, `.pb-vencido`, `.pb-atrasado`, `.pb-aprovado`, `.pb-ajuste`) — status de pagamento (semântico — mantém verde/amarelo/vermelho)
-- **Task priority** (`.pri-a`, `.pri-m`, `.pri-b`) — prioridade alta/média/baixa
-- **Contract type** (`.ct-badge`, `.ct-cpa`, `.ct-tiered`, etc.) — tipo de contrato
-- **Ranking** (`.rank-badge`, `.rank-gold`, `.rank-silver`, `.rank-bronze`) — top 3 com medalhas
-- **Role badge** (`.role-badge`) — cargo do usuário
-- **Last contact** (`.lc-ok`, `.lc-warn`, `.lc-danger`) — status de último contato
-- **Sync pill** (`.sync-pill`, `.sync-dot`) — "Cloud Sync" (mantém verde)
-- **Beta pill** (`.beta-pill`) — sinal de "Modo Beta ativo"
-- **Notification dot** (`.hub-notif-badge`, `.ac-notif-dot`) — contador de notificações
+### 📊 Cards (cobrir TODOS, não só os principais)
+- [ ] `.kpi` + `.kpi::before` (strip lateral) + `.kpi-val` + `.kpi-lbl` + `.kpi-sub`
+- [ ] `.intel-wrap`, `.intel-card`, `.intel-eye`, `.intel-title`, `.intel-sub`
+- [ ] `.aff-card` (+ `:hover`), `.aff-name`, `.aff-type`, `.aff-stat-v`, `.aff-tag`
+- [ ] `.user-card`, `.user-av`, `.user-name`, `.user-email`
+- [ ] `.tk` (+ todos `.tk-*`), incluindo `.tk-chk` (checkbox)
+- [ ] `.kanban-col`, `.kanban-card` (+ `:hover`), `.kanban-add`
+- [ ] `.st-card`, `.st-section-icon` — cards de Configurações
+- [ ] `.ac-card` — cards do Action Center
+- [ ] `.fin-card`, `.fin-cal-day`, `.fin-cal-day-today` — financeiro
 
-### Tabelas e dados
-- **Tables** (`table`, `th`, `td`, `.tr:hover`) — tabelas de dados
-- **Rank cells** (`.td-rank`, `.td-name`, `.td-num`, `.td-money`) — células especializadas
-- **Chart canvas** (`.chart-wrap canvas`) — gráficos Chart.js
+### 🎛 Controles
+- [ ] `.btn-theme` — botão primary
+- [ ] `.btn-outline` + `:hover`
+- [ ] `.btn-ghost` + `:hover`
+- [ ] `.tab`, `.tab:hover`, `.tab.on`
+- [ ] `.pill`, `.pill:hover`, `.pill.on`, `.pill-tag` (+ variantes)
+- [ ] `.fi` (inputs) + `::placeholder` + `:focus`
+- [ ] `textarea:focus`
+- [ ] `.search-pill`, `.search-panel`, `.search-item:hover`
+- [ ] `.st-switch-track`, `.st-switch-thumb` — toggles
+- [ ] `.st-seg`, `.st-seg.on` — segmented controls
+- [ ] `.ibt:hover` — icon buttons de tabela
 
-### Overlays e flutuantes
-- **Modal** (`.modal`, `.modal-hdr`, `.modal-ttl`, `#modal-ov`) — diálogos
-- **Action Center** (`#action-center`, `.ac-hdr`, `.ac-title`) — painel lateral direito
-- **Toast** (`.toast`) — notificações efêmeras
-- **Scrollbar** (`::-webkit-scrollbar`, `-thumb`) — barra de rolagem
+### 🏷 Badges (manter cores semânticas)
+- [ ] `.pb-pago` (verde), `.pb-pendente` (amber), `.pb-vencido` (red), `.pb-atrasado` (amber), `.pb-aprovado` (blue), `.pb-ajuste`, `.pb-recusado`
+- [ ] `.pri-a` (red), `.pri-m` (amber), `.pri-b` (neutral)
+- [ ] `.ct-badge` + variantes (.ct-cpa, .ct-tiered, etc)
+- [ ] `.rank-badge`, `.rank-gold`, `.rank-silver`, `.rank-bronze` — medalhas (manter dourado/prata/bronze)
+- [ ] `.role-badge` — cargo
+- [ ] `.lc-ok`, `.lc-warn`, `.lc-danger`, `.lc-never` — último contato
 
-### Copilot (Beta)
-- **Floating button** (`#copilot-fab`, `.cp-fab-pulse`) — botão canto inferior direito
-- **Drawer** (`#copilot-drawer`, `.cp-hdr`, `.cp-body`) — painel de chat à direita
-- **Messages** (`.cp-msg`, `.cp-msg-user`, `.cp-msg-assist`, `.cp-bubble`) — bolhas de chat
-- **History sidebar** (`.cp-history-panel`, `.cp-hist-item`) — histórico de conversas
-- **Input** (`.cp-input`, `.cp-send`) — campo de envio
+### 📋 Tabelas
+- [ ] `table`, `th`, `td` — bg, color, padding
+- [ ] `.tr:hover` — linha hover
+- [ ] `.td-name`, `.td-num`, `.td-money`, `.td-brand` — células especializadas
+- [ ] `::-webkit-scrollbar`, `-thumb`, `-track`, `-thumb:hover`
 
-### Elementos decorativos
-- **Mosaic** (`.mosaic-pattern`, `.mosaic-wrapper`) — padrão de fundo animado (logo 3C repetido)
-- **Logo** (`.hub-wordmark`, `.hub-wordmark em`) — "3C**OS**" — o `em` costuma ter acento diferente
+### 🪟 Overlays
+- [ ] `.modal`, `.modal-hdr`, `.modal-ttl`, `.modal-cls`
+- [ ] `#modal-ov` — overlay escuro atrás do modal
+- [ ] `#action-center`, `.ac-hdr`, `.ac-title`, `.ac-close`
+- [ ] `.toast` — notificações
+- [ ] `.mob-sidebar`, `.mob-sb-item`, `.mob-sb-item.active` — menu mobile
 
----
-
-## 4. Referências visuais (temas existentes)
-
-Para entender o que já foi feito:
-
-### Default (Pink)
-- Dark: fundo `#060810` (quase preto com azul), texto branco, accent rosa `#ec4899`
-- Light: fundo `#f8fafc` (quase branco), accent rosa mais escuro `#db2777`
-- Aesthetic: moderno, jovem, gaming
-- Cards: glass morphism sutil (transparência + blur)
-
-### Mono
-- Dark: preto puro `#0a0b0e` + branco puro `#fafafa`, todas as cores viram branco
-- Light: cinza claro + preto
-- Aesthetic: editorial, tipográfico, alto contraste
-- Bordas retas, sem arredondamento excessivo
-- Trata o produto como um objeto editorial
-
-### Nebula
-- Dark: preto espacial `#07070c` + violeta `#a78bfa`
-- Light: branco rosado + violeta escuro `#7c3aed`
-- Aesthetic: cosmic, sci-fi, estrelado (fundo tem pontos brancos sutis)
-- Cards mais arredondados (18-20px)
-- Um único accent (violeta) contra cinza neutro
+### 🤖 Copilot (se for fundir com tema)
+- [ ] `#copilot-fab` + `.cp-fab-pulse`
+- [ ] `#copilot-drawer`, `.cp-hdr`, `.cp-title-icon`, `.cp-welcome-icon`
+- [ ] `.cp-msg-user .cp-bubble`, `.cp-msg-avatar`
+- [ ] `.cp-send`, `.cp-input:focus`
+- [ ] `.cp-hist-item`, `.cp-hist-item.on`
 
 ---
 
-## 5. Regras de ouro
+## Exemplo de entregável
 
-1. **Acessibilidade:** contraste mínimo WCAG AA (4.5:1 para texto body, 3:1 para texto grande).
-2. **Dark + light obrigatórios:** nada de tema "só dark". Ambos os modos devem funcionar.
-3. **Cores semânticas:** vermelho continua sendo "ruim", verde "bom", amarelo "atenção". Não troque isso.
-4. **Hierarquia tipográfica:** 3 níveis de texto (`--text`, `--text2`, `--text3`) com contraste decrescente claro.
-5. **Borders sutis:** 1px, nada de bordas de 3px neon a menos que seja um hover intencional.
-6. **Performance:** sem `filter: blur()` pesado, sem animações infinitas em elementos grandes (só em detalhes como dots).
-7. **Mobile:** testar em 375px de largura — cards, sidebar, menu hambúrguer.
-8. **Fontes:** manter Montserrat (números/títulos) e Inter (body). Não importar novas fontes sem necessidade.
+```css
+/* ══════════════════════════════════════════════════════════
+   EDITION: [NOME] — [Descrição 1 linha]
+   Inspirado em [REFERÊNCIA].
+   ══════════════════════════════════════════════════════════ */
 
----
+/* Variáveis */
+[data-edition="NOME"][data-theme="dark"] {
+  --bg: ...;
+  --bg2: ...;
+  /* ...etc... */
+}
+[data-edition="NOME"][data-theme="light"] {
+  /* ... */
+}
 
-## 6. Entregável
+/* Hub (PRIORIDADE) */
+[data-edition="NOME"] .hub-bg { ... }
+[data-edition="NOME"] .hub-app { ... }
+[data-edition="NOME"] .hub-app:hover { ... }
+/* ... */
 
-O designer/IA deve devolver:
+/* Hero */
+[data-edition="NOME"] .hero { ... }
 
-1. **Um bloco de CSS** com tudo abaixo do comentário:
-   ```css
-   /* ══════════════════════════════════════════════════════════
-      EDITION: [NOME] — [Descrição curta]
-      ══════════════════════════════════════════════════════════ */
-   [data-edition="NOME"][data-theme="dark"] { /* variáveis */ }
-   [data-edition="NOME"][data-theme="light"] { /* variáveis */ }
-   /* ...seguido de overrides específicos por componente... */
-   ```
+/* Cards */
+[data-edition="NOME"] .kpi { ... }
+/* ... */
 
-2. **Um nome** (ex: "Aurora", "Neon", "Brutalist", "Ocean")
-3. **Uma descrição curta** (1 linha — vai no card de seleção em Configurações)
-4. **Um preview card** (um `div` estilizado 200×70px que represente o tema, pra mostrar na tela de seleção)
-5. **Mood board / referências** (opcional mas útil — apps/sites que inspiram o tema)
+/* Controles, badges, tabelas, etc. */
+```
 
----
-
-## 7. Como testar o tema localmente
-
-1. Cola o CSS no final de `css/styles.css`
-2. No DevTools, muda o atributo do `<html>` para `data-edition="NOME"`
-3. Alterna `data-theme="dark"` ↔ `"light"` pra testar os dois modos
-4. Percorre todos os módulos: Dashboard, Afiliados, Pagamentos, Tarefas, Pipeline, Audit, Backup, Usuários, Configurações
-5. Abre um modal (ex: "Novo Afiliado"), o Action Center (sino), o Copilot (Beta ON)
-6. Testa em mobile (F12 > toggle device)
+E junto:
+- **Nome do tema** (ex: "Aurora", "Nebula", "Graphite")
+- **Descrição 1 linha** pro card de seleção
+- **Preview card CSS** (200x70px) que represente o tema
+- **Mood board** com 3-5 referências visuais
 
 ---
 
-## 8. Exemplos de prompt para IA
+## Processo sugerido
 
-Se for usar IA para gerar o tema, prompt sugerido:
+1. **Pesquisa**: rode o sistema no tema Mono — ele é o mais "transformador". Veja tudo que ele muda. Seu tema deve ter profundidade similar.
+2. **Paleta**: defina 1 cor accent + cinzas. Nada mais.
+3. **Moodboard**: 3 referências visuais. Se possível, temas de produtos reais (Linear, Vercel, Arc, etc), não só artes abstratas.
+4. **Hub first**: comece pelo Hub. Se ele não surpreender, não continua.
+5. **Dark first, light depois**: dark é mais perdoado visualmente. Se funcionar em light também, ótimo.
+6. **Teste em cada módulo**: Dashboard, Afiliados, Pagamentos, etc. Um tema bom é uniforme — não tem módulo que "escapou".
+7. **Teste o Action Center, Modais, Copilot**: overlays precisam funcionar.
+8. **Mobile**: F12 > 375px. Sidebar mobile, bottom nav, etc.
 
-> "Crie um tema CSS completo para a plataforma 3C OS Pro. O tema é [NOME] e deve evocar [MOOD]. Inspire-se em [REFERÊNCIA]. Precisa funcionar em dark e light mode. Override todas as variáveis CSS listadas (bg, bg2, bg3, gb, gb2, gb3, text, text2, text3, theme, theme-dim, theme-b, theme-glow). Mantenha cores semânticas (red/amber/green/blue) reconhecíveis. Estilize: cards (radius, border, shadow), botões primary/outline/ghost, tabs, pills, badges de status, modais, scrollbar, hero section, hub app cards. Entregue CSS puro com seletores `[data-edition="NOME"][data-theme="dark|light"]`. Contraste mínimo WCAG AA."
+---
 
-Anexe este documento inteiro junto do prompt.
+## Prompt para IA (opcional)
+
+> "Crie um tema CSS completo para a plataforma 3C OS Pro seguindo este spec (anexo). Nome: [NOME]. Inspiração: [REFERÊNCIA ex. Linear + Arc Browser]. Dark + light mode obrigatórios. PRIORIDADE ALTA: transformar o Hub principal (hub-app cards, hub-bg, mosaico), não só mudar cores internas. **Tom clean — use no máximo 1 cor accent**, evite neon saturado espalhado. Preservar cores semânticas (red/amber/green/blue reconhecíveis). Contraste WCAG AA. Cobrir os 80+ seletores listados. Entregar CSS puro + 1 preview card de 200x70px representando o tema."

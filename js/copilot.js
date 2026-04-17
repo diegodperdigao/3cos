@@ -409,10 +409,19 @@ function buildCopilotContext() {
 window.updateCopilotVisibility = () => {
   const btn = document.getElementById('copilot-fab');
   if (!btn) return;
-  const show = STATE?.betaMode === true && STATE?.user;
+  const show = STATE?.betaMode === true && !!STATE?.user;
   btn.style.display = show ? 'flex' : 'none';
 };
 
+// Safety net: keep checking every 2s for the first 20s after boot,
+// in case STATE loads asynchronously and the initial call ran too early.
 document.addEventListener('DOMContentLoaded', () => {
+  let ticks = 0;
+  const interval = setInterval(() => {
+    updateCopilotVisibility();
+    ticks++;
+    if (ticks >= 10) clearInterval(interval);
+  }, 2000);
+  // Also run immediately
   setTimeout(updateCopilotVisibility, 500);
 });
