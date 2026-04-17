@@ -167,12 +167,24 @@ module.exports = async function handler(req, res) {
         const reply =
           data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') ||
           '(sem resposta)';
+        // Debug: echo back what we actually sent so frontend can verify
+        const contextStats = {
+          affiliates: (context.affiliates || []).length,
+          contracts: (context.contracts || []).length,
+          tasks: (context.tasks || []).length,
+          payments_statuses: Object.keys(context.payments_by_status || {}),
+          brands: Object.keys(context.brands || {}),
+          context_bytes: contextText.length,
+          contents_turns: contents.length,
+        };
         return res.status(200).json({
           reply,
           usage: data?.usageMetadata,
           model: modelId,
           finish_reason: data?.candidates?.[0]?.finishReason,
           attempts: attempts.length > 0 ? attempts : undefined,
+          _debug_context_stats: contextStats,
+          _build_id: 'ai-v2-primed',
         });
       }
 

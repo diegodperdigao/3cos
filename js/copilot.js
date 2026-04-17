@@ -280,6 +280,15 @@ window.sendCopilotMessage = async () => {
     _copilotActiveId = conv.id;
   }
 
+  // Defensive check: warn if STATE is empty (user opened Copilot before data loaded)
+  const s = window.STATE || {};
+  if (!s.user || !(s.affiliates || []).length) {
+    console.warn('[Copilot] STATE não carregado completamente:', {
+      hasUser: !!s.user,
+      affiliatesCount: (s.affiliates || []).length,
+    });
+  }
+
   conv.messages.push({ role: 'user', content: text });
   // Auto-set title from first user message
   if (conv.messages.length === 1) conv.title = _titleFromText(text);
@@ -291,12 +300,25 @@ window.sendCopilotMessage = async () => {
 
   try {
     const context = buildCopilotContext();
+    // DEBUG: dump context to console so user can verify data is being sent
+    console.log('[Copilot] Enviando contexto com:', {
+      affiliates: (context.affiliates || []).length,
+      contracts: (context.contracts || []).length,
+      payments_statuses: Object.keys(context.payments_by_status || {}),
+      payments_total: Object.values(context.payments_by_status || {}).reduce((s, b) => s + (b.count || 0), 0),
+      tasks: (context.tasks || []).length,
+      brands: Object.keys(context.brands || {}),
+      reports: (context.recent_reports || []).length,
+      full_context_bytes: JSON.stringify(context).length,
+    });
+
     const res = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: conv.messages, context }),
     });
     const data = await res.json();
+    console.log('[Copilot] Resposta da API:', data);
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     conv.messages.push({ role: 'assistant', content: data.reply || '(sem resposta)' });
   } catch (err) {
