@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=63">
+<link rel="stylesheet" href="css/styles.css?v=64">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -34,27 +34,61 @@
       if(s&&s.settings&&s.settings.showIntroVideo===false) return;
     }
   }catch(e){}
-  document.write('<div id="splash" style="position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.6s" onclick="skipIntro()"><video id="splash-video" autoplay muted playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture style="width:100%;height:100%;object-fit:cover"><source src="assets/intro.mp4" type="video/mp4"></video></div>');
+  // Splash markup with a tap-to-play overlay shown only when autoplay fails.
+  // Overlay has a play icon + hint. Tapping the splash does: first tap →
+  // attempt play; second tap (or video end) → skip.
+  document.write(
+    '<div id="splash" style="position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.6s" onclick="tapSplash(event)">'+
+    '<video id="splash-video" autoplay muted playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture style="width:100%;height:100%;object-fit:cover"><source src="assets/intro.mp4" type="video/mp4"></video>'+
+    '<div id="splash-tap" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.82);flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font-family:system-ui,-apple-system,sans-serif">'+
+      '<div style="width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center">'+
+        '<svg width="32" height="32" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>'+
+      '</div>'+
+      '<div style="font-size:14px;font-weight:500;letter-spacing:0.02em;opacity:0.9">Toque para assistir à introdução</div>'+
+      '<div style="font-size:11px;opacity:0.5">ou aguarde 2 segundos para pular</div>'+
+    '</div>'+
+    '</div>'
+  );
 })();
+let _splashTapped = false;
+let _splashPlaying = false;
 function skipIntro(){
   const s=document.getElementById('splash');if(!s||s.style.opacity==='0')return;
   s.style.opacity='0';setTimeout(()=>s.remove(),600);
+}
+// Handles clicks on the splash: first tap triggers play (for mobile where
+// autoplay is blocked), subsequent taps skip. Uses capture so it intercepts
+// taps on the overlay children.
+function tapSplash(e){
+  const v=document.getElementById('splash-video');
+  if(!v)return skipIntro();
+  if(_splashPlaying){return skipIntro();}
+  if(!_splashTapped){
+    _splashTapped=true;
+    const overlay=document.getElementById('splash-tap');
+    if(overlay)overlay.style.display='none';
+    v.play().then(()=>{_splashPlaying=true;}).catch(()=>skipIntro());
+  }
 }
 document.addEventListener('DOMContentLoaded',()=>{
   const v=document.getElementById('splash-video');
   if(!v)return;
   v.addEventListener('ended',skipIntro);
+  v.addEventListener('playing',()=>{_splashPlaying=true;});
   // Force muted before play (iOS requirement) + try play explicitly
   v.muted=true;v.playsInline=true;
   var playPromise=v.play();
   if(playPromise&&playPromise.catch){
     playPromise.catch(function(){
-      // Autoplay blocked (Low Power Mode, old iOS, etc) — skip splash right away
-      setTimeout(skipIntro,100);
+      // Autoplay blocked (Low Power Mode, iOS Safari, etc) — show tap overlay
+      const overlay=document.getElementById('splash-tap');
+      if(overlay)overlay.style.display='flex';
+      // If user doesn't tap within 2s, skip automatically so they're not stuck
+      setTimeout(()=>{if(!_splashTapped)skipIntro();},2000);
     });
   }
-  // Hard ceiling: 8s no matter what
-  setTimeout(skipIntro,8000);
+  // Hard ceiling: 10s no matter what
+  setTimeout(skipIntro,10000);
 });
 </script>
 
@@ -248,26 +282,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=63"></script>
+<script src="js/app.js?v=64"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=63"></script>
-<script src="js/data.js?v=63"></script>
+<script src="js/supabase-client.js?v=64"></script>
+<script src="js/data.js?v=64"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=63"></script>
+<script src="js/lab.js?v=64"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=63"></script>
+<script src="js/search.js?v=64"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=63"></script>
-<script src="js/affiliates.js?v=63"></script>
-<script src="js/brands.js?v=63"></script>
-<script src="js/payments.js?v=63"></script>
-<script src="js/tasks.js?v=63"></script>
-<script src="js/pipeline.js?v=63"></script>
-<script src="js/import.js?v=63"></script>
-<script src="js/watchdog.js?v=63"></script>
-<script src="js/audit.js?v=63"></script>
-<script src="js/users.js?v=63"></script>
-<script src="js/settings.js?v=63"></script>
-<script src="js/copilot.js?v=63"></script>
+<script src="js/dashboard.js?v=64"></script>
+<script src="js/affiliates.js?v=64"></script>
+<script src="js/brands.js?v=64"></script>
+<script src="js/payments.js?v=64"></script>
+<script src="js/tasks.js?v=64"></script>
+<script src="js/pipeline.js?v=64"></script>
+<script src="js/import.js?v=64"></script>
+<script src="js/watchdog.js?v=64"></script>
+<script src="js/audit.js?v=64"></script>
+<script src="js/users.js?v=64"></script>
+<script src="js/settings.js?v=64"></script>
+<script src="js/copilot.js?v=64"></script>
 </body>
 </html>
