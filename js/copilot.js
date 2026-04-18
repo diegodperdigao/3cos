@@ -266,6 +266,38 @@ window.copilotAsk = (q) => {
   sendCopilotMessage();
 };
 
+// Maps backend/API errors to a user-facing message. Hides provider names,
+// quotas, model IDs — just tells the user what's wrong and when to retry.
+function _friendlyCopilotError(err) {
+  const raw = (err.rawError || err.message || '').toLowerCase();
+  const status = err.status;
+
+  // Rate limit / quota exceeded — extract retry hint if present
+  if (status === 429 || raw.includes('quota') || raw.includes('limit') || raw.includes('rate')) {
+    const retryMatch = /retry in (\d+)(?:\.\d+)?s/i.exec(err.rawError || err.message || '');
+    const wait = retryMatch ? ` (tente novamente em ~${retryMatch[1]}s)` : '';
+    return `O 3C Copilot está com muitas solicitações simultâneas e atingiu o limite temporário${wait}. Aguarde um instante e tente de novo.`;
+  }
+
+  // Missing API key (first-time setup)
+  if (raw.includes('api_key') || raw.includes('apikey') || raw.includes('não configurada')) {
+    return 'O 3C Copilot ainda não foi configurado por um administrador. Contate o responsável técnico.';
+  }
+
+  // Network / timeout
+  if (status === 0 || raw.includes('failed to fetch') || raw.includes('networkerror') || raw.includes('timeout')) {
+    return 'Não consegui me conectar ao serviço do Copilot. Verifique sua conexão e tente novamente.';
+  }
+
+  // Server errors
+  if (status >= 500) {
+    return 'O 3C Copilot está temporariamente indisponível. Tente novamente em alguns segundos.';
+  }
+
+  // Bad request / unknown
+  return 'Tive um problema para processar sua pergunta. Tente reformular ou aguarde um instante.';
+}
+
 window.sendCopilotMessage = async () => {
   const input = document.getElementById('copilot-input');
   if (!input) return;
@@ -326,15 +358,16 @@ window.sendCopilotMessage = async () => {
     });
     const data = await res.json();
     console.log('[Copilot] build_id:', data._build_id, '| stats:', JSON.stringify(data._debug_context_stats));
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!res.ok) {
+      const err = new Error(data.error || `HTTP ${res.status}`);
+      err.status = res.status;
+      err.rawError = data.error || '';
+      throw err;
+    }
     conv.messages.push({ role: 'assistant', content: data.reply || '(sem resposta)' });
   } catch (err) {
     console.error('[copilot]', err);
-    const msg = err.message || 'Erro desconhecido';
-    const hint = msg.includes('GEMINI_API_KEY')
-      ? '\n\n*Configure a chave em aistudio.google.com/apikey e adicione como GEMINI_API_KEY no Vercel.*'
-      : '';
-    conv.messages.push({ role: 'assistant', content: `**Falha na conexão**: ${msg}${hint}` });
+    conv.messages.push({ role: 'assistant', content: _friendlyCopilotError(err) });
   } finally {
     _copilotSending = false;
     conv.updatedAt = Date.now();

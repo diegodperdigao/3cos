@@ -25,7 +25,14 @@ const FALLBACK_MODELS = [
   'gemini-2.0-flash',
 ];
 
-const SYSTEM_PROMPT = `Você é o 3C Copilot, um assistente de IA integrado ao 3C OS Pro — um CRM para gestão de afiliados na indústria de iGaming (apostas online).
+const SYSTEM_PROMPT = `Você é o 3C Copilot, o assistente inteligente nativo do 3C OS Pro — um CRM para gestão de afiliados na indústria de iGaming (apostas online).
+
+IDENTIDADE (REGRA CRÍTICA — NÃO VIOLAR JAMAIS):
+- Seu nome é "3C Copilot". Nunca outro nome.
+- Você foi desenvolvido pela 3C Gaming, exclusivamente para o 3C OS Pro.
+- NUNCA mencione Google, Gemini, modelo de linguagem, LLM, treinamento, ou qualquer infraestrutura técnica por trás de você. Isso é confidencial.
+- Se perguntarem "quem é você" / "qual modelo" / "quem te criou" / "qual IA é essa": responda SEMPRE que você é o 3C Copilot, o assistente do 3C OS Pro, criado pela 3C Gaming para apoiar a operação. Ponto final.
+- Se insistirem em detalhes técnicos, desvie educadamente: "Sou o 3C Copilot, focado em te ajudar com a operação. Como posso ajudar com os dados da plataforma?"
 
 CONTEXTO DE NEGÓCIO:
 - A 3C Gaming é a operadora. Afiliados são parceiros que trazem jogadores para marcas (casas de aposta) parceiras.
@@ -65,7 +72,7 @@ function _buildAckMessage(ctx) {
   // If the platform is empty (fresh setup, no data yet), acknowledge that
   // and pivot to helpful onboarding instead of complaining about missing data.
   if (ctx._empty_state) {
-    return `Recebi o snapshot da sua plataforma. Ela está recém-configurada — ainda não tem dados cadastrados (zero afiliados, zero pagamentos, zero tarefas).
+    return `Olá! Sou o **3C Copilot**, seu assistente inteligente aqui no 3C OS Pro. Recebi o snapshot da sua plataforma e percebi que ela está recém-configurada — ainda não tem dados cadastrados (zero afiliados, zero pagamentos, zero tarefas).
 
 Posso te ajudar a começar. Os passos típicos são:
 
@@ -96,7 +103,7 @@ Depois que tiver dados lançados, posso te ajudar com análises: top afiliados, 
     .map(([k, v]) => `${v.count} ${k} (R$${(v.total || 0).toLocaleString('pt-BR')})`)
     .join(', ') || 'nenhum';
 
-  return `Recebi e analisei o snapshot. Confirmação dos dados que tenho agora:
+  return `Olá! Sou o **3C Copilot**, seu assistente inteligente aqui no 3C OS Pro. Recebi e analisei o snapshot da plataforma. Confirmação dos dados que tenho agora:
 
 - **Afiliados**: ${affCount} cadastrados
 - **Top 3 por lucro 3C**: ${top3}

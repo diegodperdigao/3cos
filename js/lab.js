@@ -68,10 +68,10 @@ window.daysSinceContact = (affiliate) => {
 window.lastContactHTML = (affiliate) => {
   const days = daysSinceContact(affiliate);
   if (days === null) {
-    return `<div class="last-contact lc-never" title="Nenhuma atividade registrada"><i data-lucide="clock"></i> Sem contato</div>`;
+    return `<div class="last-contact lc-never" title="Nenhuma atividade registrada no log"><i data-lucide="clock"></i> Sem interações</div>`;
   }
   const cls = days <= 7 ? 'lc-ok' : days <= 14 ? 'lc-warn' : 'lc-danger';
   const label = days === 0 ? 'hoje' : days === 1 ? 'ontem' : `há ${days} dias`;
-  return `<div class="last-contact ${cls}" title="Último registro no audit log"><i data-lucide="clock"></i> ${label}</div>`;
+  return `<div class="last-contact ${cls}" title="Última interação registrada no audit log"><i data-lucide="clock"></i> Última interação ${label}</div>`;
 };
 

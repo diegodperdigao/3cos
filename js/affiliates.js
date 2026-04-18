@@ -55,7 +55,9 @@ function renderAffs(list){
       </div>
       <div class="aff-foot">
         <div class="aff-casas">${brands.map(b=>`<div class="casa-chip" style="color:${STATE.brands[b]?.color};border-color:${STATE.brands[b]?.color}22;background:${STATE.brands[b]?.color}11">${b}</div>`).join('')}</div>
-        <div class="aff-contact"><i data-lucide="mail"></i>${a.contactEmail}</div>
+        <div class="aff-contact" title="${a.contactEmail||a.contactPhone||'Sem contato cadastrado'}">
+          <i data-lucide="${a.contactEmail?'mail':a.contactPhone?'phone':'user-x'}"></i>${a.contactEmail||a.contactPhone||'<span style="opacity:0.55">Sem e-mail</span>'}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -102,14 +104,14 @@ window.openAffDetail=id=>{
   </div>`:'';
 
   openModal(a.name,`
-    <div class="pills" style="margin-bottom:14px" id="aff-detail-tabs">
-      <button class="pill on" onclick="showAffTab('perfil',this)">Perfil</button>
-      <button class="pill" onclick="showAffTab('timeline',this)">Timeline</button>
-      <button class="pill" onclick="showAffTab('performance',this)">Performance</button>
+    <div class="pills aff-detail-tabs" style="margin-bottom:14px">
+      <button class="pill on" data-aff-tab="perfil" onclick="showAffTab('perfil',this)">Perfil</button>
+      <button class="pill" data-aff-tab="timeline" onclick="showAffTab('timeline',this)">Timeline</button>
+      <button class="pill" data-aff-tab="performance" onclick="showAffTab('performance',this)">Performance</button>
     </div>
 
     <!-- TAB: PERFIL -->
-    <div id="aff-tab-perfil">
+    <div data-aff-panel="perfil" id="aff-tab-perfil">
       <div style="margin-bottom:14px"><div class="dtl" style="margin-bottom:8px">Tags</div>
         <div class="tag-picker">
           ${(STATE.availableTags||[]).map(t=>{const on=(a.tags||[]).includes(t.id);return `<div class="tag-picker-item ${on?'selected':''}" style="background:${t.color}${on?'22':'10'};color:${t.color};border-color:${t.color}${on?'66':'22'}" onclick="toggleAffTag('${a.id}','${t.id}')"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}</div>`;}).join('')}
@@ -151,7 +153,7 @@ window.openAffDetail=id=>{
     </div>
 
     <!-- TAB: TIMELINE -->
-    <div id="aff-tab-timeline" style="display:none">
+    <div data-aff-panel="timeline" id="aff-tab-timeline" style="display:none">
       <div class="dtl" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
         Histórico Cronológico
         <button onclick="addCRMNote('${a.id}')" style="background:none;border:none;color:var(--theme);cursor:pointer;font-size:9px;font-weight:700;text-transform:uppercase">+ Nota</button>
@@ -175,7 +177,7 @@ window.openAffDetail=id=>{
     </div>
 
     <!-- TAB: PERFORMANCE -->
-    <div id="aff-tab-performance" style="display:none">
+    <div data-aff-panel="performance" id="aff-tab-performance" style="display:none">
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
         <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:14px 12px;text-align:center">
           <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">FTDs</div>
@@ -220,10 +222,15 @@ window.openAffDetail=id=>{
 };
 
 window.showAffTab=(tab,btn)=>{
-  btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
-  ['perfil','timeline','performance'].forEach(t=>{
-    const el=document.getElementById('aff-tab-'+t);if(el)el.style.display=t===tab?'block':'none';
+  // Scope the lookup to the modal body to avoid any ID collision on the page
+  const modal=btn.closest('.modal, #mbd, [role="dialog"]')||document.getElementById('mbd')||document;
+  const pills=btn.closest('.pills');
+  if(pills)pills.querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  modal.querySelectorAll('[data-aff-panel]').forEach(el=>{
+    el.style.display=(el.getAttribute('data-aff-panel')===tab)?'block':'none';
   });
+  if(typeof lucide!=='undefined')lucide.createIcons();
 };
 
 window.addCRMNote = (affiliateId) => {

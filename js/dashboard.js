@@ -105,10 +105,24 @@ function getDashDateRange(){
   return {from:null,to:null};
 }
 
+// Resolve a brand filter against STATE.brands, tolerating casing / whitespace
+// mismatches between the tab key and report.brand values. Falls back to the
+// original value if no lookup match — keeps the previous exact-match behavior.
+function _resolveBrandKey(brandFilter){
+  if(!brandFilter)return null;
+  const target=(brandFilter||'').toString().trim().toLowerCase();
+  const keys=Object.keys(STATE.brands||{});
+  const match=keys.find(k=>k.trim().toLowerCase()===target);
+  return match||brandFilter;
+}
+
 function getFilteredReports(brandFilter){
   const {from,to}=getDashDateRange();
   let reps=STATE.reports;
-  if(brandFilter)reps=reps.filter(r=>r.brand===brandFilter);
+  if(brandFilter){
+    const target=(brandFilter||'').toString().trim().toLowerCase();
+    reps=reps.filter(r=>(r.brand||'').toString().trim().toLowerCase()===target);
+  }
   if(from||to){
     reps=reps.filter(r=>{
       const d=new Date(r.date);
@@ -120,34 +134,68 @@ function getFilteredReports(brandFilter){
   return reps;
 }
 
+// Compute commission + 3C profit from a set of reports using each brand's
+// deal structure. Used for brand / date-filtered views where affiliate
+// rollups (STATE.affiliates.commission) aren't applicable.
+function _estimateRevFromReports(reps){
+  let comm=0,profit=0;
+  reps.forEach(r=>{
+    const brand=STATE.brands?.[r.brand]||STATE.brands?.[_resolveBrandKey(r.brand)];
+    if(!brand)return;
+    const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+(v||0),0):(r.qftd||0);
+    const nr=r.netRev||0;
+    const cpa=brand.cpa||(brand.levels?.[0]?.cpa)||0;
+    const rs=brand.rs||0;
+    const commThis=(q*cpa)+(nr*rs/100);
+    comm+=commThis;
+    profit+=Math.max(0,nr-commThis);
+  });
+  return {comm,profit};
+}
+
 window.refreshDash=()=>{
   const el=document.getElementById('dash-dynamic');if(!el)return;
   const brand=_dashBrand;
   const isAllTime=_dashDateRange==='all';
   const brands=brand==='all'?Object.keys(STATE.brands):[brand];
 
-  // Calculate data
+  // Calculate data — report-driven always, for consistency across views.
+  // When the view is "all time + all brands" we also cross-check against
+  // STATE.affiliates rollups to catch totals imported without daily breakdowns.
   let totFTD=0,totQFTD=0,totDep=0,totComm=0,totProfit=0,totRev=0;
   const agg={};brands.forEach(b=>{agg[b]={ftd:0,qftd:0,dep:0,netRev:0,affCount:new Set()};});
 
+  // Normalized per-brand aggregation into agg map (case-insensitive)
+  const brandKeyByLower={};Object.keys(STATE.brands||{}).forEach(k=>{brandKeyByLower[k.trim().toLowerCase()]=k;});
+  const _aggBucket=(rbrand)=>agg[brandKeyByLower[(rbrand||'').toString().trim().toLowerCase()]];
+
+  const scopedReps=getFilteredReports(brand==='all'?null:brand);
+  scopedReps.forEach(r=>{
+    const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+(v||0),0):(r.qftd||0);
+    totFTD+=r.ftd||0;totQFTD+=q;totDep+=r.deposits||0;totRev+=r.netRev||0;
+    const b=_aggBucket(r.brand);
+    if(b){b.ftd+=r.ftd||0;b.qftd+=q;b.dep+=r.deposits||0;b.netRev+=r.netRev||0;b.affCount.add(r.affiliateId);}
+  });
+  const {comm:estComm,profit:estProfit}=_estimateRevFromReports(scopedReps);
+  totComm=estComm;totProfit=estProfit;
+
+  // For "all + all time", prefer the affiliate rollups if they're larger —
+  // handles datasets imported with only totals (no per-day reports).
   if(isAllTime&&brand==='all'){
-    STATE.affiliates.forEach(a=>{totFTD+=a.ftds;totQFTD+=a.qftds;totDep+=a.deposits;totComm+=a.commission;totProfit+=a.profit;});
-    STATE.reports.forEach(r=>{
-      if(!agg[r.brand])return;
-      const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+v,0):(r.qftd||0);
-      agg[r.brand].ftd+=r.ftd||0;agg[r.brand].qftd+=q;agg[r.brand].dep+=r.deposits||0;agg[r.brand].netRev+=r.netRev||0;
-      agg[r.brand].affCount.add(r.affiliateId);
+    let affFTD=0,affQFTD=0,affDep=0,affComm=0,affProfit=0,affRev=0;
+    STATE.affiliates.forEach(a=>{
+      affFTD+=a.ftds||0;affQFTD+=a.qftds||0;affDep+=a.deposits||0;
+      affComm+=a.commission||0;affProfit+=a.profit||0;affRev+=a.netRev||0;
     });
-  }else{
-    const reps=getFilteredReports(brand==='all'?null:brand);
-    reps.forEach(r=>{
-      const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+v,0):(r.qftd||0);
-      totFTD+=r.ftd||0;totQFTD+=q;totDep+=r.deposits||0;totRev+=r.netRev||0;
-      if(agg[r.brand]){agg[r.brand].ftd+=r.ftd||0;agg[r.brand].qftd+=q;agg[r.brand].dep+=r.deposits||0;
-        agg[r.brand].netRev+=r.netRev||0;agg[r.brand].affCount.add(r.affiliateId);}
-    });
+    if(affFTD>totFTD)totFTD=affFTD;
+    if(affQFTD>totQFTD)totQFTD=affQFTD;
+    if(affDep>totDep)totDep=affDep;
+    if(affRev>totRev)totRev=affRev;
+    if(affComm>totComm)totComm=affComm;
+    if(affProfit>totProfit)totProfit=affProfit;
   }
-  const br=brand==='all'?null:STATE.brands[brand];
+
+  const br=brand==='all'?null:STATE.brands[_resolveBrandKey(brand)];
   const conv=pct(totQFTD,totFTD);
 
   const {from,to}=getDashDateRange();
@@ -189,27 +237,29 @@ window.refreshDash=()=>{
   }
 
   el.innerHTML=`
-    <!-- KPIs -->
-    <div class="kpi-row" style="margin-bottom:22px">
-      <div class="kpi" style="--kpi-c:#ec4899">
+    <!-- KPIs — sempre os mesmos 4 para qualquer visão (total, por marca, por período) -->
+    <div class="kpi-row" style="margin-bottom:14px">
+      <div class="kpi" style="--kpi-c:#ec4899" title="Qualified First Time Deposits no período">
         <div class="kpi-icon-row"><i data-lucide="users"></i><span class="kpi-lbl">QFTDs</span></div>
         <div class="kpi-val">${totQFTD}</div><div class="kpi-sub">${totFTD} FTDs · ${dateLbl}</div></div>
-      <div class="kpi" style="--kpi-c:var(--blue)">
+      <div class="kpi" style="--kpi-c:var(--blue)" title="Volume depositado pelos jogadores no período">
         <div class="kpi-icon-row"><i data-lucide="trending-down"></i><span class="kpi-lbl">Depósitos</span></div>
         <div class="kpi-val sm">${fc(totDep)}</div><div class="kpi-sub">Volume depositado</div></div>
-      ${isAllTime&&brand==='all'?`
-      <div class="kpi" style="--kpi-c:var(--red)">
-        <div class="kpi-icon-row"><i data-lucide="credit-card"></i><span class="kpi-lbl">Comissão</span></div>
-        <div class="kpi-val sm">${fc(totComm)}</div><div class="kpi-sub">CPA + Rev Share</div></div>
-      <div class="kpi" style="--kpi-c:var(--green)">
-        <div class="kpi-icon-row"><i data-lucide="diamond"></i><span class="kpi-lbl">Lucro 3C</span></div>
-        <div class="kpi-val sm">${fc(totProfit)}</div><div class="kpi-sub">Bruto: ${fc(totComm+totProfit)}</div></div>`:`
-      <div class="kpi" style="--kpi-c:var(--red)">
+      <div class="kpi" style="--kpi-c:var(--red)" title="Net Revenue = receita líquida gerada à marca (depósitos menos bônus e chargebacks)">
         <div class="kpi-icon-row"><i data-lucide="activity"></i><span class="kpi-lbl">Net Revenue</span></div>
         <div class="kpi-val sm">${fc(totRev)}</div><div class="kpi-sub">Receita líquida</div></div>
-      <div class="kpi" style="--kpi-c:var(--green)">
+      <div class="kpi" style="--kpi-c:var(--green)" title="FTD → QFTD (taxa de qualificação dos jogadores trazidos)">
         <div class="kpi-icon-row"><i data-lucide="percent"></i><span class="kpi-lbl">Conversão</span></div>
-        <div class="kpi-val">${conv}%</div><div class="kpi-sub">FTD → QFTD</div></div>`}
+        <div class="kpi-val">${conv}%</div><div class="kpi-sub">FTD → QFTD</div></div>
+    </div>
+    <!-- Financeiro secundário — sempre presente, computado de reports + deals quando filtrado -->
+    <div class="kpi-row" style="margin-bottom:22px">
+      <div class="kpi" style="--kpi-c:var(--amber)" title="Comissão total a pagar aos afiliados no período (CPA + Rev Share)">
+        <div class="kpi-icon-row"><i data-lucide="credit-card"></i><span class="kpi-lbl">Comissão</span></div>
+        <div class="kpi-val sm">${fc(totComm)}</div><div class="kpi-sub">CPA + Rev Share</div></div>
+      <div class="kpi" style="--kpi-c:var(--purple)" title="Lucro 3C = Net Revenue recebido da marca menos comissão paga aos afiliados">
+        <div class="kpi-icon-row"><i data-lucide="diamond"></i><span class="kpi-lbl">Lucro 3C</span></div>
+        <div class="kpi-val sm">${fc(totProfit)}</div><div class="kpi-sub">Net Rev − Comissão</div></div>
     </div>
 
     <!-- INTELLIGENCE -->
