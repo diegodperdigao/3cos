@@ -237,8 +237,44 @@ function renderCopilotMessage(m) {
   const isUser = m.role === 'user';
   const who = isUser ? 'cp-msg-user' : 'cp-msg-assist';
   const icon = !isUser ? `<div class="cp-msg-avatar">${COPILOT_ICON_SVG}</div>` : '';
-  const content = formatMarkdown(m.content);
+  // Last-line defense: strip raw Gemini/API error patterns from assistant
+  // messages before rendering. Protects against historical messages saved
+  // in localStorage before the friendly-error mapping was introduced.
+  const text = !isUser ? _sanitizeCopilotMessage(m.content) : m.content;
+  const content = formatMarkdown(text);
   return `<div class="cp-msg ${who}">${icon}<div class="cp-bubble">${content}</div></div>`;
+}
+
+// Detects raw API / provider error text in an assistant message and swaps it
+// for a friendly Portuguese message. Runs at render time so stale messages
+// in the conversation history don't keep leaking infrastructure details.
+function _sanitizeCopilotMessage(content) {
+  if (!content) return content;
+  const s = String(content);
+  const lower = s.toLowerCase();
+
+  const rawErrorPatterns = [
+    /quota exceeded/i,
+    /generativelanguage\.googleapis\.com/i,
+    /generate_content_free_tier/i,
+    /please retry in [\d.]+s/i,
+    /gemini[- ]\d/i,
+    /rate[\s-]?limit/i,
+    /rpc error/i,
+    /resource_exhausted/i,
+    /falha na conexão.*:/i,  // old "**Falha na conexão**: ..." prefix
+  ];
+
+  const hitsRawError = rawErrorPatterns.some(re => re.test(s));
+  if (!hitsRawError) return s;
+
+  const retryMatch = /retry in (\d+)(?:\.\d+)?s/i.exec(s);
+  const wait = retryMatch ? ` (tente novamente em ~${retryMatch[1]}s)` : '';
+
+  if (lower.includes('quota') || lower.includes('limit') || lower.includes('rate') || lower.includes('retry')) {
+    return `O 3C Copilot está com muitas solicitações e atingiu o limite temporário${wait}. Aguarde um instante e tente de novo.`;
+  }
+  return 'O 3C Copilot está temporariamente indisponível. Tente novamente em alguns segundos.';
 }
 
 function formatMarkdown(text) {

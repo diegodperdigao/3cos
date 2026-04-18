@@ -195,6 +195,39 @@ window.refreshDash=()=>{
     if(affProfit>totProfit)totProfit=affProfit;
   }
 
+  // Brand-filtered fallback: when there are no matching reports for the
+  // selected brand + period, derive from affiliate-level data for affiliates
+  // that have this brand in their deals. Best-effort — we don't know the
+  // per-brand breakdown at the affiliate level, so we prorate by deal count.
+  if(brand!=='all'&&scopedReps.length===0&&isAllTime){
+    const brandKey=_resolveBrandKey(brand);
+    const affsWithBrand=STATE.affiliates.filter(a=>a.deals&&(a.deals[brandKey]||a.deals[brand]));
+    console.log('[dashboard] Brand filter fallback —',brand,': 0 reports, using',affsWithBrand.length,'affiliate(s) with this brand');
+    affsWithBrand.forEach(a=>{
+      const brandCount=Object.keys(a.deals||{}).length||1;
+      const ratio=1/brandCount;
+      totFTD+=(a.ftds||0)*ratio;
+      totQFTD+=(a.qftds||0)*ratio;
+      totDep+=(a.deposits||0)*ratio;
+      totRev+=(a.netRev||0)*ratio;
+      totComm+=(a.commission||0)*ratio;
+      totProfit+=(a.profit||0)*ratio;
+    });
+    totFTD=Math.round(totFTD);totQFTD=Math.round(totQFTD);
+    totDep=Math.round(totDep*100)/100;totRev=Math.round(totRev*100)/100;
+    totComm=Math.round(totComm*100)/100;totProfit=Math.round(totProfit*100)/100;
+  }
+
+  // Debug trace — shows exactly what the filter produced
+  if(brand!=='all'){
+    console.log('[dashboard] brand filter:',brand,'| reports matched:',scopedReps.length,
+      '| totals: FTD',totFTD,'QFTD',totQFTD,'Dep',totDep,'Rev',totRev);
+    if(scopedReps.length===0&&STATE.reports?.length>0){
+      const uniqueBrands=[...new Set(STATE.reports.map(r=>r.brand))].slice(0,10);
+      console.warn('[dashboard] Nenhum report match.  Marcas encontradas em reports:',uniqueBrands,'| Filtro:',brand);
+    }
+  }
+
   const br=brand==='all'?null:STATE.brands[_resolveBrandKey(brand)];
   const conv=pct(totQFTD,totFTD);
 
@@ -236,9 +269,10 @@ window.refreshDash=()=>{
     }).filter(Boolean).sort((a,b)=>b.deposits-a.deposits);
   }
 
-  // Empty-period detection: when the scope has no reports AND the affiliate
-  // rollups also produced zeros, surface a hint instead of just showing zeros.
-  const noData = (scopedReps.length === 0) && (totFTD + totQFTD + totDep + totRev === 0);
+  // Empty-period detection: only show the hint when BOTH report scope is
+  // empty AND the affiliate fallback also produced zeros (i.e. genuinely
+  // no data anywhere for this scope).
+  const noData = (scopedReps.length === 0) && (totFTD + totQFTD + totDep + totRev + totComm === 0);
   let emptyHint = '';
   if (noData) {
     const suggestion = (STATE.reports || []).length === 0
