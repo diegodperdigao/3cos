@@ -451,7 +451,8 @@ window.saveDisplayName = () => {
 };
 
 // Avatar upload: reads as Data URL and stores in STATE.user.avatar.
-// Updates hub avatar + module header avatar.
+// Also syncs STATE.users[] so the avatar appears in other places (audit,
+// mentions, etc) and pushes the change to Supabase profiles.
 window.uploadAvatar = (event) => {
   const file = event.target?.files?.[0];
   if (!file) return;
@@ -460,10 +461,18 @@ window.uploadAvatar = (event) => {
   reader.onload = (e) => {
     const url = e.target.result;
     STATE.user.avatar = url;
+    // Sync to STATE.users so other views (e.g. userAvatar by name) pick it up
+    const match = (STATE.users || []).find(u => u.id === STATE.user.id || u.email === STATE.user.email);
+    if (match) match.avatar = url;
     saveToLocal();
-    // Refresh visible avatars
+    // Push to Supabase profiles if available
+    if (window.sb && window.Data?.upsert) {
+      Data.upsert('profiles', { id: STATE.user.id, name: STATE.user.name, email: STATE.user.email, role: STATE.user.role, status: STATE.user.status, avatar: url })
+        .catch(e => console.warn('[uploadAvatar] profile sync failed:', e));
+    }
+    // Refresh visible avatars in the hub header
     const hubAv = document.getElementById('hub-user-avatar');
-    if (hubAv) hubAv.innerHTML = `<img src="${url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+    if (hubAv && window.userAvatar) hubAv.innerHTML = window.userAvatar(STATE.user, 32);
     // Re-render settings to show new avatar
     rerenderSettings();
     logAction('Avatar atualizado', '');

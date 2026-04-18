@@ -886,7 +886,7 @@ function showHub(){
     document.getElementById('hub-urole').textContent=STATE.user.title||ROLES[STATE.user.role]?.label||STATE.user.role;
     // Avatar (foto se tiver URL, senão iniciais coloridas)
     const avEl=document.getElementById('hub-user-avatar');
-    if (avEl) avEl.innerHTML=window.userAvatar?window.userAvatar(STATE.user,34):'';
+    if (avEl) avEl.innerHTML=window.userAvatar?window.userAvatar(STATE.user,32):'';
     document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
     const hub=document.getElementById('hub');hub.style.display='flex';
     setTimeout(()=>hub.style.opacity='1',50);
