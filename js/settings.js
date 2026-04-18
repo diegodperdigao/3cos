@@ -123,11 +123,18 @@ function bSettings(el){
           </div>
         </div>
         <div class="st-card">
-          <div class="st-row st-row-col">
-            <div class="st-label">Nome de exibição</div>
-            <div style="display:flex;gap:8px;width:100%">
-              <input type="text" class="fi" id="st-name" value="${escapeHTML(user.name||'')}" style="flex:1">
-              <button class="btn btn-theme" onclick="saveDisplayName()"><i data-lucide="check"></i> Salvar</button>
+          <div class="st-row" style="gap:16px;align-items:center">
+            <div class="st-avatar-wrap" onclick="document.getElementById('st-avatar-input').click()" title="Clique para alterar foto">
+              ${window.userAvatar?userAvatar(user,52):`<div style="width:52px;height:52px;border-radius:50%;background:var(--theme);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px">${(user.name||'?')[0]}</div>`}
+              <div class="st-avatar-overlay"><i data-lucide="camera"></i></div>
+              <input type="file" id="st-avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(event)">
+            </div>
+            <div style="flex:1">
+              <div class="st-label">Nome de exibição</div>
+              <div style="display:flex;gap:8px;width:100%;margin-top:4px">
+                <input type="text" class="fi" id="st-name" value="${escapeHTML(user.name||'')}" style="flex:1">
+                <button class="btn btn-theme" onclick="saveDisplayName()"><i data-lucide="check"></i> Salvar</button>
+              </div>
             </div>
           </div>
           <div class="st-divider"></div>
@@ -441,6 +448,28 @@ window.saveDisplayName = () => {
   saveToLocal();
   logAction('Nome atualizado', `Novo nome: ${name}`);
   toast('Nome atualizado', 's');
+};
+
+// Avatar upload: reads as Data URL and stores in STATE.user.avatar.
+// Updates hub avatar + module header avatar.
+window.uploadAvatar = (event) => {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { toast('Imagem muito grande (máx. 2MB)', 'e'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const url = e.target.result;
+    STATE.user.avatar = url;
+    saveToLocal();
+    // Refresh visible avatars
+    const hubAv = document.getElementById('hub-user-avatar');
+    if (hubAv) hubAv.innerHTML = `<img src="${url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+    // Re-render settings to show new avatar
+    rerenderSettings();
+    logAction('Avatar atualizado', '');
+    toast('Avatar atualizado', 's');
+  };
+  reader.readAsDataURL(file);
 };
 
 window.changePassword = async () => {

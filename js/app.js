@@ -410,6 +410,35 @@ window.toast=toast;
 // Opens / closes the user avatar dropdown menus (one on the hub, one on each
 // module header). Clicking outside closes it. Uses a module-level listener
 // registered once per open.
+// Lock-screen theme selector: applies THEME_MAP and persists so the choice
+// survives page reload. Works BEFORE login (STATE.user is null).
+window.setLockTheme = (themeKey) => {
+  const THEME_MAP = window.THEME_MAP || {
+    'default-dark': { edition: '', theme: 'dark' },
+    'default-light': { edition: '', theme: 'light' },
+    'mono-dark': { edition: 'mono', theme: 'dark' },
+    'bento-dark': { edition: 'bento', theme: 'dark' },
+    'bento-light': { edition: 'bento', theme: 'light' },
+    'meridian-dark': { edition: 'meridian', theme: 'dark' },
+  };
+  const pair = THEME_MAP[themeKey];
+  if (!pair) return;
+  const root = document.documentElement;
+  root.setAttribute('data-theme', pair.theme);
+  if (pair.edition) root.setAttribute('data-edition', pair.edition);
+  else root.removeAttribute('data-edition');
+  localStorage.setItem('3cos_lock_theme', themeKey);
+  // highlight active swatch
+  document.querySelectorAll('.lock-theme-btn').forEach(b => {
+    b.classList.toggle('on', b.getAttribute('data-lt') === themeKey);
+  });
+};
+// Restore lock-screen theme choice on load (before login)
+(function(){
+  const saved = localStorage.getItem('3cos_lock_theme');
+  if (saved) window.setLockTheme(saved);
+})();
+
 function _toggleDropdown(ddId, event) {
   event.stopPropagation();
   const dd = document.getElementById(ddId);
@@ -1029,7 +1058,6 @@ function modHdr(label){
     <div class="mod-hdr-l">
       <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
       <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
-      ${STATE.betaMode?'<span class="hdr-beta-tag" title="Modo Beta ativo">Beta</span>':''}
     </div>
     <div class="mod-hdr-c">
       <div class="search-pill search-pill-sm" onclick="focusSearchInput(this)">
@@ -1044,8 +1072,8 @@ function modHdr(label){
       </div>
     </div>
     <div class="mod-hdr-r">
-      <button class="hdr-icon-btn" onclick="toggleBetaMode()" title="Alternar modo Beta"><i data-lucide="flask-conical"></i></button>
-      <span class="hdr-sync-icon" title="Sincronizado com a nuvem"><i data-lucide="cloud"></i></span>
+      <button class="hdr-icon-btn ${STATE.betaMode?'on':''}" onclick="toggleBetaMode()" title="Alternar modo Beta"><i data-lucide="flask-conical"></i></button>
+      <span class="hdr-sync-icon" title="Sincronizado com a nuvem" style="display:none"><i data-lucide="cloud"></i></span>
       <button class="hdr-icon-btn" onclick="toggleActionCenter()" title="Alertas"><i data-lucide="bell"></i></button>
       <button class="hdr-icon-btn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="sun"></i></button>
       <button class="hdr-icon-btn" onclick="goBack()" title="Voltar ao hub"><i data-lucide="grid"></i></button>

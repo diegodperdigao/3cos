@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=62">
+<link rel="stylesheet" href="css/styles.css?v=63">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -88,9 +88,14 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="lock-hint">Acesso seguro</div>
     <div id="lerr" class="lock-err"></div>
     <div class="lock-reset" onclick="toast('Email enviado!','i')">Esqueci minha senha</div>
-    <button onclick="toggleTheme()" style="margin-top:16px;background:transparent;border:none;cursor:pointer;color:var(--text3);transition:color 0.15s;padding:8px" title="Alternar tema">
-      <i data-lucide="sun" style="width:18px;height:18px"></i>
-    </button>
+    <div class="lock-theme-row">
+      <button class="lock-theme-btn" onclick="setLockTheme('default-dark')" data-lt="default-dark"><span class="lock-theme-swatch" style="background:#1a1a2e"></span></button>
+      <button class="lock-theme-btn" onclick="setLockTheme('default-light')" data-lt="default-light"><span class="lock-theme-swatch" style="background:#f1f5f9"></span></button>
+      <button class="lock-theme-btn" onclick="setLockTheme('mono-dark')" data-lt="mono-dark"><span class="lock-theme-swatch" style="background:#111;border:1px solid #555"></span></button>
+      <button class="lock-theme-btn" onclick="setLockTheme('bento-dark')" data-lt="bento-dark"><span class="lock-theme-swatch" style="background:#18181b;border:1px solid #ff9f80"></span></button>
+      <button class="lock-theme-btn" onclick="setLockTheme('bento-light')" data-lt="bento-light"><span class="lock-theme-swatch" style="background:#fafaf5;border:1px solid #f97316"></span></button>
+      <button class="lock-theme-btn" onclick="setLockTheme('meridian-dark')" data-lt="meridian-dark"><span class="lock-theme-swatch" style="background:#151210;border:1px solid #c0392b"></span></button>
+    </div>
   </div>
 </div>
 
@@ -243,26 +248,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=62"></script>
+<script src="js/app.js?v=63"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=62"></script>
-<script src="js/data.js?v=62"></script>
+<script src="js/supabase-client.js?v=63"></script>
+<script src="js/data.js?v=63"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=62"></script>
+<script src="js/lab.js?v=63"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=62"></script>
+<script src="js/search.js?v=63"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=62"></script>
-<script src="js/affiliates.js?v=62"></script>
-<script src="js/brands.js?v=62"></script>
-<script src="js/payments.js?v=62"></script>
-<script src="js/tasks.js?v=62"></script>
-<script src="js/pipeline.js?v=62"></script>
-<script src="js/import.js?v=62"></script>
-<script src="js/watchdog.js?v=62"></script>
-<script src="js/audit.js?v=62"></script>
-<script src="js/users.js?v=62"></script>
-<script src="js/settings.js?v=62"></script>
-<script src="js/copilot.js?v=62"></script>
+<script src="js/dashboard.js?v=63"></script>
+<script src="js/affiliates.js?v=63"></script>
+<script src="js/brands.js?v=63"></script>
+<script src="js/payments.js?v=63"></script>
+<script src="js/tasks.js?v=63"></script>
+<script src="js/pipeline.js?v=63"></script>
+<script src="js/import.js?v=63"></script>
+<script src="js/watchdog.js?v=63"></script>
+<script src="js/audit.js?v=63"></script>
+<script src="js/users.js?v=63"></script>
+<script src="js/settings.js?v=63"></script>
+<script src="js/copilot.js?v=63"></script>
 </body>
 </html>
