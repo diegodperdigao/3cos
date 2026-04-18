@@ -19,9 +19,21 @@ function bPayments(el){
   const lateCount=byStatus.atrasado?.count||0;
   const pend=(byStatus.pendente?.sum||0)+(byStatus.aprovado?.sum||0)+(byStatus.ajuste?.sum||0);
 
+  const noPayments=STATE.payments.length===0;
+  const emptyBanner=noPayments?`
+    <div class="empty-banner" style="display:flex;align-items:center;gap:16px;padding:18px 20px;background:linear-gradient(135deg, rgba(var(--theme-rgb,232,1,4),0.08), rgba(var(--theme-rgb,232,1,4),0.02));border:1px solid var(--gb2);border-radius:var(--radius);margin-bottom:20px">
+      <div style="width:42px;height:42px;border-radius:12px;background:var(--theme-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--theme)"><i data-lucide="zap"></i></div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:13px;margin-bottom:3px">Nenhum pagamento cadastrado ainda</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.5">Execute um <strong>Fechamento</strong> para gerar os pagamentos do mês automaticamente, ou crie manualmente na aba <strong>Pagamentos</strong>.</div>
+      </div>
+      <button class="btn btn-theme" onclick="showPayTab('closing',document.querySelector('#pay-tabs .tab'))" style="flex-shrink:0"><i data-lucide="play"></i> Executar Fechamento</button>
+    </div>`:'';
+
   el.innerHTML=modHdr('Financeiro — Pagamentos')+`<div class="mod-body">
     ${heroHTML('payments','Financeiro','Gestão Financeira','Aprovação, recusa e comissões por afiliado')}
     <div class="mod-main">
+      ${emptyBanner}
       <div class="kpi-row">
         <div class="kpi" style="--kpi-c:var(--red);cursor:pointer" onclick="document.querySelector('[onclick*=&quot;pilPy(\\'vencido\\'&quot;]')?.click()">
           <div class="kpi-icon-row"><i data-lucide="alert-octagon"></i><span class="kpi-lbl">Vencidos</span></div>

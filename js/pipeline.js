@@ -10,6 +10,7 @@ function bPipeline(el){
         <div class="sec-lbl">Pipeline Kanban</div>
         <div class="sec-actions">
           <button class="btn btn-outline" onclick="openManageStages()"><i data-lucide="settings"></i> Editar Etapas</button>
+          ${STATE.affiliates.length>0&&STATE.pipeline.cards.length===0?`<button class="btn btn-outline" onclick="importAffiliatesToPipeline()"><i data-lucide="download"></i> Importar Afiliados</button>`:''}
           <button class="btn btn-theme" onclick="openAddPipelineCard()"><i data-lucide="plus"></i> Novo Lead</button>
         </div>
       </div>
@@ -483,5 +484,49 @@ window.saveStages=()=>{
   STATE.pipeline.stages=newStages;
   logAction('Pipeline: etapas atualizadas',`${newStages.length} etapas`);
   saveToLocal();closeModal();renderKanban();toast('Etapas atualizadas!');
+};
+
+// Bulk-import existing affiliates into the pipeline. Auto-buckets into
+// stages based on affiliate status + activity (active → "Ativo" stage,
+// inactive → "Inativo", no FTDs → "Lead", others → "Negociação"). Skips
+// any affiliate already present as a pipeline card.
+window.importAffiliatesToPipeline=()=>{
+  const stages=STATE.pipeline.stages;
+  const findStage=(name)=>stages.find(s=>s.name.toLowerCase()===name.toLowerCase())?.id;
+  const leadStage=findStage('Lead')||stages[0]?.id;
+  const negotiationStage=findStage('Negociação')||stages[1]?.id||leadStage;
+  const activeStage=findStage('Ativo')||stages[stages.length-2]?.id||leadStage;
+  const inactiveStage=findStage('Inativo')||stages[stages.length-1]?.id||leadStage;
+
+  const existingAffIds=new Set(STATE.pipeline.cards.map(c=>c.affiliateId));
+  const toImport=STATE.affiliates.filter(a=>!existingAffIds.has(a.id));
+  if(!toImport.length)return toast('Todos os afiliados já estão no pipeline','w');
+
+  const preview=toImport.slice(0,6).map(a=>`• ${a.name}`).join('\n');
+  const extra=toImport.length>6?`\n• ...e mais ${toImport.length-6}`:'';
+  if(!confirm(`Importar ${toImport.length} afiliado(s) para o pipeline?\n\n${preview}${extra}\n\nA alocação inicial será automática por status/atividade.`))return;
+
+  let added=0;
+  toImport.forEach(a=>{
+    let stageId;
+    if(a.status==='inativo')stageId=inactiveStage;
+    else if((a.ftds||0)===0)stageId=leadStage;
+    else if(a.status==='ativo'&&(a.ftds||0)>0)stageId=activeStage;
+    else stageId=negotiationStage;
+
+    STATE.pipeline.cards.push({
+      id:'pc'+Date.now()+'_'+a.id,
+      affiliateId:a.id,
+      affiliateName:a.name,
+      stageId,
+      value:a.commission||0,
+      notes:`Importado do módulo Afiliados em ${new Date().toLocaleDateString('pt-BR')}`,
+      createdAt:new Date().toISOString(),
+    });
+    added++;
+  });
+
+  logAction('Pipeline: importação em massa',`${added} afiliado(s) → funil`);
+  saveToLocal();renderKanban();toast(`${added} afiliado(s) adicionados ao pipeline`);
 };
 

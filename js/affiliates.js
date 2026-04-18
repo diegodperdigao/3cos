@@ -22,6 +22,7 @@ function bAffs(el){
       <div class="pills pills-tags" style="margin-top:6px">
         <div class="pills-lbl">Tags</div>
         ${(STATE.availableTags||[]).map(t=>{const count=(STATE.affiliates||[]).filter(a=>(a.tags||[]).includes(t.id)).length;return `<button class="pill pill-tag" style="--tag-c:${t.color}" onclick="applyTagFilter('${t.id}',this)"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}<span class="pill-count">${count}</span></button>`;}).join('')}
+        <button class="pill" onclick="autoSuggestTags()" style="margin-left:auto;color:var(--theme);border-color:var(--theme-b)" title="Sugere tags automaticamente baseado em métricas dos afiliados"><i data-lucide="sparkles" style="width:10px;height:10px;vertical-align:-1px"></i> Auto-classificar</button>
       </div>
       <div class="aff-grid" id="aff-grid"></div>
     </div></div>`;
@@ -487,5 +488,86 @@ window.deleteAff=id=>{
     logAction('Afiliado excluído',name);saveToLocal();closeModal();
     renderAffs(_affTypeF?STATE.affiliates.filter(x=>x.contractType===_affTypeF):STATE.affiliates);
     toast('Afiliado excluído!');}
+};
+
+// Suggests tags automatically based on affiliate metrics:
+// • "Top Performer" — top 20% by commission (or by profit when commission is zero)
+// • "Escala" — commission growing MoM OR top 20% by FTDs
+// • "VIP" — profit > threshold (top 10%)
+// • "Novo" — created < 60 days ago
+// • "Em Risco" — active affiliate with no FTDs in last 30 days
+// Pre-existing manual tags are preserved; only missing matches are added.
+window.autoSuggestTags = () => {
+  const affs = STATE.affiliates || [];
+  const tags = STATE.availableTags || [];
+  if (!affs.length) return toast('Nenhum afiliado para classificar', 'w');
+  if (!tags.length) return toast('Cadastre tags antes de usar a auto-classificação', 'w');
+
+  const findTag = (name) => tags.find(t => t.name.toLowerCase().includes(name.toLowerCase()));
+  const tagTop = findTag('top performer') || findTag('top');
+  const tagEscala = findTag('escala');
+  const tagVIP = findTag('vip');
+  const tagNovo = findTag('novo');
+  const tagRisco = findTag('em risco') || findTag('risco');
+
+  // Compute thresholds
+  const byCommission = [...affs].sort((a, b) => (b.commission || 0) - (a.commission || 0));
+  const byProfit = [...affs].sort((a, b) => (b.profit || 0) - (a.profit || 0));
+  const byFtds = [...affs].sort((a, b) => (b.ftds || 0) - (a.ftds || 0));
+  const top20Commission = new Set(byCommission.slice(0, Math.max(1, Math.ceil(affs.length * 0.2))).map(a => a.id));
+  const top10Profit = new Set(byProfit.slice(0, Math.max(1, Math.ceil(affs.length * 0.1))).map(a => a.id));
+  const top20Ftds = new Set(byFtds.slice(0, Math.max(1, Math.ceil(affs.length * 0.2))).map(a => a.id));
+
+  // Recent activity map (last 30 days, per affiliate)
+  const cutoff = new Date(Date.now() - 30 * 86400000);
+  const recentActivity = {};
+  (STATE.reports || []).forEach(r => {
+    if (!r.affiliateId || !r.date) return;
+    if (new Date(r.date) >= cutoff && (r.ftd || 0) > 0) recentActivity[r.affiliateId] = true;
+  });
+
+  // Compute proposed changes WITHOUT mutating state yet
+  const proposed = []; // { affiliate, tagIds: [], tagNames: [] }
+  affs.forEach(a => {
+    const currentTags = a.tags || [];
+    const toAdd = [];
+
+    const mark = (cond, tag) => {
+      if (!cond || !tag || currentTags.includes(tag.id) || toAdd.some(t => t.id === tag.id)) return;
+      toAdd.push(tag);
+    };
+
+    mark(top20Commission.has(a.id), tagTop);
+    mark(top10Profit.has(a.id), tagVIP);
+    mark(top20Ftds.has(a.id) && (a.ftds || 0) > 0, tagEscala);
+
+    const createdAt = a.createdAt ? new Date(a.createdAt) : null;
+    const isNew = createdAt && (Date.now() - createdAt.getTime()) < 60 * 86400000;
+    mark(isNew, tagNovo);
+
+    const isActive = a.status === 'ativo' && (a.ftds || 0) > 0;
+    mark(isActive && !recentActivity[a.id], tagRisco);
+
+    if (toAdd.length) proposed.push({ affiliate: a, tags: toAdd });
+  });
+
+  if (!proposed.length) return toast('Todos os afiliados já estão classificados', 'i');
+
+  const preview = proposed.slice(0, 5).map(p => `• ${p.affiliate.name}: ${p.tags.map(t => t.name).join(', ')}`).join('\n');
+  const more = proposed.length > 5 ? `\n• ...e mais ${proposed.length - 5} afiliados` : '';
+  if (!confirm(`Adicionar ${proposed.length} classificação(ões) automática(s)?\n\n${preview}${more}\n\nTags manuais existentes serão mantidas.`)) return;
+
+  // Apply now that user confirmed
+  proposed.forEach(p => {
+    if (!p.affiliate.tags) p.affiliate.tags = [];
+    p.tags.forEach(t => { if (!p.affiliate.tags.includes(t.id)) p.affiliate.tags.push(t.id); });
+  });
+
+  logAction('Tags: auto-classificação', `${proposed.length} afiliado(s) classificado(s)`);
+  saveToLocal();
+  // Refresh module to show new tag counts + pills
+  const modEl = document.getElementById('mod-affiliates');
+  if (modEl) bAffs(modEl);
+  toast(`${changes.length} afiliado(s) classificado(s)`, 's');
 };
 

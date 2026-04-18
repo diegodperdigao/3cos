@@ -571,19 +571,134 @@ function updateActionCenter() {
     }
   }
 
-  const recent = STATE.auditLog.slice(0, 4);
-  html += `
-    <div>
-      <div class="ac-section-title"><i data-lucide="radio"></i> Radar da Equipe</div>
-      ${recent.length ? recent.map(a => `
-        <div class="ac-card" style="cursor:default">
-          <div class="ac-card-title" style="margin-bottom:4px">${a.action}</div>
-          <div class="ac-card-sub"><span>${a.user}</span><span>${a.time.split(' ')[0]}</span></div>
-        </div>`).join('') : '<div style="font-size:10px;color:var(--text3)">Sem atividade recente.</div>'}
-    </div>`;
+  // ── PROACTIVE ALERTS (distinct from Audit: actionable, not historical) ──
+  const alerts = _computeActionAlerts();
+  if (alerts.length) {
+    html += `
+      <div>
+        <div class="ac-section-title"><i data-lucide="alert-triangle"></i> Alertas Acionáveis</div>
+        ${alerts.map(al => `
+          <div class="ac-card ac-notif-clickable" onclick="${al.action}" style="border-left:3px solid var(--${al.color})">
+            <div class="ac-card-top">
+              <span class="ac-card-title"><i data-lucide="${al.icon}" style="width:11px;height:11px;vertical-align:-1px"></i> ${al.title}</span>
+              ${al.badge?`<span class="ac-badge" style="background:var(--${al.color}-dim,var(--bg));color:var(--${al.color})">${al.badge}</span>`:''}
+            </div>
+            <div class="ac-card-sub"><span>${al.detail}</span></div>
+          </div>`).join('')}
+      </div>`;
+  } else if (!html) {
+    html = '<div style="font-size:10px;color:var(--text3);padding:20px;text-align:center">Tudo em dia. Nenhum alerta pendente.</div>';
+  }
 
   container.innerHTML = html;
   lucide.createIcons();
+}
+
+// Build the list of proactive, actionable alerts shown in the Action Center.
+// Ordered by urgency: overdue items → items due soon → stale affiliates →
+// missing monthly closing. Each alert carries an onclick navigation target
+// so the user can jump straight to the relevant module.
+function _computeActionAlerts() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const in7days = new Date(today.getTime() + 7 * 86400000);
+  const alerts = [];
+
+  // Overdue payments (status computed — includes vencido + atrasado)
+  const overdue = (STATE.payments || []).filter(p => {
+    const cs = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
+    return cs === 'vencido' || cs === 'atrasado';
+  });
+  if (overdue.length) {
+    const total = overdue.reduce((s, p) => s + (p.amount || 0), 0);
+    alerts.push({
+      icon: 'alert-octagon',
+      color: 'red',
+      title: `${overdue.length} pagamento(s) em atraso`,
+      detail: `Total: ${fc(total)} — revise no módulo Financeiro`,
+      badge: overdue.length,
+      action: `toggleActionCenter();openMod('payments')`,
+    });
+  }
+
+  // Payments due in the next 7 days
+  const dueSoon = (STATE.payments || []).filter(p => {
+    if (!p.dueDate || p.status === 'pago') return false;
+    const d = new Date(p.dueDate);
+    return d >= today && d <= in7days;
+  });
+  if (dueSoon.length) {
+    alerts.push({
+      icon: 'calendar-clock',
+      color: 'amber',
+      title: `${dueSoon.length} pagamento(s) vencendo em 7 dias`,
+      detail: `${dueSoon.slice(0, 2).map(p => p.affiliate || p.contract).join(', ')}${dueSoon.length > 2 ? '…' : ''}`,
+      badge: dueSoon.length,
+      action: `toggleActionCenter();openMod('payments')`,
+    });
+  }
+
+  // Overdue tasks
+  const overdueTasks = (STATE.tasks || []).filter(t => {
+    if (t.status === 'concluída' || !t.dueDate) return false;
+    return new Date(t.dueDate) < today;
+  });
+  if (overdueTasks.length) {
+    alerts.push({
+      icon: 'check-square',
+      color: 'red',
+      title: `${overdueTasks.length} tarefa(s) atrasada(s)`,
+      detail: overdueTasks.slice(0, 2).map(t => t.title).join(', ') + (overdueTasks.length > 2 ? '…' : ''),
+      badge: overdueTasks.length,
+      action: `toggleActionCenter();openMod('tasks')`,
+    });
+  }
+
+  // Affiliates with no FTD activity in 30+ days (only if reports exist)
+  const stale = _computeStaleAffiliates(30);
+  if (stale.length) {
+    alerts.push({
+      icon: 'user-x',
+      color: 'amber',
+      title: `${stale.length} afiliado(s) sem atividade há 30+ dias`,
+      detail: stale.slice(0, 2).map(a => a.name).join(', ') + (stale.length > 2 ? '…' : ''),
+      badge: stale.length,
+      action: `toggleActionCenter();openMod('affiliates')`,
+    });
+  }
+
+  // Monthly closing missing
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const hasClosing = (STATE.closings || []).some(c => (c.month || '').startsWith(thisMonth));
+  if (!hasClosing && (STATE.affiliates || []).length > 0 && now.getDate() >= 5) {
+    alerts.push({
+      icon: 'calendar-check',
+      color: 'blue',
+      title: 'Fechamento do mês não executado',
+      detail: 'Rode o fechamento em Financeiro para gerar pagamentos',
+      action: `toggleActionCenter();openMod('payments')`,
+    });
+  }
+
+  return alerts;
+}
+
+function _computeStaleAffiliates(daysThreshold) {
+  const cutoff = new Date(Date.now() - daysThreshold * 86400000);
+  const activeAffs = (STATE.affiliates || []).filter(a => a.status === 'ativo');
+  if (!activeAffs.length || !STATE.reports?.length) return [];
+  const lastActivityByAff = {};
+  STATE.reports.forEach(r => {
+    if (!r.affiliateId || !r.date) return;
+    const d = new Date(r.date);
+    if (!lastActivityByAff[r.affiliateId] || d > lastActivityByAff[r.affiliateId]) {
+      lastActivityByAff[r.affiliateId] = d;
+    }
+  });
+  return activeAffs.filter(a => {
+    const last = lastActivityByAff[a.id];
+    return !last || last < cutoff;
+  });
 }
 
 // ── THEME ──

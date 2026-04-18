@@ -358,7 +358,10 @@ window.exportCSV=(type)=>{
   const url=URL.createObjectURL(blob);
   const link=document.createElement('a');link.href=url;link.download=filename;
   document.body.appendChild(link);link.click();document.body.removeChild(link);
-  URL.revokeObjectURL(url);toast('CSV exportado!');
+  URL.revokeObjectURL(url);
+  const rowCount=csv.split('\n').length-2;
+  logAction('Export CSV',`${type} — ${rowCount} registro(s) → ${filename}`);
+  toast('CSV exportado!');
 };
 
 // ══════════════════════════════════════════════════════════

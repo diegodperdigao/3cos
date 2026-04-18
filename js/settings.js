@@ -316,10 +316,12 @@ function rerenderSettings(){
 }
 
 window.setAppTheme = (name) => {
+  const prev = STATE.settings.theme;
   STATE.settings.theme = name;
   applyAppTheme();
   saveToLocal();
   const labels={'default-dark':'Default Dark','default-light':'Default Light','mono-dark':'Mono Dark','mono-light':'Mono Light','bento-dark':'Bento Dark','bento-light':'Bento Light','meridian-light':'Meridian Light','meridian-dark':'Meridian Dark'};
+  if (prev !== name) logAction('Tema alterado', `${labels[prev]||prev} → ${labels[name]||name}`);
   toast(`Tema ${labels[name]||name} aplicado`, 's');
   // Re-render settings to update selection UI
   rerenderSettings();
@@ -640,6 +642,7 @@ window.run3CDashImport = async () => {
   STATE.closings = [];
   STATE.pipeline = STATE.pipeline || { stages: [], cards: [] };
 
+  logAction('Importação JSON (3C Dash)', `${affiliates.length} afiliado(s), ${reports.length} report(s), ${Object.keys(brands).length} marca(s)`);
   saveToLocal();
 
   // Sync to Supabase if configured — clear old data first, then upsert new

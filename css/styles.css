@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '5.6';
+  --3cos-version: '5.7';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -379,7 +379,7 @@ body::before {
 
 .mod-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;position:relative;z-index:1;}
 
-.hero{position:relative;overflow:hidden;height:200px;flex-shrink:0;display:flex;align-items:flex-end;padding:0 32px 26px;
+.hero{position:relative;overflow:hidden;height:128px;flex-shrink:0;display:flex;align-items:flex-end;padding:0 32px 18px;
   background:rgba(6,8,16,0.35);}
 [data-theme="light"] .hero{
   background:linear-gradient(135deg,#f8fafc,#f1f5f9);
@@ -394,8 +394,8 @@ body::before {
 .hero-accent{position:absolute;inset:0;z-index:1;pointer-events:none;}
 .hero-content{position:relative;z-index:2;}
 .hero-eyebrow{font-size:9px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--theme);margin-bottom:5px;}
-.hero-title{font-family:var(--fd);font-size:34px;font-weight:900;text-transform:uppercase;letter-spacing:0.02em;line-height:1.1;padding-top:0.08em;}
-.hero-sub{font-size:11px;font-weight:400;color:var(--text2);margin-top:4px;}
+.hero-title{font-family:var(--fd);font-size:26px;font-weight:900;text-transform:uppercase;letter-spacing:0.02em;line-height:1.1;padding-top:0.08em;}
+.hero-sub{font-size:11px;font-weight:400;color:var(--text2);margin-top:3px;}
 [data-theme="light"] .hero-title{color:var(--text);}
 
 .mod-main{padding:26px 32px 32px;flex:1;}
@@ -687,7 +687,7 @@ td{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-ali
 .tk-as .u-avatar{flex-shrink:0;}
 .tk-as svg,.tk-du svg{width:10px;height:10px;}
 
-#brands-hero{position:relative;overflow:hidden;height:200px;flex-shrink:0;display:flex;align-items:flex-end;padding:0 32px 26px;}
+#brands-hero{position:relative;overflow:hidden;height:128px;flex-shrink:0;display:flex;align-items:flex-end;padding:0 32px 18px;}
 #brands-hero-bg{position:absolute;inset:0;z-index:0;background:#030008;transition:background 0.35s;}
 [data-theme="light"] #brands-hero-bg{background:transparent;}
 .brands-hero-overlay{position:absolute;inset:0;z-index:1;
@@ -1034,7 +1034,7 @@ textarea.fi{resize:vertical;min-height:60px;}
   .hub-apps-label { padding: 0 4px; }
 
   /* Heroes mobile */
-  .hero, #brands-hero { height: 140px; padding: 0 16px 18px; }
+  .hero, #brands-hero { height: 100px; padding: 0 16px 14px; }
   .hero-title { font-size: 20px; }
   .hero-sub { font-size: 9px; }
   .hero-eyebrow { font-size: 7px; }
@@ -1174,7 +1174,7 @@ textarea.fi{resize:vertical;min-height:60px;}
   .mod-hdr-r .hdr-btn:has(svg){min-width:40px;min-height:40px;}
   .hub-bar{height:54px;}
   .mod-hdr{height:50px;}
-  .hero{height:140px !important;padding:0 16px 18px !important;}
+  .hero{height:100px !important;padding:0 16px 14px !important;}
   .hero-title{font-size:20px !important;}
 }
 
