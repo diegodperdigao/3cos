@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=61">
+<link rel="stylesheet" href="css/styles.css?v=62">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="lock-sub">Sistema Operacional — Pro</div>
     <input type="email" id="le" class="lock-field" placeholder="nome@3c.gg" autocomplete="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter') doLogin()">
     <input type="password" id="lp" class="lock-field" placeholder="••••••••" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doLogin()">
-    <button class="lock-btn" id="lbtn" onclick="doLogin()">ACESSAR O SISTEMA</button>
+    <button class="lock-btn" id="lbtn" onclick="doLogin()">Acessar o sistema</button>
     <div class="lock-hint">Acesso seguro</div>
     <div id="lerr" class="lock-err"></div>
     <div class="lock-reset" onclick="toast('Email enviado!','i')">Esqueci minha senha</div>
@@ -121,23 +121,27 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
     </div>
     <div class="hub-bar-r">
-      <button class="beta-btn" onclick="toggleBetaMode()" id="hub-beta-btn" title="Modo Beta — recursos experimentais">
-        <span class="beta-btn-txt">BETA</span>
-        <span class="beta-btn-status" aria-hidden="true"></span>
+      <button class="hub-icon-btn" onclick="toggleBetaMode()" id="hub-beta-btn" title="Alternar modo Beta">
+        <i data-lucide="flask-conical"></i>
+        <span class="hub-beta-dot" aria-hidden="true"></span>
       </button>
-      <button class="hub-icon-btn" onclick="toggleActionCenter()" id="hub-notif-btn">
+      <button class="hub-icon-btn" onclick="toggleActionCenter()" id="hub-notif-btn" title="Alertas">
         <i data-lucide="bell"></i>
         <div class="hub-notif-badge" id="hub-notif-count" style="display:none">0</div>
       </button>
-      <button class="hub-icon-btn" onclick="toggleTheme()"><i data-lucide="sun" id="theme-icon"></i></button>
-      <div class="hub-user-chip" id="hub-user-chip">
+      <button class="hub-icon-btn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="sun" id="theme-icon"></i></button>
+      <div class="hub-user-chip" id="hub-user-chip" onclick="toggleHubUserMenu(event)">
         <div class="hub-user-avatar" id="hub-user-avatar"></div>
         <div class="hub-user-info">
           <div class="hub-user-name" id="hub-uname">—</div>
           <span class="hub-user-role" id="hub-urole">Admin</span>
         </div>
+        <i data-lucide="chevron-down" style="width:12px;height:12px;opacity:0.5;flex-shrink:0"></i>
+        <div class="hub-user-dropdown" id="hub-user-dropdown">
+          <button class="hdr-user-dropdown-item" onclick="openMod('settings')"><i data-lucide="settings"></i> Configurações</button>
+          <button class="hdr-user-dropdown-item danger" onclick="doLogout()"><i data-lucide="log-out"></i> Sair</button>
+        </div>
       </div>
-      <button class="hub-logout-btn" style="margin-left: 8px;" onclick="doLogout()">SAIR</button>
     </div>
   </div>
   
@@ -239,26 +243,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=61"></script>
+<script src="js/app.js?v=62"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=61"></script>
-<script src="js/data.js?v=61"></script>
+<script src="js/supabase-client.js?v=62"></script>
+<script src="js/data.js?v=62"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=61"></script>
+<script src="js/lab.js?v=62"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=61"></script>
+<script src="js/search.js?v=62"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=61"></script>
-<script src="js/affiliates.js?v=61"></script>
-<script src="js/brands.js?v=61"></script>
-<script src="js/payments.js?v=61"></script>
-<script src="js/tasks.js?v=61"></script>
-<script src="js/pipeline.js?v=61"></script>
-<script src="js/import.js?v=61"></script>
-<script src="js/watchdog.js?v=61"></script>
-<script src="js/audit.js?v=61"></script>
-<script src="js/users.js?v=61"></script>
-<script src="js/settings.js?v=61"></script>
-<script src="js/copilot.js?v=61"></script>
+<script src="js/dashboard.js?v=62"></script>
+<script src="js/affiliates.js?v=62"></script>
+<script src="js/brands.js?v=62"></script>
+<script src="js/payments.js?v=62"></script>
+<script src="js/tasks.js?v=62"></script>
+<script src="js/pipeline.js?v=62"></script>
+<script src="js/import.js?v=62"></script>
+<script src="js/watchdog.js?v=62"></script>
+<script src="js/audit.js?v=62"></script>
+<script src="js/users.js?v=62"></script>
+<script src="js/settings.js?v=62"></script>
+<script src="js/copilot.js?v=62"></script>
 </body>
 </html>

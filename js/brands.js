@@ -371,7 +371,7 @@ let _brandTab='all';
 function bBrands(el){
   const brandsList=Object.entries(STATE.brands);
   el.innerHTML=modHdr('Marcas Parceiras')+`<div class="mod-body">
-    ${heroHTML('brands','Marcas','Casas Parceiras','Gestão de marcas e deals negociados')}
+    ${heroHTML('brands','','Marcas','Casas parceiras e deals negociados')}
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Nossas Marcas Parceiras</div>
         <div class="sec-actions">

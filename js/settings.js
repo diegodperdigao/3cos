@@ -13,7 +13,7 @@ function bSettings(el){
   const dark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
 
   el.innerHTML = modHdr('Configurações')+`<div class="mod-body">
-    ${heroHTML('settings','Preferências','Configurações','Personalize a experiência do 3C OS')}
+    ${heroHTML('settings','','Configurações','Preferências e personalização')}
     <div class="mod-main">
 
       <!-- APARÊNCIA -->

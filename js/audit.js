@@ -1,6 +1,6 @@
 function bAudit(el){
   el.innerHTML=modHdr('Auditoria — Log de Atividades')+`<div class="mod-body">
-    ${heroHTML('audit','Segurança','Log de Auditoria','Registro imutável de ações do sistema')}
+    ${heroHTML('audit','Segurança','Auditoria','Registro imutável de ações')}
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Últimas ações no sistema</div>
         <button class="btn btn-outline" onclick="exportCSV('audit')"><i data-lucide="download"></i>Exportar CSV</button>

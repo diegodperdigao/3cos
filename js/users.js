@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════════════════
 function bUsers(el){
   el.innerHTML=modHdr('Usuários — Controle de Acesso')+`<div class="mod-body">
-    ${heroHTML('users','Admin','Gestão de Usuários','Controle de permissões e acessos')}
+    ${heroHTML('users','Admin','Usuários','Permissões e acessos')}
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Usuários ativos</div>
         <button class="btn btn-theme" onclick="openNewUser()"><i data-lucide="user-plus"></i>Novo Usuário</button>
@@ -36,7 +36,7 @@ function bBackup(el){
   const dataSize=JSON.stringify(STATE).length;
   const dataSizeKB=Math.round(dataSize/1024);
   el.innerHTML=modHdr('Backup & Nuvem')+`<div class="mod-body">
-    ${heroHTML('backup','Backup','Backup & Nuvem','Exportar, importar e sincronizar seus dados')}
+    ${heroHTML('backup','','Backup & nuvem','Exportar, importar e sincronizar')}
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Status da Sincronização</div></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px">

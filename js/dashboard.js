@@ -4,7 +4,7 @@
 let _dashBrand='all',_dashDateRange='all';
 function bDash(el){
   el.innerHTML=modHdr('Dashboard')+`<div class="mod-body">
-    ${heroHTML('dashboard','Dashboard — Operação 3C','Visão Geral 3C','Resultado consolidado da operação')}
+    ${heroHTML('dashboard','Operação 3C','Dashboard','Visão geral consolidada')}
     <div class="mod-main">
       <div class="sec-hdr" style="margin-bottom:14px">
         <div class="sec-lbl">Painel de Controle</div>

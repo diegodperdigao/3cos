@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════════════════
 function bAffs(el){
   el.innerHTML=modHdr('Afiliados — CRM')+`<div class="mod-body">
-    ${heroHTML('affiliates','CRM — Base de Afiliados','Afiliados','Parceiros, deals, contratos e pagamentos')}
+    ${heroHTML('affiliates','CRM','Afiliados','Parceiros, deals e contratos')}
     <div class="mod-main">
       <div class="sec-hdr">
         <div class="sec-lbl">Todos os afiliados</div>

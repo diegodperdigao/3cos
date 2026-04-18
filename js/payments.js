@@ -31,7 +31,7 @@ function bPayments(el){
     </div>`:'';
 
   el.innerHTML=modHdr('Financeiro — Pagamentos')+`<div class="mod-body">
-    ${heroHTML('payments','Financeiro','Gestão Financeira','Aprovação, recusa e comissões por afiliado')}
+    ${heroHTML('payments','','Financeiro','Aprovações, comissões e fechamentos')}
     <div class="mod-main">
       ${emptyBanner}
       <div class="kpi-row">

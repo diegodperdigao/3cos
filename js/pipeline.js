@@ -4,7 +4,7 @@
 function bPipeline(el){
   if(!STATE.pipeline)STATE.pipeline={stages:[{id:'s1',name:'Lead',color:'#94a3b8'},{id:'s2',name:'Negociação',color:'#f59e0b'},{id:'s3',name:'Deal Fechado',color:'#3b82f6'},{id:'s4',name:'Ativo',color:'#10b981'},{id:'s5',name:'Inativo',color:'#ef4444'}],cards:[]};
   el.innerHTML=modHdr('Pipeline — Kanban')+`<div class="mod-body">
-    ${heroHTML('pipeline','Pipeline','Funil de Afiliados','Acompanhe o progresso de cada afiliado no funil')}
+    ${heroHTML('pipeline','','Pipeline','Funil e negociações com afiliados')}
     <div class="mod-main">
       <div class="sec-hdr">
         <div class="sec-lbl">Pipeline Kanban</div>

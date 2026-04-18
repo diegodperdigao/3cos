@@ -4,7 +4,7 @@
 let _tkF=null;
 function bTasks(el){
   el.innerHTML=modHdr('Tarefas — Workflow')+`<div class="mod-body">
-    ${heroHTML('tasks','Workflow','Tarefas & Workflow','Atividades vinculadas a afiliados e módulos')}
+    ${heroHTML('tasks','Workflow','Tarefas','Atividades vinculadas a afiliados e módulos')}
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Todas as tarefas</div>
         <button class="btn btn-theme" onclick="openNewTask()"><i data-lucide="plus"></i>Nova Tarefa</button></div>

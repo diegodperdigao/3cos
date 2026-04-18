@@ -407,6 +407,30 @@ function toast(msg,t='s'){
 }
 window.toast=toast;
 
+// Opens / closes the user avatar dropdown menus (one on the hub, one on each
+// module header). Clicking outside closes it. Uses a module-level listener
+// registered once per open.
+function _toggleDropdown(ddId, event) {
+  event.stopPropagation();
+  const dd = document.getElementById(ddId);
+  if (!dd) return;
+  // Close any other open dropdowns first
+  document.querySelectorAll('.hdr-user-dropdown.open, .hub-user-dropdown.open').forEach(el => {
+    if (el !== dd) el.classList.remove('open');
+  });
+  const open = dd.classList.toggle('open');
+  if (open) {
+    setTimeout(() => {
+      document.addEventListener('click', function closer(e) {
+        if (!dd.contains(e.target)) dd.classList.remove('open');
+        else document.addEventListener('click', closer, { once: true });
+      }, { once: true });
+    }, 0);
+  }
+}
+window.toggleHdrUserMenu = (event) => _toggleDropdown('hdr-user-dropdown', event);
+window.toggleHubUserMenu = (event) => _toggleDropdown('hub-user-dropdown', event);
+
 // Toggles a password-style input between masked and plaintext. Used for
 // sensitive config fields (EmailJS keys, API tokens) that admins need to
 // see occasionally but shouldn't have visible by default.
@@ -1005,42 +1029,50 @@ function modHdr(label){
     <div class="mod-hdr-l">
       <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
       <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
-      <div class="mod-hdr-sep"></div>
-      <div class="mod-hdr-name">${label}</div>
-      ${STATE.betaMode?'<div class="beta-pill" title="Modo Beta ativo — recursos experimentais habilitados"><div class="beta-pill-dot"></div><span class="beta-pill-txt">Beta</span></div>':''}
+      ${STATE.betaMode?'<span class="hdr-beta-tag" title="Modo Beta ativo">Beta</span>':''}
     </div>
     <div class="mod-hdr-c">
       <div class="search-pill search-pill-sm" onclick="focusSearchInput(this)">
         <i data-lucide="search" class="search-pill-icon"></i>
-        <input type="text" class="search-pill-input" placeholder="Buscar em tudo..."
+        <input type="text" class="search-pill-input" placeholder="Buscar..."
                oninput="onSearchInput(event)"
                onfocus="onSearchFocus(event)"
                onkeydown="onSearchKeydown(event)"
                autocomplete="off">
-        <span class="search-pill-hint">Ctrl K</span>
+        <span class="search-pill-hint">⌘K</span>
         <div class="search-panel"></div>
       </div>
     </div>
     <div class="mod-hdr-r">
-      <div class="sync-pill"><div class="sync-dot"></div><span class="sync-txt">Cloud Sync</span></div>
-      <div class="hdr-divider"></div>
-      <button class="beta-btn beta-btn-sm" onclick="toggleBetaMode()" title="Modo Beta — recursos experimentais"><span class="beta-btn-txt">BETA</span><span class="beta-btn-status" aria-hidden="true"></span></button>
-      <button class="hdr-btn" onclick="toggleActionCenter()"><i data-lucide="bell"></i></button>
-      <button class="hdr-btn" onclick="toggleTheme()"><i data-lucide="sun"></i></button>
-      <button class="hdr-btn" onclick="goBack()"><i data-lucide="grid"></i> Hub</button>
-      <button class="hdr-btn" onclick="doLogout()"><i data-lucide="log-out"></i> Sair</button>
+      <button class="hdr-icon-btn" onclick="toggleBetaMode()" title="Alternar modo Beta"><i data-lucide="flask-conical"></i></button>
+      <span class="hdr-sync-icon" title="Sincronizado com a nuvem"><i data-lucide="cloud"></i></span>
+      <button class="hdr-icon-btn" onclick="toggleActionCenter()" title="Alertas"><i data-lucide="bell"></i></button>
+      <button class="hdr-icon-btn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="sun"></i></button>
+      <button class="hdr-icon-btn" onclick="goBack()" title="Voltar ao hub"><i data-lucide="grid"></i></button>
+      <div class="hdr-user-menu" onclick="toggleHdrUserMenu(event)">
+        <div class="hdr-user-avatar" id="hdr-user-avatar">${STATE.user?.name?.[0]||'?'}</div>
+        <i data-lucide="chevron-down" style="width:12px;height:12px;opacity:0.5"></i>
+        <div class="hdr-user-dropdown" id="hdr-user-dropdown">
+          <div class="hdr-user-dropdown-name">${STATE.user?.name||'Usuário'}</div>
+          <div class="hdr-user-dropdown-email">${STATE.user?.email||''}</div>
+          <div class="hdr-user-dropdown-divider"></div>
+          <button class="hdr-user-dropdown-item" onclick="openMod('settings')"><i data-lucide="settings"></i> Configurações</button>
+          <button class="hdr-user-dropdown-item danger" onclick="doLogout()"><i data-lucide="log-out"></i> Sair</button>
+        </div>
+      </div>
     </div>
   </div>`;
 }
 
 function heroHTML(mosId,eyebrow,title,sub){
+  // Hero compact — Apple-style page header: title + subtitle inline, no mosaic,
+  // no eyebrow banner. The eyebrow is preserved as a small caption above the
+  // title to keep semantic hierarchy (module category), but is de-emphasized.
   return `<div class="hero" id="${mosId}-hero">
-    <div class="mosaic-wrapper"><div class="mosaic-container"><div class="mosaic-pattern" id="mosaic-${mosId}"></div></div></div>
-    <div class="hero-overlay"></div><div class="hero-accent"></div>
     <div class="hero-content">
-      <div class="hero-eyebrow">${eyebrow}</div>
+      ${eyebrow?`<div class="hero-eyebrow">${eyebrow}</div>`:''}
       <div class="hero-title">${title}</div>
-      <div class="hero-sub">${sub}</div>
+      ${sub?`<div class="hero-sub">${sub}</div>`:''}
     </div>
   </div>`;
 }
