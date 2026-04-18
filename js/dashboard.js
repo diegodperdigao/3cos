@@ -271,8 +271,8 @@ window.refreshDash=()=>{
         <div class="kpi-icon-row"><i data-lucide="percent"></i><span class="kpi-lbl">Conversão</span></div>
         <div class="kpi-val">${conv}%</div><div class="kpi-sub">FTD → QFTD</div></div>
     </div>
-    <!-- Financeiro secundário — sempre presente, computado de reports + deals quando filtrado -->
-    <div class="kpi-row" style="margin-bottom:22px">
+    <!-- Financeiro secundário — 2 colunas para manter alinhamento -->
+    <div class="kpi-row" style="margin-bottom:22px;grid-template-columns:repeat(2,1fr)">
       <div class="kpi" style="--kpi-c:var(--amber)" title="Comissão total a pagar aos afiliados no período (CPA + Rev Share)">
         <div class="kpi-icon-row"><i data-lucide="credit-card"></i><span class="kpi-lbl">Comissão</span></div>
         <div class="kpi-val sm">${fc(totComm)}</div><div class="kpi-sub">CPA + Rev Share</div></div>
