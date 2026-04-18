@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '5.4';
+  --3cos-version: '5.5';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -3321,25 +3321,30 @@ textarea.fi{resize:vertical;min-height:60px;}
 }
 
 /* Status badges: solid pastel blocks */
-[data-edition="bento"] .pb-pago{background: var(--green) !important;color: #0a0a0a !important;border: 2px solid var(--text) !important;}
-[data-edition="bento"] .pb-pendente{background: var(--amber) !important;color: #0a0a0a !important;border: 2px solid var(--text) !important;}
-[data-edition="bento"] .pb-vencido{background: var(--red) !important;color: #fff !important;border: 2px solid var(--text) !important;}
-[data-edition="bento"] .pb-atrasado{background: var(--amber) !important;color: #0a0a0a !important;border: 2px solid var(--text) !important;}
-[data-edition="bento"] .pb-aprovado{background: var(--blue) !important;color: #fff !important;border: 2px solid var(--text) !important;}
+[data-edition="bento"] .pb-pago{background: var(--green) !important;color: #1a1a1a !important;border: 2px solid var(--text) !important;}
+[data-edition="bento"] .pb-pendente{background: var(--amber) !important;color: #1a1a1a !important;border: 2px solid var(--text) !important;}
+[data-edition="bento"] .pb-vencido{background: var(--red) !important;color: #1a1a1a !important;border: 2px solid var(--text) !important;}
+[data-edition="bento"] .pb-atrasado{background: var(--amber) !important;color: #1a1a1a !important;border: 2px solid var(--text) !important;}
+[data-edition="bento"] .pb-aprovado{background: var(--blue) !important;color: #1a1a1a !important;border: 2px solid var(--text) !important;}
 
-/* Contract-type chips: solid pastel blocks (bento palette) with 2px outline */
+/* Contract-type chips: distinct pastel blocks from the Bento palette */
 [data-edition="bento"] .ct-badge{
   border-radius: 6px !important;
   border: 2px solid var(--text) !important;
   font-weight: 800 !important;
   padding: 3px 8px !important;
 }
-[data-edition="bento"] .ct-badge.cpa{background: var(--theme) !important;color: #fff !important;}
-[data-edition="bento"] .ct-badge.tiered{background: var(--amber) !important;color: #0a0a0a !important;}
+[data-edition="bento"] .ct-badge.cpa{background: var(--pink) !important;color: #1a1a1a !important;}
+[data-edition="bento"] .ct-badge.tiered{background: var(--purple) !important;color: #fff !important;}
 [data-edition="bento"] .ct-badge.deposit{background: var(--blue) !important;color: #fff !important;}
-[data-edition="bento"] .ct-badge.rs{background: var(--green) !important;color: #0a0a0a !important;}
+[data-edition="bento"] .ct-badge.rs{background: var(--green) !important;color: #1a1a1a !important;}
+/* Dark: text color adjustments (dark pastels are lighter, so black text works) */
+[data-edition="bento"][data-theme="dark"] .ct-badge.cpa{color: #1a1a1a !important;}
+[data-edition="bento"][data-theme="dark"] .ct-badge.tiered{color: #1a1a1a !important;}
+[data-edition="bento"][data-theme="dark"] .ct-badge.deposit{color: #1a1a1a !important;}
+[data-edition="bento"][data-theme="dark"] .ct-badge.rs{color: #1a1a1a !important;}
 
-/* Role badges: same solid-pastel + outline language */
+/* Role badges: solid-pastel + outline language */
 [data-edition="bento"] .role-admin,
 [data-edition="bento"] .role-financeiro,
 [data-edition="bento"] .role-operacao,
@@ -3349,9 +3354,13 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-radius: 6px !important;
 }
 [data-edition="bento"] .role-admin{background: var(--red) !important;color: #fff !important;}
-[data-edition="bento"] .role-financeiro{background: var(--amber) !important;color: #0a0a0a !important;}
+[data-edition="bento"] .role-financeiro{background: var(--amber) !important;color: #1a1a1a !important;}
 [data-edition="bento"] .role-operacao{background: var(--blue) !important;color: #fff !important;}
 [data-edition="bento"] .role-viewer{background: var(--purple) !important;color: #fff !important;}
+[data-edition="bento"][data-theme="dark"] .role-admin{color: #1a1a1a !important;}
+[data-edition="bento"][data-theme="dark"] .role-financeiro{color: #1a1a1a !important;}
+[data-edition="bento"][data-theme="dark"] .role-operacao{color: #1a1a1a !important;}
+[data-edition="bento"][data-theme="dark"] .role-viewer{color: #1a1a1a !important;}
 
 /* Priority chips */
 [data-edition="bento"] .pri-a,
@@ -3362,8 +3371,11 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-radius: 6px !important;
 }
 [data-edition="bento"] .pri-a{background: var(--red) !important;color: #fff !important;}
-[data-edition="bento"] .pri-m{background: var(--amber) !important;color: #0a0a0a !important;}
-[data-edition="bento"] .pri-b{background: var(--green) !important;color: #0a0a0a !important;}
+[data-edition="bento"] .pri-m{background: var(--amber) !important;color: #1a1a1a !important;}
+[data-edition="bento"] .pri-b{background: var(--green) !important;color: #1a1a1a !important;}
+[data-edition="bento"][data-theme="dark"] .pri-a{color: #1a1a1a !important;}
+[data-edition="bento"][data-theme="dark"] .pri-m{color: #1a1a1a !important;}
+[data-edition="bento"][data-theme="dark"] .pri-b{color: #1a1a1a !important;}
 
 /* Rank badges: solid pastel */
 [data-edition="bento"] .rank-badge{border: 2px solid var(--text) !important;}
