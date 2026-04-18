@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '5.1';
+  --3cos-version: '5.2';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -3406,25 +3406,25 @@ textarea.fi{resize:vertical;min-height:60px;}
   --purple: #6d4b8a;
   --lime: #8a8a1b;
   --radius: 4px;
-  --fd: 'Playfair Display', 'Montserrat', serif;
+  --fd: 'Montserrat', sans-serif;  /* keep sans-serif — serif was too ornamental */
 }
 
-/* ── DARK: deep ink ── */
+/* ── DARK: warm ink ── */
 [data-edition="meridian"][data-theme="dark"]{
-  --bg: #14110d;
-  --bg2: #1d1914;
-  --bg3: #26211b;
-  --gb: rgba(245, 240, 230, 0.10);
-  --gb2: rgba(245, 240, 230, 0.18);
-  --gb3: rgba(245, 240, 230, 0.28);
-  --text: #f5f0e6;
-  --text2: #c4bba8;
-  --text3: #7a7263;
-  --theme: #e85548;
-  --theme-dim: rgba(232,85,72,0.08);
-  --theme-b: rgba(232,85,72,0.24);
-  --theme-glow: rgba(232,85,72,0.22);
-  --red: #e85548;
+  --bg: #151210;
+  --bg2: #1e1a16;
+  --bg3: #28231d;
+  --gb: rgba(245, 240, 230, 0.08);
+  --gb2: rgba(245, 240, 230, 0.14);
+  --gb3: rgba(245, 240, 230, 0.22);
+  --text: #ede8df;
+  --text2: #b0a898;
+  --text3: #736a5c;
+  --theme: #e8654a;
+  --theme-dim: rgba(232,101,74,0.10);
+  --theme-b: rgba(232,101,74,0.26);
+  --theme-glow: rgba(232,101,74,0.22);
+  --red: #e8654a;
   --amber: #e8a33c;
   --green: #7dbd7b;
   --blue: #6ca4d4;
@@ -3432,7 +3432,7 @@ textarea.fi{resize:vertical;min-height:60px;}
   --purple: #b090d4;
   --lime: #d4d468;
   --radius: 4px;
-  --fd: 'Playfair Display', 'Montserrat', serif;
+  --fd: 'Montserrat', sans-serif;
 }
 
 /* Hide the 3C mosaic — Meridian owns the whole canvas */
@@ -3448,15 +3448,16 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="meridian"] .hub-id-tagline,
 [data-edition="meridian"] .intel-title,
 [data-edition="meridian"] .modal-ttl{
-  font-family: 'Playfair Display', Georgia, serif !important;
+  font-family: 'Montserrat', sans-serif !important;
   font-weight: 700 !important;
   letter-spacing: -0.015em !important;
   text-transform: none !important;
 }
 [data-edition="meridian"] .hero-title{
-  font-size: 44px !important;
-  line-height: 1.1 !important;
-  font-weight: 800 !important;
+  font-size: 30px !important;
+  line-height: 1.15 !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
 }
 [data-edition="meridian"] .hero-eyebrow{
   font-family: var(--fb) !important;
@@ -3467,20 +3468,18 @@ textarea.fi{resize:vertical;min-height:60px;}
   color: var(--theme) !important;
 }
 [data-edition="meridian"] .hub-id-tagline{
-  text-transform: none !important;
-  font-size: 14px !important;
-  letter-spacing: 0.02em !important;
-  font-style: italic !important;
+  text-transform: uppercase !important;
+  font-size: 10px !important;
+  letter-spacing: 0.24em !important;
+  font-weight: 600 !important;
+  color: var(--text3) !important;
+}
+[data-edition="meridian"] .hub-greeting{
+  font-size: 15px !important;
   font-weight: 400 !important;
   color: var(--text2) !important;
 }
-[data-edition="meridian"] .hub-greeting{
-  font-family: 'Playfair Display', Georgia, serif !important;
-  font-size: 18px !important;
-  font-style: italic !important;
-  font-weight: 400 !important;
-}
-[data-edition="meridian"] .hub-greeting strong{font-weight: 700 !important;font-style: normal !important;}
+[data-edition="meridian"] .hub-greeting strong{font-weight: 700 !important;}
 
 /* Cards: NO boxes — just generous padding + top horizontal hairline as separator */
 [data-edition="meridian"] .kpi,
@@ -3519,9 +3518,9 @@ textarea.fi{resize:vertical;min-height:60px;}
 
 /* KPI values get the serif treatment — large, bold, italicized number */
 [data-edition="meridian"] .kpi-val{
-  font-family: 'Playfair Display', Georgia, serif !important;
-  font-weight: 800 !important;
-  font-size: 38px !important;
+  font-family: var(--fd) !important;
+  font-weight: 900 !important;
+  font-size: 28px !important;
   letter-spacing: -0.02em !important;
 }
 [data-edition="meridian"] .kpi-lbl{
@@ -3562,7 +3561,7 @@ textarea.fi{resize:vertical;min-height:60px;}
 }
 [data-edition="meridian"] .hub-app:hover .hub-app-icon svg{stroke: #fff !important;}
 [data-edition="meridian"] .hub-app-name{
-  font-family: 'Playfair Display', Georgia, serif !important;
+  font-family: 'Montserrat', sans-serif !important;
   font-weight: 700 !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
@@ -3570,10 +3569,10 @@ textarea.fi{resize:vertical;min-height:60px;}
 }
 [data-edition="meridian"] .hub-apps-label{
   font-family: var(--fb) !important;
-  font-style: italic !important;
-  font-size: 11px !important;
-  text-transform: none !important;
-  letter-spacing: 0.04em !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.18em !important;
+  font-weight: 600 !important;
 }
 [data-edition="meridian"] .hub-apps-label::after{background: var(--text) !important;height: 1px !important;}
 
@@ -3655,13 +3654,12 @@ textarea.fi{resize:vertical;min-height:60px;}
 
 /* Section labels: serif italic */
 [data-edition="meridian"] .sec-lbl{
-  font-family: 'Playfair Display', Georgia, serif !important;
-  font-style: italic !important;
-  font-weight: 600 !important;
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-  font-size: 20px !important;
-  color: var(--text) !important;
+  font-family: var(--fd) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  font-size: 10px !important;
+  color: var(--text2) !important;
 }
 [data-edition="meridian"] .sec-hdr{
   border-bottom: 1px solid var(--gb) !important;
@@ -3695,7 +3693,6 @@ textarea.fi{resize:vertical;min-height:60px;}
   color: var(--theme) !important;
   background: none !important;
   -webkit-text-fill-color: var(--theme) !important;
-  font-style: italic !important;
 }
 
 /* Status badges: quiet capsules */
@@ -3719,7 +3716,7 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-radius: 0 !important;
   border: none !important;
   background: transparent !important;
-  font-family: 'Playfair Display', Georgia, serif !important;
+  font-family: 'Montserrat', sans-serif !important;
   font-style: italic !important;
   font-weight: 800 !important;
   color: var(--text) !important;
@@ -3736,8 +3733,9 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-bottom: 1px solid var(--gb) !important;
 }
 [data-edition="meridian"] .modal-ttl{
-  font-size: 24px !important;
-  font-weight: 700 !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
 }
 [data-edition="meridian"] #modal-ov{background: rgba(0,0,0,0.45) !important;}
 
@@ -3769,11 +3767,11 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-bottom: 1px solid var(--gb) !important;
 }
 [data-edition="meridian"] .mod-hdr-name{
-  font-family: 'Playfair Display', Georgia, serif !important;
-  font-style: italic !important;
-  font-size: 15px !important;
-  text-transform: none !important;
-  letter-spacing: 0.01em !important;
+  font-family: var(--fd) !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.18em !important;
+  font-weight: 700 !important;
 }
 
 /* Copilot: editorial quote-block vibe */
@@ -3791,7 +3789,7 @@ textarea.fi{resize:vertical;min-height:60px;}
 }
 [data-edition="meridian"] .cp-title-icon .cp-gemini-icon{fill: #fff !important;}
 [data-edition="meridian"] .cp-title-main{
-  font-family: 'Playfair Display', Georgia, serif !important;
+  font-family: 'Montserrat', sans-serif !important;
   font-weight: 700 !important;
 }
 [data-edition="meridian"] .cp-welcome-icon{
@@ -3800,10 +3798,8 @@ textarea.fi{resize:vertical;min-height:60px;}
 }
 [data-edition="meridian"] .cp-welcome-icon .cp-gemini-icon{fill: #fff !important;}
 [data-edition="meridian"] .cp-welcome-title{
-  font-family: 'Playfair Display', Georgia, serif !important;
-  font-style: italic !important;
-  font-weight: 700 !important;
-  font-size: 22px !important;
+  font-weight: 800 !important;
+  font-size: 18px !important;
 }
 [data-edition="meridian"] .cp-msg-user .cp-bubble{
   background: var(--theme) !important;
