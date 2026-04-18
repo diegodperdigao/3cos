@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '5.3';
+  --3cos-version: '5.4';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -1749,11 +1749,39 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="mono"] .aff-type{
   color:var(--text) !important;opacity:0.6;
   letter-spacing:0.12em !important;text-transform:uppercase;font-size:9px;}
+/* Mono: distinguish ct-badge variants via fill vs outline (no color info) */
 [data-edition="mono"] .ct-badge{
-  background:var(--text) !important;
-  color:var(--bg) !important;
   border:1px solid var(--text) !important;
-  font-weight:800;letter-spacing:0.1em;}
+  font-weight:800;letter-spacing:0.1em;
+  background:var(--text) !important;
+  color:var(--bg) !important;}
+[data-edition="mono"] .ct-badge.tiered{
+  background:transparent !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .ct-badge.deposit{
+  background:transparent !important;
+  color:var(--text) !important;
+  border-style:dashed !important;}
+[data-edition="mono"] .ct-badge.rs{
+  background:transparent !important;
+  color:var(--text) !important;
+  border-style:dotted !important;}
+/* Mono: roles + priorities go mono too, weight encodes emphasis */
+[data-edition="mono"] .role-admin,
+[data-edition="mono"] .role-financeiro,
+[data-edition="mono"] .role-operacao,
+[data-edition="mono"] .role-viewer,
+[data-edition="mono"] .pri-a,
+[data-edition="mono"] .pri-m,
+[data-edition="mono"] .pri-b{
+  background:transparent !important;
+  color:var(--text) !important;
+  border:1px solid var(--text) !important;
+  font-weight:700 !important;}
+[data-edition="mono"] .role-admin,
+[data-edition="mono"] .pri-a{
+  background:var(--text) !important;
+  color:var(--bg) !important;}
 [data-edition="mono"] .aff-stat-l{color:var(--text) !important;opacity:0.55;}
 [data-edition="mono"] .aff-stat-v{color:var(--text) !important;font-family:var(--fd);font-weight:800;}
 [data-edition="mono"] .casa-chip{
@@ -3299,6 +3327,44 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="bento"] .pb-atrasado{background: var(--amber) !important;color: #0a0a0a !important;border: 2px solid var(--text) !important;}
 [data-edition="bento"] .pb-aprovado{background: var(--blue) !important;color: #fff !important;border: 2px solid var(--text) !important;}
 
+/* Contract-type chips: solid pastel blocks (bento palette) with 2px outline */
+[data-edition="bento"] .ct-badge{
+  border-radius: 6px !important;
+  border: 2px solid var(--text) !important;
+  font-weight: 800 !important;
+  padding: 3px 8px !important;
+}
+[data-edition="bento"] .ct-badge.cpa{background: var(--theme) !important;color: #fff !important;}
+[data-edition="bento"] .ct-badge.tiered{background: var(--amber) !important;color: #0a0a0a !important;}
+[data-edition="bento"] .ct-badge.deposit{background: var(--blue) !important;color: #fff !important;}
+[data-edition="bento"] .ct-badge.rs{background: var(--green) !important;color: #0a0a0a !important;}
+
+/* Role badges: same solid-pastel + outline language */
+[data-edition="bento"] .role-admin,
+[data-edition="bento"] .role-financeiro,
+[data-edition="bento"] .role-operacao,
+[data-edition="bento"] .role-viewer{
+  border: 2px solid var(--text) !important;
+  font-weight: 800 !important;
+  border-radius: 6px !important;
+}
+[data-edition="bento"] .role-admin{background: var(--red) !important;color: #fff !important;}
+[data-edition="bento"] .role-financeiro{background: var(--amber) !important;color: #0a0a0a !important;}
+[data-edition="bento"] .role-operacao{background: var(--blue) !important;color: #fff !important;}
+[data-edition="bento"] .role-viewer{background: var(--purple) !important;color: #fff !important;}
+
+/* Priority chips */
+[data-edition="bento"] .pri-a,
+[data-edition="bento"] .pri-m,
+[data-edition="bento"] .pri-b{
+  border: 2px solid var(--text) !important;
+  font-weight: 800 !important;
+  border-radius: 6px !important;
+}
+[data-edition="bento"] .pri-a{background: var(--red) !important;color: #fff !important;}
+[data-edition="bento"] .pri-m{background: var(--amber) !important;color: #0a0a0a !important;}
+[data-edition="bento"] .pri-b{background: var(--green) !important;color: #0a0a0a !important;}
+
 /* Rank badges: solid pastel */
 [data-edition="bento"] .rank-badge{border: 2px solid var(--text) !important;}
 [data-edition="bento"] .rank-badge.rank-gold{background: var(--amber) !important;}
@@ -3667,7 +3733,9 @@ textarea.fi{resize:vertical;min-height:60px;}
   margin-bottom: 20px !important;
 }
 
-/* Hero: wide, magazine-spread look */
+/* Hero: editorial header — no longer a full-bleed magazine spread,
+   just a tight horizontal rule under the title block so vertical rhythm
+   stays in sync with the content below. */
 [data-edition="meridian"] .hero{
   background: var(--bg) !important;
   border: none !important;
@@ -3675,16 +3743,21 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-radius: 0 !important;
   box-shadow: none !important;
   margin: 0 !important;
-  padding: 40px 0 30px !important;
+  padding: 22px 32px 20px !important;
   height: auto !important;
-  min-height: 180px;
+  min-height: 0 !important;
+  align-items: flex-start !important;
 }
-[data-edition="meridian"] .hero-accent{display:none !important;}
+[data-edition="meridian"] .hero-accent,
+[data-edition="meridian"] .hero-overlay{display:none !important;}
+[data-edition="meridian"] .hero-content{width:100%;}
+[data-edition="meridian"] .hero-eyebrow{margin-bottom: 8px !important;}
 [data-edition="meridian"] .hero-sub{
   font-family: var(--fb) !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   color: var(--text2) !important;
   max-width: 600px;
+  margin-top: 6px !important;
 }
 
 /* Logo em the wordmark: editorial red small caps */
@@ -3695,12 +3768,20 @@ textarea.fi{resize:vertical;min-height:60px;}
   -webkit-text-fill-color: var(--theme) !important;
 }
 
-/* Status badges: quiet capsules */
+/* Status + contract badges: quiet capsules, editorial palette (red accent + graphite) */
 [data-edition="meridian"] .pb-pago,
 [data-edition="meridian"] .pb-pendente,
 [data-edition="meridian"] .pb-vencido,
 [data-edition="meridian"] .pb-atrasado,
-[data-edition="meridian"] .pb-aprovado{
+[data-edition="meridian"] .pb-aprovado,
+[data-edition="meridian"] .ct-badge,
+[data-edition="meridian"] .role-admin,
+[data-edition="meridian"] .role-financeiro,
+[data-edition="meridian"] .role-operacao,
+[data-edition="meridian"] .role-viewer,
+[data-edition="meridian"] .pri-a,
+[data-edition="meridian"] .pri-m,
+[data-edition="meridian"] .pri-b{
   border-radius: 0 !important;
   border: 1px solid currentColor !important;
   background: transparent !important;
@@ -3710,6 +3791,28 @@ textarea.fi{resize:vertical;min-height:60px;}
   font-size: 9px !important;
   padding: 2px 6px !important;
 }
+/* Recolor into Meridian's editorial palette: red = priority, text = neutral */
+[data-edition="meridian"] .ct-badge.cpa,
+[data-edition="meridian"] .role-admin,
+[data-edition="meridian"] .pb-vencido,
+[data-edition="meridian"] .pri-a{color: var(--theme) !important;}
+[data-edition="meridian"] .ct-badge.tiered,
+[data-edition="meridian"] .ct-badge.deposit,
+[data-edition="meridian"] .ct-badge.rs,
+[data-edition="meridian"] .role-financeiro,
+[data-edition="meridian"] .role-operacao,
+[data-edition="meridian"] .role-viewer,
+[data-edition="meridian"] .pb-pago,
+[data-edition="meridian"] .pb-pendente,
+[data-edition="meridian"] .pb-atrasado,
+[data-edition="meridian"] .pb-aprovado,
+[data-edition="meridian"] .pri-m,
+[data-edition="meridian"] .pri-b{color: var(--text2) !important;}
+/* Affiliate card side-stripe in Meridian also drops the rainbow */
+[data-edition="meridian"] .aff-card.ct-cpa{border-left-color: var(--theme) !important;}
+[data-edition="meridian"] .aff-card.ct-tiered,
+[data-edition="meridian"] .aff-card.ct-deposit,
+[data-edition="meridian"] .aff-card.ct-rs{border-left-color: var(--text) !important;}
 
 /* Rank badges: serif italic numeral, no medal gradient */
 [data-edition="meridian"] .rank-badge{
