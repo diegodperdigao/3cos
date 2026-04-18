@@ -407,6 +407,21 @@ function toast(msg,t='s'){
 }
 window.toast=toast;
 
+// Toggles a password-style input between masked and plaintext. Used for
+// sensitive config fields (EmailJS keys, API tokens) that admins need to
+// see occasionally but shouldn't have visible by default.
+window.toggleSecretField = (inputId, btn) => {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const revealing = input.type === 'password';
+  input.type = revealing ? 'text' : 'password';
+  const icon = btn?.querySelector('i');
+  if (icon) {
+    icon.setAttribute('data-lucide', revealing ? 'eye-off' : 'eye');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+};
+
 function openModal(title,body,ftr=''){
   document.getElementById('mttl').textContent=title;
   document.getElementById('mbd').innerHTML=body;
@@ -799,6 +814,10 @@ window.doLogout=async ()=>{
   // Force clear theme edition on logout (lock screen should always be default)
   document.documentElement.removeAttribute('data-edition');
   if (window.updateCopilotVisibility) updateCopilotVisibility();
+  // Clear login fields and error so the next user starts clean
+  const emailInput=document.getElementById('le');if(emailInput)emailInput.value='';
+  const passInput=document.getElementById('lp');if(passInput)passInput.value='';
+  const errEl=document.getElementById('lerr');if(errEl){errEl.style.display='none';errEl.textContent='';}
   const hub=document.getElementById('hub');hub.style.opacity='0';
   setTimeout(()=>{hub.style.display='none';
     document.querySelectorAll('.mod').forEach(m=>{m.classList.remove('active');m.style.display='none';m.style.opacity='0';});

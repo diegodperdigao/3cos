@@ -236,7 +236,26 @@ window.refreshDash=()=>{
     }).filter(Boolean).sort((a,b)=>b.deposits-a.deposits);
   }
 
+  // Empty-period detection: when the scope has no reports AND the affiliate
+  // rollups also produced zeros, surface a hint instead of just showing zeros.
+  const noData = (scopedReps.length === 0) && (totFTD + totQFTD + totDep + totRev === 0);
+  let emptyHint = '';
+  if (noData) {
+    const suggestion = (STATE.reports || []).length === 0
+      ? 'Ainda não há lançamentos diários na plataforma. Importe os dados ou lance pelo módulo Dashboard.'
+      : brand !== 'all'
+        ? `Nenhum lançamento encontrado para <strong>${brand}</strong> neste período. Tente outro período ou selecione <em>Todas as marcas</em>.`
+        : 'Nenhum lançamento no período selecionado. Tente <em>Todo Período</em> ou um intervalo maior.';
+    emptyHint = `
+      <div class="empty-banner" style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--bg3);border:1px dashed var(--gb2);border-radius:var(--radius);margin-bottom:16px">
+        <i data-lucide="info" style="width:18px;height:18px;color:var(--theme);flex-shrink:0"></i>
+        <div style="flex:1;font-size:11px;color:var(--text2);line-height:1.6">${suggestion}</div>
+        ${_dashDateRange !== 'all' ? `<button class="btn btn-outline" onclick="setDashDate('all',document.querySelector('.pill[onclick*=&quot;setDashDate(\\'all\\'&quot;]'))" style="flex-shrink:0"><i data-lucide="arrow-right"></i> Ver Todo Período</button>` : ''}
+      </div>`;
+  }
+
   el.innerHTML=`
+    ${emptyHint}
     <!-- KPIs — sempre os mesmos 4 para qualquer visão (total, por marca, por período) -->
     <div class="kpi-row" style="margin-bottom:14px">
       <div class="kpi" style="--kpi-c:#ec4899" title="Qualified First Time Deposits no período">

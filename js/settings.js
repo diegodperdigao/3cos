@@ -29,42 +29,42 @@ function bSettings(el){
           <div class="st-row st-row-col">
             <div class="st-label">Tema</div>
             <div class="st-theme-grid st-theme-grid-3">
-              <div class="st-theme-card ${themeName==='default-dark'?'on':''}" onclick="setAppTheme('default-dark')">
+              <div class="st-theme-card ${themeName==='default-dark'?'on':''}" onclick="setAppTheme('default-dark')" onmouseenter="previewAppTheme('default-dark')" onmouseleave="endPreviewAppTheme()">
                 <div class="st-theme-preview st-theme-default-dark"></div>
                 <div class="st-theme-name">Default Dark</div>
                 <div class="st-theme-desc">Cores vibrantes da 3C sobre preto</div>
               </div>
-              <div class="st-theme-card ${themeName==='default-light'?'on':''}" onclick="setAppTheme('default-light')">
+              <div class="st-theme-card ${themeName==='default-light'?'on':''}" onclick="setAppTheme('default-light')" onmouseenter="previewAppTheme('default-light')" onmouseleave="endPreviewAppTheme()">
                 <div class="st-theme-preview st-theme-default-light"></div>
                 <div class="st-theme-name">Default Light</div>
                 <div class="st-theme-desc">Versão clara do tema padrão</div>
               </div>
-              <div class="st-theme-card ${themeName==='mono-dark'?'on':''}" onclick="setAppTheme('mono-dark')">
+              <div class="st-theme-card ${themeName==='mono-dark'?'on':''}" onclick="setAppTheme('mono-dark')" onmouseenter="previewAppTheme('mono-dark')" onmouseleave="endPreviewAppTheme()">
                 <div class="st-theme-preview st-theme-mono-dark"></div>
                 <div class="st-theme-name">Mono Dark</div>
                 <div class="st-theme-desc">Monocromático — foco máximo</div>
               </div>
-              <div class="st-theme-card ${themeName==='mono-light'?'on':''}" onclick="setAppTheme('mono-light')">
+              <div class="st-theme-card ${themeName==='mono-light'?'on':''}" onclick="setAppTheme('mono-light')" onmouseenter="previewAppTheme('mono-light')" onmouseleave="endPreviewAppTheme()">
                 <div class="st-theme-preview st-theme-mono-light"></div>
                 <div class="st-theme-name">Mono Light</div>
                 <div class="st-theme-desc">Monocromático em base clara</div>
               </div>
-              <div class="st-theme-card ${themeName==='bento-light'?'on':''}" onclick="setAppTheme('bento-light')">
+              <div class="st-theme-card ${themeName==='bento-light'?'on':''}" onclick="setAppTheme('bento-light')" onmouseenter="previewAppTheme('bento-light')" onmouseleave="endPreviewAppTheme()">
                 <div class="st-theme-preview st-theme-bento-light"></div>
                 <div class="st-theme-name">Bento Light</div>
                 <div class="st-theme-desc">Neo-brutalismo suave, pastéis vívidos</div>
               </div>
-              <div class="st-theme-card ${themeName==='bento-dark'?'on':''}" onclick="setAppTheme('bento-dark')">
+              <div class="st-theme-card ${themeName==='bento-dark'?'on':''}" onclick="setAppTheme('bento-dark')" onmouseenter="previewAppTheme('bento-dark')" onmouseleave="endPreviewAppTheme()">
                 <div class="st-theme-preview st-theme-bento-dark"></div>
                 <div class="st-theme-name">Bento Dark</div>
                 <div class="st-theme-desc">Bento em charcoal profundo</div>
               </div>
-              <div class="st-theme-card ${themeName==='meridian-light'?'on':''}" onclick="setAppTheme('meridian-light')">
+              <div class="st-theme-card ${themeName==='meridian-light'?'on':''}" onclick="setAppTheme('meridian-light')" onmouseenter="previewAppTheme('meridian-light')" onmouseleave="endPreviewAppTheme()">
                 <div class="st-theme-preview st-theme-meridian-light"></div>
                 <div class="st-theme-name">Meridian Light</div>
                 <div class="st-theme-desc">Editorial, serifa, vermelho de revista</div>
               </div>
-              <div class="st-theme-card ${themeName==='meridian-dark'?'on':''}" onclick="setAppTheme('meridian-dark')">
+              <div class="st-theme-card ${themeName==='meridian-dark'?'on':''}" onclick="setAppTheme('meridian-dark')" onmouseenter="previewAppTheme('meridian-dark')" onmouseleave="endPreviewAppTheme()">
                 <div class="st-theme-preview st-theme-meridian-dark"></div>
                 <div class="st-theme-name">Meridian Dark</div>
                 <div class="st-theme-desc">Meridian em tinta escura</div>
@@ -369,6 +369,28 @@ window.applyAppTheme = () => {
 // Legacy alias so old callers (users.js) still work
 window.applyBetaEdition = window.applyAppTheme;
 
+// Theme hover preview: applies a theme transiently so the user can see it
+// before clicking. On mouseleave, restores the previously saved theme.
+// Debounced + uses a single in-flight preview to avoid flicker when sliding
+// across the theme grid.
+let _themePreviewTimer = null;
+window.previewAppTheme = (themeKey) => {
+  clearTimeout(_themePreviewTimer);
+  _themePreviewTimer = setTimeout(() => {
+    const pair = THEME_MAP[themeKey];
+    if (!pair) return;
+    const root = document.documentElement;
+    root.setAttribute('data-theme', pair.theme);
+    if (pair.edition) root.setAttribute('data-edition', pair.edition);
+    else root.removeAttribute('data-edition');
+  }, 100);
+};
+window.endPreviewAppTheme = () => {
+  clearTimeout(_themePreviewTimer);
+  // Restore to the user's saved theme
+  applyAppTheme();
+};
+
 window.setColorMode = (mode) => {
   document.documentElement.setAttribute('data-theme', mode);
   localStorage.setItem('3cos_theme', mode);
@@ -384,6 +406,7 @@ window.setDensity = (d) => {
   STATE.settings.density = d;
   applyAppTheme();
   saveToLocal();
+  flashSettingsSaved();
   rerenderSettings();
 };
 
@@ -394,13 +417,35 @@ window.toggleSetting = (key) => {
   if (key === 'showIntroVideo') {
     localStorage.setItem('3cos_show_intro', STATE.settings[key] ? '1' : '0');
   }
+  flashSettingsSaved();
 };
 
 window.toggleNotif = (key) => {
   if (!STATE.settings.notifications) STATE.settings.notifications = {};
   STATE.settings.notifications[key] = !STATE.settings.notifications[key];
   saveToLocal();
+  flashSettingsSaved();
 };
+
+// Briefly flash a "✓ Salvo automaticamente" badge at the top of the settings
+// module so the user has visible confirmation that their change was persisted.
+// Called by every toggle/setter in the settings module.
+function flashSettingsSaved() {
+  const mod = document.getElementById('mod-settings');
+  if (!mod || !mod.classList.contains('active')) return;
+  let badge = mod.querySelector('.st-saved-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.className = 'st-saved-badge';
+    badge.innerHTML = '<i data-lucide="check-circle"></i> Salvo automaticamente';
+    mod.appendChild(badge);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+  badge.classList.remove('flash');
+  // Reflow then re-add to restart the animation
+  void badge.offsetWidth;
+  badge.classList.add('flash');
+}
 
 window.saveDisplayName = () => {
   const input = document.getElementById('st-name');

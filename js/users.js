@@ -95,15 +95,24 @@ function bBackup(el){
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:14px">
         <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:14px">
           <label style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px">Public Key</label>
-          <input class="fi" id="ejs-pubkey" value="${STATE.emailjs?.publicKey||''}" placeholder="Seu Public Key" style="padding:8px;font-size:12px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="fi" type="password" id="ejs-pubkey" value="${STATE.emailjs?.publicKey||''}" placeholder="Seu Public Key" style="padding:8px;font-size:12px;flex:1" autocomplete="off">
+            <button type="button" class="ibt" onclick="toggleSecretField('ejs-pubkey',this)" title="Mostrar/ocultar" style="flex-shrink:0"><i data-lucide="eye"></i></button>
+          </div>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:14px">
           <label style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px">Service ID</label>
-          <input class="fi" id="ejs-service" value="${STATE.emailjs?.serviceId||''}" placeholder="service_xxxxxxx" style="padding:8px;font-size:12px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="fi" type="password" id="ejs-service" value="${STATE.emailjs?.serviceId||''}" placeholder="service_xxxxxxx" style="padding:8px;font-size:12px;flex:1" autocomplete="off">
+            <button type="button" class="ibt" onclick="toggleSecretField('ejs-service',this)" title="Mostrar/ocultar" style="flex-shrink:0"><i data-lucide="eye"></i></button>
+          </div>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:14px">
           <label style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px">Template ID (Fechamento)</label>
-          <input class="fi" id="ejs-template" value="${STATE.emailjs?.templateId||''}" placeholder="template_xxxxxxx" style="padding:8px;font-size:12px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="fi" type="password" id="ejs-template" value="${STATE.emailjs?.templateId||''}" placeholder="template_xxxxxxx" style="padding:8px;font-size:12px;flex:1" autocomplete="off">
+            <button type="button" class="ibt" onclick="toggleSecretField('ejs-template',this)" title="Mostrar/ocultar" style="flex-shrink:0"><i data-lucide="eye"></i></button>
+          </div>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:14px">
           <label style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px">Email do Financeiro</label>

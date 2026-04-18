@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=57">
+<link rel="stylesheet" href="css/styles.css?v=58">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -82,8 +82,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     <img src="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg" class="lock-logo">
     <div class="lock-title">3C<span>OS</span></div>
     <div class="lock-sub">Sistema Operacional — Pro</div>
-    <input type="email" id="le" class="lock-field" placeholder="nome@3c.gg" autocomplete="email" onkeydown="if(event.key==='Enter') doLogin()">
-    <input type="password" id="lp" class="lock-field" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+    <input type="email" id="le" class="lock-field" placeholder="nome@3c.gg" autocomplete="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter') doLogin()">
+    <input type="password" id="lp" class="lock-field" placeholder="••••••••" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doLogin()">
     <button class="lock-btn" id="lbtn" onclick="doLogin()">ACESSAR O SISTEMA</button>
     <div class="lock-hint">Acesso seguro</div>
     <div id="lerr" class="lock-err"></div>
@@ -239,26 +239,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=57"></script>
+<script src="js/app.js?v=58"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=57"></script>
-<script src="js/data.js?v=57"></script>
+<script src="js/supabase-client.js?v=58"></script>
+<script src="js/data.js?v=58"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=57"></script>
+<script src="js/lab.js?v=58"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=57"></script>
+<script src="js/search.js?v=58"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=57"></script>
-<script src="js/affiliates.js?v=57"></script>
-<script src="js/brands.js?v=57"></script>
-<script src="js/payments.js?v=57"></script>
-<script src="js/tasks.js?v=57"></script>
-<script src="js/pipeline.js?v=57"></script>
-<script src="js/import.js?v=57"></script>
-<script src="js/watchdog.js?v=57"></script>
-<script src="js/audit.js?v=57"></script>
-<script src="js/users.js?v=57"></script>
-<script src="js/settings.js?v=57"></script>
-<script src="js/copilot.js?v=57"></script>
+<script src="js/dashboard.js?v=58"></script>
+<script src="js/affiliates.js?v=58"></script>
+<script src="js/brands.js?v=58"></script>
+<script src="js/payments.js?v=58"></script>
+<script src="js/tasks.js?v=58"></script>
+<script src="js/pipeline.js?v=58"></script>
+<script src="js/import.js?v=58"></script>
+<script src="js/watchdog.js?v=58"></script>
+<script src="js/audit.js?v=58"></script>
+<script src="js/users.js?v=58"></script>
+<script src="js/settings.js?v=58"></script>
+<script src="js/copilot.js?v=58"></script>
 </body>
 </html>
