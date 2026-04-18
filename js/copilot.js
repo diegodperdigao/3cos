@@ -353,70 +353,106 @@ function buildCopilotContext() {
                   (s.payments || []).length === 0 &&
                   (s.tasks || []).length === 0;
 
+  // ── PAYMENTS: just counts + totals by status (no item list — AI can ask if needed) ──
   const paymentsByStatus = {};
   (s.payments || []).forEach(p => {
     const cs = (typeof computePaymentStatus === 'function') ? computePaymentStatus(p) : p.status;
-    if (!paymentsByStatus[cs]) paymentsByStatus[cs] = { count: 0, total: 0, items: [] };
+    if (!paymentsByStatus[cs]) paymentsByStatus[cs] = { count: 0, total: 0 };
     paymentsByStatus[cs].count++;
     paymentsByStatus[cs].total += (p.amount || 0);
-    paymentsByStatus[cs].items.push({
-      id: p.id, affiliate: p.affiliate, brand: p.brand, amount: p.amount,
-      dueDate: p.dueDate, nfReceivedDate: p.nfReceivedDate, type: p.type,
-      status: cs, contract: p.contract,
-    });
   });
+  // Only include individual items for overdue/at-risk (most likely to be asked)
+  const criticalPayments = (s.payments || [])
+    .filter(p => {
+      const cs = (typeof computePaymentStatus === 'function') ? computePaymentStatus(p) : p.status;
+      return cs === 'vencido' || cs === 'atrasado';
+    })
+    .map(p => ({
+      affiliate: p.affiliate, brand: p.brand, amount: p.amount,
+      dueDate: p.dueDate, type: p.type,
+    }));
 
-  const allAffiliates = (s.affiliates || []).map(a => ({
-    id: a.id, name: a.name, status: a.status, contractType: a.contractType,
-    ftds: a.ftds, qftds: a.qftds, deposits: a.deposits,
-    netRev: a.netRev, commission: a.commission, profit: a.profit,
-    tags: a.tags || [], notes: a.notes, contactName: a.contactName, contactEmail: a.contactEmail,
-    deals: a.deals,
-  }));
+  // ── AFFILIATES: only active, compact fields, notes trimmed ──
+  const compact = v => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
+  const allAffiliates = (s.affiliates || [])
+    .filter(a => a.status !== 'inativo')
+    .map(a => {
+      const o = {
+        id: a.id, name: a.name, contractType: a.contractType,
+        ftds: a.ftds, qftds: a.qftds,
+        deposits: Math.round((a.deposits || 0) * 100) / 100,
+        netRev: Math.round((a.netRev || 0) * 100) / 100,
+        commission: Math.round((a.commission || 0) * 100) / 100,
+        profit: Math.round((a.profit || 0) * 100) / 100,
+        deals: a.deals,
+      };
+      if (!compact(a.notes)) o.notes = String(a.notes).substring(0, 100);
+      if (!compact(a.tags)) o.tags = a.tags;
+      return o;
+    });
 
-  const allContracts = (s.contracts || []).map(c => ({
-    id: c.id, affiliate: c.affiliate, brand: c.brand, name: c.name,
-    type: c.type, value: c.value, status: c.status,
-    startDate: c.startDate, endDate: c.endDate, paid: c.paid, paymentStatus: c.paymentStatus,
-  }));
+  // ── REPORTS: aggregate by affiliate × brand × month (huge token saving) ──
+  const monthlyAgg = {};
+  (s.reports || []).forEach(r => {
+    const month = (r.date || '').substring(0, 7); // YYYY-MM
+    const key = `${r.affiliateId}|${r.brand}|${month}`;
+    if (!monthlyAgg[key]) {
+      const affName = (s.affiliates || []).find(a => a.id === r.affiliateId)?.name || r.affiliateId;
+      monthlyAgg[key] = {
+        affiliate: affName, brand: r.brand, month,
+        ftd: 0, qftd: 0, deposits: 0, netRev: 0,
+      };
+    }
+    const agg = monthlyAgg[key];
+    agg.ftd += r.ftd || 0;
+    const qf = typeof r.qftd === 'number' ? r.qftd : (typeof r.qftd === 'object' && r.qftd ? Object.values(r.qftd).reduce((s, v) => s + (v || 0), 0) : 0);
+    agg.qftd += qf;
+    agg.deposits += r.deposits || 0;
+    agg.netRev += r.netRev || 0;
+  });
+  const monthlyReports = Object.values(monthlyAgg).map(r => ({
+    ...r,
+    deposits: Math.round(r.deposits * 100) / 100,
+    netRev: Math.round(r.netRev * 100) / 100,
+  })).sort((a, b) => (b.month + b.affiliate).localeCompare(a.month + a.affiliate));
 
-  const allTasks = (s.tasks || []).map(t => ({
-    id: t.id, title: t.title, priority: t.priority, status: t.status,
-    dueDate: t.dueDate, assignee: t.assignee, linkedModule: t.linkedModule,
-    description: t.description,
-  }));
+  // ── TASKS: only non-completed ──
+  const openTasks = (s.tasks || [])
+    .filter(t => t.status !== 'concluída')
+    .map(t => {
+      const o = { title: t.title, priority: t.priority, status: t.status, assignee: t.assignee };
+      if (t.dueDate) o.dueDate = t.dueDate;
+      if (t.description) o.description = String(t.description).substring(0, 80);
+      return o;
+    });
 
-  const closings = (s.closings || []).map(c => ({
-    id: c.id, affiliate: c.affiliate, brand: c.brand,
-    month: c.month, totalComm: c.totalComm, status: c.status,
-  }));
+  // ── CONTRACTS: only actives, lean fields ──
+  const activeContracts = (s.contracts || [])
+    .filter(c => c.status !== 'encerrado')
+    .map(c => ({
+      affiliate: c.affiliate, brand: c.brand, type: c.type,
+      value: c.value, paid: c.paid, paymentStatus: c.paymentStatus,
+    }));
 
   return {
     today,
     user: { name: s.user?.name, role: s.user?.role },
     brands: s.brands,
     affiliates: allAffiliates,
-    contracts: allContracts,
-    payments_by_status: paymentsByStatus,
-    tasks: allTasks,
-    closings,
-    pipeline: {
-      stages: (s.pipeline?.stages || []).map(st => st.name),
-      cards: (s.pipeline?.cards || []).map(c => ({
-        affiliate: c.affiliateName, stage: (s.pipeline?.stages||[]).find(st=>st.id===c.stageId)?.name,
-        value: c.value, note: c.note,
-      })),
+    contracts: activeContracts,
+    payments: {
+      by_status: paymentsByStatus,
+      critical: criticalPayments,  // only vencidos + atrasados
     },
-    recent_reports: (s.reports || []).slice(-30).map(r => ({
-      date: r.date, brand: r.brand,
-      affiliate: (s.affiliates || []).find(a => a.id === r.affiliateId)?.name || r.affiliateId,
-      ftd: r.ftd, qftd: (typeof r.qftd === 'object' ? Object.values(r.qftd).reduce((x, v) => x + v, 0) : r.qftd),
-      deposits: r.deposits, netRev: r.netRev,
+    tasks_open: openTasks,
+    closings: (s.closings || []).slice(-6).map(c => ({
+      affiliate: c.affiliate, brand: c.brand, month: c.month, totalComm: c.totalComm, status: c.status,
     })),
+    reports_monthly: monthlyReports,  // aggregated instead of daily
     deadlines: s.deadlines,
     _empty_state: isEmpty,
     _empty_note: isEmpty
-      ? 'IMPORTANTE: A plataforma não tem dados cadastrados ainda (zero afiliados, zero pagamentos, zero tarefas). O usuário acabou de configurar o sistema e ainda não populou com dados reais. Oriente-o a começar cadastrando marcas parceiras, afiliados e lançando dados de performance nos módulos correspondentes. NÃO diga que não tem acesso — explique que o sistema está vazio e precisa ser populado.'
+      ? 'IMPORTANTE: A plataforma não tem dados cadastrados. Oriente o usuário a cadastrar marcas, afiliados e lançar performance. NÃO diga que não tem acesso — explique que o sistema está vazio.'
       : null,
   };
 }

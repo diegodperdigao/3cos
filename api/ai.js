@@ -78,9 +78,10 @@ Depois que tiver dados lançados, posso te ajudar com análises: top afiliados, 
   }
 
   const affCount = (ctx.affiliates || []).length;
-  const payBuckets = ctx.payments_by_status || {};
+  // Support both new structure (payments.by_status) and legacy (payments_by_status)
+  const payBuckets = ctx.payments?.by_status || ctx.payments_by_status || {};
   const totalPayments = Object.values(payBuckets).reduce((s, b) => s + (b.count || 0), 0);
-  const taskCount = (ctx.tasks || []).filter(t => t.status !== 'concluída').length;
+  const taskCount = (ctx.tasks_open || ctx.tasks || []).length;
   const contractCount = (ctx.contracts || []).length;
   const brands = Object.keys(ctx.brands || {});
 
