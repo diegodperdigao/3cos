@@ -413,27 +413,46 @@ window.toast=toast;
 // Lock-screen theme selector: applies THEME_MAP and persists so the choice
 // survives page reload. Works BEFORE login (STATE.user is null).
 window.setLockTheme = (themeKey) => {
-  const THEME_MAP = window.THEME_MAP || {
+  const TM = window.THEME_MAP || {
     'default-dark': { edition: '', theme: 'dark' },
     'default-light': { edition: '', theme: 'light' },
     'mono-dark': { edition: 'mono', theme: 'dark' },
+    'mono-light': { edition: 'mono', theme: 'light' },
     'bento-dark': { edition: 'bento', theme: 'dark' },
     'bento-light': { edition: 'bento', theme: 'light' },
     'meridian-dark': { edition: 'meridian', theme: 'dark' },
+    'meridian-light': { edition: 'meridian', theme: 'light' },
   };
-  const pair = THEME_MAP[themeKey];
+  const pair = TM[themeKey];
   if (!pair) return;
   const root = document.documentElement;
   root.setAttribute('data-theme', pair.theme);
   if (pair.edition) root.setAttribute('data-edition', pair.edition);
   else root.removeAttribute('data-edition');
   localStorage.setItem('3cos_lock_theme', themeKey);
-  // highlight active swatch
-  document.querySelectorAll('.lock-theme-btn').forEach(b => {
+  document.querySelectorAll('.lock-theme-opt').forEach(b => {
     b.classList.toggle('on', b.getAttribute('data-lt') === themeKey);
   });
+  // Close panel after selection
+  const panel = document.getElementById('lock-theme-panel');
+  if (panel) panel.classList.remove('open');
 };
-// Restore lock-screen theme choice on load (before login)
+window.toggleLockThemePanel = () => {
+  const panel = document.getElementById('lock-theme-panel');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    setTimeout(() => {
+      document.addEventListener('click', function closer(e) {
+        if (!panel.contains(e.target) && !e.target.closest('.lock-theme-toggle')) {
+          panel.classList.remove('open');
+        } else {
+          document.addEventListener('click', closer, { once: true });
+        }
+      }, { once: true });
+    }, 0);
+  }
+};
 (function(){
   const saved = localStorage.getItem('3cos_lock_theme');
   if (saved) window.setLockTheme(saved);

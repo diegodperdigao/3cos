@@ -456,30 +456,101 @@ window.saveDisplayName = () => {
 window.uploadAvatar = (event) => {
   const file = event.target?.files?.[0];
   if (!file) return;
-  if (file.size > 2 * 1024 * 1024) { toast('Imagem muito grande (máx. 2MB)', 'e'); return; }
+  if (file.size > 5 * 1024 * 1024) { toast('Imagem muito grande (máx. 5MB)', 'e'); return; }
   const reader = new FileReader();
   reader.onload = (e) => {
-    const url = e.target.result;
-    STATE.user.avatar = url;
-    // Sync to STATE.users so other views (e.g. userAvatar by name) pick it up
-    const match = (STATE.users || []).find(u => u.id === STATE.user.id || u.email === STATE.user.email);
-    if (match) match.avatar = url;
-    saveToLocal();
-    // Push to Supabase profiles if available
-    if (window.sb && window.Data?.upsert) {
-      Data.upsert('profiles', { id: STATE.user.id, name: STATE.user.name, email: STATE.user.email, role: STATE.user.role, status: STATE.user.status, avatar: url })
-        .catch(e => console.warn('[uploadAvatar] profile sync failed:', e));
-    }
-    // Refresh visible avatars in the hub header
-    const hubAv = document.getElementById('hub-user-avatar');
-    if (hubAv && window.userAvatar) hubAv.innerHTML = window.userAvatar(STATE.user, 32);
-    // Re-render settings to show new avatar
-    rerenderSettings();
-    logAction('Avatar atualizado', '');
-    toast('Avatar atualizado', 's');
+    const imgUrl = e.target.result;
+    _openAvatarCropper(imgUrl, (croppedUrl) => {
+      STATE.user.avatar = croppedUrl;
+      const match = (STATE.users || []).find(u => u.id === STATE.user.id || u.email === STATE.user.email);
+      if (match) match.avatar = croppedUrl;
+      saveToLocal();
+      if (window.sb && window.Data?.upsert) {
+        Data.upsert('profiles', { id: STATE.user.id, name: STATE.user.name, email: STATE.user.email, role: STATE.user.role, status: STATE.user.status, avatar: croppedUrl })
+          .catch(err => console.warn('[uploadAvatar] profile sync failed:', err));
+      }
+      const hubAv = document.getElementById('hub-user-avatar');
+      if (hubAv && window.userAvatar) hubAv.innerHTML = window.userAvatar(STATE.user, 32);
+      rerenderSettings();
+      logAction('Avatar atualizado', '');
+      toast('Avatar atualizado', 's');
+    });
   };
   reader.readAsDataURL(file);
 };
+
+function _openAvatarCropper(imgUrl, onDone) {
+  const SIZE = 256;
+  openModal('Recortar avatar', `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+      <div style="position:relative;width:${SIZE}px;height:${SIZE}px;overflow:hidden;border-radius:50%;border:2px solid var(--gb2);background:var(--bg3)">
+        <img id="crop-img" src="${imgUrl}" style="position:absolute;cursor:grab;user-select:none;-webkit-user-drag:none" draggable="false">
+      </div>
+      <input type="range" id="crop-zoom" min="100" max="300" value="100" style="width:200px;accent-color:var(--theme)">
+      <div style="font-size:11px;color:var(--text3)">Arraste a imagem e ajuste o zoom</div>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-theme" onclick="_applyCrop()">Salvar</button>`);
+  lucide.createIcons();
+
+  const img = document.getElementById('crop-img');
+  const zoom = document.getElementById('crop-zoom');
+  let ox = 0, oy = 0, dragging = false, startX, startY, imgW, imgH;
+
+  img.onload = () => {
+    const ratio = img.naturalWidth / img.naturalHeight;
+    if (ratio >= 1) { imgH = SIZE; imgW = SIZE * ratio; }
+    else { imgW = SIZE; imgH = SIZE / ratio; }
+    img.style.width = imgW + 'px';
+    img.style.height = imgH + 'px';
+    ox = -(imgW - SIZE) / 2;
+    oy = -(imgH - SIZE) / 2;
+    _updatePos();
+  };
+  if (img.complete) img.onload();
+
+  function _updatePos() {
+    img.style.left = ox + 'px';
+    img.style.top = oy + 'px';
+  }
+
+  img.addEventListener('pointerdown', (e) => {
+    dragging = true; startX = e.clientX - ox; startY = e.clientY - oy;
+    img.style.cursor = 'grabbing';
+    img.setPointerCapture(e.pointerId);
+  });
+  img.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    ox = e.clientX - startX; oy = e.clientY - startY;
+    _updatePos();
+  });
+  img.addEventListener('pointerup', () => { dragging = false; img.style.cursor = 'grab'; });
+
+  zoom.addEventListener('input', () => {
+    const scale = zoom.value / 100;
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const baseW = ratio >= 1 ? SIZE * ratio : SIZE;
+    const baseH = ratio >= 1 ? SIZE : SIZE / ratio;
+    imgW = baseW * scale; imgH = baseH * scale;
+    img.style.width = imgW + 'px';
+    img.style.height = imgH + 'px';
+    ox = Math.min(0, Math.max(-(imgW - SIZE), ox));
+    oy = Math.min(0, Math.max(-(imgH - SIZE), oy));
+    _updatePos();
+  });
+
+  window._applyCrop = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = SIZE; canvas.height = SIZE;
+    const ctx = canvas.getContext('2d');
+    const scaleX = img.naturalWidth / imgW;
+    const scaleY = img.naturalHeight / imgH;
+    ctx.drawImage(img, -ox * scaleX, -oy * scaleY, SIZE * scaleX, SIZE * scaleY, 0, 0, SIZE, SIZE);
+    const result = canvas.toDataURL('image/jpeg', 0.85);
+    closeModal();
+    onDone(result);
+  };
+}
 
 window.changePassword = async () => {
   const np = document.getElementById('st-pw-new')?.value;
