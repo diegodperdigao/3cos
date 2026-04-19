@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '7.5';
+  --3cos-version: '7.6';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -3260,40 +3260,28 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="bento"] .kanban-card,
 [data-edition="bento"] .kanban-col{
   border-radius: 14px !important;
-  border: 1.5px solid var(--text) !important;
-  box-shadow: 3px 3px 0 0 var(--text) !important;
-  transition: transform 0.15s, box-shadow 0.15s;
+  border: 1px solid var(--gb2) !important;
+  box-shadow: none !important;
+  transition: transform 0.18s cubic-bezier(0.32,0.72,0,1), box-shadow 0.18s, border-color 0.18s;
 }
-/* Dark bento: softer shadow (white is too bright) */
-[data-edition="bento"][data-theme="dark"] .hub-app,
-[data-edition="bento"][data-theme="dark"] .kpi,
-[data-edition="bento"][data-theme="dark"] .intel-wrap,
-[data-edition="bento"][data-theme="dark"] .intel-card,
-[data-edition="bento"][data-theme="dark"] .aff-card,
-[data-edition="bento"][data-theme="dark"] .user-card,
-[data-edition="bento"][data-theme="dark"] .tk,
-[data-edition="bento"][data-theme="dark"] .st-card,
-[data-edition="bento"][data-theme="dark"] .ac-card,
-[data-edition="bento"][data-theme="dark"] .kanban-card,
-[data-edition="bento"][data-theme="dark"] .kanban-col{
-  border-color: var(--gb3) !important;
-  box-shadow: 3px 3px 0 0 var(--gb3) !important;
-}
+/* Bento brutalist shadow promoted to an INTERACTION signal, not decoration —
+   only shows on hover/focus, keeping idle cards calm and scannable. */
 [data-edition="bento"] .hub-app:hover,
 [data-edition="bento"] .aff-card:hover,
-[data-edition="bento"] .kanban-card:hover{
+[data-edition="bento"] .kanban-card:hover,
+[data-edition="bento"] .intel-card:hover,
+[data-edition="bento"] .kpi:hover{
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 0 var(--text) !important;
+  border-color: var(--text) !important;
+  box-shadow: 3px 3px 0 0 var(--text) !important;
 }
 [data-edition="bento"][data-theme="dark"] .hub-app:hover,
 [data-edition="bento"][data-theme="dark"] .aff-card:hover,
-[data-edition="bento"][data-theme="dark"] .kanban-card:hover{
-  box-shadow: 4px 4px 0 0 var(--gb3) !important;
-}
-[data-edition="bento"] .kpi:hover,
-[data-edition="bento"] .intel-card:hover{
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 0 var(--theme) !important;
+[data-edition="bento"][data-theme="dark"] .kanban-card:hover,
+[data-edition="bento"][data-theme="dark"] .intel-card:hover,
+[data-edition="bento"][data-theme="dark"] .kpi:hover{
+  border-color: var(--gb3) !important;
+  box-shadow: 3px 3px 0 0 var(--gb3) !important;
 }
 
 /* Hub apps get the distinct accent colors per card (the bento grid look) */
@@ -3421,50 +3409,45 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-color: var(--text) !important;
 }
 
-/* Status badges: solid pastel blocks */
-[data-edition="bento"] .pb-pago{background: var(--green) !important;color: #fff !important;border: 2px solid var(--text) !important;}
-[data-edition="bento"] .pb-pendente{background: var(--amber) !important;color: #fff !important;border: 2px solid var(--text) !important;}
-[data-edition="bento"] .pb-vencido{background: var(--red) !important;color: #fff !important;border: 2px solid var(--text) !important;}
-[data-edition="bento"] .pb-atrasado{background: var(--amber) !important;color: #fff !important;border: 2px solid var(--text) !important;}
-[data-edition="bento"] .pb-aprovado{background: var(--blue) !important;color: #fff !important;border: 2px solid var(--text) !important;}
-
-/* Contract-type chips: distinct pastel blocks from the Bento palette */
-[data-edition="bento"] .ct-badge{
-  border-radius: 6px !important;
-  border: 2px solid var(--text) !important;
-  font-weight: 800 !important;
-  padding: 3px 8px !important;
-}
-[data-edition="bento"] .ct-badge.cpa{background: var(--pink) !important;color: #fff !important;}
-[data-edition="bento"] .ct-badge.tiered{background: var(--purple) !important;color: #fff !important;}
-[data-edition="bento"] .ct-badge.deposit{background: var(--blue) !important;color: #fff !important;}
-[data-edition="bento"] .ct-badge.rs{background: var(--green) !important;color: #fff !important;}
-
-/* Role badges: solid-pastel + outline language */
+/* Chips & badges: tinted translucent fill + 1px hairline instead of thick
+   solid fills. Color still identifies semantic state but without stacking
+   saturated rectangles across dense lists. Mirrors how Apple/Linear handle
+   dense chip repetition. */
+[data-edition="bento"] .pb-pago,
+[data-edition="bento"] .pb-pendente,
+[data-edition="bento"] .pb-vencido,
+[data-edition="bento"] .pb-atrasado,
+[data-edition="bento"] .pb-aprovado,
+[data-edition="bento"] .ct-badge,
 [data-edition="bento"] .role-admin,
 [data-edition="bento"] .role-financeiro,
 [data-edition="bento"] .role-operacao,
-[data-edition="bento"] .role-viewer{
-  border: 2px solid var(--text) !important;
-  font-weight: 800 !important;
-  border-radius: 6px !important;
-}
-[data-edition="bento"] .role-admin{background: var(--red) !important;color: #fff !important;}
-[data-edition="bento"] .role-financeiro{background: var(--amber) !important;color: #fff !important;}
-[data-edition="bento"] .role-operacao{background: var(--blue) !important;color: #fff !important;}
-[data-edition="bento"] .role-viewer{background: var(--purple) !important;color: #fff !important;}
-
-/* Priority chips */
+[data-edition="bento"] .role-viewer,
 [data-edition="bento"] .pri-a,
 [data-edition="bento"] .pri-m,
 [data-edition="bento"] .pri-b{
-  border: 2px solid var(--text) !important;
-  font-weight: 800 !important;
   border-radius: 6px !important;
+  border: 1px solid currentColor !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  background: color-mix(in srgb, currentColor 14%, transparent) !important;
 }
-[data-edition="bento"] .pri-a{background: var(--red) !important;color: #fff !important;}
-[data-edition="bento"] .pri-m{background: var(--amber) !important;color: #fff !important;}
-[data-edition="bento"] .pri-b{background: var(--green) !important;color: #fff !important;}
+[data-edition="bento"] .pb-pago{color: var(--green) !important;}
+[data-edition="bento"] .pb-pendente{color: var(--amber) !important;}
+[data-edition="bento"] .pb-vencido{color: var(--red) !important;}
+[data-edition="bento"] .pb-atrasado{color: var(--amber) !important;}
+[data-edition="bento"] .pb-aprovado{color: var(--blue) !important;}
+[data-edition="bento"] .ct-badge.cpa{color: var(--pink) !important;}
+[data-edition="bento"] .ct-badge.tiered{color: var(--purple) !important;}
+[data-edition="bento"] .ct-badge.deposit{color: var(--blue) !important;}
+[data-edition="bento"] .ct-badge.rs{color: var(--green) !important;}
+[data-edition="bento"] .role-admin{color: var(--red) !important;}
+[data-edition="bento"] .role-financeiro{color: var(--amber) !important;}
+[data-edition="bento"] .role-operacao{color: var(--blue) !important;}
+[data-edition="bento"] .role-viewer{color: var(--purple) !important;}
+[data-edition="bento"] .pri-a{color: var(--red) !important;}
+[data-edition="bento"] .pri-m{color: var(--amber) !important;}
+[data-edition="bento"] .pri-b{color: var(--green) !important;}
 
 /* Rank badges: solid pastel */
 [data-edition="bento"] .rank-badge{border: 2px solid var(--text) !important;}
