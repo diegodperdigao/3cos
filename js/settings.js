@@ -275,6 +275,49 @@ function bSettings(el){
         </div>
       </div>
 
+      <!-- BETA FEATURES -->
+      <div class="st-section">
+        <div class="st-section-hdr">
+          <div class="st-section-icon"><i data-lucide="flask-conical"></i></div>
+          <div>
+            <div class="st-section-title">Laboratório · Features em beta</div>
+            <div class="st-section-sub">Recursos experimentais que podem ser ativados individualmente</div>
+          </div>
+        </div>
+        <div class="st-card">
+          <div class="st-row">
+            <div>
+              <div class="st-label">Modo Beta</div>
+              <div class="st-hint">Libera o acesso ao laboratório abaixo e ao 3C Copilot</div>
+            </div>
+            ${switchHTML('st-beta-master', !!STATE.betaMode, 'toggleBetaMode()')}
+          </div>
+          ${STATE.betaMode ? `
+          <div class="st-divider"></div>
+          <div class="st-beta-grid">
+            ${(window.BETA_FEATURES||[]).map(f => {
+              const on = !!STATE.settings?.betaFlags?.[f.id];
+              const badge = f.status === 'ready'
+                ? '<span class="st-beta-badge st-beta-ready">Disponível</span>'
+                : f.status === 'preview'
+                  ? '<span class="st-beta-badge st-beta-preview">Prévia</span>'
+                  : '<span class="st-beta-badge st-beta-planned">Em desenvolvimento</span>';
+              const canToggle = f.status === 'ready' || f.status === 'preview';
+              return `<div class="st-beta-item ${!canToggle?'st-beta-disabled':''}">
+                <div class="st-beta-icon"><i data-lucide="${f.icon}"></i></div>
+                <div class="st-beta-info">
+                  <div class="st-beta-title">${f.name} ${badge}</div>
+                  <div class="st-beta-desc">${f.desc}</div>
+                </div>
+                ${canToggle
+                  ? switchHTML(`st-beta-${f.id}`, on, `toggleBetaFeature('${f.id}')`)
+                  : '<div style="opacity:0.4;font-size:10px;color:var(--text3);padding-right:4px">Em breve</div>'}
+              </div>`;
+            }).join('')}
+          </div>` : ''}
+        </div>
+      </div>
+
       <!-- ATALHOS -->
       <div class="st-section">
         <div class="st-section-hdr">

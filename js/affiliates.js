@@ -162,9 +162,10 @@ window.openAffDetail=id=>{
 
     <!-- TAB: TIMELINE -->
     <div data-aff-panel="timeline" id="aff-tab-timeline" style="display:none">
-      <div class="dtl" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-        Histórico Cronológico
-        <button onclick="addCRMNote('${a.id}')" style="background:none;border:none;color:var(--theme);cursor:pointer;font-size:9px;font-weight:700;text-transform:uppercase">+ Nota</button>
+      ${typeof renderActivityTimeline === 'function' ? renderActivityTimeline(a.id) : ''}
+      <div class="dtl" style="margin:${typeof renderActivityTimeline === 'function' && isBetaEnabled?.('activity_timeline') ? '22px 0 10px' : '0 0 10px'};display:flex;justify-content:space-between;align-items:center">
+        Histórico do sistema
+        <button onclick="addCRMNote('${a.id}')" style="background:none;border:none;color:var(--theme);cursor:pointer;font-size:10px;font-weight:500">+ Nota rápida</button>
       </div>
       <div style="position:relative;padding-left:20px;border-left:2px solid var(--gb)">
         ${history.length?history.map(h=>{
