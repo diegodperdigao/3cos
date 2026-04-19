@@ -1108,7 +1108,7 @@ function modHdr(label){
       </div>
     </div>
     <div class="mod-hdr-r">
-      <button class="hdr-icon-btn ${STATE.betaMode?'on':''}" onclick="toggleBetaMode()" title="Alternar modo Beta"><i data-lucide="flask-conical"></i></button>
+      <button class="hdr-icon-btn ${STATE.betaMode?'on':''}" onclick="toggleBetaMode(this)" title="Alternar modo Beta"><i data-lucide="flask-conical"></i></button>
       <span class="hdr-sync-icon" title="Sincronizado com a nuvem" style="display:none"><i data-lucide="cloud"></i></span>
       <button class="hdr-icon-btn" onclick="toggleActionCenter()" title="Alertas"><i data-lucide="bell"></i></button>
       <button class="hdr-icon-btn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="sun"></i></button>

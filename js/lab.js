@@ -61,12 +61,12 @@ window.toggleBetaFeature = (featureId) => {
   }
 };
 
-window.toggleBetaMode = () => {
-  // If Beta is already ON and the user clicks again, open the features panel
-  // instead of turning it off. This prevents accidentally losing the state
-  // and makes the active features discoverable.
+window.toggleBetaMode = function(anchor) {
+  // `anchor` is the clicked button (passed as `this` from inline onclick
+  // in hub/header). Used to position the popover correctly regardless of
+  // whether the user is on the hub or inside a module.
   if (STATE.betaMode) {
-    return window.openBetaMenu();
+    return window.openBetaMenu(anchor);
   }
   STATE.betaMode = true;
   logAction('Modo Beta ativado', '');
@@ -75,19 +75,31 @@ window.toggleBetaMode = () => {
   if (window.updateCopilotVisibility) updateCopilotVisibility();
   if (window.refreshActiveModule) refreshActiveModule();
   if (typeof rerenderSettings === 'function') rerenderSettings();
-  // Open the menu right after activation so the user sees what's available
-  setTimeout(() => window.openBetaMenu(), 100);
+  // Open menu after state propagates so popover reflects current betaMode
+  setTimeout(() => window.openBetaMenu(anchor), 120);
 };
 
 // Renders a small anchored panel listing all beta features with quick toggles
 // and a hint of where each one shows up. Replaces the old "just turn off"
 // behavior of clicking the flask icon again.
-window.openBetaMenu = () => {
+window.openBetaMenu = (anchorEl) => {
   // Remove any existing menu
   document.getElementById('beta-menu-popover')?.remove();
 
-  const anchor = document.querySelector('#hub-beta-btn, .hdr-icon-btn[onclick*="toggleBetaMode"]');
-  if (!anchor) return;
+  // Find the visible trigger — hub button OR any header flask icon.
+  // Filters by actual visibility (width > 0) because the hub button
+  // still exists in the DOM when a module is active, just hidden.
+  let anchor = anchorEl;
+  if (!anchor) {
+    const candidates = Array.from(document.querySelectorAll(
+      '#hub-beta-btn, button[onclick*="toggleBetaMode"]'
+    ));
+    anchor = candidates.find(a => a.offsetWidth > 0 && a.offsetHeight > 0) || candidates[0];
+  }
+  if (!anchor) {
+    console.warn('[beta] no anchor found for menu');
+    return;
+  }
   const rect = anchor.getBoundingClientRect();
 
   const items = (window.BETA_FEATURES || []).map(f => {
