@@ -359,6 +359,11 @@ window.toggleTheme = _wrapToggleTheme;
         document.getElementById('hub-uname').textContent=STATE.user.name;
         document.getElementById('hub-urole').textContent=ROLES[STATE.user.role]?.label||STATE.user.role;
         document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
+        // Populate the hub avatar on session restore (showHub is not called here)
+        const _avEl=document.getElementById('hub-user-avatar');
+        if(_avEl && typeof window.userAvatar === 'function'){
+          _avEl.innerHTML = window.userAvatar(STATE.user, 32);
+        }
         // Show hub first (always stable)
         const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
         try { buildHubCards(); buildMobileHome(); } catch(e){ console.error('[boot] buildHub failed:', e); }

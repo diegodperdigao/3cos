@@ -268,7 +268,7 @@ window.userAvatar=(nameOrUser,size=28)=>{
   const name=(u?.name)||(typeof nameOrUser==='string'?nameOrUser:'?');
   const avatar=u?.avatar||'';
   const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(s=>s[0]).join('').toUpperCase();
-  // deterministic color from name
+  // deterministic color from name (used as a CSS var so themes can override)
   let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))|0;
   const hue=Math.abs(h)%360;
   const bg=`hsl(${hue},60%,45%)`;
@@ -276,7 +276,9 @@ window.userAvatar=(nameOrUser,size=28)=>{
   if(avatar){
     return `<img class="u-avatar" src="${avatar}" alt="${name}" title="${name}${u?.title?' · '+u.title:''}" style="width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;flex-shrink:0">`;
   }
-  return `<span class="u-avatar u-avatar-init" title="${name}${u?.title?' · '+u.title:''}" style="width:${s}px;height:${s}px;background:${bg};color:#fff;font-size:${Math.round(s*0.38)}px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;font-family:var(--fd)">${initials}</span>`;
+  // Only size is inline; colors come from the --u-avatar-bg CSS var so theme
+  // overrides (e.g. mono) can take over without fighting !important.
+  return `<span class="u-avatar u-avatar-init" title="${name}${u?.title?' · '+u.title:''}" style="--u-avatar-bg:${bg};width:${s}px;height:${s}px;font-size:${Math.round(s*0.38)}px">${initials}</span>`;
 };
 const od=(d,s)=>d&&s!=='pago'&&new Date(d)<new Date();
 const sl=s=>({ativo:'Ativo',negociação:'Negociação',encerrado:'Encerrado'}[s]||s||'Ativo');
