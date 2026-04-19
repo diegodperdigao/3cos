@@ -134,23 +134,65 @@ function getFilteredReports(brandFilter){
   return reps;
 }
 
-// Compute commission + 3C profit from a set of reports using each brand's
-// deal structure. Used for brand / date-filtered views where affiliate
-// rollups (STATE.affiliates.commission) aren't applicable.
+// Compute tiered CPA commission for a given QFTD count.
+// levels = [{cpa, baseline}, ...] sorted by baseline ascending.
+// Returns total CPA value: each QFTD tier pays its own rate.
+function _computeTieredCPA(qftds, levels) {
+  if (!levels?.length || qftds <= 0) return 0;
+  const sorted = [...levels].sort((a, b) => (a.baseline || 0) - (b.baseline || 0));
+  let remaining = qftds, total = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const tier = sorted[i];
+    const nextBase = sorted[i + 1]?.baseline || Infinity;
+    const tierCap = nextBase - (tier.baseline || 0);
+    const inTier = Math.min(remaining, tierCap);
+    total += inTier * (tier.cpa || 0);
+    remaining -= inTier;
+    if (remaining <= 0) break;
+  }
+  return total;
+}
+
+// Compute commission from a deal structure (affiliate deal or brand config).
+// Handles both standard (flat CPA) and tiered (levels array).
+function _computeDealComm(qftds, netRev, deal) {
+  if (!deal) return 0;
+  let cpaPart = 0;
+  if (deal.levels?.length) {
+    cpaPart = _computeTieredCPA(qftds, deal.levels);
+  } else {
+    cpaPart = (deal.cpa || 0) * qftds;
+  }
+  const rsPart = (deal.rs || 0) / 100 * (netRev || 0);
+  return cpaPart + Math.max(0, rsPart);
+}
+
+// Compute commission + 3C profit from a set of reports.
+// For EACH report, looks up:
+//   1) brandComm = what the brand pays 3C (brand-level CPA/RS/tiers)
+//   2) affComm   = what 3C pays the affiliate (affiliate deal CPA/RS/tiers)
+//   3) profit    = brandComm - affComm (can be negative = 3C losing money)
 function _estimateRevFromReports(reps){
   let comm=0,profit=0;
   reps.forEach(r=>{
-    const brand=STATE.brands?.[r.brand]||STATE.brands?.[_resolveBrandKey(r.brand)];
-    if(!brand)return;
+    const brandKey = _resolveBrandKey(r.brand) || r.brand;
+    const brand = STATE.brands?.[brandKey] || STATE.brands?.[r.brand];
+    if(!brand) return;
     const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+(v||0),0):(r.qftd||0);
-    const nr=r.netRev||0;
-    const cpa=brand.cpa||(brand.levels?.[0]?.cpa)||0;
-    const rs=brand.rs||0;
-    const commThis=(q*cpa)+(nr*rs/100);
-    comm+=commThis;
-    profit+=Math.max(0,nr-commThis);
+    const nr = r.netRev || 0;
+
+    // What brand pays 3C
+    const brandComm = _computeDealComm(q, nr, brand);
+
+    // What 3C pays the affiliate (look up their specific deal)
+    const aff = STATE.affiliates?.find(a => a.id === r.affiliateId);
+    const affDeal = aff?.deals?.[brandKey] || aff?.deals?.[r.brand];
+    const affComm = affDeal ? _computeDealComm(q, nr, affDeal) : 0;
+
+    comm += affComm;
+    profit += brandComm - affComm;
   });
-  return {comm,profit};
+  return {comm, profit};
 }
 
 window.refreshDash=()=>{
@@ -235,16 +277,18 @@ window.refreshDash=()=>{
   const dateLbl=_dashDateRange==='all'?'Todo Período':_dashDateRange==='month'?'Este Mês':_dashDateRange==='last'?'Mês Passado':
     (from&&to?`${from.toLocaleDateString('pt-BR')} — ${to.toLocaleDateString('pt-BR')}`:'Personalizado');
 
-  // Intel affiliates
+  // Intel affiliates — use affiliate deals to find who operates each brand,
+  // regardless of whether reports match the current period.
   const filteredReps=getFilteredReports(brand==='all'?null:brand);
   let intelAffs;
-  if(isAllTime&&brand==='all'){
-    intelAffs=[...STATE.affiliates].filter(a=>a.ftds>0).sort((a,b)=>pct(b.qftds,b.ftds)-pct(a.qftds,a.ftds));
-  }else if(brand==='all'){
-    const affIds=new Set(filteredReps.map(r=>r.affiliateId));
-    intelAffs=STATE.affiliates.filter(a=>affIds.has(a.id));
+  if(brand==='all'){
+    intelAffs=[...STATE.affiliates].filter(a=>(a.ftds||0)>0).sort((a,b)=>pct(b.qftds,b.ftds)-pct(a.qftds,a.ftds));
   }else{
-    intelAffs=STATE.affiliates.filter(a=>a.deals&&a.deals[brand]);
+    const brandKey=_resolveBrandKey(brand);
+    intelAffs=STATE.affiliates.filter(a=>{
+      if(!a.deals)return false;
+      return a.deals[brand]||a.deals[brandKey]||Object.keys(a.deals).some(k=>k.toLowerCase()===brand.toLowerCase());
+    });
   }
 
   const intelTitle=brand==='all'?'Intelligence 3C':`${brand} Intelligence`;
@@ -325,11 +369,14 @@ window.refreshDash=()=>{
       <div class="intel-grid">
         ${intelAffs.map(a=>{
           let aFTD,aQFTD,aDep;
-          if(isAllTime&&brand==='all'){aFTD=a.ftds;aQFTD=a.qftds;aDep=a.deposits;}
-          else{const rs=filteredReps.filter(r=>r.affiliateId===a.id);
-            aFTD=rs.reduce((s,r)=>s+(r.ftd||0),0);aQFTD=rs.reduce((s,r)=>s+(typeof r.qftd==='object'?Object.values(r.qftd).reduce((x,v)=>x+v,0):(r.qftd||0)),0);
-            aDep=rs.reduce((s,r)=>s+(r.deposits||0),0);}
-          if(!aFTD&&!aQFTD&&!aDep&&!(isAllTime&&brand==='all'))return '';
+          // Try report data first; fall back to affiliate totals
+          const affReps=filteredReps.filter(r=>r.affiliateId===a.id);
+          if(affReps.length){
+            aFTD=affReps.reduce((s,r)=>s+(r.ftd||0),0);
+            aQFTD=affReps.reduce((s,r)=>s+(typeof r.qftd==='object'?Object.values(r.qftd).reduce((x,v)=>x+v,0):(r.qftd||0)),0);
+            aDep=affReps.reduce((s,r)=>s+(r.deposits||0),0);
+          }else{aFTD=a.ftds||0;aQFTD=a.qftds||0;aDep=a.deposits||0;}
+          if(!aFTD&&!aQFTD&&!aDep)return '';
           const p2=pct(aQFTD,aFTD);const col=cvC(p2);
           const dealStr=brand==='all'?`${aFTD} FTDs · ${CONTRACT_TYPES[a.contractType]?.label||''}`:
             (()=>{const deal=a.deals?.[brand];return a.contractType==='tiered'?'CPA Escalonado':

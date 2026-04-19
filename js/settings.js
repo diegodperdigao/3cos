@@ -745,11 +745,25 @@ window.run3CDashImport = async () => {
     });
 
     // Compute a rough commission + profit (CPA*QFTDs + RS*NetRev — best effort)
+    // Uses the tiered helper from dashboard if available, falls back to flat.
     const commission = rows.reduce((s, r) => {
       const dealForBrand = deals[r.brand];
       if (!dealForBrand) return s;
       const qf = typeof r.qftd === 'number' ? r.qftd : (typeof r.qftd === 'object' ? Object.values(r.qftd).reduce((x, v) => x + (v || 0), 0) : 0);
-      const cpaPart = (dealForBrand.cpa || 0) * qf;
+      let cpaPart = 0;
+      if (dealForBrand.levels?.length) {
+        const sorted = [...dealForBrand.levels].sort((a, b) => (a.baseline || 0) - (b.baseline || 0));
+        let rem = qf;
+        for (let i = 0; i < sorted.length && rem > 0; i++) {
+          const nextBase = sorted[i + 1]?.baseline || Infinity;
+          const tierCap = nextBase - (sorted[i].baseline || 0);
+          const inTier = Math.min(rem, tierCap);
+          cpaPart += inTier * (sorted[i].cpa || 0);
+          rem -= inTier;
+        }
+      } else {
+        cpaPart = (dealForBrand.cpa || 0) * qf;
+      }
       const rsPart = (dealForBrand.rs || 0) / 100 * (r.netRev || 0);
       return s + cpaPart + Math.max(0, rsPart);
     }, 0);
