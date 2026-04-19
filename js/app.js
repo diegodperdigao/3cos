@@ -441,16 +441,9 @@ window.toggleLockThemePanel = () => {
   const panel = document.getElementById('lock-theme-panel');
   if (!panel) return;
   panel.classList.toggle('open');
-  if (panel.classList.contains('open')) {
-    setTimeout(() => {
-      document.addEventListener('click', function closer(e) {
-        if (!panel.contains(e.target) && !e.target.closest('.lock-theme-toggle')) {
-          panel.classList.remove('open');
-        } else {
-          document.addEventListener('click', closer, { once: true });
-        }
-      }, { once: true });
-    }, 0);
+  // Refresh lucide icons inside the panel (the X close button)
+  if (panel.classList.contains('open') && typeof lucide !== 'undefined') {
+    lucide.createIcons();
   }
 };
 (function(){

@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '6.6';
+  --3cos-version: '6.7';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -142,11 +142,19 @@ body::before {
   padding:6px 14px;color:var(--text3);font-size:12px;font-family:var(--fb);
   cursor:pointer;transition:all 0.15s;}
 .lock-theme-toggle:hover{border-color:var(--text2);color:var(--text);}
-.lock-theme-panel{display:none;position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%);
-  width:280px;background:var(--bg2);border:1px solid var(--gb);border-radius:12px;
-  box-shadow:0 16px 40px -8px rgba(0,0,0,0.4);padding:12px;z-index:10;}
-.lock-theme-panel.open{display:block;}
-.lock-theme-panel-title{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-align:center;}
+/* Theme picker on the lock screen: centered overlay so it never gets
+   clipped by the viewport regardless of where the trigger button sits. */
+.lock-theme-panel{display:none;position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,0.62);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;padding:24px;}
+.lock-theme-panel.open{display:flex;}
+.lock-theme-panel-inner{position:relative;width:340px;max-width:100%;background:var(--bg2);
+  border:1px solid var(--gb);border-radius:14px;
+  box-shadow:0 24px 60px -12px rgba(0,0,0,0.5);padding:18px;}
+.lock-theme-panel-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;
+  border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;}
+.lock-theme-panel-close:hover{background:var(--bg3);color:var(--text);}
+.lock-theme-panel-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;text-align:left;padding-right:28px;}
 .lock-theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
 .lock-theme-opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gb);
   border-radius:8px;background:transparent;color:var(--text);font-size:11px;font-family:var(--fb);
