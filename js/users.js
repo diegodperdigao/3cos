@@ -32,62 +32,76 @@ function bUsers(el){
 // BACKUP & NUVEM (módulo separado)
 // ══════════════════════════════════════════════════════════
 function bBackup(el){
-  const lastSync=STATE.lastSync||'Nunca';
-  const dataSize=JSON.stringify(STATE).length;
-  const dataSizeKB=Math.round(dataSize/1024);
+  const lastSync = STATE.lastSync ? new Date(STATE.lastSync).toLocaleString('pt-BR') : 'Nunca sincronizado';
+  const lastExport = STATE.lastExport ? new Date(STATE.lastExport).toLocaleString('pt-BR') : '—';
+  const dataSize = JSON.stringify(STATE).length;
+  const dataSizeKB = Math.round(dataSize / 1024);
+  const supaOK = !!window.SUPABASE_CONFIGURED;
+
   el.innerHTML=modHdr('Backup & Nuvem')+`<div class="mod-body">
     ${heroHTML('backup','','Backup & nuvem','Exportar, importar e sincronizar')}
     <div class="mod-main">
-      <div class="sec-hdr"><div class="sec-lbl">Status da Sincronização</div></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px">
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
-          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Supabase</div>
-          <div style="font-size:14px;font-weight:700;color:${window.SUPABASE_CONFIGURED?'var(--green)':'var(--red)'};margin-top:4px">${window.SUPABASE_CONFIGURED?'Conectado':'Desconectado'}</div>
+
+      <div class="sec-hdr"><div class="sec-lbl">Status</div></div>
+      <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:22px">
+        <div class="kpi"><div class="kpi-icon-row"><i data-lucide="${supaOK?'cloud':'cloud-off'}" style="stroke:${supaOK?'var(--green)':'var(--red)'}"></i><span class="kpi-lbl">Supabase</span></div>
+          <div class="kpi-val sm" style="color:${supaOK?'var(--green)':'var(--red)'}">${supaOK?'Conectado':'Desconectado'}</div>
+          <div class="kpi-sub">${supaOK?'Dados em nuvem':'Config. ausente'}</div></div>
+        <div class="kpi"><div class="kpi-icon-row"><i data-lucide="refresh-cw"></i><span class="kpi-lbl">Último sync</span></div>
+          <div class="kpi-val sm" style="font-size:13px">${lastSync}</div></div>
+        <div class="kpi"><div class="kpi-icon-row"><i data-lucide="database"></i><span class="kpi-lbl">Volume</span></div>
+          <div class="kpi-val sm">${dataSizeKB} KB</div>
+          <div class="kpi-sub">${STATE.affiliates.length} afs · ${STATE.reports.length} reports</div></div>
+        <div class="kpi"><div class="kpi-icon-row"><i data-lucide="download"></i><span class="kpi-lbl">Último export</span></div>
+          <div class="kpi-val sm" style="font-size:13px">${lastExport}</div></div>
+      </div>
+
+      <div class="sec-hdr"><div class="sec-lbl">Sincronização</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:22px">
+        <div class="bk-card">
+          <div class="bk-card-hdr"><i data-lucide="cloud-upload" style="stroke:var(--green)"></i>
+            <div><div class="bk-card-t">Forçar sincronização</div>
+            <div class="bk-card-s">Envia o estado local atual para o Supabase</div></div>
+          </div>
+          <button class="btn btn-theme" onclick="forceSyncCloud()" style="width:100%" ${supaOK?'':'disabled'}><i data-lucide="refresh-cw"></i> Sincronizar agora</button>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
-          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Tamanho dos Dados</div>
-          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text);margin-top:4px">${dataSizeKB} KB</div>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
-          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Afiliados</div>
-          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text);margin-top:4px">${STATE.affiliates.length}</div>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:16px;text-align:center">
-          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-weight:700">Lançamentos</div>
-          <div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text);margin-top:4px">${STATE.reports.length}</div>
+        <div class="bk-card">
+          <div class="bk-card-hdr"><i data-lucide="cloud-download" style="stroke:var(--blue)"></i>
+            <div><div class="bk-card-t">Recarregar da nuvem</div>
+            <div class="bk-card-s">Substitui os dados locais pelos do Supabase</div></div>
+          </div>
+          <button class="btn btn-outline" onclick="reloadFromCloud()" style="width:100%" ${supaOK?'':'disabled'}><i data-lucide="download-cloud"></i> Recarregar</button>
         </div>
       </div>
 
-      <div class="sec-hdr"><div class="sec-lbl">Ações</div></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:20px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <i data-lucide="cloud" style="width:20px;height:20px;stroke:var(--green)"></i>
-            <div><div style="font-size:13px;font-weight:700;color:var(--text)">Sincronizar Nuvem</div>
-            <div style="font-size:10px;color:var(--text3)">Sincronizar dados com o Supabase</div></div>
-          </div>
-          <button class="btn btn-theme" onclick="forceSyncCloud()" style="width:100%"><i data-lucide="cloud"></i> Forçar Sync</button>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:20px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <i data-lucide="download" style="width:20px;height:20px;stroke:var(--blue)"></i>
-            <div><div style="font-size:13px;font-weight:700;color:var(--text)">Exportar Backup</div>
-            <div style="font-size:10px;color:var(--text3)">Baixar arquivo JSON com todos os dados</div></div>
+      <div class="sec-hdr"><div class="sec-lbl">Backup manual</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:22px">
+        <div class="bk-card">
+          <div class="bk-card-hdr"><i data-lucide="download" style="stroke:var(--blue)"></i>
+            <div><div class="bk-card-t">Exportar backup</div>
+            <div class="bk-card-s">Baixa um JSON com todo o estado</div></div>
           </div>
           <button class="btn btn-outline" onclick="exportBackup()" style="width:100%"><i data-lucide="download"></i> Exportar JSON</button>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);padding:20px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <i data-lucide="upload" style="width:20px;height:20px;stroke:var(--amber)"></i>
-            <div><div style="font-size:13px;font-weight:700;color:var(--text)">Importar Backup</div>
-            <div style="font-size:10px;color:var(--text3)">Restaurar dados de um arquivo JSON</div></div>
+        <div class="bk-card">
+          <div class="bk-card-hdr"><i data-lucide="upload" style="stroke:var(--amber)"></i>
+            <div><div class="bk-card-t">Importar backup</div>
+            <div class="bk-card-s">Restaura dados de um JSON exportado</div></div>
           </div>
-          <button class="btn btn-outline" onclick="document.getElementById('import-backup-bk').click()" style="width:100%"><i data-lucide="upload"></i> Importar JSON</button>
+          <button class="btn btn-outline" onclick="document.getElementById('import-backup-bk').click()" style="width:100%"><i data-lucide="upload"></i> Escolher arquivo</button>
           <input type="file" id="import-backup-bk" accept=".json" style="display:none" onchange="importBackup(event)">
         </div>
+        <div class="bk-card">
+          <div class="bk-card-hdr"><i data-lucide="file-json" style="stroke:var(--purple)"></i>
+            <div><div class="bk-card-t">Importar do 3C Dash</div>
+            <div class="bk-card-s">Cole o JSON exportado do 3C Dash legacy</div></div>
+          </div>
+          <button class="btn btn-outline" onclick="openImport3CDash()" style="width:100%"><i data-lucide="file-json"></i> Abrir importador</button>
+        </div>
       </div>
+
       <!-- EMAILJS CONFIG -->
-      <div class="sec-hdr" style="margin-top:28px"><div class="sec-lbl">Integração EmailJS</div></div>
+      <div class="sec-hdr" style="margin-top:10px"><div class="sec-lbl">Integração EmailJS</div></div>
       <div style="padding:12px 16px;background:var(--bg3);border:1px solid var(--gb);border-radius:var(--radius);margin-bottom:14px;font-size:11px;color:var(--text2);line-height:1.6">
         Configure suas credenciais do <strong style="color:var(--text)">EmailJS</strong> para enviar emails de fechamento para o financeiro.
         Crie uma conta em <strong>emailjs.com</strong>, configure um Service e um Template, e cole os IDs abaixo.
@@ -192,6 +206,8 @@ window.exportBackup=()=>{
   delete data.user;
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
+  STATE.lastExport = new Date().toISOString();
+  saveToLocal();
   const a=document.createElement('a');a.href=url;a.download=`3cos_backup_${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);logAction('Backup exportado','JSON');toast('Backup exportado!');
@@ -217,10 +233,48 @@ window.importBackup=(event)=>{
   reader.readAsText(file);event.target.value='';
 };
 
-window.forceSyncCloud=async()=>{
-  if(!fbAuth.currentUser)return toast('Não autenticado','e');
-  try{await saveToCloud();toast('Sync completo!');
-  }catch(e){toast('Erro no sync: '+e.message,'e');}
+// Force push the local STATE to Supabase. Confirms before overwriting cloud.
+// Marks STATE.lastSync on success so the Backup UI shows when it last ran.
+window.forceSyncCloud = async () => {
+  if (!window.SUPABASE_CONFIGURED || !window.sb) return toast('Supabase não configurado', 'e');
+  if (!STATE.user) return toast('Não autenticado', 'e');
+  if (!window.Data?.syncAll) return toast('Módulo Data indisponível', 'e');
+  if (!confirm('Enviar o estado local atual para o Supabase?\n\nIsso sobrescreve os dados na nuvem com o que está no seu navegador agora.')) return;
+  toast('Sincronizando...', 'i');
+  try {
+    await Data.syncAll();
+    STATE.lastSync = new Date().toISOString();
+    saveToLocal();
+    logAction('Sync manual', 'Dados locais enviados ao Supabase');
+    toast('Sincronização concluída', 's');
+    // Re-render the backup module to refresh timestamps
+    const el = document.getElementById('mod-backup');
+    if (el && typeof bBackup === 'function') bBackup(el);
+  } catch (e) {
+    console.error('[forceSyncCloud] failed:', e);
+    toast('Erro no sync: ' + (e?.message || 'desconhecido'), 'e');
+  }
+};
+
+// Pull from Supabase, replacing local STATE. Confirms first since it's
+// destructive (any unsynced local change is lost).
+window.reloadFromCloud = async () => {
+  if (!window.SUPABASE_CONFIGURED || !window.sb) return toast('Supabase não configurado', 'e');
+  if (!window.Data?.loadAll) return toast('Módulo Data indisponível', 'e');
+  if (!confirm('Substituir dados locais pelos do Supabase?\n\nQualquer alteração local que ainda não foi sincronizada será perdida.')) return;
+  toast('Recarregando da nuvem...', 'i');
+  try {
+    await Data.loadAll();
+    STATE.lastSync = new Date().toISOString();
+    saveToLocal();
+    logAction('Recarregado da nuvem', 'Estado local substituído');
+    toast('Dados atualizados', 's');
+    const el = document.getElementById('mod-backup');
+    if (el && typeof bBackup === 'function') bBackup(el);
+  } catch (e) {
+    console.error('[reloadFromCloud] failed:', e);
+    toast('Erro: ' + (e?.message || 'desconhecido'), 'e');
+  }
 };
 
 // ══════════════════════════════════════════════════════════
