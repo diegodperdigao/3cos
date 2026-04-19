@@ -1,32 +1,57 @@
 // ══════════════════════════════════════════════════════════
 // 7. USUÁRIOS
 // ══════════════════════════════════════════════════════════
+function _renderUserGrid(filter){
+  const q=(filter||'').toLowerCase();
+  return STATE.users.filter(u=>!q||(u.name||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)).map(u=>`<div class="user-card" style="border:1px solid var(--gb)">
+    ${userAvatar(u,44)}
+    <div class="user-info">
+      <div class="user-name">${u.name} <span class="role-badge role-${u.role}" style="margin-left:8px">${ROLES[u.role]?.label}</span></div>
+      <div class="user-email">${u.title?u.title+' · ':''}${u.email} · Criado em ${new Date(u.createdAt).toLocaleDateString('pt-BR')}</div>
+      <div class="user-mods">${u.modules.map(m=>`<span class="mod-chip">${MODS.find(x=>x.id===m)?.label||m}</span>`).join('')}</div>
+    </div>
+    <div style="display:flex;gap:4px">
+      <button class="ibt" onclick="openEditUser('${u.id}')" title="Editar"><i data-lucide="edit-3"></i></button>
+      <button class="ibt ${u.status==='ativo'?'danger':'green'}" onclick="toggleUserStatus('${u.id}')" title="${u.status==='ativo'?'Bloquear':'Desbloquear'}">
+        <i data-lucide="${u.status==='ativo'?'lock':'unlock'}"></i>
+      </button>
+      ${u.id!==STATE.user?.id?`<button class="ibt danger" onclick="confirmDeleteUser('${u.id}')" title="Remover"><i data-lucide="trash-2"></i></button>`:''}
+    </div>
+  </div>`).join('')||'<div class="empty" style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Nenhum usuário encontrado.</div>';
+}
 function bUsers(el){
   el.innerHTML=modHdr('Usuários — Controle de Acesso')+`<div class="mod-body">
     ${heroHTML('users','Admin','Usuários','Permissões e acessos')}
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Usuários ativos</div>
-        <button class="btn btn-theme" onclick="openNewUser()"><i data-lucide="user-plus"></i>Novo Usuário</button>
+        <div class="sec-actions">
+          <div class="srch"><i data-lucide="search"></i><input type="text" placeholder="Buscar usuário..." oninput="filterUsers(this.value)"></div>
+          <button class="btn btn-theme" onclick="openNewUser()"><i data-lucide="user-plus"></i>Novo Usuário</button>
+        </div>
       </div>
-      <div class="user-grid">
-        ${STATE.users.map(u=>`<div class="user-card" style="border:1px solid var(--gb)">
-          ${userAvatar(u,44)}
-          <div class="user-info">
-            <div class="user-name">${u.name} <span class="role-badge role-${u.role}" style="margin-left:8px">${ROLES[u.role]?.label}</span></div>
-            <div class="user-email">${u.title?u.title+' · ':''}${u.email} · Criado em ${new Date(u.createdAt).toLocaleDateString('pt-BR')}</div>
-            <div class="user-mods">${u.modules.map(m=>`<span class="mod-chip">${MODS.find(x=>x.id===m)?.label||m}</span>`).join('')}</div>
-          </div>
-          <div style="display:flex;gap:4px">
-            <button class="ibt" onclick="openEditUser('${u.id}')" data-tooltip="Editar usuário"><i data-lucide="edit-3"></i></button>
-            <button class="ibt ${u.status==='ativo'?'danger':'green'}" onclick="toggleUserStatus('${u.id}')" data-tooltip="${u.status==='ativo'?'Bloquear acesso':'Desbloquear acesso'}">
-              <i data-lucide="${u.status==='ativo'?'lock':'unlock'}"></i>
-            </button>
-          </div>
-        </div>`).join('')}
-      </div>
+      <div class="user-grid" id="user-grid">${_renderUserGrid()}</div>
     </div></div>`;
   lucide.createIcons();
 }
+let _userSearchTimer=null;
+window.filterUsers=q=>{clearTimeout(_userSearchTimer);_userSearchTimer=setTimeout(()=>{const g=document.getElementById('user-grid');if(g){g.innerHTML=_renderUserGrid(q);lucide.createIcons();}},150);};
+window.confirmDeleteUser=(id)=>{
+  const u=STATE.users.find(x=>x.id===id);if(!u)return;
+  if(u.id===STATE.user?.id)return toast('Não é possível excluir o próprio usuário','e');
+  openModal('Excluir usuário',`<p style="color:var(--text2);font-size:13px">Remover <strong>${u.name}</strong> (${u.email})? O acesso será revogado.</p>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-danger" onclick="deleteUser('${id}')">Excluir</button>`);
+};
+window.deleteUser=(id)=>{
+  const idx=STATE.users.findIndex(x=>x.id===id);
+  if(idx<0)return;
+  const name=STATE.users[idx].name;
+  STATE.users.splice(idx,1);
+  logAction('Usuário excluído',name);
+  saveToLocal();closeModal();
+  const el=document.getElementById('mod-users');if(el)bUsers(el);
+  toast('Usuário removido');
+};
 
 // ══════════════════════════════════════════════════════════
 // BACKUP & NUVEM (módulo separado)

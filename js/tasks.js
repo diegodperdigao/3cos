@@ -7,7 +7,10 @@ function bTasks(el){
     ${heroHTML('tasks','Workflow','Tarefas','Atividades vinculadas a afiliados e módulos')}
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Todas as tarefas</div>
-        <button class="btn btn-theme" onclick="openNewTask()"><i data-lucide="plus"></i>Nova Tarefa</button></div>
+        <div class="sec-actions">
+          <div class="srch"><i data-lucide="search"></i><input type="text" placeholder="Buscar tarefa..." oninput="filterTask(this.value)"></div>
+          <button class="btn btn-theme" onclick="openNewTask()"><i data-lucide="plus"></i>Nova Tarefa</button>
+        </div></div>
       <div class="pills">
         <button class="pill on" onclick="pilTk(null,this)">Todas</button>
         <button class="pill" onclick="pilTk('pendente',this)">Pendentes</button>
@@ -70,12 +73,22 @@ function renderTasks(list){
   lucide.createIcons();
 }
 window.promptAddSubtask=(taskId)=>{
-  const text=prompt('Nome da subtarefa:');
-  if(!text||!text.trim())return;
+  openModal('Nova subtarefa',`
+    <div class="fg"><div class="fgp"><label>Nome da subtarefa</label>
+      <input class="fi" id="new-subtask-text" placeholder="Descreva a subtarefa..." autofocus>
+    </div></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-theme" onclick="_saveSubtask('${taskId}')">Adicionar</button>`);
+  setTimeout(()=>document.getElementById('new-subtask-text')?.focus(),200);
+};
+window._saveSubtask=(taskId)=>{
+  const text=document.getElementById('new-subtask-text')?.value?.trim();
+  if(!text)return toast('Nome da subtarefa obrigatório','e');
   const t=STATE.tasks.find(x=>x.id===taskId);if(!t)return;
   if(!t.subtasks)t.subtasks=[];
-  t.subtasks.push({id:'st'+Date.now(),text:text.trim(),done:false});
-  saveToLocal();renderTasks(_tkF?STATE.tasks.filter(x=>x.status===_tkF):STATE.tasks);
+  t.subtasks.push({id:'st'+Date.now(),text,done:false});
+  saveToLocal();closeModal();renderTasks(_tkF?STATE.tasks.filter(x=>x.status===_tkF):STATE.tasks);
+  toast('Subtarefa adicionada');
 };
 window.toggleSubtask=(taskId,subId)=>{
   const t=STATE.tasks.find(x=>x.id===taskId);if(!t||!t.subtasks)return;
@@ -84,6 +97,8 @@ window.toggleSubtask=(taskId,subId)=>{
 };
 window.toggleTask=id=>{const t=STATE.tasks.find(x=>x.id===id);if(!t)return;t.status=t.status==='concluída'?'pendente':'concluída';logAction('Tarefa '+(t.status==='concluída'?'concluída':'reaberta'),t.title);saveToLocal();renderTasks(_tkF?STATE.tasks.filter(x=>x.status===_tkF):STATE.tasks);toast(t.status==='concluída'?'Concluída!':'Reaberta');};
 window.pilTk=(s,btn)=>{_tkF=s;btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderTasks(s?STATE.tasks.filter(t=>t.status===s):STATE.tasks);};
+let _taskSearchTimer=null;
+window.filterTask=q=>{clearTimeout(_taskSearchTimer);_taskSearchTimer=setTimeout(()=>{const term=q.toLowerCase();const list=(_tkF?STATE.tasks.filter(t=>t.status===_tkF):STATE.tasks).filter(t=>(t.title||'').toLowerCase().includes(term)||(t.assignee||'').toLowerCase().includes(term)||(t.description||'').toLowerCase().includes(term));renderTasks(list);},150);};
 
 window.openNewTask=()=>openModal('Nova Tarefa',`<div class="fg">
   <div class="fgp ff"><label>Título *</label><input class="fi" id="nt-t" placeholder="O que precisa ser feito?"></div>

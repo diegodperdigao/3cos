@@ -95,7 +95,10 @@ window.saveEditBrand=name=>{
 };
 
 window.confirmDeleteBrand=name=>{
-  openModal('Excluir Marca',`<p style="color:var(--text2);font-size:13px">Excluir <strong>${name}</strong>? Dados de relatórios e contratos vinculados serão mantidos.</p>`,
+  const affCount=STATE.affiliates.filter(a=>a.deals&&a.deals[name]).length;
+  const contractCount=STATE.contracts.filter(c=>c.brand===name).length;
+  const warn=affCount||contractCount?`<p style="color:var(--red);font-size:11px;margin-top:8px"><strong>Atenção:</strong> ${affCount} afiliado(s) e ${contractCount} contrato(s) estão vinculados a esta marca.</p>`:'';
+  openModal('Excluir Marca',`<p style="color:var(--text2);font-size:13px">Excluir <strong>${name}</strong>? Dados de relatórios e contratos vinculados serão mantidos.</p>${warn}`,
   `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
    <button class="btn btn-danger" onclick="deleteBrand('${name}')">Excluir</button>`);
 };

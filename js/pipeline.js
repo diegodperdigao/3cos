@@ -478,6 +478,9 @@ window.saveStages=()=>{
     if(name)newStages.push({id:existingId||'s'+Date.now()+i,name,color});
   });
   if(!newStages.length)return toast('Adicione pelo menos uma etapa','e');
+  const names=newStages.map(s=>s.name.toLowerCase());
+  const dupes=names.filter((n,i)=>names.indexOf(n)!==i);
+  if(dupes.length)return toast(`Nome duplicado: "${dupes[0]}"`, 'e');
   // Move orphaned cards to first stage
   const validIds=new Set(newStages.map(s=>s.id));
   STATE.pipeline.cards.forEach(c=>{if(!validIds.has(c.stageId))c.stageId=newStages[0].id;});

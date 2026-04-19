@@ -64,7 +64,14 @@ function renderAffs(list){
   }).join('');
   lucide.createIcons();
 }
-window.filterAff=q=>renderAffs(_computeAffList().filter(a=>a.name.toLowerCase().includes(q.toLowerCase())));
+let _affSearchTimer=null;
+window.filterAff=q=>{
+  clearTimeout(_affSearchTimer);
+  _affSearchTimer=setTimeout(()=>{
+    const term=q.toLowerCase();
+    renderAffs(_computeAffList().filter(a=>(a.name||'').toLowerCase().includes(term)||(a.contactEmail||'').toLowerCase().includes(term)));
+  },150);
+};
 window.filterAffType=(t,btn)=>{_affTypeF=t;_affTagF=null;btn.closest('.pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.pills-tags .pill').forEach(b=>b.classList.remove('on'));renderAffs(_computeAffList());};
 
 window.applyTagFilter=(tagId,btn)=>{
