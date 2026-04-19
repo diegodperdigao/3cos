@@ -605,6 +605,32 @@ function renderClosingTab(){
       </div>
     </div>
 
+    <!-- FECHAMENTO EM REMESSA -->
+    <div class="intel-wrap" style="margin-bottom:20px">
+      <div class="intel-hdr"><div>
+        <div class="intel-eye">Remessa</div>
+        <div class="intel-title">Fechamento em lote</div>
+        <div class="intel-sub">Selecione marca e mês → fecha todos os afiliados de uma vez</div>
+      </div></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div class="fgp" style="flex:1;min-width:160px"><label>Marca</label>
+            <select class="fi" id="batch-brand" onchange="refreshBatchList()">
+              <option value="all">Todas as marcas</option>
+              ${Object.keys(STATE.brands).map(b=>`<option value="${b}">${b}</option>`).join('')}
+            </select>
+          </div>
+          <div class="fgp" style="flex:1;min-width:160px"><label>Mês de referência</label>
+            <select class="fi" id="batch-month" onchange="refreshBatchList()">
+              ${months.map((m,i)=>`<option value="${m.value}" ${i===0?'selected':''}>${m.label}</option>`).join('')}
+            </select>
+          </div>
+          <button class="btn btn-outline" onclick="refreshBatchList()"><i data-lucide="refresh-cw"></i> Atualizar lista</button>
+        </div>
+        <div id="batch-list"></div>
+      </div>
+    </div>
+
     <div class="sec-hdr">
       <div class="sec-lbl">Fechamentos Realizados</div>
       ${closings.length?`<div class="sec-actions">
@@ -727,6 +753,150 @@ window.updateClosingDeals=()=>{
     const cts=STATE.contracts.filter(c=>c.affiliateId===affId&&c.brand===brand&&c.status==='ativo');
     cts.forEach(c=>{dealSelect.innerHTML+=`<option value="${c.id}">${c.name} (${fc(c.value)})</option>`;});
   }
+};
+
+// ══════════════════════════════════════════════════════════
+// BATCH CLOSING (Fechamento em Remessa)
+// ══════════════════════════════════════════════════════════
+// Lists all affiliates that have a deal with the selected brand,
+// shows their data for the selected month, lets user check/uncheck,
+// and executes all closings at once.
+window.refreshBatchList = () => {
+  const el = document.getElementById('batch-list');
+  if (!el) return;
+  const brandFilter = document.getElementById('batch-brand')?.value || 'all';
+  const month = document.getElementById('batch-month')?.value;
+  if (!month) { el.innerHTML = ''; return; }
+
+  // Get affiliates that have a deal with selected brand (or any brand)
+  const eligible = STATE.affiliates.filter(a => {
+    if (a.status !== 'ativo') return false;
+    if (!a.deals) return false;
+    if (brandFilter === 'all') return Object.keys(a.deals).length > 0;
+    return !!a.deals[brandFilter];
+  });
+
+  if (!eligible.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3);text-align:center;padding:14px">Nenhum afiliado elegível para esta marca.</div>';
+    return;
+  }
+
+  // For each affiliate, compute monthly data from reports
+  const rows = eligible.map(a => {
+    const brands = brandFilter === 'all' ? Object.keys(a.deals) : [brandFilter];
+    const reps = STATE.reports.filter(r => {
+      if (r.affiliateId !== a.id) return false;
+      if (!(r.date || '').startsWith(month)) return false;
+      if (brandFilter !== 'all' && r.brand !== brandFilter) return false;
+      return true;
+    });
+    const ftd = reps.reduce((s, r) => s + (r.ftd || 0), 0);
+    const qftd = reps.reduce((s, r) => {
+      const q = typeof r.qftd === 'object' ? Object.values(r.qftd).reduce((x, v) => x + (v || 0), 0) : (r.qftd || 0);
+      return s + q;
+    }, 0);
+    const dep = reps.reduce((s, r) => s + (r.deposits || 0), 0);
+    const nr = reps.reduce((s, r) => s + (r.netRev || 0), 0);
+
+    // Already closed this month?
+    const alreadyClosed = (STATE.closings || []).some(c =>
+      c.affiliateId === a.id &&
+      c.monthRef === month &&
+      (brandFilter === 'all' || c.brand === brandFilter)
+    );
+
+    return { aff: a, brands, ftd, qftd, dep, nr, comm: a.commission, alreadyClosed };
+  });
+
+  const totalComm = rows.filter(r => !r.alreadyClosed).reduce((s, r) => s + (r.comm || 0), 0);
+
+  el.innerHTML = `
+    <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:11px;color:var(--text2)">${eligible.length} afiliado(s) · Comissão total: <strong style="color:var(--text)">${fc(totalComm)}</strong></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-outline" style="font-size:10px;padding:5px 10px" onclick="document.querySelectorAll('.batch-cl-chk:not(:disabled)').forEach(c=>c.checked=true)">Todos</button>
+        <button class="btn btn-outline" style="font-size:10px;padding:5px 10px" onclick="document.querySelectorAll('.batch-cl-chk').forEach(c=>c.checked=false)">Nenhum</button>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr>
+      <th style="width:36px"></th>
+      <th>Afiliado</th><th>Marcas</th><th style="text-align:center">FTDs</th><th style="text-align:center">QFTDs</th><th>Depósitos</th><th>Comissão</th><th>Status</th>
+    </tr></thead><tbody>
+      ${rows.map(r => `<tr class="tr" style="${r.alreadyClosed ? 'opacity:0.5' : ''}">
+        <td onclick="event.stopPropagation()">
+          <input type="checkbox" class="batch-cl-chk" value="${r.aff.id}" ${r.alreadyClosed ? 'disabled' : 'checked'} style="accent-color:var(--theme)">
+        </td>
+        <td class="td-name">${r.aff.name}</td>
+        <td style="font-size:10px;color:var(--text2)">${r.brands.join(', ')}</td>
+        <td class="td-num">${r.ftd}</td>
+        <td class="td-num">${r.qftd}</td>
+        <td class="td-money">${fc(r.dep)}</td>
+        <td class="td-money">${fc(r.comm)}</td>
+        <td>${r.alreadyClosed ? '<span class="pb pb-pago" style="font-size:9px">Já fechado</span>' : '<span class="pb pb-pendente" style="font-size:9px">Pendente</span>'}</td>
+      </tr>`).join('')}
+    </tbody></table></div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-theme" onclick="executeBatchClosing()"><i data-lucide="zap"></i> Executar fechamento em remessa</button>
+    </div>`;
+  lucide.createIcons();
+};
+
+window.executeBatchClosing = () => {
+  const brandFilter = document.getElementById('batch-brand')?.value || 'all';
+  const month = document.getElementById('batch-month')?.value;
+  const monthLabel = document.getElementById('batch-month')?.selectedOptions?.[0]?.text || month;
+  if (!month) return toast('Selecione o mês', 'e');
+
+  const selectedIds = [...document.querySelectorAll('.batch-cl-chk:checked')].map(c => c.value);
+  if (!selectedIds.length) return toast('Selecione pelo menos um afiliado', 'e');
+
+  if (!confirm(`Executar fechamento para ${selectedIds.length} afiliado(s) · ${monthLabel}?`)) return;
+
+  if (!STATE.closings) STATE.closings = [];
+  let count = 0;
+
+  selectedIds.forEach(affId => {
+    const a = STATE.affiliates.find(x => x.id === affId);
+    if (!a) return;
+    const brands = brandFilter === 'all' ? Object.keys(a.deals || {}) : [brandFilter];
+
+    brands.forEach(brand => {
+      // Skip if already closed
+      if (STATE.closings.some(c => c.affiliateId === affId && c.brand === brand && c.monthRef === month)) return;
+
+      const deal = a.deals?.[brand] || {};
+      const ct = CONTRACT_TYPES[a.contractType] || { label: 'CPA' };
+      const closingId = 'cl' + Date.now() + '_' + count;
+
+      STATE.closings.push({
+        id: closingId, affiliateId: affId, affiliateName: a.name,
+        brand, monthRef: month, monthLabel, dealId: '',
+        contractType: a.contractType, deal: JSON.parse(JSON.stringify(deal)),
+        ftds: a.ftds, qftds: a.qftds, deposits: a.deposits,
+        netRev: a.netRev || 0, commission: a.commission, profit: a.profit,
+        paymentStatus: 'pendente',
+        createdAt: new Date().toLocaleDateString('pt-BR'),
+        createdBy: STATE.user?.name || '',
+      });
+
+      STATE.payments.unshift({
+        id: 'py' + Date.now() + '_' + count,
+        affiliateId: affId, affiliate: a.name, brand,
+        contract: `Fechamento ${brand} — ${monthLabel}`,
+        contractId: '', amount: a.commission,
+        dueDate: '', status: 'pendente',
+        type: `Fechamento ${monthLabel}`, nfName: '',
+      });
+
+      count++;
+    });
+  });
+
+  logAction('Fechamento em remessa', `${count} fechamento(s) · ${monthLabel}`);
+  saveToLocal();
+  renderClosingTab();
+  renderPyTbl(STATE.payments);
+  toast(`${count} fechamento(s) executado(s)`, 's');
 };
 
 window.previewClosing=()=>{
