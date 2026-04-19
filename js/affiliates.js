@@ -36,22 +36,14 @@ function renderAffs(list){
   g.innerHTML=list.map(a=>{
     const ct=CONTRACT_TYPES[a.contractType]||{label:'CPA',css:'cpa'};
     const brands=Object.keys(a.deals||{});
-    const mainMetric=a.qftds?`${a.qftds} QFTDs`:`${a.ftds||0} FTDs`;
-    const depVal=fc(a.deposits);
-    const tagNames=(a.tags||[]).map(tid=>STATE.availableTags?.find(x=>x.id===tid)?.name).filter(Boolean);
-    const tagStr=tagNames.length?tagNames.join(' · '):'';
     return `<div class="aff-card" onclick="openAffDetail('${a.id}')">
       <div class="aff-top">
         ${window.userAvatar?userAvatar(a,36):`<div class="aff-av">${(a.name||'?')[0]}</div>`}
         <div style="flex:1;min-width:0">
           <div class="aff-name">${a.name}</div>
-          <div class="aff-meta">${mainMetric} · ${depVal}${tagStr?' · '+tagStr:''}</div>
+          <div class="aff-meta">${brands.join(' · ')||'Sem marca'}</div>
         </div>
         <span class="ct-badge ${ct.css}">${ct.label}</span>
-      </div>
-      <div class="aff-foot">
-        <div class="aff-casas">${brands.map(b=>`<span class="casa-txt">${b}</span>`).join('<span class="casa-sep">·</span>')}</div>
-        ${a.contactEmail?`<span class="aff-email">${a.contactEmail}</span>`:''}
       </div>
     </div>`;
   }).join('');

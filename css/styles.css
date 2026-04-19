@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '8.3';
+  --3cos-version: '8.4';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -579,12 +579,12 @@ body::before {
 .aff-card:hover{border-color:var(--gb2);transform:translateY(-2px);box-shadow:0 8px 20px -8px rgba(0,0,0,0.15);}
 [data-theme="light"] .aff-card:hover{box-shadow:0 8px 20px -8px rgba(0,0,0,0.06);}
 .aff-card.ct-cpa,.aff-card.ct-deposit,.aff-card.ct-rs,.aff-card.ct-tiered{border-left:none;}
-.aff-top{display:flex;align-items:center;gap:12px;margin-bottom:0;}
+.aff-top{display:flex;align-items:center;gap:12px;}
 .aff-top .u-avatar,.aff-top .u-avatar-init{flex-shrink:0;}
 .aff-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.aff-meta{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.aff-meta{font-size:12px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .aff-type{display:none;}
-.aff-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--gb);}
+.aff-foot{display:none;}
 .aff-casas{display:flex;align-items:center;flex-wrap:wrap;gap:0;}
 .casa-txt{font-size:11px;color:var(--text2);font-weight:500;}
 .casa-sep{font-size:9px;color:var(--text3);margin:0 4px;}
