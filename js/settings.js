@@ -456,7 +456,11 @@ window.saveDisplayName = () => {
 window.uploadAvatar = (event) => {
   const file = event.target?.files?.[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { toast('Imagem muito grande (máx. 5MB)', 'e'); return; }
+  // No hard size limit — we always crop to 256x256 JPEG so the stored
+  // avatar stays small regardless of input. We only guard against very
+  // large files (>30MB) to avoid freezing the browser while reading.
+  if (file.size > 30 * 1024 * 1024) { toast('Arquivo acima de 30MB não suportado', 'e'); return; }
+  if (!file.type.startsWith('image/')) { toast('Selecione um arquivo de imagem', 'e'); return; }
   const reader = new FileReader();
   reader.onload = (e) => {
     const imgUrl = e.target.result;

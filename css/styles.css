@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '6.7';
+  --3cos-version: '6.8';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -136,32 +136,23 @@ body::before {
   border:none;border-radius:12px;cursor:pointer;transition:all 0.2s;
   box-shadow:0 8px 24px var(--theme-dim);}
 .lock-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px var(--theme-dim);}
-/* Lock-screen theme selector: button that reveals a panel */
+/* Lock-screen theme selector — button reveals a row of swatch dots below.
+   Hover previews the theme, click commits. Works in both light and dark. */
 .lock-theme-toggle{display:inline-flex;align-items:center;gap:6px;margin-top:18px;
-  background:transparent;border:1px solid var(--gb2);border-radius:8px;
-  padding:6px 14px;color:var(--text3);font-size:12px;font-family:var(--fb);
+  background:var(--bg3);border:1px solid var(--gb2);border-radius:8px;
+  padding:8px 16px;color:var(--text);font-size:12px;font-family:var(--fb);font-weight:500;
   cursor:pointer;transition:all 0.15s;}
-.lock-theme-toggle:hover{border-color:var(--text2);color:var(--text);}
-/* Theme picker on the lock screen: centered overlay so it never gets
-   clipped by the viewport regardless of where the trigger button sits. */
-.lock-theme-panel{display:none;position:fixed;inset:0;z-index:300;
-  background:rgba(0,0,0,0.62);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-  align-items:center;justify-content:center;padding:24px;}
+.lock-theme-toggle:hover{border-color:var(--theme);color:var(--theme);background:var(--bg2);}
+.lock-theme-panel{display:none;justify-content:center;flex-wrap:wrap;gap:10px;
+  margin-top:14px;padding:14px 12px;background:var(--bg3);
+  border:1px solid var(--gb);border-radius:12px;}
 .lock-theme-panel.open{display:flex;}
-.lock-theme-panel-inner{position:relative;width:340px;max-width:100%;background:var(--bg2);
-  border:1px solid var(--gb);border-radius:14px;
-  box-shadow:0 24px 60px -12px rgba(0,0,0,0.5);padding:18px;}
-.lock-theme-panel-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;
-  border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;}
-.lock-theme-panel-close:hover{background:var(--bg3);color:var(--text);}
-.lock-theme-panel-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;text-align:left;padding-right:28px;}
-.lock-theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-.lock-theme-opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--gb);
-  border-radius:8px;background:transparent;color:var(--text);font-size:11px;font-family:var(--fb);
-  cursor:pointer;transition:all 0.12s;text-align:left;white-space:nowrap;}
-.lock-theme-opt:hover{background:var(--bg3);border-color:var(--text3);}
-.lock-theme-opt.on{border-color:var(--theme);background:var(--theme-dim);}
-.lock-theme-swatch{display:block;width:16px;height:16px;border-radius:4px;flex-shrink:0;border:1px solid var(--gb2);}
+.lock-theme-dot{width:34px;height:34px;border-radius:50%;padding:0;cursor:pointer;
+  background:transparent;border:2px solid transparent;
+  display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
+.lock-theme-dot:hover{border-color:var(--text2);transform:scale(1.08);}
+.lock-theme-dot.on{border-color:var(--theme);}
+.lock-theme-swatch{display:block;width:24px;height:24px;border-radius:50%;flex-shrink:0;box-shadow:0 1px 2px rgba(0,0,0,0.15);}
 
 /* Fix: lock screen elements adapt to theme accent + ensure contrast */
 .lock-title span{color:var(--theme);}

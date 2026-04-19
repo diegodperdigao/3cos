@@ -441,10 +441,32 @@ window.toggleLockThemePanel = () => {
   const panel = document.getElementById('lock-theme-panel');
   if (!panel) return;
   panel.classList.toggle('open');
-  // Refresh lucide icons inside the panel (the X close button)
-  if (panel.classList.contains('open') && typeof lucide !== 'undefined') {
-    lucide.createIcons();
-  }
+};
+
+// Hover preview on lock screen: applies theme transiently.
+// On mouseleave the panel, restore the committed theme.
+const _LOCK_THEME_MAP = {
+  'default-dark': { edition: '', theme: 'dark' },
+  'default-light': { edition: '', theme: 'light' },
+  'mono-dark': { edition: 'mono', theme: 'dark' },
+  'mono-light': { edition: 'mono', theme: 'light' },
+  'bento-dark': { edition: 'bento', theme: 'dark' },
+  'bento-light': { edition: 'bento', theme: 'light' },
+  'meridian-dark': { edition: 'meridian', theme: 'dark' },
+  'meridian-light': { edition: 'meridian', theme: 'light' },
+};
+function _applyLockThemeKey(themeKey) {
+  const pair = _LOCK_THEME_MAP[themeKey];
+  if (!pair) return;
+  const root = document.documentElement;
+  root.setAttribute('data-theme', pair.theme);
+  if (pair.edition) root.setAttribute('data-edition', pair.edition);
+  else root.removeAttribute('data-edition');
+}
+window.previewLockTheme = (themeKey) => _applyLockThemeKey(themeKey);
+window.endPreviewLockTheme = () => {
+  const committed = localStorage.getItem('3cos_lock_theme') || 'default-dark';
+  _applyLockThemeKey(committed);
 };
 (function(){
   const saved = localStorage.getItem('3cos_lock_theme');
