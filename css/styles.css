@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '8.1';
+  --3cos-version: '8.2';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -573,36 +573,30 @@ body::before {
 .dep-val{font-family:var(--fd);font-size:13px;font-weight:700;color:var(--green);}
 
 .aff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
-.aff-card{border-radius:var(--radius);padding:20px;cursor:pointer;transition:all 0.15s;position:relative;overflow:hidden;}
-.aff-card:hover{border-color:rgba(255,255,255,0.25);transform:translateY(-2px);}
-[data-theme="light"] .aff-card:hover{border-color:rgba(0,0,0,0.12); box-shadow: 0 8px 24px rgba(0,0,0,0.05);}
-.aff-card.ct-cpa{border-left:3px solid var(--pink);}
-.aff-card.ct-deposit{border-left:3px solid var(--blue);}
-.aff-card.ct-rs{border-left:3px solid var(--green);}
-.aff-card.ct-tiered{border-left:3px solid var(--amber);}
-.aff-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
-.aff-av{width:42px;height:42px;border-radius:11px;background:var(--theme-dim);
-  border:1px solid var(--theme-b);display:flex;align-items:center;justify-content:center;
-  font-family:var(--fd);font-size:17px;font-weight:700;color:var(--theme);flex-shrink:0;}
-.aff-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
-.aff-type{font-size:8px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.09em;}
-.ct-badge{font-size:8px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;padding:2px 8px;border-radius:4px;margin-left:auto;white-space:nowrap;}
-.ct-badge.cpa{background:rgba(236,72,153,0.1);color:var(--pink);}
-.ct-badge.deposit{background:rgba(37,99,235,0.1);color:var(--blue);}
-.ct-badge.rs{background:rgba(16,185,129,0.1);color:var(--green);}
-.ct-badge.tiered{background:rgba(245,158,11,0.1);color:var(--amber);}
-.aff-stats{display:flex;background:rgba(0,0,0,0.2);border:1px solid var(--gb);border-radius:9px;overflow:hidden;margin-bottom:12px;}
-[data-theme="light"] .aff-stats{background:rgba(255,255,255,0.6);border-color:rgba(255,255,255,0.9);box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);}
-.aff-stat{flex:1;padding:8px 11px;text-align:center;}
-.aff-stat+.aff-stat{border-left:1px solid var(--gb);}
-[data-theme="light"] .aff-stat+.aff-stat{border-left-color: rgba(255,255,255,0.8);}
-.aff-stat-l{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;}
-.aff-stat-v{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text);}
-.aff-casas{display:flex;gap:5px;flex-wrap:wrap;}
-.casa-chip{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;
-  font-size:9px;font-weight:600;border:1px solid;cursor:pointer;transition:opacity 0.15s;}
-.aff-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
-.aff-contact{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);}
+/* Affiliate card — Apple-clean: name + metric + brands. Detail on click. */
+.aff-card{border-radius:var(--radius);padding:16px 18px;cursor:pointer;transition:all 0.15s;position:relative;
+  background:var(--bg2);border:1px solid var(--gb);}
+.aff-card:hover{border-color:var(--gb2);transform:translateY(-2px);box-shadow:0 8px 20px -8px rgba(0,0,0,0.15);}
+[data-theme="light"] .aff-card:hover{box-shadow:0 8px 20px -8px rgba(0,0,0,0.06);}
+.aff-card.ct-cpa,.aff-card.ct-deposit,.aff-card.ct-rs,.aff-card.ct-tiered{border-left:none;}
+.aff-top{display:flex;align-items:center;gap:12px;margin-bottom:0;}
+.aff-top .u-avatar,.aff-top .u-avatar-init{flex-shrink:0;}
+.aff-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.aff-meta{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.aff-type{display:none;}
+.aff-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--gb);}
+.aff-casas{display:flex;align-items:center;flex-wrap:wrap;gap:0;}
+.casa-txt{font-size:11px;color:var(--text2);font-weight:500;}
+.casa-sep{font-size:9px;color:var(--text3);margin:0 4px;}
+.aff-email{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+/* Legacy classes hidden — data lives in the detail modal now */
+.aff-stats,.tag-row,.last-contact,.aff-contact{display:none;}
+.aff-av{display:none;}
+
+/* Contract type badge — minimal neutral chip */
+.ct-badge{font-size:10px;font-weight:500;letter-spacing:0;text-transform:none;padding:3px 8px;border-radius:6px;margin-left:auto;white-space:nowrap;
+  background:var(--bg3);color:var(--text2);border:1px solid var(--gb);}
+.ct-badge.cpa,.ct-badge.deposit,.ct-badge.rs,.ct-badge.tiered{background:var(--bg3);color:var(--text2);}
 .aff-contact svg{width:11px;height:11px;}
 
 .tbl-wrap{border-radius:var(--radius);border:1px solid var(--gb);overflow-x:auto;scrollbar-width:thin;}

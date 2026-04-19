@@ -36,29 +36,22 @@ function renderAffs(list){
   g.innerHTML=list.map(a=>{
     const ct=CONTRACT_TYPES[a.contractType]||{label:'CPA',css:'cpa'};
     const brands=Object.keys(a.deals||{});
-    let s1={l:'FTDs',v:a.ftds},s2={l:'QFTDs',v:a.qftds,c:'#ec4899'},s3={l:'Depósitos',v:fc(a.deposits)};
-    if(a.contractType==='deposit'){s2={l:'Meta/Mês',v:fc(a.deals[brands[0]]?.depositTarget||0)};s3={l:'Progresso',v:Math.round(a.deposits/(a.deals[brands[0]]?.depositTarget||1)*100)+'%'};}
-    if(a.contractType==='rs'){s1={l:'Net Rev',v:fc(a.netRev)};s2={l:'Depósitos',v:fc(a.deposits)};s3={l:'Comissão',v:fc(a.commission)};}
-    const tagsHTML=(a.tags||[]).length?`<div class="tag-row">${(a.tags||[]).map(tid=>{const t=STATE.availableTags?.find(x=>x.id===tid);return t?`<span class="aff-tag" style="background:${t.color}15;color:${t.color};border:1px solid ${t.color}33"><span class="aff-tag-dot" style="background:${t.color}"></span>${t.name}</span>`:'';}).join('')}</div>`:'';
-    const lcHTML=typeof lastContactHTML==='function'?lastContactHTML(a):'';
-    return `<div class="aff-card ct-${ct.css}" onclick="openAffDetail('${a.id}')">
+    const mainMetric=a.qftds?`${a.qftds} QFTDs`:`${a.ftds||0} FTDs`;
+    const depVal=fc(a.deposits);
+    const tagNames=(a.tags||[]).map(tid=>STATE.availableTags?.find(x=>x.id===tid)?.name).filter(Boolean);
+    const tagStr=tagNames.length?tagNames.join(' · '):'';
+    return `<div class="aff-card" onclick="openAffDetail('${a.id}')">
       <div class="aff-top">
-        <div class="aff-av">${a.name[0]}</div>
-        <div style="flex:1"><div class="aff-name">${a.name}</div><div class="aff-type">${a.type}</div></div>
+        ${window.userAvatar?userAvatar(a,36):`<div class="aff-av">${(a.name||'?')[0]}</div>`}
+        <div style="flex:1;min-width:0">
+          <div class="aff-name">${a.name}</div>
+          <div class="aff-meta">${mainMetric} · ${depVal}${tagStr?' · '+tagStr:''}</div>
+        </div>
         <span class="ct-badge ${ct.css}">${ct.label}</span>
       </div>
-      ${tagsHTML}
-      ${lcHTML}
-      <div class="aff-stats">
-        <div class="aff-stat"><span class="aff-stat-l">${s1.l}</span><span class="aff-stat-v">${s1.v}</span></div>
-        <div class="aff-stat"><span class="aff-stat-l">${s2.l}</span><span class="aff-stat-v" style="color:${s2.c||'var(--text)'}">${s2.v}</span></div>
-        <div class="aff-stat"><span class="aff-stat-l">${s3.l}</span><span class="aff-stat-v">${s3.v}</span></div>
-      </div>
       <div class="aff-foot">
-        <div class="aff-casas">${brands.map(b=>`<div class="casa-chip" style="color:${STATE.brands[b]?.color};border-color:${STATE.brands[b]?.color}22;background:${STATE.brands[b]?.color}11">${b}</div>`).join('')}</div>
-        <div class="aff-contact" title="${a.contactEmail||a.contactPhone||'Sem contato cadastrado'}">
-          <i data-lucide="${a.contactEmail?'mail':a.contactPhone?'phone':'user-x'}"></i>${a.contactEmail||a.contactPhone||'<span style="opacity:0.55">Sem e-mail</span>'}
-        </div>
+        <div class="aff-casas">${brands.map(b=>`<span class="casa-txt">${b}</span>`).join('<span class="casa-sep">·</span>')}</div>
+        ${a.contactEmail?`<span class="aff-email">${a.contactEmail}</span>`:''}
       </div>
     </div>`;
   }).join('');
