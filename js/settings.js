@@ -489,6 +489,14 @@ function _openAvatarCropper(imgUrl, onDone) {
     <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
       <div style="position:relative;width:${SIZE}px;height:${SIZE}px;overflow:hidden;border-radius:50%;border:2px solid var(--gb2);background:var(--bg3)">
         <img id="crop-img" src="${imgUrl}" style="position:absolute;cursor:grab;user-select:none;-webkit-user-drag:none" draggable="false">
+        <div style="position:absolute;inset:0;pointer-events:none;z-index:2">
+          <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.25)"></div>
+          <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.25)"></div>
+          <div style="position:absolute;left:33.33%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.1)"></div>
+          <div style="position:absolute;left:66.66%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.1)"></div>
+          <div style="position:absolute;top:33.33%;left:0;right:0;height:1px;background:rgba(255,255,255,0.1)"></div>
+          <div style="position:absolute;top:66.66%;left:0;right:0;height:1px;background:rgba(255,255,255,0.1)"></div>
+        </div>
       </div>
       <input type="range" id="crop-zoom" min="100" max="300" value="100" style="width:200px;accent-color:var(--theme)">
       <div style="font-size:11px;color:var(--text3)">Arraste a imagem e ajuste o zoom</div>

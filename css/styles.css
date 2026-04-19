@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '6.8';
+  --3cos-version: '6.9';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -1919,6 +1919,9 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="mono"] .hub-logout-btn:hover{background:var(--text) !important;color:var(--bg) !important;}
 [data-edition="mono"] .hub-user-name{color:var(--text) !important;}
 [data-edition="mono"] .hub-user-role{color:var(--text) !important;opacity:0.6;}
+[data-edition="mono"] .hub-user-avatar{background:var(--text) !important;color:var(--bg) !important;}
+[data-edition="mono"] .hub-user-avatar .u-avatar-init{background:var(--text) !important;color:var(--bg) !important;}
+[data-edition="mono"] .hdr-user-avatar{background:var(--text) !important;color:var(--bg) !important;}
 
 /* BETA button mono — keep recognizable but in mono palette */
 [data-edition="mono"] .beta-btn{
