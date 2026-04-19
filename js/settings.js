@@ -744,15 +744,14 @@ window.run3CDashImport = async () => {
       }
     });
 
-    // Compute a rough commission + profit (CPA*QFTDs + RS*NetRev — best effort)
-    // Uses the tiered helper from dashboard if available, falls back to flat.
-    const commission = rows.reduce((s, r) => {
-      const dealForBrand = deals[r.brand];
-      if (!dealForBrand) return s;
-      const qf = typeof r.qftd === 'number' ? r.qftd : (typeof r.qftd === 'object' ? Object.values(r.qftd).reduce((x, v) => x + (v || 0), 0) : 0);
+    // Compute affiliate commission (what 3C pays the affiliate) AND
+    // brand commission (what the brand pays 3C). Profit = brandComm - affComm.
+    // Handles tiered structures via marginal-rate calculation.
+    const _computeComm = (deal, qf, nr) => {
+      if (!deal) return 0;
       let cpaPart = 0;
-      if (dealForBrand.levels?.length) {
-        const sorted = [...dealForBrand.levels].sort((a, b) => (a.baseline || 0) - (b.baseline || 0));
+      if (deal.levels?.length) {
+        const sorted = [...deal.levels].sort((a, b) => (a.baseline || 0) - (b.baseline || 0));
         let rem = qf;
         for (let i = 0; i < sorted.length && rem > 0; i++) {
           const nextBase = sorted[i + 1]?.baseline || Infinity;
@@ -762,12 +761,23 @@ window.run3CDashImport = async () => {
           rem -= inTier;
         }
       } else {
-        cpaPart = (dealForBrand.cpa || 0) * qf;
+        cpaPart = (deal.cpa || 0) * qf;
       }
-      const rsPart = (dealForBrand.rs || 0) / 100 * (r.netRev || 0);
-      return s + cpaPart + Math.max(0, rsPart);
-    }, 0);
-    const profit = netRev - commission;
+      const rsPart = (deal.rs || 0) / 100 * (nr || 0);
+      return cpaPart + Math.max(0, rsPart);
+    };
+
+    let commission = 0;  // what 3C pays affiliate
+    let brandRevenue = 0;  // what brand pays 3C
+    rows.forEach(r => {
+      const affDeal = deals[r.brand];
+      const brandConf = brands[r.brand];
+      if (!affDeal && !brandConf) return;
+      const qf = typeof r.qftd === 'number' ? r.qftd : (typeof r.qftd === 'object' ? Object.values(r.qftd).reduce((x, v) => x + (v || 0), 0) : 0);
+      commission += _computeComm(affDeal, qf, r.netRev || 0);
+      brandRevenue += _computeComm(brandConf, qf, r.netRev || 0);
+    });
+    const profit = brandRevenue - commission;
 
     return {
       id: a.id, name: a.name,

@@ -246,6 +246,11 @@ window.Data = (function () {
         STATE.users = (typeof DEFAULT_STATE !== 'undefined' && DEFAULT_STATE.users) ? [...DEFAULT_STATE.users] : [];
       }
 
+      // Migration: recompute affiliate profit using the corrected formula
+      // (brandComm - affComm). Older imports stored profit = netRev - affComm
+      // which is wrong because netRev is player revenue, not brand→3C payout.
+      try { _recomputeAffiliateProfits(); } catch(e) { console.warn('[Data] profit recompute failed:', e); }
+
       console.log('[Data] loaded:',
         `${STATE.affiliates.length} affiliates,`,
         `${STATE.payments.length} payments,`,
@@ -258,6 +263,45 @@ window.Data = (function () {
       console.error('[Data.loadAll] failed:', err);
       return false;
     }
+  }
+
+  // One-shot migration: walks STATE.affiliates and recomputes profit using
+  // the correct formula (brandComm - affComm) from their reports. Only
+  // rewrites values — doesn't touch commission, netRev, etc. Safe to run
+  // repeatedly; idempotent when profit is already correct.
+  function _recomputeAffiliateProfits() {
+    if (!STATE.affiliates?.length || !STATE.reports?.length) return;
+    const comm = (deal, qf, nr) => {
+      if (!deal) return 0;
+      let cpa = 0;
+      if (deal.levels?.length) {
+        const sorted = [...deal.levels].sort((a, b) => (a.baseline || 0) - (b.baseline || 0));
+        let rem = qf;
+        for (let i = 0; i < sorted.length && rem > 0; i++) {
+          const nextBase = sorted[i + 1]?.baseline || Infinity;
+          const cap = nextBase - (sorted[i].baseline || 0);
+          const inT = Math.min(rem, cap);
+          cpa += inT * (sorted[i].cpa || 0);
+          rem -= inT;
+        }
+      } else {
+        cpa = (deal.cpa || 0) * qf;
+      }
+      return cpa + Math.max(0, (deal.rs || 0) / 100 * (nr || 0));
+    };
+    STATE.affiliates.forEach(a => {
+      const rows = STATE.reports.filter(r => r.affiliateId === a.id);
+      if (!rows.length) return;
+      let brandRev = 0, affComm = 0;
+      rows.forEach(r => {
+        const qf = typeof r.qftd === 'object' ? Object.values(r.qftd).reduce((s, v) => s + (v || 0), 0) : (r.qftd || 0);
+        const nr = r.netRev || 0;
+        brandRev += comm(STATE.brands?.[r.brand], qf, nr);
+        affComm += comm(a.deals?.[r.brand], qf, nr);
+      });
+      a.commission = Math.round(affComm * 100) / 100;
+      a.profit = Math.round((brandRev - affComm) * 100) / 100;
+    });
   }
 
   // ── UPSERT (insert or update) ───────────────────────────

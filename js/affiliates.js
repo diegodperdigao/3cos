@@ -568,6 +568,6 @@ window.autoSuggestTags = () => {
   // Refresh module to show new tag counts + pills
   const modEl = document.getElementById('mod-affiliates');
   if (modEl) bAffs(modEl);
-  toast(`${changes.length} afiliado(s) classificado(s)`, 's');
+  toast(`${proposed.length} afiliado(s) classificado(s)`, 's');
 };
 
