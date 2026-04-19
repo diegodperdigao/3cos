@@ -469,6 +469,13 @@ window.uploadAvatar = (event) => {
       const match = (STATE.users || []).find(u => u.id === STATE.user.id || u.email === STATE.user.email);
       if (match) match.avatar = croppedUrl;
       saveToLocal();
+      // Also refresh the session blob so the avatar survives F5
+      try {
+        const sess = JSON.parse(localStorage.getItem('3cos_sess') || '{}');
+        sess.user = STATE.user;
+        if (!sess.exp) sess.exp = Date.now() + 7 * 86400000;
+        localStorage.setItem('3cos_sess', JSON.stringify(sess));
+      } catch(e) { console.warn('[uploadAvatar] session refresh failed:', e); }
       if (window.sb && window.Data?.upsert) {
         Data.upsert('profiles', { id: STATE.user.id, name: STATE.user.name, email: STATE.user.email, role: STATE.user.role, status: STATE.user.status, avatar: croppedUrl })
           .catch(err => console.warn('[uploadAvatar] profile sync failed:', err));

@@ -394,6 +394,9 @@ async function _validateSession() {
         // Supabase session valid — fetch profile and refresh
         const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
         if (profile) {
+          // Preserve any fields that aren't stored in the profiles table yet
+          // (avatar lives in localStorage until the schema has an avatar column).
+          const preservedAvatar = STATE.user?.avatar || profile.avatar || '';
           STATE.user = {
             id: profile.id,
             name: profile.name,
@@ -401,6 +404,7 @@ async function _validateSession() {
             role: profile.role,
             status: profile.status,
             modules: profile.modules || [],
+            avatar: preservedAvatar,
             createdAt: profile.created_at?.split('T')[0] || '',
           };
           localStorage.setItem('3cos_sess', JSON.stringify({ user: STATE.user, exp: Date.now() + 7*86400000 }));
