@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '8.2';
+  --3cos-version: '8.3';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -4289,6 +4289,36 @@ table td{font-weight:400;}
   75%{opacity:1;transform:translateY(0) scale(1);}
   100%{opacity:0;transform:translateY(-4px) scale(0.98);}
 }
+/* Beta quick-access popover (flask icon dropdown) */
+.beta-menu-popover{width:340px;max-width:calc(100vw - 24px);
+  background:var(--bg2);border:1px solid var(--gb);border-radius:14px;
+  box-shadow:0 24px 60px -12px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.04);
+  overflow:hidden;animation:betaMenuIn 0.18s cubic-bezier(0.32,0.72,0,1);}
+@keyframes betaMenuIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.beta-menu-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px 12px;border-bottom:1px solid var(--gb);}
+.beta-menu-title{font-size:14px;font-weight:600;color:var(--text);}
+.beta-menu-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.beta-menu-list{padding:6px;max-height:380px;overflow-y:auto;}
+.beta-menu-item{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:8px;transition:background 0.12s;}
+.beta-menu-item:hover{background:var(--bg3);}
+.beta-menu-item.is-planned{opacity:0.65;}
+.beta-menu-icon{width:28px;height:28px;border-radius:7px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.beta-menu-icon svg{width:13px;height:13px;stroke:var(--text2);}
+.beta-menu-body{flex:1;min-width:0;}
+.beta-menu-name{font-size:12px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:6px;}
+.beta-menu-where{font-size:10px;color:var(--text3);margin-top:2px;}
+.beta-menu-tag{font-size:8px;font-weight:600;padding:1px 6px;border-radius:8px;letter-spacing:0.02em;}
+.beta-menu-ready{background:rgba(16,185,129,0.14);color:var(--green);}
+.beta-menu-preview{background:rgba(245,158,11,0.14);color:var(--amber);}
+.beta-menu-planned{background:var(--bg3);color:var(--text3);}
+.beta-menu-switch{width:26px;height:26px;border-radius:7px;border:1px solid var(--gb2);background:var(--bg);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all 0.15s;flex-shrink:0;}
+.beta-menu-switch:hover{border-color:var(--theme-b);color:var(--theme);}
+.beta-menu-switch.on{background:var(--theme);border-color:var(--theme);color:#fff;}
+.beta-menu-switch.on:hover{background:var(--theme);color:#fff;}
+.beta-menu-switch svg{width:13px;height:13px;}
+.beta-menu-ftr{display:flex;gap:6px;padding:10px;border-top:1px solid var(--gb);background:var(--bg);}
+
 /* Activity Timeline (beta feature: activity_timeline) */
 .activity-timeline-wrap{margin-bottom:8px;}
 .activity-quick-add{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}

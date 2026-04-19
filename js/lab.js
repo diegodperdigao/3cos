@@ -12,14 +12,15 @@
 //   desc: one-sentence summary of what it does
 //   status: 'ready' (usable now) | 'preview' (partial) | 'planned' (stub)
 //   icon: lucide icon
+//   where: short hint of where the feature shows up in the UI
 const BETA_FEATURES = [
-  { id: 'activity_timeline', name: 'Timeline de atividades', desc: 'Registre ligações, reuniões, emails e notas estruturadas por afiliado — separado do log de auditoria.', status: 'ready', icon: 'activity' },
-  { id: 'followups', name: 'Follow-ups agendados', desc: 'Próxima ação vinculada ao afiliado, com data e lembrete automático na Central de Ações.', status: 'planned', icon: 'calendar-clock' },
-  { id: 'reports_custom', name: 'Relatórios customizados', desc: 'Comparação de períodos, cohort de afiliados, drill-down por marca e tipo de deal.', status: 'planned', icon: 'bar-chart-3' },
-  { id: 'attachments', name: 'Anexos em afiliado/contrato', desc: 'Upload de contratos, NFs e prints diretamente no cadastro (substitui o campo nfName).', status: 'planned', icon: 'paperclip' },
-  { id: 'custom_fields', name: 'Campos customizados', desc: 'Adicionar propriedades sob medida em afiliados e marcas sem alterar o schema.', status: 'planned', icon: 'settings-2' },
-  { id: 'bulk_actions', name: 'Ações em lote', desc: 'Selecionar múltiplos afiliados e aplicar tag, exportar ou mover no pipeline de uma vez.', status: 'planned', icon: 'check-square' },
-  { id: 'multi_pipeline', name: 'Múltiplos pipelines', desc: 'Criar pipelines paralelos (negociação, renegociação, onboarding) com etapas próprias.', status: 'planned', icon: 'git-branch' },
+  { id: 'activity_timeline', name: 'Timeline de atividades', desc: 'Registre ligações, reuniões, emails e notas estruturadas por afiliado — separado do log de auditoria.', status: 'ready', icon: 'activity', where: 'Afiliados → clique em um card → aba Timeline' },
+  { id: 'followups', name: 'Follow-ups agendados', desc: 'Próxima ação vinculada ao afiliado, com data e lembrete automático na Central de Ações.', status: 'planned', icon: 'calendar-clock', where: 'Em desenvolvimento' },
+  { id: 'reports_custom', name: 'Relatórios customizados', desc: 'Comparação de períodos, cohort de afiliados, drill-down por marca e tipo de deal.', status: 'planned', icon: 'bar-chart-3', where: 'Em desenvolvimento' },
+  { id: 'attachments', name: 'Anexos em afiliado/contrato', desc: 'Upload de contratos, NFs e prints diretamente no cadastro (substitui o campo nfName).', status: 'planned', icon: 'paperclip', where: 'Em desenvolvimento' },
+  { id: 'custom_fields', name: 'Campos customizados', desc: 'Adicionar propriedades sob medida em afiliados e marcas sem alterar o schema.', status: 'planned', icon: 'settings-2', where: 'Em desenvolvimento' },
+  { id: 'bulk_actions', name: 'Ações em lote', desc: 'Selecionar múltiplos afiliados e aplicar tag, exportar ou mover no pipeline de uma vez.', status: 'planned', icon: 'check-square', where: 'Em desenvolvimento' },
+  { id: 'multi_pipeline', name: 'Múltiplos pipelines', desc: 'Criar pipelines paralelos (negociação, renegociação, onboarding) com etapas próprias.', status: 'planned', icon: 'git-branch', where: 'Em desenvolvimento' },
 ];
 window.BETA_FEATURES = BETA_FEATURES;
 
@@ -52,20 +53,110 @@ window.toggleBetaFeature = (featureId) => {
   saveToLocal();
   if (window.refreshActiveModule) refreshActiveModule();
   if (typeof rerenderSettings === 'function') rerenderSettings();
-  toast(`${feature?.name || 'Feature'} ${!was ? 'ativada' : 'desativada'}`, 's');
+  // Richer toast explains where the feature appears
+  if (!was && feature?.where) {
+    toast(`${feature.name} ativada — ${feature.where}`, 's');
+  } else {
+    toast(`${feature?.name || 'Feature'} ${!was ? 'ativada' : 'desativada'}`, 's');
+  }
 };
 
 window.toggleBetaMode = () => {
-  STATE.betaMode = !STATE.betaMode;
-  const on = STATE.betaMode;
-  logAction(`Modo Beta ${on ? 'ativado' : 'desativado'}`, '');
+  // If Beta is already ON and the user clicks again, open the features panel
+  // instead of turning it off. This prevents accidentally losing the state
+  // and makes the active features discoverable.
+  if (STATE.betaMode) {
+    return window.openBetaMenu();
+  }
+  STATE.betaMode = true;
+  logAction('Modo Beta ativado', '');
   saveToLocal();
   updateLabButton();
   if (window.updateCopilotVisibility) updateCopilotVisibility();
   if (window.refreshActiveModule) refreshActiveModule();
   if (typeof rerenderSettings === 'function') rerenderSettings();
-  if (on) toast('Modo Beta ativado — acesse Configurações > Beta para ligar features', 's');
-  else toast('Modo Beta desativado', 'i');
+  // Open the menu right after activation so the user sees what's available
+  setTimeout(() => window.openBetaMenu(), 100);
+};
+
+// Renders a small anchored panel listing all beta features with quick toggles
+// and a hint of where each one shows up. Replaces the old "just turn off"
+// behavior of clicking the flask icon again.
+window.openBetaMenu = () => {
+  // Remove any existing menu
+  document.getElementById('beta-menu-popover')?.remove();
+
+  const anchor = document.querySelector('#hub-beta-btn, .hdr-icon-btn[onclick*="toggleBetaMode"]');
+  if (!anchor) return;
+  const rect = anchor.getBoundingClientRect();
+
+  const items = (window.BETA_FEATURES || []).map(f => {
+    const on = !!STATE.settings?.betaFlags?.[f.id];
+    const ready = f.status === 'ready' || f.status === 'preview';
+    return `<div class="beta-menu-item ${ready ? '' : 'is-planned'}">
+      <div class="beta-menu-icon"><i data-lucide="${f.icon}"></i></div>
+      <div class="beta-menu-body">
+        <div class="beta-menu-name">${f.name}
+          ${f.status === 'ready' ? '<span class="beta-menu-tag beta-menu-ready">Disponível</span>' :
+            f.status === 'preview' ? '<span class="beta-menu-tag beta-menu-preview">Prévia</span>' :
+            '<span class="beta-menu-tag beta-menu-planned">Em breve</span>'}
+        </div>
+        <div class="beta-menu-where">${f.where}</div>
+      </div>
+      ${ready
+        ? `<button class="beta-menu-switch ${on ? 'on' : ''}" onclick="toggleBetaFeature('${f.id}');openBetaMenu()" title="${on ? 'Desativar' : 'Ativar'}">
+            ${on ? '<i data-lucide="check"></i>' : ''}
+          </button>`
+        : ''}
+    </div>`;
+  }).join('');
+
+  const popover = document.createElement('div');
+  popover.id = 'beta-menu-popover';
+  popover.className = 'beta-menu-popover';
+  popover.innerHTML = `
+    <div class="beta-menu-hdr">
+      <div>
+        <div class="beta-menu-title">Laboratório</div>
+        <div class="beta-menu-sub">Features experimentais</div>
+      </div>
+      <button class="ibt" onclick="document.getElementById('beta-menu-popover')?.remove()" title="Fechar"><i data-lucide="x" style="width:12px;height:12px"></i></button>
+    </div>
+    <div class="beta-menu-list">${items}</div>
+    <div class="beta-menu-ftr">
+      <button class="btn btn-outline" onclick="document.getElementById('beta-menu-popover')?.remove();openMod('settings')" style="flex:1"><i data-lucide="settings-2"></i> Gerenciar em Configurações</button>
+      <button class="btn btn-ghost" onclick="_deactivateBetaMode()" title="Desativar modo Beta"><i data-lucide="power"></i></button>
+    </div>
+  `;
+  popover.style.position = 'fixed';
+  popover.style.top = `${rect.bottom + 8}px`;
+  popover.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
+  popover.style.zIndex = '300';
+  document.body.appendChild(popover);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // Click-outside to close
+  setTimeout(() => {
+    document.addEventListener('click', function closer(e) {
+      if (!popover.contains(e.target) && !e.target.closest('#hub-beta-btn, [onclick*="toggleBetaMode"]')) {
+        popover.remove();
+      } else {
+        document.addEventListener('click', closer, { once: true });
+      }
+    }, { once: true });
+  }, 0);
+};
+
+window._deactivateBetaMode = () => {
+  STATE.betaMode = false;
+  logAction('Modo Beta desativado', '');
+  saveToLocal();
+  updateLabButton();
+  if (window.updateCopilotVisibility) updateCopilotVisibility();
+  if (window.refreshActiveModule) refreshActiveModule();
+  if (typeof rerenderSettings === 'function') rerenderSettings();
+  document.getElementById('beta-menu-popover')?.remove();
+  toast('Modo Beta desativado', 'i');
 };
 
 window.updateLabButton = () => {
