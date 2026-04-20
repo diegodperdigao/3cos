@@ -904,13 +904,45 @@ window.run3CDashImport = async () => {
   logAction('Importação JSON (3C Dash)', `${affiliates.length} afiliado(s), ${reports.length} report(s), ${Object.keys(brands).length} marca(s)`);
   saveToLocal();
 
-  // Sync to Supabase if configured — clear old data first, then upsert new
+  // Sync to Supabase if configured — clear old data first, then upsert new.
+  // We explicitly re-insert reports here (after syncAll) because the upsert
+  // path inside syncAll depends on a unique index that may not be present.
+  // Since we just cleared, a plain insert is safe and unambiguous.
   if (window.SUPABASE_CONFIGURED && window.Data?.syncAll) {
     toast('Limpando dados antigos do Supabase...', 'i');
     await _clearSupabaseForImport();
     toast('Enviando novos dados...', 'i');
     try {
       await Data.syncAll();
+      // Verify reports landed — if the upsert silently lost the batch, reinsert.
+      try {
+        const { count } = await sb.from('reports').select('*', { count: 'exact', head: true });
+        console.log('[import] Supabase reports count after sync:', count);
+        if ((count || 0) === 0 && reports.length > 0) {
+          console.warn('[import] reports missing in Supabase — forcing plain insert');
+          const flattenQftd = (q) => {
+            if (typeof q === 'number') return q;
+            if (typeof q === 'object' && q) return Object.values(q).reduce((s, v) => s + (Number(v) || 0), 0);
+            return 0;
+          };
+          const rows = reports
+            .filter(r => r.brand && r.affiliateId && r.date)
+            .map(r => ({
+              brand: r.brand,
+              affiliate_id: r.affiliateId,
+              date: r.date,
+              ftd: Number(r.ftd) || 0,
+              qftd: flattenQftd(r.qftd),
+              deposits: Number(r.deposits) || 0,
+              net_rev: Number(r.netRev) || 0,
+            }));
+          const { error: insErr } = await sb.from('reports').insert(rows);
+          if (insErr) console.error('[import] fallback insert failed:', insErr.message);
+          else console.log('[import] fallback insert succeeded:', rows.length);
+        }
+      } catch (verr) {
+        console.warn('[import] report-count verification failed:', verr.message);
+      }
       toast(`Importado: ${affiliates.length} afiliados, ${reports.length} lançamentos diários, ${Object.keys(brands).length} marcas`, 's');
     } catch (e) {
       console.error('[import] sync failed:', e);
@@ -921,5 +953,5 @@ window.run3CDashImport = async () => {
   }
 
   closeModal();
-  setTimeout(() => location.reload(), 1200);
+  setTimeout(() => location.reload(), 1500);
 };

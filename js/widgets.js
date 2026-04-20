@@ -21,7 +21,11 @@ const DEFAULT_HUB_WIDGETS = ['results', 'payments_queue', 'tasks', 'notification
 
 function _activeWidgets() {
   const saved = STATE.settings?.hubWidgets;
-  if (Array.isArray(saved)) return saved.filter(id => HUB_WIDGETS.some(w => w.id === id));
+  // Empty saved list means "user never customised" — show defaults, not blank.
+  // Only treat as intentional hide if user saved with 0 selected AND we flagged it.
+  if (Array.isArray(saved) && saved.length > 0) {
+    return saved.filter(id => HUB_WIDGETS.some(w => w.id === id));
+  }
   return DEFAULT_HUB_WIDGETS;
 }
 

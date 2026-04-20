@@ -3,21 +3,24 @@
 // ══════════════════════════════════════════════════════════
 function _renderUserGrid(filter){
   const q=(filter||'').toLowerCase();
-  return STATE.users.filter(u=>!q||(u.name||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)).map(u=>`<div class="user-card" style="border:1px solid var(--gb)">
-    ${userAvatar(u,44)}
-    <div class="user-info">
-      <div class="user-name">${u.name} <span class="role-badge role-${u.role}" style="margin-left:8px">${ROLES[u.role]?.label}</span></div>
-      <div class="user-email">${u.title?u.title+' · ':''}${u.email} · Criado em ${new Date(u.createdAt).toLocaleDateString('pt-BR')}</div>
-      <div class="user-mods">${u.modules.map(m=>`<span class="mod-chip">${MODS.find(x=>x.id===m)?.label||m}</span>`).join('')}</div>
-    </div>
-    <div style="display:flex;gap:4px">
-      <button class="ibt" onclick="openEditUser('${u.id}')" title="Editar"><i data-lucide="edit-3"></i></button>
-      <button class="ibt ${u.status==='ativo'?'danger':'green'}" onclick="toggleUserStatus('${u.id}')" title="${u.status==='ativo'?'Bloquear':'Desbloquear'}">
-        <i data-lucide="${u.status==='ativo'?'lock':'unlock'}"></i>
-      </button>
-      ${u.id!==STATE.user?.id?`<button class="ibt danger" onclick="confirmDeleteUser('${u.id}')" title="Remover"><i data-lucide="trash-2"></i></button>`:''}
-    </div>
-  </div>`).join('')||'<div class="empty" style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Nenhum usuário encontrado.</div>';
+  return STATE.users.filter(u=>!q||(u.name||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)).map(u=>{
+    const isSelf = u.id===STATE.user?.id;
+    const blockLbl = u.status==='ativo' ? 'Bloquear' : 'Desbloquear';
+    const blockIcon = u.status==='ativo' ? 'lock' : 'unlock';
+    return `<div class="user-card" style="border:1px solid var(--gb)">
+      ${userAvatar(u,44)}
+      <div class="user-info">
+        <div class="user-name">${u.name} <span class="role-badge role-${u.role}" style="margin-left:8px">${ROLES[u.role]?.label}</span>${isSelf?'<span class="user-self-tag">você</span>':''}</div>
+        <div class="user-email">${u.title?u.title+' · ':''}${u.email} · Criado em ${new Date(u.createdAt).toLocaleDateString('pt-BR')}</div>
+        <div class="user-mods">${u.modules.map(m=>`<span class="mod-chip">${MODS.find(x=>x.id===m)?.label||m}</span>`).join('')}</div>
+      </div>
+      <div class="user-actions">
+        <button class="btn btn-outline user-action-btn" onclick="openEditUser('${u.id}')" title="Editar usuário"><i data-lucide="pencil"></i><span>Editar</span></button>
+        ${isSelf?'':`<button class="btn btn-outline user-action-btn ${u.status==='ativo'?'is-warn':'is-ok'}" onclick="toggleUserStatus('${u.id}')" title="${blockLbl}"><i data-lucide="${blockIcon}"></i><span>${blockLbl}</span></button>
+        <button class="btn btn-outline user-action-btn is-danger" onclick="confirmDeleteUser('${u.id}')" title="Excluir usuário"><i data-lucide="trash-2"></i><span>Excluir</span></button>`}
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty" style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Nenhum usuário encontrado.</div>';
 }
 function bUsers(el){
   el.innerHTML=modHdr('Usuários — Controle de Acesso')+`<div class="mod-body">

@@ -775,6 +775,17 @@ td{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-ali
   background:rgba(255,255,255,0.05);border:1px solid var(--gb);color:var(--text3);}
 [data-theme="light"] .mod-chip{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.04);}
 .user-grid{display:flex;flex-direction:column;gap:10px;}
+.user-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.user-action-btn{padding:7px 10px !important;font-size:11px !important;font-weight:600;display:inline-flex !important;align-items:center;gap:5px;min-height:32px;}
+.user-action-btn svg{width:13px;height:13px;}
+.user-action-btn.is-warn{color:var(--amber);border-color:rgba(245,158,11,0.3);}
+.user-action-btn.is-warn:hover{background:rgba(245,158,11,0.08);border-color:var(--amber);}
+.user-action-btn.is-ok{color:var(--green);border-color:rgba(34,197,94,0.3);}
+.user-action-btn.is-ok:hover{background:rgba(34,197,94,0.08);border-color:var(--green);}
+.user-action-btn.is-danger{color:var(--red);border-color:rgba(239,68,68,0.3);}
+.user-action-btn.is-danger:hover{background:rgba(239,68,68,0.08);border-color:var(--red);color:var(--red);}
+.user-self-tag{font-size:9px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--theme-dim);color:var(--theme);margin-left:6px;text-transform:uppercase;letter-spacing:0.04em;}
+@media (max-width:600px){.user-actions{width:100%;justify-content:flex-start;margin-top:8px;}}
 
 .audit-item{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--gb);}
 [data-theme="light"] .audit-item { border-bottom-color: var(--gb); }
@@ -4245,8 +4256,10 @@ table td{font-weight:400;}
 /* Remove all decorative text-shadows / letter-spacing overuse */
 .hub-wordmark{letter-spacing:0.06em !important;}
 
-/* Date/time picker: force light icon on every dark theme variant.
-   !important ensures no theme-specific rule can override. */
+/* Date/time picker: replace the native icon with a custom inline SVG.
+   This guarantees visibility across themes regardless of browser
+   color-scheme inheritance quirks (which was the failure mode of the
+   filter:invert approach). */
 html[data-theme="dark"]{color-scheme:dark !important;}
 html[data-theme="light"]{color-scheme:light !important;}
 input[type="date"],
@@ -4254,23 +4267,33 @@ input[type="datetime-local"],
 input[type="time"],
 input[type="month"],
 input[type="week"]{color-scheme:inherit !important;}
-[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
-[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
-[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
-[data-theme="dark"] input[type="month"]::-webkit-calendar-picker-indicator,
-[data-theme="dark"] input[type="week"]::-webkit-calendar-picker-indicator{
-  filter:invert(1) brightness(1.5) !important;
-  opacity:0.8 !important;
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator{
+  opacity:0 !important;
+  width:22px;height:22px;
   cursor:pointer;
-  padding:4px;
-  border-radius:4px;
+  position:absolute;right:4px;
 }
-[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator:hover,
-[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
-[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator:hover,
-[data-theme="dark"] input[type="month"]::-webkit-calendar-picker-indicator:hover,
-[data-theme="dark"] input[type="week"]::-webkit-calendar-picker-indicator:hover{
-  opacity:1;background:rgba(255,255,255,0.08);
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="month"],
+input[type="week"]{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a5b2c6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg>") !important;
+  background-repeat:no-repeat !important;
+  background-position:right 8px center !important;
+  background-size:16px 16px !important;
+  padding-right:34px !important;
+}
+[data-theme="light"] input[type="date"],
+[data-theme="light"] input[type="datetime-local"],
+[data-theme="light"] input[type="time"],
+[data-theme="light"] input[type="month"],
+[data-theme="light"] input[type="week"]{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg>") !important;
 }
 
 /* ══════════════════════════════════════════════════════════

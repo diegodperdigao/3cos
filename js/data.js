@@ -129,6 +129,14 @@ window.Data = (function () {
           console.warn(`[Data.loadAll] ${table} retornou não-array — mantendo STATE.${field}`);
           return false;
         }
+        // Preserve local state if cloud is empty but we have locally-cached data.
+        // Handles the case where a sync failed silently (e.g. missing unique
+        // index on reports) — prevents the post-import reload from wiping the
+        // user's freshly imported records.
+        if (data.length === 0 && Array.isArray(STATE[field]) && STATE[field].length > 0) {
+          console.warn(`[Data.loadAll] ${table} vazio no Supabase — mantendo ${STATE[field].length} registro(s) locais`);
+          return false;
+        }
         STATE[field] = data.map(mapper);
         console.log(`[Data.loadAll] ${table} ← ${data.length} registros`);
         return true;
@@ -381,13 +389,12 @@ window.Data = (function () {
         }
       });
 
-      // Reports — natural key upsert (no JS-side id)
-      // Requires unique index on (brand, affiliate_id, date)
-      // → see supabase/migrations/001_phase3_followup.sql
+      // Reports — natural key upsert (no JS-side id).
+      // NOTE: onConflict requires a unique index on (brand, affiliate_id, date).
+      // If that index isn't provisioned yet, the whole batch fails silently
+      // and reports never reach Supabase. We try upsert first; if it fails,
+      // we fall back to wipe-and-insert for reports specifically.
       if (STATE.reports?.length) {
-        // qftd may arrive as an object ({l1:6,l2:0,l3:0} from Hub 3C exports)
-        // but the reports.qftd column is int — flatten before upsert or the
-        // whole batch fails silently and reports never reach Supabase.
         const flattenQftd = (q) => {
           if (typeof q === 'number') return q;
           if (typeof q === 'object' && q) return Object.values(q).reduce((s, v) => s + (Number(v) || 0), 0);
@@ -405,8 +412,23 @@ window.Data = (function () {
             net_rev: Number(r.netRev) || 0,
           }));
         if (reportRows.length) {
-          ops.push(sb().from('reports').upsert(reportRows, { onConflict: 'brand,affiliate_id,date' }));
           console.log('[Data.syncAll] Enviando', reportRows.length, 'reports ao Supabase');
+          ops.push((async () => {
+            // Try upsert first (handles re-syncs without duplicating)
+            const { error: upErr } = await sb().from('reports').upsert(reportRows, { onConflict: 'brand,affiliate_id,date' });
+            if (!upErr) return { data: reportRows };
+            console.warn('[Data.syncAll] reports upsert failed, falling back to wipe+insert:', upErr.message);
+            // Fallback: wipe all reports then insert fresh (matches the pre-import
+            // clear path, so no duplicates expected).
+            await sb().from('reports').delete().gte('created_at', '1900-01-01');
+            const { error: insErr } = await sb().from('reports').insert(reportRows);
+            if (insErr) {
+              console.error('[Data.syncAll] reports insert also failed:', insErr.message);
+              return { error: insErr };
+            }
+            console.log('[Data.syncAll] reports insert fallback succeeded:', reportRows.length);
+            return { data: reportRows };
+          })());
         }
       }
 
