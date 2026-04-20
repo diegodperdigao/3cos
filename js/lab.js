@@ -15,10 +15,6 @@
 //   where: short hint of where the feature shows up in the UI
 const BETA_FEATURES = [
   { id: 'activity_timeline', name: 'Timeline de atividades', desc: 'Registre ligações, reuniões, emails e notas estruturadas por afiliado — separado do log de auditoria.', status: 'ready', icon: 'activity', where: 'Afiliados → clique em um card → aba Timeline' },
-  { id: 'apple_motion', name: 'Movimento Apple', desc: 'Microinterações iOS-style: cards sobem no hover, botões afundam no clique, transições com easing natural.', status: 'ready', icon: 'sparkles', where: 'Aplicado em toda a interface automaticamente' },
-  { id: 'apple_focus', name: 'Anéis de foco', desc: 'Anel de 3px em accent do tema ao focar inputs e botões — estilo macOS/iOS.', status: 'ready', icon: 'target', where: 'Foque qualquer campo (Tab ou clique)' },
-  { id: 'apple_modals', name: 'Modais com blur', desc: 'Fundo dos modais fica desfocado ao abrir — sensação vitralizada do iOS 17+.', status: 'ready', icon: 'layers', where: 'Qualquer modal (editar afiliado, fechamento, etc.)' },
-  { id: 'apple_toast', name: 'Toast no topo', desc: 'Notificações aparecem no topo centralizadas com efeito blur, ao invés da base.', status: 'ready', icon: 'bell', where: 'Qualquer ação que dispare um toast' },
   { id: 'followups', name: 'Follow-ups agendados', desc: 'Próxima ação vinculada ao afiliado, com data e lembrete automático na Central de Ações.', status: 'planned', icon: 'calendar-clock', where: 'Em desenvolvimento' },
   { id: 'reports_custom', name: 'Relatórios customizados', desc: 'Comparação de períodos, cohort de afiliados, drill-down por marca e tipo de deal.', status: 'planned', icon: 'bar-chart-3', where: 'Em desenvolvimento' },
   { id: 'attachments', name: 'Anexos em afiliado/contrato', desc: 'Upload de contratos, NFs e prints diretamente no cadastro (substitui o campo nfName).', status: 'planned', icon: 'paperclip', where: 'Em desenvolvimento' },
@@ -32,24 +28,11 @@ window.BETA_FEATURES = BETA_FEATURES;
 // as data-beta-{id}. CSS rules can then scope to [data-beta-apple-motion]
 // etc. without any JS involvement. Called on boot and whenever a flag
 // toggles.
-window.syncBetaAttributes = () => {
-  const root = document.documentElement;
-  const active = !!STATE.betaMode;
-  const flags = STATE.settings?.betaFlags || {};
-  const cssBacked = ['apple_motion', 'apple_focus', 'apple_modals', 'apple_toast'];
-  const applied = [];
-  cssBacked.forEach(id => {
-    const attr = 'data-beta-' + id.replace(/_/g, '-');
-    if (active && flags[id]) { root.setAttribute(attr, 'on'); applied.push(id); }
-    else root.removeAttribute(attr);
-  });
-  console.log('[beta] sync:', { active, flags, applied });
-};
-// Apply on load AND whenever DOMContentLoaded fires (covers all script loading orders)
-setTimeout(() => window.syncBetaAttributes?.(), 0);
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => window.syncBetaAttributes?.());
-}
+// The apple-clean interactions (motion, focus rings, modal blur, top-center
+// toast) were promoted from beta to standard. syncBetaAttributes is kept as
+// a no-op so existing callers don't break; future CSS-backed beta features
+// can register here again.
+window.syncBetaAttributes = () => {};
 
 // Reads the per-feature flag. Returns false if betaMode global is off or
 // the flag wasn't explicitly set. Features must opt-in.
