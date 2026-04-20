@@ -313,23 +313,49 @@ window.refreshDash=()=>{
     }).filter(Boolean).sort((a,b)=>b.deposits-a.deposits);
   }
 
-  // Empty-period detection: only show the hint when BOTH report scope is
-  // empty AND the affiliate fallback also produced zeros (i.e. genuinely
-  // no data anywhere for this scope).
+  // Detect the common case of "no daily reports at all" — JSON was imported
+  // with only aggregated affiliate totals, no per-day breakdown. In this case
+  // the date filters are useless (always return zero). Show a persistent
+  // warning at the top of the dashboard instead of only when fully empty.
+  const hasAnyReports = (STATE.reports || []).length > 0;
   const noData = (scopedReps.length === 0) && (totFTD + totQFTD + totDep + totRev + totComm === 0);
   let emptyHint = '';
-  if (noData) {
-    const suggestion = (STATE.reports || []).length === 0
-      ? 'Ainda não há lançamentos diários na plataforma. Importe os dados ou lance pelo módulo Dashboard.'
-      : brand !== 'all'
-        ? `Nenhum lançamento encontrado para <strong>${brand}</strong> neste período. Tente outro período ou selecione <em>Todas as marcas</em>.`
-        : 'Nenhum lançamento no período selecionado. Tente <em>Todo Período</em> ou um intervalo maior.';
+  if (!hasAnyReports) {
+    // Global banner: import has no daily data
+    emptyHint = `
+      <div class="empty-banner" style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--bg3);border:1px dashed var(--amber);border-radius:var(--radius);margin-bottom:16px">
+        <i data-lucide="alert-circle" style="width:18px;height:18px;color:var(--amber);flex-shrink:0"></i>
+        <div style="flex:1;font-size:11px;color:var(--text2);line-height:1.6">
+          <strong style="color:var(--text)">Sem lançamentos diários.</strong> O JSON importado trouxe apenas totais agregados por afiliado — não é possível filtrar por mês ou data. Os KPIs abaixo refletem o total consolidado de todos os afiliados. Para habilitar filtros por período, importe um JSON com <em>dailyReports</em> preenchidos ou lance os dados manualmente.
+        </div>
+      </div>`;
+  } else if (noData) {
+    const suggestion = brand !== 'all'
+      ? `Nenhum lançamento encontrado para <strong>${brand}</strong> neste período. Tente outro período ou selecione <em>Todas as marcas</em>.`
+      : 'Nenhum lançamento no período selecionado. Tente <em>Todo Período</em> ou um intervalo maior.';
     emptyHint = `
       <div class="empty-banner" style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--bg3);border:1px dashed var(--gb2);border-radius:var(--radius);margin-bottom:16px">
         <i data-lucide="info" style="width:18px;height:18px;color:var(--theme);flex-shrink:0"></i>
         <div style="flex:1;font-size:11px;color:var(--text2);line-height:1.6">${suggestion}</div>
         ${_dashDateRange !== 'all' ? `<button class="btn btn-outline" onclick="setDashDate('all',document.querySelector('.pill[onclick*=&quot;setDashDate(\\'all\\'&quot;]'))" style="flex-shrink:0"><i data-lucide="arrow-right"></i> Ver Todo Período</button>` : ''}
       </div>`;
+  }
+  // When there are no reports at all, force the data source to the affiliate
+  // rollups regardless of the selected period — otherwise KPIs show zero.
+  if (!hasAnyReports) {
+    const eligibleAffs = (brand === 'all')
+      ? STATE.affiliates
+      : STATE.affiliates.filter(a => a.deals && (a.deals[_resolveBrandKey(brand)] || a.deals[brand]));
+    let affFTD=0,affQFTD=0,affDep=0,affComm=0,affProfit=0,affRev=0;
+    eligibleAffs.forEach(a => {
+      affFTD += a.ftds||0; affQFTD += a.qftds||0; affDep += a.deposits||0;
+      affComm += a.commission||0; affProfit += a.profit||0; affRev += a.netRev||0;
+    });
+    // Only overwrite when those totals would give us MORE signal than the empty reports
+    if (affFTD + affQFTD + affDep > 0) {
+      totFTD = affFTD; totQFTD = affQFTD; totDep = affDep;
+      totRev = affRev; totComm = affComm; totProfit = affProfit;
+    }
   }
 
   el.innerHTML=`

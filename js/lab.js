@@ -37,14 +37,19 @@ window.syncBetaAttributes = () => {
   const active = !!STATE.betaMode;
   const flags = STATE.settings?.betaFlags || {};
   const cssBacked = ['apple_motion', 'apple_focus', 'apple_modals', 'apple_toast'];
+  const applied = [];
   cssBacked.forEach(id => {
     const attr = 'data-beta-' + id.replace(/_/g, '-');
-    if (active && flags[id]) root.setAttribute(attr, 'on');
+    if (active && flags[id]) { root.setAttribute(attr, 'on'); applied.push(id); }
     else root.removeAttribute(attr);
   });
+  console.log('[beta] sync:', { active, flags, applied });
 };
-// Apply on load
+// Apply on load AND whenever DOMContentLoaded fires (covers all script loading orders)
 setTimeout(() => window.syncBetaAttributes?.(), 0);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => window.syncBetaAttributes?.());
+}
 
 // Reads the per-feature flag. Returns false if betaMode global is off or
 // the flag wasn't explicitly set. Features must opt-in.
