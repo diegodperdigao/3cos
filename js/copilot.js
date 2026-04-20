@@ -15,6 +15,8 @@ let _copilotActiveId = null;  // id of active conversation
 let _copilotOpen = false;
 let _copilotSending = false;
 let _copilotHistoryOpen = false;
+let _copilotSelectMode = false;
+const _copilotSelected = new Set();
 
 function _loadConvs() {
   try {
@@ -85,8 +87,17 @@ window.openCopilot = () => {
   const overlay = document.getElementById('copilot-overlay');
   if (!drawer) return;
   _loadConvs();
-  // If no active conv exists, start fresh (but don't persist empty conv yet)
-  if (!_copilotActiveId && _copilotConvs.length) _copilotActiveId = _copilotConvs[0].id;
+  // Always start fresh when opening the Copilot. Old conversations stay in
+  // the history sidebar, accessible via the hamburger icon in the header.
+  // This prevents the clutter of dozens of half-finished tabs.
+  const active = _getActiveConv();
+  if (!active || active.messages.length > 0) {
+    // Last conv had content — start a new empty one
+    const conv = _makeConv([]);
+    _copilotConvs.unshift(conv);
+    _copilotActiveId = conv.id;
+    _saveConvs();
+  }
   renderCopilot();
   drawer.classList.add('open');
   overlay?.classList.add('open');
@@ -190,8 +201,22 @@ function renderCopilot() {
 function renderCopilotHistory() {
   const panel = document.getElementById('copilot-history');
   if (!panel) return;
+
+  // Toolbar (only visible when there are conversations)
+  const toolbar = _copilotConvs.length ? `
+    <div class="cp-hist-toolbar">
+      ${_copilotSelectMode ? `
+        <button class="cp-hist-btn" onclick="cpSelectAll()"><i data-lucide="check-square"></i> ${_copilotSelected.size === _copilotConvs.length ? 'Nenhum' : 'Todos'}</button>
+        <div class="cp-hist-toolbar-count">${_copilotSelected.size} selecionada(s)</div>
+        <button class="cp-hist-btn danger" onclick="cpBulkDelete()" ${_copilotSelected.size === 0 ? 'disabled' : ''}><i data-lucide="trash-2"></i> Apagar</button>
+        <button class="cp-hist-btn" onclick="cpExitSelectMode()"><i data-lucide="x"></i></button>
+      ` : `
+        <button class="cp-hist-btn" onclick="cpEnterSelectMode()"><i data-lucide="check-square"></i> Selecionar</button>
+      `}
+    </div>` : '';
+
   if (!_copilotConvs.length) {
-    panel.innerHTML = `<div class="cp-hist-empty">
+    panel.innerHTML = `${toolbar}<div class="cp-hist-empty">
       <i data-lucide="message-square"></i>
       <div>Sem conversas ainda</div>
       <div class="cp-hist-empty-sub">Comece uma nova conversa</div>
@@ -199,12 +224,23 @@ function renderCopilotHistory() {
     if (window.lucide?.createIcons) lucide.createIcons();
     return;
   }
+
   // Sort by updatedAt descending
   const sorted = [..._copilotConvs].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-  panel.innerHTML = sorted.map(c => {
+  const items = sorted.map(c => {
     const isActive = c.id === _copilotActiveId;
+    const selected = _copilotSelected.has(c.id);
     const timeAgo = formatRelativeTime(c.updatedAt);
     const msgCount = c.messages.length;
+    if (_copilotSelectMode) {
+      return `<div class="cp-hist-item select-mode ${selected ? 'selected' : ''}" onclick="cpToggleSelect('${c.id}')">
+        <div class="cp-hist-check">${selected ? '<i data-lucide="check"></i>' : ''}</div>
+        <div style="flex:1;min-width:0">
+          <div class="cp-hist-item-title">${escapeHTML(c.title)}</div>
+          <div class="cp-hist-item-meta">${timeAgo}${msgCount ? ` · ${msgCount} msg` : ''}</div>
+        </div>
+      </div>`;
+    }
     return `<div class="cp-hist-item ${isActive ? 'on' : ''}" onclick="switchCopilotConv('${c.id}')">
       <div class="cp-hist-item-title">${escapeHTML(c.title)}</div>
       <div class="cp-hist-item-meta">${timeAgo}${msgCount ? ` · ${msgCount} msg` : ''}</div>
@@ -213,8 +249,44 @@ function renderCopilotHistory() {
       </button>
     </div>`;
   }).join('');
+
+  panel.innerHTML = toolbar + items;
   if (window.lucide?.createIcons) lucide.createIcons();
 }
+
+window.cpEnterSelectMode = () => {
+  _copilotSelectMode = true;
+  _copilotSelected.clear();
+  renderCopilotHistory();
+};
+window.cpExitSelectMode = () => {
+  _copilotSelectMode = false;
+  _copilotSelected.clear();
+  renderCopilotHistory();
+};
+window.cpToggleSelect = (id) => {
+  if (_copilotSelected.has(id)) _copilotSelected.delete(id);
+  else _copilotSelected.add(id);
+  renderCopilotHistory();
+};
+window.cpSelectAll = () => {
+  if (_copilotSelected.size === _copilotConvs.length) _copilotSelected.clear();
+  else _copilotConvs.forEach(c => _copilotSelected.add(c.id));
+  renderCopilotHistory();
+};
+window.cpBulkDelete = () => {
+  if (_copilotSelected.size === 0) return;
+  const n = _copilotSelected.size;
+  if (!confirm(`Apagar ${n} conversa(s) selecionada(s)?`)) return;
+  _copilotConvs = _copilotConvs.filter(c => !_copilotSelected.has(c.id));
+  if (_copilotActiveId && !_copilotConvs.find(c => c.id === _copilotActiveId)) {
+    _copilotActiveId = _copilotConvs[0]?.id || null;
+  }
+  _copilotSelected.clear();
+  _copilotSelectMode = false;
+  _saveConvs();
+  renderCopilot();
+};
 
 function formatRelativeTime(ts) {
   if (!ts) return '—';
