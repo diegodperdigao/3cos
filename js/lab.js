@@ -84,22 +84,26 @@ window.toggleBetaFeature = (featureId) => {
 };
 
 window.toggleBetaMode = function(anchor) {
-  // `anchor` is the clicked button (passed as `this` from inline onclick
-  // in hub/header). Used to position the popover correctly regardless of
-  // whether the user is on the hub or inside a module.
   if (STATE.betaMode) {
     return window.openBetaMenu(anchor);
   }
   STATE.betaMode = true;
-  logAction('Modo Beta ativado', '');
+  // Auto-enable ALL ready features on first activation so the user
+  // feels the impact instantly. They can disable individually in Settings.
+  if (!STATE.settings) STATE.settings = {};
+  if (!STATE.settings.betaFlags) STATE.settings.betaFlags = {};
+  BETA_FEATURES.filter(f => f.status === 'ready' || f.status === 'preview').forEach(f => {
+    STATE.settings.betaFlags[f.id] = true;
+  });
+  logAction('Modo Beta ativado', 'Todas as features prontas habilitadas');
   saveToLocal();
   updateLabButton();
   if (window.syncBetaAttributes) window.syncBetaAttributes();
   if (window.updateCopilotVisibility) updateCopilotVisibility();
   if (window.refreshActiveModule) refreshActiveModule();
   if (typeof rerenderSettings === 'function') rerenderSettings();
-  // Open menu after state propagates so popover reflects current betaMode
-  setTimeout(() => window.openBetaMenu(anchor), 120);
+  toast('Modo Beta ativado — todas as features prontas estão ligadas', 's');
+  setTimeout(() => window.openBetaMenu(anchor), 200);
 };
 
 // Renders a small anchored panel listing all beta features with quick toggles

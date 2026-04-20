@@ -413,6 +413,40 @@ window.openEditAff=id=>{
     <div class="fgp"><label>Net Revenue (R$)</label><input type="number" class="fi" id="ea-rev" value="${a.netRev||0}"></div>
     <div class="fgp"><label>Comissão (R$)</label><input type="number" class="fi" id="ea-comm" value="${a.commission}"></div>
     <div class="fgp"><label>Lucro 3C (R$)</label><input type="number" class="fi" id="ea-profit" value="${a.profit}"></div>
+    <div class="fgp ff"><label>Deals por marca</label>
+      <div id="ea-deals-grid" style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+        ${Object.entries(a.deals||{}).map(([brand, deal])=>{
+          const br=STATE.brands[brand]||{color:'#888'};
+          const isT=!!deal.levels?.length;
+          const levels=(deal.levels||[]).map((l,i)=>`
+            <div style="display:flex;gap:6px;align-items:center" data-eal-brand="${brand}" data-eal-idx="${i}">
+              <input class="fi eal-name" value="${l.name||l.key||''}" placeholder="Nome" style="width:50px;padding:5px;font-size:11px">
+              <input class="fi eal-cpa" type="number" value="${l.cpa||0}" placeholder="CPA" style="width:70px;padding:5px;font-size:11px">
+              <input class="fi eal-base" type="number" value="${l.baseline||0}" placeholder="Baseline" style="width:80px;padding:5px;font-size:11px">
+              <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px">×</button>
+            </div>`).join('');
+          return `<div style="padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px">
+            <div style="font-size:11px;font-weight:600;color:${br.color};margin-bottom:8px">${brand}</div>
+            ${isT?`
+              <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Níveis CPA escalonado:</div>
+              <div id="ea-levels-${brand}" style="display:flex;flex-direction:column;gap:4px">${levels}</div>
+              <button onclick="addEditLevel('${brand}')" style="margin-top:6px;background:transparent;border:1px dashed var(--gb2);border-radius:6px;padding:4px 10px;font-size:10px;color:var(--text3);cursor:pointer;width:100%">+ Nível</button>
+              <div style="margin-top:8px;display:flex;gap:8px">
+                <div style="flex:1"><label style="font-size:9px;color:var(--text3)">Rev Share %</label>
+                  <input class="fi ead-rs" data-brand="${brand}" type="number" value="${deal.rs||0}" style="padding:5px;font-size:11px"></div>
+              </div>
+            `:`
+              <div style="display:flex;gap:8px">
+                <div style="flex:1"><label style="font-size:9px;color:var(--text3)">CPA (R$)</label>
+                  <input class="fi ead-cpa" data-brand="${brand}" type="number" value="${deal.cpa||0}" style="padding:5px;font-size:11px"></div>
+                <div style="flex:1"><label style="font-size:9px;color:var(--text3)">Rev Share %</label>
+                  <input class="fi ead-rs" data-brand="${brand}" type="number" value="${deal.rs||0}" style="padding:5px;font-size:11px"></div>
+              </div>
+            `}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
     <div class="fgp ff"><label>Identificação nas Plataformas</label>
       <div style="font-size:10px;color:var(--text3);margin:2px 0 6px">Como o afiliado aparece na dashboard de cada casa (nome, code, username)</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
@@ -437,6 +471,22 @@ window.openEditAff=id=>{
     <button class="btn btn-theme" onclick="saveEditAff('${a.id}')"><i data-lucide="save"></i> Salvar</button>`);
 };
 
+window.addEditLevel=(brand)=>{
+  const wrap=document.getElementById('ea-levels-'+brand);
+  if(!wrap)return;
+  const idx=wrap.children.length;
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:6px;align-items:center';
+  div.setAttribute('data-eal-brand',brand);
+  div.setAttribute('data-eal-idx',idx);
+  div.innerHTML=`
+    <input class="fi eal-name" value="" placeholder="Nome" style="width:50px;padding:5px;font-size:11px">
+    <input class="fi eal-cpa" type="number" value="0" placeholder="CPA" style="width:70px;padding:5px;font-size:11px">
+    <input class="fi eal-base" type="number" value="0" placeholder="Baseline" style="width:80px;padding:5px;font-size:11px">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px">×</button>`;
+  wrap.appendChild(div);
+};
+
 window.saveEditAff=id=>{
   const a=STATE.affiliates.find(x=>x.id===id);if(!a)return;
   const name=document.getElementById('ea-name')?.value.trim();
@@ -452,6 +502,26 @@ window.saveEditAff=id=>{
   a.commission=parseFloat(document.getElementById('ea-comm')?.value)||0;
   a.profit=parseFloat(document.getElementById('ea-profit')?.value)||0;
   a.notes=document.getElementById('ea-notes')?.value.trim()||'';
+  // Save deals (CPA/RS/levels per brand)
+  Object.keys(a.deals||{}).forEach(brand=>{
+    const deal=a.deals[brand];
+    // Standard deal: read cpa + rs
+    const cpaInput=document.querySelector(`.ead-cpa[data-brand="${brand}"]`);
+    const rsInput=document.querySelector(`.ead-rs[data-brand="${brand}"]`);
+    if(cpaInput)deal.cpa=parseFloat(cpaInput.value)||0;
+    if(rsInput)deal.rs=parseFloat(rsInput.value)||0;
+    // Tiered deal: read levels from DOM
+    const levelEls=document.querySelectorAll(`[data-eal-brand="${brand}"]`);
+    if(levelEls.length){
+      deal.levels=[];
+      levelEls.forEach(el=>{
+        const name=el.querySelector('.eal-name')?.value.trim()||'';
+        const cpa=parseFloat(el.querySelector('.eal-cpa')?.value)||0;
+        const baseline=parseInt(el.querySelector('.eal-base')?.value)||0;
+        if(name||cpa)deal.levels.push({key:name.toLowerCase()||'l'+(deal.levels.length+1),name,cpa,baseline});
+      });
+    }
+  });
   if(!a.externalIds)a.externalIds={};
   document.querySelectorAll('.ea-extid').forEach(inp=>{
     const v=inp.value.trim();if(v)a.externalIds[inp.dataset.brand]=v;else delete a.externalIds[inp.dataset.brand];
