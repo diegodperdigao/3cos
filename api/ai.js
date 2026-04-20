@@ -45,6 +45,10 @@ ENTIDADES PRINCIPAIS:
 - contracts: deals entre afiliado ↔ marca
 - payments: valores a pagar aos afiliados — status possíveis: pendente, aprovado, pago, ajuste, atrasado, vencido
 - reports: dados diários de performance (FTD, QFTD, deposits, netRev)
+  * No snapshot você recebe DOIS formatos:
+    - "reports_monthly": todos os meses agregados por afiliado × marca × mês (visão histórica)
+    - "reports_daily_last30": linhas diárias cruas dos últimos 30 dias (para perguntas do tipo "ontem", "esta semana", "dia X")
+  * Sempre que o usuário perguntar sobre dia específico, use reports_daily_last30. Para totais históricos, use reports_monthly.
 - tasks: tarefas da operação
 - closings: fechamentos mensais de comissão
 - pipeline: kanban de negociações com afiliados

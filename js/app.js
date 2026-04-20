@@ -1115,7 +1115,7 @@ function modHdr(label){
       <button class="hdr-icon-btn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="sun"></i></button>
       <button class="hdr-icon-btn" onclick="goBack()" title="Voltar ao hub"><i data-lucide="grid"></i></button>
       <div class="hdr-user-menu" onclick="toggleHdrUserMenu(event)">
-        <div class="hdr-user-avatar" id="hdr-user-avatar">${STATE.user?.name?.[0]||'?'}</div>
+        <div class="hdr-user-avatar" id="hdr-user-avatar">${window.userAvatar?window.userAvatar(STATE.user,28):(STATE.user?.name?.[0]||'?')}</div>
         <i data-lucide="chevron-down" style="width:12px;height:12px;opacity:0.5"></i>
         <div class="hdr-user-dropdown" id="hdr-user-dropdown">
           <div class="hdr-user-dropdown-name">${STATE.user?.name||'Usuário'}</div>

@@ -557,6 +557,24 @@ function buildCopilotContext() {
     netRev: Math.round(r.netRev * 100) / 100,
   })).sort((a, b) => (b.month + b.affiliate).localeCompare(a.month + a.affiliate));
 
+  // Also include RAW daily rows from the last 30 days so the AI can answer
+  // questions like "ontem", "esta semana", "3 de abril". Keeps monthly rollup
+  // for historical context without bloating tokens.
+  const cutoff = new Date(Date.now() - 30 * 86400000);
+  const recentDaily = (s.reports || [])
+    .filter(r => r.date && new Date(r.date) >= cutoff)
+    .map(r => {
+      const affName = (s.affiliates || []).find(a => a.id === r.affiliateId)?.name || r.affiliateId;
+      const qf = typeof r.qftd === 'number' ? r.qftd : (typeof r.qftd === 'object' && r.qftd ? Object.values(r.qftd).reduce((s, v) => s + (v || 0), 0) : 0);
+      return {
+        affiliate: affName, brand: r.brand, date: r.date,
+        ftd: r.ftd || 0, qftd: qf,
+        deposits: Math.round((r.deposits || 0) * 100) / 100,
+        netRev: Math.round((r.netRev || 0) * 100) / 100,
+      };
+    })
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
   // ── TASKS: only non-completed ──
   const openTasks = (s.tasks || [])
     .filter(t => t.status !== 'concluída')
@@ -589,7 +607,8 @@ function buildCopilotContext() {
     closings: (s.closings || []).slice(-6).map(c => ({
       affiliate: c.affiliate, brand: c.brand, month: c.month, totalComm: c.totalComm, status: c.status,
     })),
-    reports_monthly: monthlyReports,  // aggregated instead of daily
+    reports_monthly: monthlyReports,  // all-time aggregate by month (token-friendly)
+    reports_daily_last30: recentDaily,  // raw daily rows from last 30 days (for precise questions)
     deadlines: s.deadlines,
     _empty_state: isEmpty,
     _empty_note: isEmpty

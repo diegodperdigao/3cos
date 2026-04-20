@@ -736,16 +736,25 @@ window.run3CDashImport = async () => {
   });
 
   // ── REPORTS (index by affiliate for total computation) ──
+  // Accept several field names used by different dash exports
+  const rawReports = data.dailyReports || data.reports || data.daily_reports || data.dailyData || [];
   const reportsByAff = {};
-  const reports = (data.dailyReports || []).map(r => {
-    if (!reportsByAff[r.affiliateId]) reportsByAff[r.affiliateId] = [];
-    reportsByAff[r.affiliateId].push(r);
-    return {
-      brand: r.brand, affiliateId: r.affiliateId, date: r.date,
-      ftd: r.ftd || 0, qftd: r.qftd || 0,
-      deposits: r.deposits || 0, netRev: r.netRev || 0,
+  const reports = rawReports.map(r => {
+    const affId = r.affiliateId || r.affiliate_id || r.affId;
+    const brand = r.brand || r.brandName || r.brand_name;
+    const date = r.date || r.day || r.createdAt || r.created_at;
+    if (!reportsByAff[affId]) reportsByAff[affId] = [];
+    const row = {
+      brand, affiliateId: affId, date,
+      ftd: r.ftd || r.ftds || 0,
+      qftd: r.qftd || r.qftds || 0,
+      deposits: r.deposits || r.deposit || 0,
+      netRev: r.netRev || r.net_rev || r.netRevenue || r.net_revenue || 0,
     };
-  });
+    reportsByAff[affId].push(row);
+    return row;
+  }).filter(r => r.affiliateId && r.date);
+  console.log('[import] Reports parsed:', reports.length, 'daily rows across', Object.keys(reportsByAff).length, 'affiliates');
 
   // ── AFFILIATES (aggregate totals from reports) ──
   const affiliates = (data.affiliates || []).map(a => {
@@ -870,13 +879,13 @@ window.run3CDashImport = async () => {
     toast('Enviando novos dados...', 'i');
     try {
       await Data.syncAll();
-      toast(`Importado com sucesso: ${affiliates.length} afiliados, ${reports.length} reports`, 's');
+      toast(`Importado: ${affiliates.length} afiliados, ${reports.length} lançamentos diários, ${Object.keys(brands).length} marcas`, 's');
     } catch (e) {
       console.error('[import] sync failed:', e);
       toast(`Importado local, mas sync falhou: ${e.message}`, 'e');
     }
   } else {
-    toast(`Importado: ${affiliates.length} afiliados, ${reports.length} reports`, 's');
+    toast(`Importado: ${affiliates.length} afiliados, ${reports.length} lançamentos diários`, 's');
   }
 
   closeModal();
