@@ -15,12 +15,6 @@
 //   where: short hint of where the feature shows up in the UI
 const BETA_FEATURES = [
   { id: 'activity_timeline', name: 'Timeline de atividades', desc: 'Registre ligações, reuniões, emails e notas estruturadas por afiliado — separado do log de auditoria.', status: 'ready', icon: 'activity', where: 'Afiliados → clique em um card → aba Timeline' },
-  { id: 'followups', name: 'Follow-ups agendados', desc: 'Próxima ação vinculada ao afiliado, com data e lembrete automático na Central de Ações.', status: 'planned', icon: 'calendar-clock', where: 'Em desenvolvimento' },
-  { id: 'reports_custom', name: 'Relatórios customizados', desc: 'Comparação de períodos, cohort de afiliados, drill-down por marca e tipo de deal.', status: 'planned', icon: 'bar-chart-3', where: 'Em desenvolvimento' },
-  { id: 'attachments', name: 'Anexos em afiliado/contrato', desc: 'Upload de contratos, NFs e prints diretamente no cadastro (substitui o campo nfName).', status: 'planned', icon: 'paperclip', where: 'Em desenvolvimento' },
-  { id: 'custom_fields', name: 'Campos customizados', desc: 'Adicionar propriedades sob medida em afiliados e marcas sem alterar o schema.', status: 'planned', icon: 'settings-2', where: 'Em desenvolvimento' },
-  { id: 'bulk_actions', name: 'Ações em lote', desc: 'Selecionar múltiplos afiliados e aplicar tag, exportar ou mover no pipeline de uma vez.', status: 'planned', icon: 'check-square', where: 'Em desenvolvimento' },
-  { id: 'multi_pipeline', name: 'Múltiplos pipelines', desc: 'Criar pipelines paralelos (negociação, renegociação, onboarding) com etapas próprias.', status: 'planned', icon: 'git-branch', where: 'Em desenvolvimento' },
 ];
 window.BETA_FEATURES = BETA_FEATURES;
 

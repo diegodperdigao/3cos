@@ -2,6 +2,18 @@
 // 1. DASHBOARD
 // ══════════════════════════════════════════════════════════
 let _dashBrand='all',_dashDateRange='all';
+// Helper: pick the month (YYYY-MM) with the most reports. Used to add a
+// "dataset" pill so the user can jump straight to the period where data lives.
+function _mostRecentDataMonth(){
+  const counts={};
+  (STATE.reports||[]).forEach(r=>{
+    const m=(r.date||'').substring(0,7);
+    if(!m)return;
+    counts[m]=(counts[m]||0)+1;
+  });
+  const months=Object.keys(counts).sort().reverse();
+  return months[0]||null;
+}
 function bDash(el){
   el.innerHTML=modHdr('Dashboard')+`<div class="mod-body">
     ${heroHTML('dashboard','Operação 3C','Dashboard','Visão geral consolidada')}
@@ -93,6 +105,11 @@ window.setDashBrandTab=(brand,btn)=>{
 
 function getDashDateRange(){
   const now=new Date();
+  // Custom-encoded month: "ym:YYYY-MM" (used by the dataset pill)
+  if(typeof _dashDateRange==='string' && _dashDateRange.startsWith('ym:')){
+    const [y,m]=_dashDateRange.slice(3).split('-').map(Number);
+    return {from:new Date(y,m-1,1),to:new Date(y,m,0)};
+  }
   if(_dashDateRange==='month'){
     return {from:new Date(now.getFullYear(),now.getMonth(),1),to:new Date(now.getFullYear(),now.getMonth()+1,0)};
   }else if(_dashDateRange==='last'){
@@ -314,31 +331,21 @@ window.refreshDash=()=>{
   }
 
   // Detect the common case of "no daily reports at all" — JSON was imported
-  // with only aggregated affiliate totals, no per-day breakdown. In this case
-  // the date filters are useless (always return zero). Show a persistent
-  // warning at the top of the dashboard instead of only when fully empty.
+  // with only aggregated affiliate totals, no per-day breakdown.
   const hasAnyReports = (STATE.reports || []).length > 0;
   const noData = (scopedReps.length === 0) && (totFTD + totQFTD + totDep + totRev + totComm === 0);
+  const recentMonth = hasAnyReports ? _mostRecentDataMonth() : null;
   let emptyHint = '';
-  if (!hasAnyReports) {
-    // Global banner: import has no daily data
-    emptyHint = `
-      <div class="empty-banner" style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--bg3);border:1px dashed var(--amber);border-radius:var(--radius);margin-bottom:16px">
-        <i data-lucide="alert-circle" style="width:18px;height:18px;color:var(--amber);flex-shrink:0"></i>
-        <div style="flex:1;font-size:11px;color:var(--text2);line-height:1.6">
-          <strong style="color:var(--text)">Sem lançamentos diários.</strong> O JSON importado trouxe apenas totais agregados por afiliado — não é possível filtrar por mês ou data. Os KPIs abaixo refletem o total consolidado de todos os afiliados. Para habilitar filtros por período, importe um JSON com <em>dailyReports</em> preenchidos ou lance os dados manualmente.
-        </div>
-      </div>`;
-  } else if (noData) {
-    const suggestion = brand !== 'all'
-      ? `Nenhum lançamento encontrado para <strong>${brand}</strong> neste período. Tente outro período ou selecione <em>Todas as marcas</em>.`
-      : 'Nenhum lançamento no período selecionado. Tente <em>Todo Período</em> ou um intervalo maior.';
-    emptyHint = `
-      <div class="empty-banner" style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--bg3);border:1px dashed var(--gb2);border-radius:var(--radius);margin-bottom:16px">
-        <i data-lucide="info" style="width:18px;height:18px;color:var(--theme);flex-shrink:0"></i>
-        <div style="flex:1;font-size:11px;color:var(--text2);line-height:1.6">${suggestion}</div>
-        ${_dashDateRange !== 'all' ? `<button class="btn btn-outline" onclick="setDashDate('all',document.querySelector('.pill[onclick*=&quot;setDashDate(\\'all\\'&quot;]'))" style="flex-shrink:0"><i data-lucide="arrow-right"></i> Ver Todo Período</button>` : ''}
-      </div>`;
+  // Subtle hint only when genuinely empty — no persistent banner.
+  if (noData && _dashDateRange !== 'all') {
+    const jumpBtn = recentMonth
+      ? `<button class="dash-hint-btn" onclick="setDashDate('ym:${recentMonth}',this)"><i data-lucide="arrow-right" style="width:11px;height:11px"></i> Ir para ${new Date(recentMonth+'-02').toLocaleDateString('pt-BR',{month:'short',year:'numeric'})}</button>`
+      : `<button class="dash-hint-btn" onclick="setDashDate('all',document.querySelector('.pill[onclick*=&quot;setDashDate(\\'all\\'&quot;]'))"><i data-lucide="arrow-right" style="width:11px;height:11px"></i> Todo período</button>`;
+    emptyHint = `<div class="dash-hint">
+      <i data-lucide="info" style="width:12px;height:12px"></i>
+      <span>Nenhum dado neste período${brand!=='all'?` para <strong>${brand}</strong>`:''}.</span>
+      ${jumpBtn}
+    </div>`;
   }
   // When there are no reports at all, force the data source to the affiliate
   // rollups regardless of the selected period — otherwise KPIs show zero.

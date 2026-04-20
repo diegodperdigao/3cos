@@ -736,25 +736,42 @@ window.run3CDashImport = async () => {
   });
 
   // ── REPORTS (index by affiliate for total computation) ──
-  // Accept several field names used by different dash exports
+  // Accepts the Hub 3C schema (qftd as tier object {l1,l2,l3}, insertedAt,
+  // affiliateName echo, etc.) plus legacy variants.
   const rawReports = data.dailyReports || data.reports || data.daily_reports || data.dailyData || [];
+  console.log('[import] Raw reports array length:', rawReports.length);
+  if (rawReports.length > 0) {
+    console.log('[import] First report sample:', rawReports[0]);
+  }
   const reportsByAff = {};
   const reports = rawReports.map(r => {
     const affId = r.affiliateId || r.affiliate_id || r.affId;
     const brand = r.brand || r.brandName || r.brand_name;
     const date = r.date || r.day || r.createdAt || r.created_at;
+    if (!affId) { console.warn('[import] Report missing affiliateId:', r); }
+    if (!date) { console.warn('[import] Report missing date:', r); }
     if (!reportsByAff[affId]) reportsByAff[affId] = [];
+    // qftd can be a number OR a tier object like {l1:6,l2:0,l3:0}
+    // Keep the object shape — tiered computation uses it downstream.
+    const qftd = (r.qftd !== undefined && r.qftd !== null)
+      ? r.qftd
+      : (r.qftds !== undefined ? r.qftds : 0);
     const row = {
+      id: r.id || undefined,
       brand, affiliateId: affId, date,
-      ftd: r.ftd || r.ftds || 0,
-      qftd: r.qftd || r.qftds || 0,
-      deposits: r.deposits || r.deposit || 0,
-      netRev: r.netRev || r.net_rev || r.netRevenue || r.net_revenue || 0,
+      ftd: Number(r.ftd ?? r.ftds ?? 0) || 0,
+      qftd,
+      deposits: Number(r.deposits ?? r.deposit ?? 0) || 0,
+      netRev: Number(r.netRev ?? r.net_rev ?? r.netRevenue ?? r.net_revenue ?? 0) || 0,
     };
     reportsByAff[affId].push(row);
     return row;
   }).filter(r => r.affiliateId && r.date);
   console.log('[import] Reports parsed:', reports.length, 'daily rows across', Object.keys(reportsByAff).length, 'affiliates');
+  if (reports.length > 0) {
+    const dates = reports.map(r => r.date).sort();
+    console.log('[import] Date range:', dates[0], '→', dates[dates.length-1]);
+  }
 
   // ── AFFILIATES (aggregate totals from reports) ──
   const affiliates = (data.affiliates || []).map(a => {

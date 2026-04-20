@@ -116,13 +116,6 @@ function bBackup(el){
           <button class="btn btn-outline" onclick="document.getElementById('import-backup-bk').click()" style="width:100%"><i data-lucide="upload"></i> Escolher arquivo</button>
           <input type="file" id="import-backup-bk" accept=".json" style="display:none" onchange="importBackup(event)">
         </div>
-        <div class="bk-card">
-          <div class="bk-card-hdr"><i data-lucide="file-json" style="stroke:var(--purple)"></i>
-            <div><div class="bk-card-t">Importar do 3C Dash</div>
-            <div class="bk-card-s">Cole o JSON exportado do 3C Dash legacy</div></div>
-          </div>
-          <button class="btn btn-outline" onclick="openImport3CDash()" style="width:100%"><i data-lucide="file-json"></i> Abrir importador</button>
-        </div>
       </div>
 
       <!-- EMAILJS CONFIG -->

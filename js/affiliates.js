@@ -533,7 +533,13 @@ window.saveEditAff=id=>{
     tiktok:document.getElementById('ea-tiktok')?.value.trim()||'',
     website:document.getElementById('ea-website')?.value.trim()||''
   };
-  logAction('Afiliado editado',name);saveToLocal();closeModal();
+  // Detailed audit: diff of deals to track CPA/RS/levels changes
+  const dealSummary = Object.entries(a.deals||{}).map(([b,d])=>{
+    if(d.levels?.length)return `${b}: escalonado (${d.levels.length} níveis)`;
+    return `${b}: CPA R$${d.cpa||0} + RS ${d.rs||0}%`;
+  }).join(' | ');
+  logAction('Afiliado editado',`${name}${dealSummary?' · deals: '+dealSummary:''}`);
+  saveToLocal();closeModal();
   renderAffs(_affTypeF?STATE.affiliates.filter(x=>x.contractType===_affTypeF):STATE.affiliates);
   toast('Afiliado atualizado!');
 };

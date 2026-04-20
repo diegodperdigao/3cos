@@ -27,7 +27,7 @@ function bPayments(el){
         <div style="font-weight:700;font-size:13px;margin-bottom:3px">Nenhum pagamento cadastrado ainda</div>
         <div style="font-size:11px;color:var(--text2);line-height:1.5">Execute um <strong>Fechamento</strong> para gerar os pagamentos do mês automaticamente, ou crie manualmente na aba <strong>Pagamentos</strong>.</div>
       </div>
-      <button class="btn btn-theme" onclick="showPayTab('closing',document.querySelector('#pay-tabs .tab'))" style="flex-shrink:0"><i data-lucide="play"></i> Executar Fechamento</button>
+      <button class="btn btn-theme" onclick="goToClosingForm()" style="flex-shrink:0"><i data-lucide="play"></i> Executar Fechamento</button>
     </div>`:'';
 
   el.innerHTML=modHdr('Financeiro — Pagamentos')+`<div class="mod-body">
@@ -539,6 +539,22 @@ window.sendBatch=()=>{
 // ══════════════════════════════════════════════════════════
 // PRAZOS & CALENDÁRIO + AUTO-TASK GENERATOR
 // ══════════════════════════════════════════════════════════
+// Navigate to the closing tab and scroll the form into view. Used by the
+// empty-state banner so "Executar Fechamento" actually takes the user to
+// the form instead of just switching a hidden tab.
+window.goToClosingForm=()=>{
+  const firstTab=document.querySelector('#pay-tabs .tab');
+  if(firstTab)showPayTab('closing',firstTab);
+  // Scroll to closing form after tab content renders
+  setTimeout(()=>{
+    const el=document.getElementById('cl-aff');
+    if(el){
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      el.focus();
+    }
+  },180);
+};
+
 window.showPayTab=(tab,btn)=>{
   _pyTab=tab;
   btn.closest('.tabs').querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
@@ -810,21 +826,29 @@ window.refreshBatchList = () => {
 
   const totalComm = rows.filter(r => !r.alreadyClosed).reduce((s, r) => s + (r.comm || 0), 0);
 
+  const eligibleCount = rows.filter(r => !r.alreadyClosed).length;
   el.innerHTML = `
-    <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-      <div style="font-size:11px;color:var(--text2)">${eligible.length} afiliado(s) · Comissão total: <strong style="color:var(--text)">${fc(totalComm)}</strong></div>
+    <div style="padding:10px 14px;background:var(--theme-dim);border:1px solid var(--theme-b);border-radius:10px;margin-bottom:12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:10px">
+      <i data-lucide="check-square" style="width:14px;height:14px;stroke:var(--theme)"></i>
+      <span>Marque os afiliados que quer fechar. Os que já têm fechamento neste período ficam desabilitados.</span>
+    </div>
+    <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div style="font-size:12px;color:var(--text2)">
+        <strong style="color:var(--text)" id="batch-selected-count">${eligibleCount}</strong> de ${eligibleCount} elegíveis selecionado(s) ·
+        Comissão: <strong style="color:var(--text)" id="batch-selected-sum">${fc(totalComm)}</strong>
+      </div>
       <div style="display:flex;gap:6px">
-        <button class="btn btn-outline" style="font-size:10px;padding:5px 10px" onclick="document.querySelectorAll('.batch-cl-chk:not(:disabled)').forEach(c=>c.checked=true)">Todos</button>
-        <button class="btn btn-outline" style="font-size:10px;padding:5px 10px" onclick="document.querySelectorAll('.batch-cl-chk').forEach(c=>c.checked=false)">Nenhum</button>
+        <button class="btn btn-outline" style="font-size:11px;padding:6px 12px" onclick="document.querySelectorAll('.batch-cl-chk:not(:disabled)').forEach(c=>c.checked=true);updateBatchSelection()"><i data-lucide="check"></i> Todos</button>
+        <button class="btn btn-outline" style="font-size:11px;padding:6px 12px" onclick="document.querySelectorAll('.batch-cl-chk').forEach(c=>c.checked=false);updateBatchSelection()"><i data-lucide="x"></i> Nenhum</button>
       </div>
     </div>
     <div class="tbl-wrap"><table><thead><tr>
       <th style="width:36px"></th>
       <th>Afiliado</th><th>Marcas</th><th style="text-align:center">FTDs</th><th style="text-align:center">QFTDs</th><th>Depósitos</th><th>Comissão</th><th>Status</th>
     </tr></thead><tbody>
-      ${rows.map(r => `<tr class="tr" style="${r.alreadyClosed ? 'opacity:0.5' : ''}">
-        <td onclick="event.stopPropagation()">
-          <input type="checkbox" class="batch-cl-chk" value="${r.aff.id}" ${r.alreadyClosed ? 'disabled' : 'checked'} style="accent-color:var(--theme)">
+      ${rows.map(r => `<tr class="tr ${r.alreadyClosed?'':'batch-row-clickable'}" style="${r.alreadyClosed?'opacity:0.5;':''}" ${r.alreadyClosed?'':`onclick="_toggleBatchRow(this,'${r.aff.id}')"`}>
+        <td onclick="event.stopPropagation()" style="padding-left:14px">
+          <input type="checkbox" class="batch-cl-chk" value="${r.aff.id}" ${r.alreadyClosed ? 'disabled' : 'checked'} onchange="updateBatchSelection()" style="accent-color:var(--theme);width:16px;height:16px;cursor:pointer">
         </td>
         <td class="td-name">${r.aff.name}</td>
         <td style="font-size:10px;color:var(--text2)">${r.brands.join(', ')}</td>
@@ -839,6 +863,30 @@ window.refreshBatchList = () => {
       <button class="btn btn-theme" onclick="executeBatchClosing()"><i data-lucide="zap"></i> Executar fechamento em remessa</button>
     </div>`;
   lucide.createIcons();
+};
+
+// Click anywhere on the row toggles its checkbox (avoids tiny click target)
+window._toggleBatchRow = (row, affId) => {
+  const cb = row.querySelector('.batch-cl-chk');
+  if (!cb || cb.disabled) return;
+  cb.checked = !cb.checked;
+  updateBatchSelection();
+};
+
+// Live counter — updates the "X de Y selecionado" as user toggles.
+window.updateBatchSelection = () => {
+  const checked = [...document.querySelectorAll('.batch-cl-chk:checked')];
+  const countEl = document.getElementById('batch-selected-count');
+  const sumEl = document.getElementById('batch-selected-sum');
+  if (countEl) countEl.textContent = checked.length;
+  if (sumEl) {
+    let total = 0;
+    checked.forEach(cb => {
+      const a = STATE.affiliates.find(x => x.id === cb.value);
+      if (a) total += (a.commission || 0);
+    });
+    sumEl.textContent = fc(total);
+  }
 };
 
 window.executeBatchClosing = () => {

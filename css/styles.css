@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '9.2';
+  --3cos-version: '9.3';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -250,10 +250,10 @@ body::before {
 .hub-greeting{font-size:13px;font-weight:400;color:var(--text2);margin-top:10px;}
 .hub-greeting strong{color:var(--text);font-weight:600;}
 
-/* Light mode keeps identical sizing to dark mode — only colors differ */
+/* Light mode keeps identical sizing to dark mode — colors follow active theme */
 [data-theme="light"] .hub-id-logo{
-  box-shadow:0 0 0 6px rgba(219,39,119,0.04),0 10px 28px rgba(219,39,119,0.12);
-  border-color:rgba(219,39,119,0.1);}
+  box-shadow:0 0 0 6px var(--theme-dim),0 10px 28px var(--theme-b);
+  border-color:var(--theme-b);}
 [data-theme="light"] .hub-id-name{color:#0f172a;}
 
 .hub-apps-label{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;
@@ -1751,10 +1751,10 @@ textarea.fi{resize:vertical;min-height:60px;}
 
 [data-edition="mono"] .hub-app-name{
   color:var(--text) !important;
-  font-size:12px !important;
-  font-weight:900 !important;
-  letter-spacing:0.14em !important;
-  text-transform:uppercase;}
+  font-size:11px !important;
+  font-weight:800 !important;
+  letter-spacing:0.04em !important;
+  text-transform:none !important;}
 [data-edition="mono"] .hub-app-sub{
   color:var(--text) !important;
   opacity:0.55;
@@ -4745,6 +4745,20 @@ table td{font-weight:400;}
 [data-edition="mono"] .cp-send{background:var(--text) !important;color:var(--bg) !important;}
 [data-edition="mono"] .cp-send svg{stroke:var(--bg) !important;}
 .cp-send svg{width:16px;height:16px;stroke:#fff;stroke-width:2.2;}
+
+/* Batch-closing row: whole row is clickable to toggle selection */
+.batch-row-clickable{cursor:pointer;transition:background 0.12s;}
+.batch-row-clickable:hover{background:var(--bg3);}
+
+/* Dashboard subtle hint (no large banner) */
+.dash-hint{display:inline-flex;align-items:center;gap:10px;padding:7px 12px;
+  background:var(--bg3);border:1px solid var(--gb);border-radius:999px;
+  margin-bottom:12px;font-size:11px;color:var(--text2);}
+.dash-hint svg{stroke:var(--theme);flex-shrink:0;}
+.dash-hint-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;
+  background:var(--theme-dim);color:var(--theme);border:none;border-radius:999px;
+  font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:var(--fb);}
+.dash-hint-btn:hover{background:var(--theme-b);}
 
 /* ══════════════════════════════════════════════════════════
    APPLE-CLEAN INTERACTIONS (standard, always on)
