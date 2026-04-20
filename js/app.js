@@ -927,6 +927,7 @@ function showHub(){
     const hub=document.getElementById('hub');hub.style.display='flex';
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
+    if (window.buildHubWidgets) buildHubWidgets();
     if(window.updateLabButton)updateLabButton();
     if(window.syncBetaAttributes)syncBetaAttributes();
     if(window.updateCopilotVisibility)updateCopilotVisibility();

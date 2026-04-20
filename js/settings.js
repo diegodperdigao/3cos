@@ -752,10 +752,14 @@ window.run3CDashImport = async () => {
     if (!date) { console.warn('[import] Report missing date:', r); }
     if (!reportsByAff[affId]) reportsByAff[affId] = [];
     // qftd can be a number OR a tier object like {l1:6,l2:0,l3:0}
-    // Keep the object shape — tiered computation uses it downstream.
-    const qftd = (r.qftd !== undefined && r.qftd !== null)
-      ? r.qftd
+    // Flatten to a number here: Supabase's reports.qftd is int, and the
+    // tier breakdown isn't used downstream anyway (brand-level tiers handle
+    // the marginal CPA calc via the affiliate's deal structure).
+    const rawQftd = (r.qftd !== undefined && r.qftd !== null) ? r.qftd
       : (r.qftds !== undefined ? r.qftds : 0);
+    const qftd = typeof rawQftd === 'object' && rawQftd
+      ? Object.values(rawQftd).reduce((s, v) => s + (Number(v) || 0), 0)
+      : (Number(rawQftd) || 0);
     const row = {
       id: r.id || undefined,
       brand, affiliateId: affId, date,

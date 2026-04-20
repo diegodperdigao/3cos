@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '9.3';
+  --3cos-version: '9.4';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -4245,25 +4245,34 @@ table td{font-weight:400;}
 /* Remove all decorative text-shadows / letter-spacing overuse */
 .hub-wordmark{letter-spacing:0.06em !important;}
 
-/* Date/time picker: make native UI (icon + panel) match theme */
-[data-theme="dark"] input[type="date"],
-[data-theme="dark"] input[type="datetime-local"],
-[data-theme="dark"] input[type="time"],
-[data-theme="dark"] input[type="month"],
-[data-theme="dark"] input[type="week"]{color-scheme:dark;}
-[data-theme="light"] input[type="date"],
-[data-theme="light"] input[type="datetime-local"],
-[data-theme="light"] input[type="time"],
-[data-theme="light"] input[type="month"],
-[data-theme="light"] input[type="week"]{color-scheme:light;}
+/* Date/time picker: force light icon on every dark theme variant.
+   color-scheme alone isn't enough because some browsers still render the
+   icon as black. invert(1) flips it to white regardless of theme tokens. */
+[data-theme="dark"]{color-scheme:dark;}
+[data-theme="light"]{color-scheme:light;}
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="month"],
+input[type="week"]{color-scheme:inherit;}
 [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
 [data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
-[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator{
-  filter:invert(0.85);opacity:0.85;cursor:pointer;
+[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="month"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="week"]::-webkit-calendar-picker-indicator{
+  filter:invert(1) brightness(1.2);
+  opacity:0.75;
+  cursor:pointer;
+  padding:4px;
+  border-radius:4px;
 }
 [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator:hover,
 [data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
-[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator:hover{opacity:1;}
+[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator:hover,
+[data-theme="dark"] input[type="month"]::-webkit-calendar-picker-indicator:hover,
+[data-theme="dark"] input[type="week"]::-webkit-calendar-picker-indicator:hover{
+  opacity:1;background:rgba(255,255,255,0.08);
+}
 
 /* ══════════════════════════════════════════════════════════
    SETTINGS MODULE
@@ -4745,6 +4754,79 @@ table td{font-weight:400;}
 [data-edition="mono"] .cp-send{background:var(--text) !important;color:var(--bg) !important;}
 [data-edition="mono"] .cp-send svg{stroke:var(--bg) !important;}
 .cp-send svg{width:16px;height:16px;stroke:#fff;stroke-width:2.2;}
+
+/* ══════════════════════════════════════════════════════════
+   HUB WIDGETS — customizable dashboard tiles on the main hub
+   ══════════════════════════════════════════════════════════ */
+.hub-widgets{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:14px;width:100%;max-width:900px;margin-bottom:18px;}
+.hub-widget{background:var(--bg2);border:1px solid var(--gb);border-radius:var(--radius);
+  padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-height:150px;
+  transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.28s, border-color 0.18s;}
+.hub-widget:hover{transform:translateY(-2px);border-color:var(--gb2);
+  box-shadow:0 14px 28px -10px rgba(0,0,0,0.25);}
+.hw-hdr{display:flex;align-items:center;gap:8px;color:var(--text2);}
+.hw-hdr svg{width:14px;height:14px;stroke:var(--text3);}
+.hw-title{font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--text2);text-transform:uppercase;}
+.hw-body{flex:1;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text);}
+.hw-ftr{margin-top:2px;}
+.hw-cta{width:100%;padding:8px;background:var(--bg3);border:1px solid var(--gb);border-radius:8px;
+  color:var(--text2);font-size:11px;font-family:var(--fb);font-weight:500;cursor:pointer;
+  transition:all 0.15s;}
+.hw-cta:hover{background:var(--theme-dim);color:var(--theme);border-color:var(--theme-b);}
+.hw-empty{padding:20px 0;text-align:center;color:var(--text3);font-size:11px;}
+
+.hw-stat-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;}
+.hw-stat-lbl{color:var(--text2);display:inline-flex;align-items:center;gap:6px;}
+.hw-stat-val{color:var(--text);font-weight:600;font-family:var(--fb);}
+.hw-stage-dot{width:8px;height:8px;border-radius:50%;}
+
+.hw-results-big{text-align:center;padding:4px 0 8px;border-bottom:1px solid var(--gb);margin-bottom:4px;}
+.hw-big-val{font-family:var(--fd);font-size:32px;font-weight:800;color:var(--text);line-height:1;}
+.hw-big-lbl{font-size:10px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;}
+
+.hw-notif-item,.hw-task-item,.hw-activity-item,.hw-top-item{
+  display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:11px;}
+.hw-notif-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.hw-notif-body,.hw-task-body,.hw-activity-body{flex:1;min-width:0;}
+.hw-notif-text,.hw-task-title,.hw-activity-action{
+  color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hw-notif-time,.hw-task-meta,.hw-activity-meta{color:var(--text3);font-size:10px;margin-top:1px;}
+.hw-task-dot{width:4px;height:20px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+.hw-pri-a{background:var(--red);}
+.hw-pri-m{background:var(--amber);}
+.hw-pri-b{background:var(--green);}
+.hw-top-item{align-items:center;}
+.hw-top-rank{width:18px;height:18px;border-radius:50%;background:var(--theme-dim);color:var(--theme);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;font-family:var(--fb);}
+.hw-top-name{flex:1;font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hw-top-val{font-size:11px;font-weight:600;color:var(--green);font-family:var(--fb);}
+
+/* Hub widgets picker modal */
+.hwp-list{display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;}
+.hwp-row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);
+  border:1px solid var(--gb);border-radius:10px;cursor:pointer;transition:all 0.15s;}
+.hwp-row:hover{border-color:var(--theme-b);background:var(--bg2);}
+.hwp-row:has(input:checked){border-color:var(--theme);background:var(--theme-dim);}
+.hwp-check{accent-color:var(--theme);width:16px;height:16px;cursor:pointer;}
+.hwp-icon{width:32px;height:32px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hwp-icon svg{width:14px;height:14px;stroke:var(--text2);}
+.hwp-body{flex:1;min-width:0;}
+.hwp-name{font-size:13px;font-weight:600;color:var(--text);}
+.hwp-desc{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* Hub apps label row with widget-settings button next to "Módulos" */
+.hub-apps-label-row{display:flex;align-items:center;justify-content:space-between;
+  width:100%;max-width:900px;margin-bottom:12px;}
+.hub-widget-settings-btn{display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;background:transparent;border:1px solid var(--gb2);border-radius:8px;
+  color:var(--text2);font-size:11px;font-family:var(--fb);cursor:pointer;transition:all 0.15s;}
+.hub-widget-settings-btn:hover{border-color:var(--theme);color:var(--theme);}
+
+@media(max-width:720px){
+  .hub-widgets{display:none;}
+  .hub-apps-label-row .hub-widget-settings-btn{display:none;}
+}
 
 /* Batch-closing row: whole row is clickable to toggle selection */
 .batch-row-clickable{cursor:pointer;transition:background 0.12s;}

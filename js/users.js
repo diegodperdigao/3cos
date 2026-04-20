@@ -438,7 +438,7 @@ window.toggleTheme = _wrapToggleTheme;
         }
         // Show hub first (always stable)
         const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
-        try { buildHubCards(); buildMobileHome(); } catch(e){ console.error('[boot] buildHub failed:', e); }
+        try { buildHubCards(); buildMobileHome(); if(window.buildHubWidgets)buildHubWidgets(); } catch(e){ console.error('[boot] buildHub failed:', e); }
         updateNotifBadge();initMosaics();lucide.createIcons();
         if (typeof applyAppTheme === 'function') applyAppTheme();
         else if (typeof applyBetaEdition === 'function') applyBetaEdition();
@@ -524,7 +524,7 @@ fbAuth.onAuthStateChanged(async (firebaseUser) => {
     await loadFromCloud();
     fixBrandLogos();
     const hub=document.getElementById('hub');
-    if(hub && hub.style.display==='flex'){buildHubCards();buildMobileHome();updateNotifBadge();lucide.createIcons();}
+    if(hub && hub.style.display==='flex'){buildHubCards();buildMobileHome();if(window.buildHubWidgets)buildHubWidgets();updateNotifBadge();lucide.createIcons();}
     setTimeout(()=>{if(typeof runPaymentWatchdog==='function')runPaymentWatchdog();},2000);
   } else if (!firebaseUser && STATE.user) {
     // Firebase says not authenticated AND we have no Supabase session — force logout

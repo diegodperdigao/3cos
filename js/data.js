@@ -383,19 +383,28 @@ window.Data = (function () {
       // Requires unique index on (brand, affiliate_id, date)
       // → see supabase/migrations/001_phase3_followup.sql
       if (STATE.reports?.length) {
+        // qftd may arrive as an object ({l1:6,l2:0,l3:0} from Hub 3C exports)
+        // but the reports.qftd column is int — flatten before upsert or the
+        // whole batch fails silently and reports never reach Supabase.
+        const flattenQftd = (q) => {
+          if (typeof q === 'number') return q;
+          if (typeof q === 'object' && q) return Object.values(q).reduce((s, v) => s + (Number(v) || 0), 0);
+          return 0;
+        };
         const reportRows = STATE.reports
           .filter(r => r.brand && r.affiliateId && r.date)
           .map(r => ({
             brand: r.brand,
             affiliate_id: r.affiliateId,
             date: r.date,
-            ftd: r.ftd || 0,
-            qftd: r.qftd || 0,
-            deposits: r.deposits || 0,
-            net_rev: r.netRev || 0,
+            ftd: Number(r.ftd) || 0,
+            qftd: flattenQftd(r.qftd),
+            deposits: Number(r.deposits) || 0,
+            net_rev: Number(r.netRev) || 0,
           }));
         if (reportRows.length) {
           ops.push(sb().from('reports').upsert(reportRows, { onConflict: 'brand,affiliate_id,date' }));
+          console.log('[Data.syncAll] Enviando', reportRows.length, 'reports ao Supabase');
         }
       }
 

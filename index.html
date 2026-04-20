@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=93">
+<link rel="stylesheet" href="css/styles.css?v=94">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -197,7 +197,14 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="hub-id-tagline">CRM & Gestão</div>
       <div class="hub-greeting" id="hub-greeting">Selecione o módulo de trabalho</div>
     </div>
-    <div class="hub-apps-label hub-desktop-only">Módulos disponíveis</div>
+    <!-- Widgets customizáveis (acima dos módulos) -->
+    <div class="hub-widgets hub-desktop-only" id="hub-widgets"></div>
+    <div class="hub-apps-label-row hub-desktop-only">
+      <span class="hub-apps-label">Módulos</span>
+      <button class="hub-widget-settings-btn" onclick="openHubWidgetPicker()" title="Personalizar widgets">
+        <i data-lucide="layout-dashboard" style="width:14px;height:14px"></i> Personalizar widgets
+      </button>
+    </div>
     <div class="hub-apps hub-desktop-only" id="hub-cards"></div>
     <!-- Mobile Home: Tasks + Notifications -->
     <div class="hub-mobile-home" id="hub-mobile-home"></div>
@@ -289,26 +296,27 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=93"></script>
+<script src="js/app.js?v=94"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=93"></script>
-<script src="js/data.js?v=93"></script>
+<script src="js/supabase-client.js?v=94"></script>
+<script src="js/data.js?v=94"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=93"></script>
+<script src="js/lab.js?v=94"></script>
+<script src="js/widgets.js?v=94"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=93"></script>
+<script src="js/search.js?v=94"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=93"></script>
-<script src="js/affiliates.js?v=93"></script>
-<script src="js/brands.js?v=93"></script>
-<script src="js/payments.js?v=93"></script>
-<script src="js/tasks.js?v=93"></script>
-<script src="js/pipeline.js?v=93"></script>
-<script src="js/import.js?v=93"></script>
-<script src="js/watchdog.js?v=93"></script>
-<script src="js/audit.js?v=93"></script>
-<script src="js/users.js?v=93"></script>
-<script src="js/settings.js?v=93"></script>
-<script src="js/copilot.js?v=93"></script>
+<script src="js/dashboard.js?v=94"></script>
+<script src="js/affiliates.js?v=94"></script>
+<script src="js/brands.js?v=94"></script>
+<script src="js/payments.js?v=94"></script>
+<script src="js/tasks.js?v=94"></script>
+<script src="js/pipeline.js?v=94"></script>
+<script src="js/import.js?v=94"></script>
+<script src="js/watchdog.js?v=94"></script>
+<script src="js/audit.js?v=94"></script>
+<script src="js/users.js?v=94"></script>
+<script src="js/settings.js?v=94"></script>
+<script src="js/copilot.js?v=94"></script>
 </body>
 </html>
