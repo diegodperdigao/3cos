@@ -265,24 +265,59 @@ window.saveNewUser=async ()=>{
 
 window.openEditUser=id=>{
   const u=STATE.users.find(x=>x.id===id);if(!u)return;
+  const isSelf = u.id === STATE.user?.id;
   openModal('Editar Usuário',`<div class="fg">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">${userAvatar(u,56)}<div><div style="font-weight:700;font-size:14px">${u.name}</div><div style="font-size:11px;color:var(--text3)">${u.email}</div></div></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">${userAvatar(u,56)}<div><div style="font-weight:700;font-size:14px">${u.name}</div><div style="font-size:11px;color:var(--text3)">${u.email}</div></div></div>
     <div class="fgp ff"><label>Nome *</label><input class="fi" id="eu-name" value="${u.name}"></div>
     <div class="fgp"><label>Cargo / Título</label><input class="fi" id="eu-title" value="${u.title||''}" placeholder="Ex: Head de BizDev, Analista Financeiro..."></div>
     <div class="fgp ff"><label>Avatar (URL da foto)</label><input class="fi" id="eu-avatar" value="${u.avatar||''}" placeholder="https://..."></div>
     <div class="fgp"><label>Email</label><input class="fi" id="eu-email" value="${u.email}" disabled></div>
-    <div class="fgp"><label>Permissão</label><select class="fi" id="eu-role">
+    <div class="fgp"><label>Permissão</label><select class="fi" id="eu-role" ${isSelf?'disabled':''}>
       <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
       <option value="financeiro" ${u.role==='financeiro'?'selected':''}>Financeiro</option>
       <option value="operacao" ${u.role==='operacao'?'selected':''}>Operação</option>
       <option value="viewer" ${u.role==='viewer'?'selected':''}>Viewer</option>
     </select></div>
+    <div class="fgp"><label>Status</label><select class="fi" id="eu-status" ${isSelf?'disabled':''}>
+      <option value="ativo" ${u.status==='ativo'?'selected':''}>Ativo</option>
+      <option value="bloqueado" ${u.status==='bloqueado'?'selected':''}>Bloqueado</option>
+    </select></div>
     <div class="fgp ff"><label>Módulos de Acesso</label>
       <div class="mod-checks">${ALL_MODS.map(m=>`<label class="mod-check ${u.modules.includes(m)?'active':''}"><input type="checkbox" value="${m}" ${u.modules.includes(m)?'checked':''}><span>${m}</span></label>`).join('')}</div>
     </div>
+    ${!isSelf && window.SUPABASE_CONFIGURED ? `
+    <div class="fgp ff"><label>Resetar senha</label>
+      <div style="font-size:10px;color:var(--text3);margin:2px 0 6px">Define uma nova senha provisória. O usuário deverá trocar no próximo login.</div>
+      <div style="display:flex;gap:6px">
+        <input type="text" class="fi" id="eu-newpass" placeholder="Nova senha (mín. 8 caracteres)" style="flex:1">
+        <button class="btn btn-outline" onclick="resetUserPassword('${id}')"><i data-lucide="key"></i> Resetar</button>
+      </div>
+    </div>` : ''}
   </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-    ${u.id!==STATE.user?.id?`<button class="btn btn-danger" onclick="confirmDeleteUser('${u.id}')"><i data-lucide="trash-2"></i> Excluir</button>`:''}
+    ${!isSelf?`<button class="btn btn-danger" onclick="confirmDeleteUser('${u.id}')"><i data-lucide="trash-2"></i> Excluir</button>`:''}
     <button class="btn btn-theme" onclick="saveEditUser('${id}')"><i data-lucide="save"></i> Salvar</button>`);
+  if(window.lucide?.createIcons)lucide.createIcons();
+};
+
+// Reset a user's password via Supabase admin API. Requires admin role.
+window.resetUserPassword = async (id) => {
+  const newPass = document.getElementById('eu-newpass')?.value?.trim();
+  if (!newPass || newPass.length < 8) return toast('Senha precisa ter ao menos 8 caracteres', 'e');
+  if (!window.SUPABASE_CONFIGURED || !window.sb) return toast('Supabase não configurado', 'e');
+  if (!confirm('Resetar a senha deste usuário?')) return;
+  try {
+    // Supabase admin API requires service role — call the edge function if set up,
+    // otherwise use the current session method (updates own password only).
+    // For now: use the RPC if available, else show instructions.
+    const { data, error } = await sb.rpc('admin_reset_password', { user_id: id, new_password: newPass });
+    if (error) throw error;
+    logAction('Senha resetada', STATE.users.find(x=>x.id===id)?.name || id);
+    toast('Senha resetada com sucesso', 's');
+    document.getElementById('eu-newpass').value = '';
+  } catch (e) {
+    console.error('[resetUserPassword]', e);
+    toast('Para resetar senhas de outros usuários é preciso configurar a função admin_reset_password no Supabase', 'w');
+  }
 };
 
 window.saveEditUser=async id=>{
@@ -291,6 +326,7 @@ window.saveEditUser=async id=>{
   u.title=document.getElementById('eu-title')?.value.trim()||'';
   u.avatar=document.getElementById('eu-avatar')?.value.trim()||'';
   u.role=document.getElementById('eu-role')?.value||u.role;
+  u.status=document.getElementById('eu-status')?.value||u.status;
   u.modules=[...document.querySelectorAll('#mbd .mod-check input:checked')].map(c=>c.value);
 
   // Upsert to Supabase profiles

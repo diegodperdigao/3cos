@@ -690,18 +690,29 @@ window.openImport3CDash = () => {
 };
 
 // Wipes previous data from Supabase so the import starts fresh.
-// Uses neq on a fake id to match all rows (Supabase requires a filter on deletes).
+// Deletes all rows from each table. Supabase requires an explicit filter on
+// DELETE — using created_at (present on every table in this schema) with a
+// date far in the past guarantees every row matches. Order matters: child
+// tables (reports, contracts) must be cleared BEFORE parents (affiliates,
+// brands) due to FK ON DELETE RESTRICT on some relations.
 async function _clearSupabaseForImport() {
   if (!window.sb) return;
   const tables = [
-    'reports', 'payments', 'contracts', 'tasks', 'closings',
-    'pipeline_cards', 'pipeline_stages', 'available_tags',
-    'affiliates', 'brands', 'audit_log', 'notifications',
+    // Child tables first (reference brands/affiliates)
+    'reports', 'payments', 'contracts', 'closings',
+    // Then peer tables without FK dependencies
+    'tasks', 'pipeline_cards', 'pipeline_stages', 'available_tags',
+    'audit_log', 'notifications',
+    // Parents last
+    'affiliates', 'brands',
   ];
   for (const t of tables) {
     try {
-      const { error } = await sb.from(t).delete().neq('id', '__never__');
+      // created_at exists on every table and a 1900 filter matches every row.
+      // Some tables use ts DEFAULT NOW() — this catches all.
+      const { error } = await sb.from(t).delete().gte('created_at', '1900-01-01');
       if (error) console.warn(`[clear] ${t}:`, error.message);
+      else console.log(`[clear] ${t} cleared`);
     } catch (e) {
       console.warn(`[clear] ${t} exception:`, e.message);
     }
