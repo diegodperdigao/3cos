@@ -341,30 +341,32 @@ window.Data = (function () {
     if (!sb() || _syncing) return false;
     _syncing = true;
     try {
-      const ops = [];
-
-      // Singletons (deadlines, emailjs config)
-      ops.push(saveDeadlines());
-      ops.push(saveEmailJS());
-
-      // Brands — keyed object, convert to array
+      // ── PHASE 1: upsert brands + affiliates first (they are FK targets for reports) ──
+      const phase1 = [];
       if (STATE.brands) {
         const brandRows = Object.entries(STATE.brands).map(([name, b]) => ({
-          name,
-          color: b.color,
-          rgb: b.rgb,
-          type: b.type || 'standard',
-          cpa: b.cpa || 0,
-          rs: b.rs || 0,
-          levels: b.levels || null,
-          logo: b.logo || null,
+          name, color: b.color, rgb: b.rgb, type: b.type || 'standard',
+          cpa: b.cpa || 0, rs: b.rs || 0, levels: b.levels || null, logo: b.logo || null,
         }));
-        if (brandRows.length) ops.push(sb().from('brands').upsert(brandRows));
+        if (brandRows.length) phase1.push(sb().from('brands').upsert(brandRows));
+      }
+      // Affiliates need to be in place before reports (FK affiliate_id → affiliates.id)
+      if (STATE.affiliates?.length) {
+        const affRows = STATE.affiliates.map(item => toSnake('affiliates', item));
+        phase1.push(sb().from('affiliates').upsert(affRows));
+      }
+      if (phase1.length) {
+        const p1Results = await Promise.allSettled(phase1);
+        const p1Failed = p1Results.filter(r => r.status === 'rejected' || r.value?.error);
+        if (p1Failed.length) console.warn('[Data.syncAll] Phase 1 (brands/affiliates) failures:', p1Failed.length);
       }
 
-      // Array tables — bulk upsert (use primary key by default)
+      // ── PHASE 2: everything else (reports can now reference brands + affiliates) ──
+      const ops = [];
+      ops.push(saveDeadlines());
+      ops.push(saveEmailJS());
+      // Other array tables (skip affiliates — already done in phase 1)
       const arrayTables = [
-        ['affiliates', STATE.affiliates],
         ['contracts', STATE.contracts],
         ['payments', STATE.payments],
         ['closings', STATE.closings],

@@ -281,6 +281,7 @@ window.openEditUser=id=>{
       <div class="mod-checks">${ALL_MODS.map(m=>`<label class="mod-check ${u.modules.includes(m)?'active':''}"><input type="checkbox" value="${m}" ${u.modules.includes(m)?'checked':''}><span>${m}</span></label>`).join('')}</div>
     </div>
   </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    ${u.id!==STATE.user?.id?`<button class="btn btn-danger" onclick="confirmDeleteUser('${u.id}')"><i data-lucide="trash-2"></i> Excluir</button>`:''}
     <button class="btn btn-theme" onclick="saveEditUser('${id}')"><i data-lucide="save"></i> Salvar</button>`);
 };
 
