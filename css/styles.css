@@ -2,7 +2,7 @@
    3C OS PRO — v2.5 (2026-04-16)
 ══════════════════════════════════════════════════════════ */
 :root {
-  --3cos-version: '8.6';
+  --3cos-version: '8.7';
   --theme:#ec4899; --theme-glow:rgba(236,72,153,0.2); --theme-dim:rgba(236,72,153,0.08); --theme-b:rgba(236,72,153,0.15);
   --bg:#060810; --bg2:rgba(15,18,28,0.7); --bg3:rgba(255,255,255,0.04);
   --gb:rgba(255,255,255,0.07); --gb2:rgba(255,255,255,0.1); --gb3:rgba(255,255,255,0.14);
@@ -4688,3 +4688,128 @@ table td{font-weight:400;}
 [data-edition="mono"] .cp-send{background:var(--text) !important;color:var(--bg) !important;}
 [data-edition="mono"] .cp-send svg{stroke:var(--bg) !important;}
 .cp-send svg{width:16px;height:16px;stroke:#fff;stroke-width:2.2;}
+
+/* ══════════════════════════════════════════════════════════
+   BETA: APPLE-CLEAN FEATURES
+   Gated by html[data-beta-*] attributes set by syncBetaAttributes().
+   Each feature is opt-in via Configurações > Laboratório.
+   ══════════════════════════════════════════════════════════ */
+
+/* ── apple_motion ──────────────────────────────────────────
+   iOS-style spring easing on interactive surfaces. Cards lift on
+   hover, buttons depress on active. All transitions share one curve. */
+html[data-beta-apple-motion] .aff-card,
+html[data-beta-apple-motion] .hub-app,
+html[data-beta-apple-motion] .kpi,
+html[data-beta-apple-motion] .intel-card,
+html[data-beta-apple-motion] .user-card,
+html[data-beta-apple-motion] .tk,
+html[data-beta-apple-motion] .st-card,
+html[data-beta-apple-motion] .kanban-card,
+html[data-beta-apple-motion] .bk-card,
+html[data-beta-apple-motion] .ac-card{
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+              border-color 0.18s ease !important;
+}
+html[data-beta-apple-motion] .aff-card:hover,
+html[data-beta-apple-motion] .user-card:hover,
+html[data-beta-apple-motion] .tk:hover,
+html[data-beta-apple-motion] .intel-card:hover,
+html[data-beta-apple-motion] .kpi:hover{
+  transform: translateY(-2px) scale(1.005);
+  box-shadow: 0 14px 30px -10px rgba(0,0,0,0.22), 0 0 0 1px var(--gb2);
+}
+html[data-beta-apple-motion] .hub-app:hover{
+  transform: translateY(-3px) scale(1.02);
+}
+/* Button press — "haptic" scale-down on active */
+html[data-beta-apple-motion] .btn,
+html[data-beta-apple-motion] .hdr-icon-btn,
+html[data-beta-apple-motion] .hub-icon-btn,
+html[data-beta-apple-motion] .ibt,
+html[data-beta-apple-motion] .pill,
+html[data-beta-apple-motion] .tab{
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.15s ease,
+              color 0.15s ease,
+              border-color 0.15s ease,
+              box-shadow 0.15s ease !important;
+}
+html[data-beta-apple-motion] .btn:active,
+html[data-beta-apple-motion] .hdr-icon-btn:active,
+html[data-beta-apple-motion] .hub-icon-btn:active,
+html[data-beta-apple-motion] .ibt:active,
+html[data-beta-apple-motion] .pill:active,
+html[data-beta-apple-motion] .tab:active{
+  transform: scale(0.96);
+}
+html[data-beta-apple-motion] .mod{
+  transition: opacity 0.22s ease !important;
+}
+/* Reduced-motion users still get the functional hover but no spring */
+@media (prefers-reduced-motion: reduce) {
+  html[data-beta-apple-motion] .aff-card:hover,
+  html[data-beta-apple-motion] .hub-app:hover,
+  html[data-beta-apple-motion] .kpi:hover{transform: none;}
+}
+
+/* ── apple_focus ───────────────────────────────────────────
+   Consistent accent focus ring on all interactive inputs/buttons.
+   :focus-visible so clicks on mouse don't show the ring. */
+html[data-beta-apple-focus] input:focus-visible,
+html[data-beta-apple-focus] select:focus-visible,
+html[data-beta-apple-focus] textarea:focus-visible,
+html[data-beta-apple-focus] .fi:focus-visible,
+html[data-beta-apple-focus] .lock-field:focus-visible,
+html[data-beta-apple-focus] .search-pill-input:focus-visible,
+html[data-beta-apple-focus] .cp-input:focus-visible{
+  outline: 3px solid var(--theme-b) !important;
+  outline-offset: 2px !important;
+  border-color: var(--theme-b) !important;
+}
+html[data-beta-apple-focus] .btn:focus-visible,
+html[data-beta-apple-focus] .hdr-icon-btn:focus-visible,
+html[data-beta-apple-focus] .hub-icon-btn:focus-visible,
+html[data-beta-apple-focus] .pill:focus-visible,
+html[data-beta-apple-focus] .tab:focus-visible{
+  outline: 3px solid var(--theme-b) !important;
+  outline-offset: 2px !important;
+}
+
+/* ── apple_modals ──────────────────────────────────────────
+   Frosted-glass modal overlay with depth blur. */
+html[data-beta-apple-modals] #modal-ov{
+  background: rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+}
+html[data-beta-apple-modals][data-theme="light"] #modal-ov{
+  background: rgba(255,255,255,0.35) !important;
+}
+html[data-beta-apple-modals] .modal{
+  box-shadow: 0 40px 80px -20px rgba(0,0,0,0.45), 0 0 0 1px var(--gb2) !important;
+}
+
+/* ── apple_toast ───────────────────────────────────────────
+   Notifications slide in from the top-center with a frosted
+   pill look, instead of stacking bottom-right. */
+html[data-beta-apple-toast] #toasts{
+  bottom: auto !important;
+  top: calc(20px + env(safe-area-inset-top, 0)) !important;
+  right: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  flex-direction: column !important;
+}
+html[data-beta-apple-toast] .toast{
+  transform: translateY(-120%) !important;
+  border-radius: 999px !important;
+  padding: 12px 22px !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.08) !important;
+}
+html[data-beta-apple-toast] .toast.show{
+  transform: translateY(0) !important;
+}

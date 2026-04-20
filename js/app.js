@@ -928,6 +928,7 @@ function showHub(){
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
     if(window.updateLabButton)updateLabButton();
+    if(window.syncBetaAttributes)syncBetaAttributes();
     if(window.updateCopilotVisibility)updateCopilotVisibility();
     if(window.applyAppTheme)applyAppTheme();
     initMosaics();lucide.createIcons();
