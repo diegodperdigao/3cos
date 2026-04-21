@@ -2732,18 +2732,26 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="glass"] .hub-app-icon svg{stroke: #fff !important; stroke-width: 2 !important;}
 [data-edition="glass"] .hub-app-name{color: var(--text) !important;}
 
-/* Light mode glass cards */
+/* Light mode glass cards — frosted, minimal, no heavy shadows */
 [data-edition="glass"][data-theme="light"] .hub-app{
-  background: linear-gradient(135deg, rgba(255,255,255,0.75), rgba(255,255,255,0.45)) !important;
-  border: 1px solid rgba(255,255,255,0.90) !important;
-  box-shadow:
-    0 12px 32px -8px rgba(0,0,0,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.9) !important;
+  background: rgba(255,255,255,0.55) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;-webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border: 1px solid rgba(255,255,255,0.75) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
 }
 [data-edition="glass"][data-theme="light"] .hub-app:hover{
-  box-shadow:
-    0 20px 50px -8px rgba(124,58,237,0.10),
-    inset 0 1px 0 rgba(255,255,255,0.95) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.05) !important;
+  border-color: rgba(255,255,255,0.90) !important;
+}
+[data-edition="glass"][data-theme="light"] .hub-app-icon{
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--app-stroke, #a78bfa) 35%, #fff),
+    color-mix(in srgb, var(--app-stroke, #a78bfa) 55%, #fff)) !important;
+  box-shadow: none !important;
+  border: 1px solid color-mix(in srgb, var(--app-stroke, #a78bfa) 18%, transparent) !important;
+}
+[data-edition="glass"][data-theme="light"] .hub-app-icon svg{
+  stroke: color-mix(in srgb, var(--app-stroke, #a78bfa) 80%, #000) !important;
 }
 
 /* ── Hub header icons ── */
