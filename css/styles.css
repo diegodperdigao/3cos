@@ -261,6 +261,18 @@ body::before {
   background:linear-gradient(135deg,var(--theme) 0%,#ec4899 60%,#f59e0b 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   font-weight:700;}
+
+/* Editorial / minimalist editions: solid colored name, no gradient */
+[data-edition="mono"] .hub-hero-name,
+[data-edition="meridian"] .hub-hero-name{
+  background:none !important;-webkit-background-clip:initial !important;background-clip:initial !important;
+  -webkit-text-fill-color:currentColor !important;
+  color:var(--text) !important;}
+[data-edition="mono"] .hub-hero-eyebrow,
+[data-edition="meridian"] .hub-hero-eyebrow{color:var(--text) !important;opacity:0.55;}
+[data-edition="meridian"] .hub-hero-title{font-family:'Playfair Display',serif !important;font-weight:700 !important;letter-spacing:-0.01em !important;}
+[data-edition="meridian"] .hub-hero-name{color:var(--theme) !important;font-style:italic;}
+[data-edition="mono"] .hub-hero-title{font-weight:800 !important;letter-spacing:-0.03em !important;}
 .hub-hero-sub{font-size:14px;font-weight:400;color:var(--text2);margin-top:2px;}
 .hub-greeting strong{color:var(--text);font-weight:600;}
 
