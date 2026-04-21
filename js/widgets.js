@@ -222,12 +222,15 @@ window.buildHubWidgets = () => {
 };
 
 // Compact KPI renderers — single metric, eyebrow label, optional delta/detail rows
-function _kpiTile(eyebrow, value, delta, sub, onClick, detailRows, accentColor) {
+function _kpiTile(icon, eyebrow, value, delta, sub, onClick, detailRows, accentColor) {
   const click = onClick ? ` onclick="event.stopPropagation();${onClick}"` : '';
   const accent = accentColor ? ` style="--tile-accent:${accentColor}"` : '';
   const details = detailRows ? `<div class="hw-tile-details">${detailRows}</div>` : '';
   return `<div class="hw-tile"${click}${accent}>
-    <div class="hw-tile-eyebrow">${eyebrow}</div>
+    <div class="hw-tile-head">
+      <span class="hw-tile-icon"><i data-lucide="${icon}"></i></span>
+      <span class="hw-tile-eyebrow">${eyebrow}</span>
+    </div>
     <div class="hw-tile-value">${value}</div>
     ${delta ? `<div class="hw-tile-delta ${delta.positive ? 'pos' : 'neg'}">${delta.positive ? '↑' : '↓'} ${delta.text}</div>` : ''}
     ${sub ? `<div class="hw-tile-sub">${sub}</div>` : ''}
@@ -249,8 +252,8 @@ function _kpiResults() {
   if (!rev && !qftd) STATE.affiliates.forEach(a => { rev += a.netRev || 0; qftd += a.qftds || 0; });
   const monthLbl = now.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
   const delta = lastRev > 0 ? { text: `${Math.round((rev - lastRev) / lastRev * 100)}% vs. mês anterior`, positive: rev >= lastRev } : null;
-  const details = `<div class="hw-tile-detail-row"><span>QFTDs</span><span>${qftd}</span></div>`;
-  return _kpiTile(`Receita · ${monthLbl}`, fc(rev), delta, null, "openMod('dashboard')", details);
+  const details = `<div class="hw-tile-detail-row"><span><i data-lucide="users" class="hw-detail-ico"></i>QFTDs</span><span>${qftd}</span></div>`;
+  return _kpiTile('trending-up', `Receita · ${monthLbl}`, fc(rev), delta, null, "openMod('dashboard')", details);
 }
 
 function _kpiTasks() {
@@ -264,12 +267,13 @@ function _kpiTasks() {
   }).slice(0, 2);
   if (next.length) {
     details = next.map(t => {
-      const dot = t.priority === 'alta' ? 'var(--red)' : t.priority === 'média' ? 'var(--amber)' : 'var(--green)';
-      return `<div class="hw-tile-detail-row"><span><span class="hw-tile-dot" style="background:${dot}"></span>${t.title.length > 28 ? t.title.slice(0,28)+'…' : t.title}</span></div>`;
+      const ico = t.priority === 'alta' ? 'flame' : t.priority === 'média' ? 'clock' : 'circle';
+      const color = t.priority === 'alta' ? 'var(--red)' : t.priority === 'média' ? 'var(--amber)' : 'var(--green)';
+      return `<div class="hw-tile-detail-row"><span><i data-lucide="${ico}" class="hw-detail-ico" style="stroke:${color}"></i>${t.title.length > 26 ? t.title.slice(0,26)+'…' : t.title}</span></div>`;
     }).join('');
   }
   const accent = urgent > 0 ? 'var(--red)' : undefined;
-  return _kpiTile('Tarefas', pending, null, `${done} concluídas${urgent ? ` · <strong style="color:var(--red)">${urgent} urgentes</strong>` : ''}`, "openMod('tasks')", details, accent);
+  return _kpiTile('check-square', 'Tarefas', pending, null, `${done} concluídas${urgent ? ` · <strong style="color:var(--red)">${urgent} urgentes</strong>` : ''}`, "openMod('tasks')", details, accent);
 }
 
 function _kpiPaymentsQueue() {
@@ -284,14 +288,14 @@ function _kpiPaymentsQueue() {
   let details = '';
   if (overdue.length) {
     details = overdue.slice(0, 2).map(p =>
-      `<div class="hw-tile-detail-row warn"><span>${(p.affiliate || '').split(' ')[0]} · ${p.brand}</span><span>${fc(p.amount || 0)}</span></div>`
+      `<div class="hw-tile-detail-row warn"><span><i data-lucide="alert-circle" class="hw-detail-ico"></i>${(p.affiliate || '').split(' ')[0]} · ${p.brand}</span><span>${fc(p.amount || 0)}</span></div>`
     ).join('');
   } else if (pending.length) {
-    details = `<div class="hw-tile-detail-row"><span>${pending.length} pendentes</span><span>${fc(pending.reduce((s,p)=>s+(p.amount||0),0))}</span></div>`;
+    details = `<div class="hw-tile-detail-row"><span><i data-lucide="clock" class="hw-detail-ico"></i>${pending.length} pendentes</span><span>${fc(pending.reduce((s,p)=>s+(p.amount||0),0))}</span></div>`;
   }
   const delta = overdue.length ? { text: `${fc(overdueAmt)} em atraso`, positive: false } : null;
   const accent = overdue.length ? 'var(--red)' : undefined;
-  return _kpiTile('Pagamentos', total, delta, overdue.length ? null : 'Nenhum em atraso', "openMod('payments')", details, accent);
+  return _kpiTile('banknote', 'Pagamentos', total, delta, overdue.length ? null : 'Nenhum em atraso', "openMod('payments')", details, accent);
 }
 
 function _kpiNotifications() {
@@ -302,13 +306,14 @@ function _kpiNotifications() {
   const preview = (count > 0 ? unread : all).slice(0, 2);
   if (preview.length) {
     details = preview.map(n => {
-      const dotColor = n.type || 'theme';
-      const text = n.text.length > 36 ? n.text.slice(0, 36) + '…' : n.text;
-      return `<div class="hw-tile-detail-row"><span><span class="hw-tile-dot" style="background:var(--${dotColor})"></span>${text}</span></div>`;
+      const ico = n.type === 'red' ? 'alert-triangle' : n.type === 'amber' ? 'alert-circle' : n.type === 'green' ? 'check-circle' : 'info';
+      const color = `var(--${n.type || 'theme'})`;
+      const text = n.text.length > 34 ? n.text.slice(0, 34) + '…' : n.text;
+      return `<div class="hw-tile-detail-row"><span><i data-lucide="${ico}" class="hw-detail-ico" style="stroke:${color}"></i>${text}</span></div>`;
     }).join('');
   }
   const accent = count > 0 ? 'var(--amber)' : undefined;
-  return _kpiTile('Notificações', count, null, count ? `${count} não lidas` : 'Tudo em dia', 'toggleActionCenter()', details, accent);
+  return _kpiTile('bell', 'Notificações', count, null, count ? `${count} não lidas` : 'Tudo em dia', 'toggleActionCenter()', details, accent);
 }
 
 function _kpiTopAffiliates() {
@@ -316,11 +321,12 @@ function _kpiTopAffiliates() {
   const top = sorted[0];
   let details = '';
   if (sorted.length > 1) {
+    const medals = ['crown', 'medal', 'award'];
     details = sorted.slice(0, 3).map((a, i) =>
-      `<div class="hw-tile-detail-row"><span>${i+1}. ${a.name.split(' ')[0]}</span><span>${fc(a.profit || 0)}</span></div>`
+      `<div class="hw-tile-detail-row"><span><i data-lucide="${medals[i]}" class="hw-detail-ico" style="stroke:${i===0?'var(--amber)':i===1?'var(--text2)':'var(--text3)'}"></i>${a.name.split(' ')[0]}</span><span>${fc(a.profit || 0)}</span></div>`
     ).join('');
   }
-  return _kpiTile('Top Afiliados', top ? top.name.split(' ')[0] : '—', null, top ? fc(top.profit || 0) + ' lucro' : 'Sem dados', "openMod('affiliates')", details);
+  return _kpiTile('trophy', 'Top Afiliados', top ? top.name.split(' ')[0] : '—', null, top ? fc(top.profit || 0) + ' lucro' : 'Sem dados', "openMod('affiliates')", details);
 }
 
 function _kpiPipelineStatus() {
@@ -331,10 +337,10 @@ function _kpiPipelineStatus() {
   if (stages.length && cards.length) {
     details = stages.filter(s => cards.some(c => c.stageId === s.id)).slice(0, 3).map(s => {
       const n = cards.filter(c => c.stageId === s.id).length;
-      return `<div class="hw-tile-detail-row"><span><span class="hw-tile-dot" style="background:${s.color || 'var(--text3)'}"></span>${s.name}</span><span>${n}</span></div>`;
+      return `<div class="hw-tile-detail-row"><span><i data-lucide="circle" class="hw-detail-ico" style="stroke:${s.color || 'var(--text3)'};fill:${s.color || 'var(--text3)'}"></i>${s.name}</span><span>${n}</span></div>`;
     }).join('');
   }
-  return _kpiTile('Pipeline', total, null, `${total} negociações`, "openMod('pipeline')", details);
+  return _kpiTile('git-branch', 'Pipeline', total, null, `${total} negociações`, "openMod('pipeline')", details);
 }
 
 function _kpiRecentActivity() {
@@ -343,10 +349,10 @@ function _kpiRecentActivity() {
   let details = '';
   if (logs.length) {
     details = logs.slice(0, 2).map(l =>
-      `<div class="hw-tile-detail-row"><span>${(l.action || '').length > 30 ? l.action.slice(0,30)+'…' : l.action}</span></div>`
+      `<div class="hw-tile-detail-row"><span><i data-lucide="zap" class="hw-detail-ico"></i>${(l.action || '').length > 28 ? l.action.slice(0,28)+'…' : l.action}</span></div>`
     ).join('');
   }
-  return _kpiTile('Atividade', count, null, 'Registros recentes', "openMod('audit')", details);
+  return _kpiTile('activity', 'Atividade', count, null, 'Registros recentes', "openMod('audit')", details);
 }
 
 // ── PICKER MODAL ──────────────────────────────────────────
