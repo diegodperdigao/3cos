@@ -190,13 +190,18 @@ function _widgetShell(id, title, icon, bodyHTML, footerHTML = '') {
   </div>`;
 }
 
-// ── MOUNTING ──────────────────────────────────────────────
+// ── MOUNTING (carousel) ───────────────────────────────────
+
+let _carouselIndex = 0;
+let _carouselTimer = null;
+let _carouselLen = 0;
 
 window.buildHubWidgets = () => {
-  const wrap = document.getElementById('hub-widgets');
-  if (!wrap) return;
+  const track = document.getElementById('carousel-track');
+  const dots = document.getElementById('carousel-dots');
+  if (!track || !dots) return;
   const active = _activeWidgets();
-  if (!active.length) { wrap.innerHTML = ''; return; }
+  if (!active.length) { track.innerHTML = ''; dots.innerHTML = ''; return; }
   const renderMap = {
     notifications: _widgetNotifications,
     payments_queue: _widgetPaymentsQueue,
@@ -206,11 +211,66 @@ window.buildHubWidgets = () => {
     pipeline_status: _widgetPipelineStatus,
     recent_activity: _widgetRecentActivity,
   };
-  wrap.innerHTML = active.map(id => {
+  const slides = active.map(id => {
     const fn = renderMap[id];
-    return fn ? fn() : '';
-  }).join('');
+    return fn ? `<div class="carousel-slide">${fn()}</div>` : '';
+  }).filter(Boolean);
+  track.innerHTML = slides.join('');
+  _carouselLen = slides.length;
+  _carouselIndex = Math.min(_carouselIndex, _carouselLen - 1);
+  dots.innerHTML = active.map((_, i) => `<button class="carousel-dot${i === _carouselIndex ? ' active' : ''}" onclick="carouselGo(${i})"></button>`).join('');
+  _updateCarousel();
+  _startCarouselAuto();
   if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+function _updateCarousel() {
+  const track = document.getElementById('carousel-track');
+  if (!track) return;
+  track.style.transform = `translateX(-${_carouselIndex * 100}%)`;
+  document.querySelectorAll('.carousel-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === _carouselIndex);
+  });
+}
+
+function _startCarouselAuto() {
+  clearInterval(_carouselTimer);
+  if (_carouselLen <= 1) return;
+  _carouselTimer = setInterval(() => {
+    _carouselIndex = (_carouselIndex + 1) % _carouselLen;
+    _updateCarousel();
+  }, 6000);
+  // Pause on hover
+  const car = document.getElementById('hub-carousel');
+  if (car && !car._pauseBound) {
+    car.addEventListener('mouseenter', () => clearInterval(_carouselTimer));
+    car.addEventListener('mouseleave', () => {
+      clearInterval(_carouselTimer);
+      _carouselTimer = setInterval(() => {
+        _carouselIndex = (_carouselIndex + 1) % _carouselLen;
+        _updateCarousel();
+      }, 6000);
+    });
+    car._pauseBound = true;
+  }
+}
+
+window.carouselNext = () => {
+  if (_carouselLen <= 1) return;
+  _carouselIndex = (_carouselIndex + 1) % _carouselLen;
+  _updateCarousel();
+  _startCarouselAuto();
+};
+window.carouselPrev = () => {
+  if (_carouselLen <= 1) return;
+  _carouselIndex = (_carouselIndex - 1 + _carouselLen) % _carouselLen;
+  _updateCarousel();
+  _startCarouselAuto();
+};
+window.carouselGo = (i) => {
+  _carouselIndex = i;
+  _updateCarousel();
+  _startCarouselAuto();
 };
 
 // ── PICKER MODAL ──────────────────────────────────────────
