@@ -382,7 +382,7 @@ window.refreshDash=()=>{
         <div class="kpi-icon-row"><i data-lucide="percent"></i><span class="kpi-lbl">Conversão</span></div>
         <div class="kpi-val">${conv}%</div><div class="kpi-sub">FTD → QFTD</div></div>
     </div>
-    <!-- Financeiro secundário — 2 colunas para manter alinhamento -->
+    <!-- Financeiro secundário -->
     <div class="kpi-row" style="margin-bottom:22px;grid-template-columns:repeat(2,1fr)">
       <div class="kpi" style="--kpi-c:var(--amber)" title="Comissão total a pagar aos afiliados no período (CPA + Rev Share)">
         <div class="kpi-icon-row"><i data-lucide="credit-card"></i><span class="kpi-lbl">Comissão</span></div>
@@ -391,6 +391,7 @@ window.refreshDash=()=>{
         <div class="kpi-icon-row"><i data-lucide="diamond"></i><span class="kpi-lbl">Lucro 3C</span></div>
         <div class="kpi-val sm">${fc(totProfit)}</div><div class="kpi-sub">Net Rev − Comissão</div></div>
     </div>
+    ${_renderForecast(scopedReps, totRev, totQFTD)}
 
     <!-- INTELLIGENCE -->
     <div class="intel-wrap" style="margin-bottom:24px">
@@ -654,4 +655,71 @@ window.deleteReport=(idx)=>{
   if(document.getElementById('mod-dashboard').classList.contains('active'))bDash(document.getElementById('mod-dashboard'));
 };
 
+// ══════════════════════════════════════════════════════════
+// FORECAST — Monthly projection (Lab beta feature)
+// ══════════════════════════════════════════════════════════
+function _renderForecast(scopedReps, currentRev, currentQFTD) {
+  if (typeof isBetaEnabled !== 'function' || !isBetaEnabled('forecast')) return '';
+  if (_dashDateRange !== 'month' && _dashDateRange !== 'all') return '';
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(monthKey));
+  if (!monthReps.length) return '';
+  const dates = [...new Set(monthReps.map(r => r.date))].sort();
+  const daysWithData = dates.length;
+  if (daysWithData < 2) return '';
+  const totalDays = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const daysPassed = now.getDate();
+  const daysLeft = totalDays - daysPassed;
+  let mRev = 0, mQFTD = 0, mFTD = 0, mDep = 0;
+  monthReps.forEach(r => {
+    mRev += r.netRev || 0;
+    mQFTD += typeof r.qftd === 'number' ? r.qftd : 0;
+    mFTD += r.ftd || 0;
+    mDep += r.deposits || 0;
+  });
+  const dailyRev = mRev / daysWithData;
+  const dailyQFTD = mQFTD / daysWithData;
+  const projRev = mRev + dailyRev * daysLeft;
+  const projQFTD = Math.round(mQFTD + dailyQFTD * daysLeft);
+  const pctMonth = Math.round(daysPassed / totalDays * 100);
+  const monthName = now.toLocaleDateString('pt-BR', { month: 'long' });
+  const lastKey = now.getMonth() === 0 ? `${now.getFullYear()-1}-12` : `${now.getFullYear()}-${String(now.getMonth()).padStart(2,'0')}`;
+  const lastReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(lastKey));
+  let lastRev = 0;
+  lastReps.forEach(r => { lastRev += r.netRev || 0; });
+  const vsLast = lastRev > 0 ? Math.round((projRev - lastRev) / lastRev * 100) : null;
+  const vsColor = vsLast !== null ? (vsLast >= 0 ? 'var(--green)' : 'var(--red)') : '';
+  const vsText = vsLast !== null ? `${vsLast >= 0 ? '+' : ''}${vsLast}% vs. mês anterior` : '';
 
+  return `<div class="forecast-card" style="margin-bottom:22px">
+    <div class="forecast-hdr">
+      <div class="forecast-icon"><i data-lucide="trending-up"></i></div>
+      <div>
+        <div class="forecast-title">Forecast · ${monthName}</div>
+        <div class="forecast-sub">Projeção baseada em ${daysWithData} dias de dados (${pctMonth}% do mês)</div>
+      </div>
+    </div>
+    <div class="forecast-bar-wrap">
+      <div class="forecast-bar" style="width:${pctMonth}%"></div>
+      <span class="forecast-bar-label">${daysPassed}/${totalDays} dias</span>
+    </div>
+    <div class="forecast-metrics">
+      <div class="forecast-metric">
+        <div class="forecast-metric-lbl">Receita projetada</div>
+        <div class="forecast-metric-val">${fc(projRev)}</div>
+        ${vsText ? `<div class="forecast-metric-delta" style="color:${vsColor}">${vsText}</div>` : ''}
+      </div>
+      <div class="forecast-metric">
+        <div class="forecast-metric-lbl">QFTDs projetados</div>
+        <div class="forecast-metric-val">${projQFTD}</div>
+        <div class="forecast-metric-delta" style="color:var(--text3)">Atual: ${mQFTD}</div>
+      </div>
+      <div class="forecast-metric">
+        <div class="forecast-metric-lbl">Média diária</div>
+        <div class="forecast-metric-val">${fc(dailyRev)}</div>
+        <div class="forecast-metric-delta" style="color:var(--text3)">${Math.round(dailyQFTD)} QFTDs/dia</div>
+      </div>
+    </div>
+  </div>`;
+}

@@ -318,6 +318,9 @@ function bSettings(el){
         </div>
       </div>
 
+      <!-- AUTOMATIONS + WEEKLY DIGEST (render only if Lab features are enabled) -->
+      ${typeof renderAutomationsSection === 'function' && STATE.betaMode ? `<div class="st-section"><div class="st-card">${renderAutomationsSection()}</div></div>` : ''}
+
       <!-- ATALHOS -->
       <div class="st-section">
         <div class="st-section-hdr">
@@ -955,3 +958,267 @@ window.run3CDashImport = async () => {
   closeModal();
   setTimeout(() => location.reload(), 1500);
 };
+
+// ══════════════════════════════════════════════════════════
+// AUTOMATIONS — External AI agent integration
+// ══════════════════════════════════════════════════════════
+// Stored in STATE.automations = [{ id, name, trigger, webhookUrl, active, createdAt }]
+// Triggers: stale_contact | payment_overdue | new_affiliate | closing_done | manual
+
+const AUTOMATION_TRIGGERS = {
+  stale_contact: { label: 'Afiliado sem contato (14+ dias)', icon: 'clock' },
+  payment_overdue: { label: 'Pagamento vencido', icon: 'alert-circle' },
+  new_affiliate: { label: 'Novo afiliado cadastrado', icon: 'user-plus' },
+  closing_done: { label: 'Fechamento concluído', icon: 'check-circle' },
+  manual: { label: 'Disparo manual', icon: 'play' },
+};
+
+window.renderAutomationsSection = () => {
+  if (typeof isBetaEnabled !== 'function' || !isBetaEnabled('automations')) return '';
+  const autos = STATE.automations || [];
+  const rows = autos.length ? autos.map(a => {
+    const t = AUTOMATION_TRIGGERS[a.trigger] || AUTOMATION_TRIGGERS.manual;
+    return `<div class="auto-row ${a.active ? '' : 'inactive'}">
+      <div class="auto-row-icon"><i data-lucide="${t.icon}"></i></div>
+      <div class="auto-row-body">
+        <div class="auto-row-name">${a.name}</div>
+        <div class="auto-row-trigger">${t.label}</div>
+        <div class="auto-row-url">${a.webhookUrl}</div>
+      </div>
+      <div class="auto-row-actions">
+        <button class="ibt" onclick="toggleAutomation('${a.id}')" title="${a.active?'Desativar':'Ativar'}">
+          <i data-lucide="${a.active?'pause':'play'}" style="width:13px;height:13px"></i>
+        </button>
+        <button class="ibt" onclick="testAutomation('${a.id}')" title="Testar"><i data-lucide="zap" style="width:13px;height:13px"></i></button>
+        <button class="ibt danger" onclick="deleteAutomation('${a.id}')" title="Excluir"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+      </div>
+    </div>`;
+  }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhuma automação configurada.</div>';
+
+  return `<div class="sec-hdr" style="margin-top:20px"><div class="sec-lbl"><i data-lucide="bot" style="width:14px;height:14px;margin-right:6px"></i>Automações</div>
+    <button class="btn btn-outline" onclick="openAddAutomation()" style="font-size:11px;padding:6px 12px"><i data-lucide="plus" style="width:12px;height:12px"></i> Nova Automação</button>
+  </div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.5">
+    Configure webhooks para integrar agentes de IA externos. Quando o trigger é disparado, o 3COS envia um POST com os dados do evento para a URL configurada.
+  </div>
+  <div class="auto-list">${rows}</div>
+  ${_renderWeeklyDigestSection()}`;
+};
+
+window.openAddAutomation = () => {
+  const trigOpts = Object.entries(AUTOMATION_TRIGGERS).map(([k, v]) =>
+    `<option value="${k}">${v.label}</option>`).join('');
+  openModal('Nova Automação', `<div class="fg">
+    <div class="fgp ff"><label>Nome *</label><input class="fi" id="aut-name" placeholder="Ex: Notificar agente de follow-up"></div>
+    <div class="fgp"><label>Trigger</label><select class="fi" id="aut-trigger">${trigOpts}</select></div>
+    <div class="fgp ff"><label>Webhook URL *</label><input class="fi" id="aut-url" placeholder="https://hook.integromat.com/..."></div>
+  </div>`, `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveAutomation()"><i data-lucide="check"></i> Criar</button>`);
+};
+
+window.saveAutomation = () => {
+  const name = document.getElementById('aut-name')?.value?.trim();
+  const url = document.getElementById('aut-url')?.value?.trim();
+  if (!name || !url) return toast('Nome e URL obrigatórios', 'e');
+  if (!STATE.automations) STATE.automations = [];
+  STATE.automations.push({
+    id: 'aut' + Date.now(),
+    name,
+    trigger: document.getElementById('aut-trigger')?.value || 'manual',
+    webhookUrl: url,
+    active: true,
+    createdAt: new Date().toISOString(),
+  });
+  logAction('Automação criada', name);
+  saveToLocal(); closeModal();
+  toast('Automação criada!');
+  if (typeof rerenderSettings === 'function') rerenderSettings();
+};
+
+window.toggleAutomation = (id) => {
+  const a = (STATE.automations || []).find(x => x.id === id);
+  if (!a) return;
+  a.active = !a.active;
+  saveToLocal();
+  toast(a.active ? 'Automação ativada' : 'Automação desativada');
+  if (typeof rerenderSettings === 'function') rerenderSettings();
+};
+
+window.testAutomation = async (id) => {
+  const a = (STATE.automations || []).find(x => x.id === id);
+  if (!a) return;
+  toast('Enviando teste...', 'i');
+  try {
+    await fetch(a.webhookUrl, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'test', trigger: a.trigger, source: '3COS', timestamp: new Date().toISOString(), data: { message: 'Teste de automação do 3COS' } }),
+    });
+    toast('Webhook disparado com sucesso!', 's');
+    logAction('Automação testada', a.name);
+  } catch (e) {
+    toast('Falha no webhook: ' + e.message, 'e');
+  }
+};
+
+window.deleteAutomation = (id) => {
+  if (!confirm('Excluir esta automação?')) return;
+  STATE.automations = (STATE.automations || []).filter(x => x.id !== id);
+  saveToLocal();
+  toast('Automação excluída');
+  if (typeof rerenderSettings === 'function') rerenderSettings();
+};
+
+window.fireAutomationTrigger = async (triggerType, eventData) => {
+  const autos = (STATE.automations || []).filter(a => a.active && a.trigger === triggerType);
+  for (const a of autos) {
+    try {
+      await fetch(a.webhookUrl, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: triggerType, source: '3COS', timestamp: new Date().toISOString(), data: eventData }),
+      });
+    } catch (e) { console.warn('[automation]', a.name, 'failed:', e.message); }
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// WEEKLY DIGEST — Premium HTML email summary
+// ══════════════════════════════════════════════════════════
+
+function _renderWeeklyDigestSection() {
+  if (typeof isBetaEnabled !== 'function' || !isBetaEnabled('weekly_digest')) return '';
+  const cfg = STATE.emailjs || {};
+  const hasEmail = cfg.publicKey && cfg.serviceId && cfg.financeEmail;
+  return `<div class="sec-hdr" style="margin-top:22px"><div class="sec-lbl"><i data-lucide="newspaper" style="width:14px;height:14px;margin-right:6px"></i>Weekly Digest</div></div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.5">
+      Resumo semanal com HTML premium enviado ao board via EmailJS. Inclui: top performers, receita vs. meta, pagamentos pendentes e alertas.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-theme" onclick="sendWeeklyDigest()" ${hasEmail ? '' : 'disabled'}>
+        <i data-lucide="send"></i> Enviar Digest Agora
+      </button>
+      <button class="btn btn-outline" onclick="previewWeeklyDigest()">
+        <i data-lucide="eye"></i> Pré-visualizar
+      </button>
+      ${!hasEmail ? '<div style="font-size:10px;color:var(--amber);margin-top:6px">Configure EmailJS em Backup & Nuvem primeiro.</div>' : ''}
+    </div>`;
+}
+
+window.previewWeeklyDigest = () => {
+  const html = _buildDigestHTML();
+  const w = window.open('', '_blank', 'width=700,height=800');
+  w.document.write(html);
+  w.document.close();
+};
+
+window.sendWeeklyDigest = () => {
+  const cfg = STATE.emailjs;
+  if (!cfg?.publicKey || !cfg?.serviceId || !cfg?.financeEmail) return toast('Configure EmailJS primeiro', 'e');
+  if (typeof emailjs === 'undefined') return toast('SDK EmailJS não carregado', 'e');
+  const html = _buildDigestHTML();
+  const templateId = cfg.templateIdDigest || cfg.templateId;
+  if (!templateId) return toast('Template ID não configurado', 'e');
+  emailjs.init(cfg.publicKey);
+  emailjs.send(cfg.serviceId, templateId, {
+    to_email: cfg.financeEmail,
+    subject: `3COS Weekly Digest — ${new Date().toLocaleDateString('pt-BR')}`,
+    message: html,
+  }).then(() => {
+    toast('Digest enviado com sucesso!', 's');
+    logAction('Weekly Digest enviado', cfg.financeEmail);
+  }, (err) => toast('Erro: ' + err.text, 'e'));
+};
+
+function _buildDigestHTML() {
+  const now = new Date();
+  const weekLabel = `Semana de ${new Date(now - 7*86400000).toLocaleDateString('pt-BR')} a ${now.toLocaleDateString('pt-BR')}`;
+  const affs = STATE.affiliates || [];
+  const topAffs = [...affs].sort((a, b) => (b.profit || 0) - (a.profit || 0)).slice(0, 5);
+  let totalRev = 0, totalComm = 0, totalProfit = 0, totalQFTD = 0;
+  affs.forEach(a => { totalRev += a.netRev || 0; totalComm += a.commission || 0; totalProfit += a.profit || 0; totalQFTD += a.qftds || 0; });
+  const overdue = (STATE.payments || []).filter(p => {
+    const s = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
+    return s === 'vencido' || s === 'atrasado';
+  });
+  const openTasks = (STATE.tasks || []).filter(t => t.status !== 'concluída').length;
+  const brands = Object.keys(STATE.brands || {});
+
+  const affRows = topAffs.map((a, i) => `<tr>
+    <td style="padding:12px 16px;border-bottom:1px solid #eee;font-weight:600;color:#1e1b4b">${i + 1}. ${a.name}</td>
+    <td style="padding:12px 16px;border-bottom:1px solid #eee;text-align:right;font-family:monospace;color:#059669">${fc(a.profit || 0)}</td>
+    <td style="padding:12px 16px;border-bottom:1px solid #eee;text-align:right">${a.qftds || 0}</td>
+  </tr>`).join('');
+
+  const overdueRows = overdue.slice(0, 5).map(p => `<tr>
+    <td style="padding:10px 16px;border-bottom:1px solid #fecaca;color:#dc2626;font-weight:500">${p.affiliate}</td>
+    <td style="padding:10px 16px;border-bottom:1px solid #fecaca;text-align:right;font-family:monospace">${fc(p.amount || 0)}</td>
+    <td style="padding:10px 16px;border-bottom:1px solid #fecaca">${p.brand || ''}</td>
+  </tr>`).join('');
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+  <body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Roboto,'Helvetica Neue',sans-serif">
+    <div style="max-width:640px;margin:0 auto;padding:32px 16px">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#1e1b4b 0%,#5b21b6 50%,#db2777 100%);border-radius:20px;padding:40px 32px;text-align:center;margin-bottom:24px">
+        <div style="font-size:14px;letter-spacing:0.25em;color:rgba(255,255,255,0.6);text-transform:uppercase;margin-bottom:8px">3C OS Pro</div>
+        <h1 style="font-size:32px;font-weight:800;color:#fff;margin:0 0 6px;letter-spacing:-0.02em">Weekly Digest</h1>
+        <div style="font-size:14px;color:rgba(255,255,255,0.7)">${weekLabel}</div>
+      </div>
+
+      <!-- KPIs -->
+      <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <div style="flex:1;min-width:130px;background:#fff;border-radius:14px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6b7280;margin-bottom:8px">Receita</div>
+          <div style="font-size:26px;font-weight:800;color:#1e1b4b;font-family:monospace">${fc(totalRev)}</div>
+        </div>
+        <div style="flex:1;min-width:130px;background:#fff;border-radius:14px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6b7280;margin-bottom:8px">Lucro 3C</div>
+          <div style="font-size:26px;font-weight:800;color:#059669;font-family:monospace">${fc(totalProfit)}</div>
+        </div>
+        <div style="flex:1;min-width:130px;background:#fff;border-radius:14px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6b7280;margin-bottom:8px">QFTDs</div>
+          <div style="font-size:26px;font-weight:800;color:#1e1b4b">${totalQFTD}</div>
+        </div>
+      </div>
+
+      <!-- Top performers -->
+      <div style="background:#fff;border-radius:14px;overflow:hidden;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+        <div style="padding:18px 20px;border-bottom:2px solid #f1f5f9">
+          <div style="font-size:13px;font-weight:700;color:#1e1b4b;letter-spacing:0.02em">🏆 Top Performers</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <tr style="background:#f8fafc"><th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em">Afiliado</th><th style="padding:10px 16px;text-align:right;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em">Lucro</th><th style="padding:10px 16px;text-align:right;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em">QFTDs</th></tr>
+          ${affRows}
+        </table>
+      </div>
+
+      ${overdue.length ? `<!-- Alertas -->
+      <div style="background:#fff;border-radius:14px;overflow:hidden;margin-bottom:20px;border:1px solid #fecaca;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+        <div style="padding:18px 20px;border-bottom:2px solid #fecaca;background:#fff5f5">
+          <div style="font-size:13px;font-weight:700;color:#dc2626">⚠️ Pagamentos em Atraso (${overdue.length})</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          ${overdueRows}
+        </table>
+      </div>` : ''}
+
+      <!-- Summary bar -->
+      <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+        <div style="flex:1;background:#fff;border-radius:10px;padding:14px 16px;font-size:12px;color:#6b7280;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+          <strong style="color:#1e1b4b">${brands.length}</strong> marcas ativas
+        </div>
+        <div style="flex:1;background:#fff;border-radius:10px;padding:14px 16px;font-size:12px;color:#6b7280;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+          <strong style="color:#1e1b4b">${affs.length}</strong> afiliados
+        </div>
+        <div style="flex:1;background:#fff;border-radius:10px;padding:14px 16px;font-size:12px;color:#6b7280;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+          <strong style="color:#1e1b4b">${openTasks}</strong> tarefas pendentes
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align:center;padding:20px;font-size:11px;color:#9ca3af">
+        <div style="margin-bottom:4px">Gerado automaticamente pelo <strong style="color:#6b7280">3C OS Pro</strong></div>
+        <div>${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+    </div>
+  </body></html>`;
+}

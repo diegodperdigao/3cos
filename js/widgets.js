@@ -7,6 +7,7 @@
 // ══════════════════════════════════════════════════════════
 
 const HUB_WIDGETS = [
+  { id: 'ai_insights', name: 'AI Insights', icon: 'sparkles', desc: 'Análises automáticas de performance e riscos' },
   { id: 'notifications', name: 'Notificações', icon: 'bell', desc: 'Últimas notificações do sistema' },
   { id: 'payments_queue', name: 'Fila de pagamentos', icon: 'banknote', desc: 'Vencidos, atrasados e a processar' },
   { id: 'tasks', name: 'Minhas tarefas', icon: 'check-square', desc: 'Pendentes e em andamento' },
@@ -199,6 +200,7 @@ window.buildHubWidgets = () => {
   if (!wrap) return;
   const active = _activeWidgets().slice(0, 3);
   const renderMap = {
+    ai_insights: _kpiAIInsights,
     notifications: _kpiNotifications,
     payments_queue: _kpiPaymentsQueue,
     tasks: _kpiTasks,
@@ -354,6 +356,81 @@ function _kpiRecentActivity() {
   }
   return _kpiTile('activity', 'Atividade', count, null, 'Registros recentes', "openMod('audit')", details);
 }
+
+function _kpiAIInsights() {
+  if (typeof isBetaEnabled !== 'function' || !isBetaEnabled('ai_insights')) {
+    return _kpiTile('sparkles', 'AI Insights', '—', null, 'Ative no Lab', null, null);
+  }
+  const insights = _generateInsights();
+  const count = insights.length;
+  let details = '';
+  if (insights.length) {
+    details = insights.slice(0, 3).map(i =>
+      `<div class="hw-tile-detail-row"><span><i data-lucide="${i.icon}" class="hw-detail-ico" style="stroke:${i.color}"></i>${i.text}</span></div>`
+    ).join('');
+  }
+  return _kpiTile('sparkles', 'AI Insights', count, null, count ? 'Oportunidades detectadas' : 'Sem alertas', "openAIInsightsPanel()", details, count > 2 ? 'var(--theme)' : undefined);
+}
+
+function _generateInsights() {
+  const insights = [];
+  const affs = STATE.affiliates || [];
+  // Stale contacts
+  affs.forEach(a => {
+    const days = typeof daysSinceContact === 'function' ? daysSinceContact(a) : null;
+    if (days !== null && days > 14) {
+      insights.push({ icon: 'clock', color: 'var(--amber)', text: `${a.name.split(' ')[0]} sem contato há ${days}d`, type: 'stale', affId: a.id });
+    }
+  });
+  // Revenue concentration
+  const totalRev = affs.reduce((s, a) => s + (a.netRev || 0), 0);
+  if (totalRev > 0) {
+    const top = [...affs].sort((a, b) => (b.netRev || 0) - (a.netRev || 0))[0];
+    if (top) {
+      const pct = Math.round((top.netRev || 0) / totalRev * 100);
+      if (pct > 50) {
+        insights.push({ icon: 'alert-triangle', color: 'var(--red)', text: `${top.name.split(' ')[0]} concentra ${pct}% da receita`, type: 'concentration' });
+      }
+    }
+  }
+  // Growth opportunities
+  affs.forEach(a => {
+    if ((a.qftds || 0) > 0 && (a.ftds || 0) > 0) {
+      const conv = Math.round(a.qftds / a.ftds * 100);
+      if (conv > 70) {
+        insights.push({ icon: 'rocket', color: 'var(--green)', text: `${a.name.split(' ')[0]}: ${conv}% conversão — potencial de escalar`, type: 'growth', affId: a.id });
+      }
+    }
+  });
+  // Overdue payments
+  const overdue = (STATE.payments || []).filter(p => {
+    const s = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
+    return s === 'vencido';
+  });
+  if (overdue.length) {
+    insights.push({ icon: 'alert-circle', color: 'var(--red)', text: `${overdue.length} pagamento(s) vencido(s) — ação urgente`, type: 'overdue' });
+  }
+  return insights;
+}
+
+window.openAIInsightsPanel = () => {
+  const insights = _generateInsights();
+  const rows = insights.length ? insights.map(i =>
+    `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--gb)">
+      <div style="width:28px;height:28px;border-radius:8px;background:color-mix(in srgb,${i.color} 12%,transparent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i data-lucide="${i.icon}" style="width:14px;height:14px;stroke:${i.color}"></i>
+      </div>
+      <div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">${i.text}</div>
+    </div>`).join('')
+    : '<div style="text-align:center;padding:30px;color:var(--text3)">Nenhuma insight detectada — continue operando normalmente.</div>';
+  openModal('AI Insights — Análise Automática', `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+      Análises geradas automaticamente com base nos seus dados. Insights identificam riscos, oportunidades e ações pendentes.
+    </div>
+    ${rows}
+  `, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+  lucide.createIcons();
+};
 
 // ── PICKER MODAL ──────────────────────────────────────────
 
