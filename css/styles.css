@@ -4888,6 +4888,19 @@ input[type="week"]{
 .hw-tile-delta.pos{color:var(--green);}
 .hw-tile-delta.neg{color:var(--red);}
 .hw-tile-sub{font-size:11px;color:var(--text3);margin-top:2px;font-weight:400;}
+/* Tile accent indicator — left colored bar when urgent */
+.hw-tile[style*="--tile-accent"]{border-left:3px solid var(--tile-accent);}
+
+/* Detail rows inside tile — mini table for context */
+.hw-tile-details{display:flex;flex-direction:column;gap:4px;margin-top:6px;
+  padding-top:8px;border-top:1px solid var(--gb);}
+.hw-tile-detail-row{display:flex;justify-content:space-between;align-items:center;
+  font-size:10px;color:var(--text2);line-height:1.4;}
+.hw-tile-detail-row span:last-child{font-weight:600;color:var(--text);font-family:var(--fb);}
+.hw-tile-detail-row.warn{color:var(--red);}
+.hw-tile-detail-row.warn span:last-child{color:var(--red);}
+.hw-tile-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+
 .hw-tile-add{border:1.5px dashed var(--gb2) !important;background:transparent !important;
   display:flex;flex-direction:row;align-items:center;justify-content:center;gap:10px;
   color:var(--text3);font-size:13px;font-weight:500;font-family:var(--fb);cursor:pointer;

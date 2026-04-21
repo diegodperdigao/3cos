@@ -221,62 +221,132 @@ window.buildHubWidgets = () => {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 };
 
-// Compact KPI renderers — single metric, eyebrow label, optional delta
-function _kpiTile(eyebrow, value, delta, sub, onClick) {
-  const click = onClick ? `onclick="event.stopPropagation();${onClick}"` : '';
-  return `<div class="hw-tile"${click?' '+click:''}>
+// Compact KPI renderers — single metric, eyebrow label, optional delta/detail rows
+function _kpiTile(eyebrow, value, delta, sub, onClick, detailRows, accentColor) {
+  const click = onClick ? ` onclick="event.stopPropagation();${onClick}"` : '';
+  const accent = accentColor ? ` style="--tile-accent:${accentColor}"` : '';
+  const details = detailRows ? `<div class="hw-tile-details">${detailRows}</div>` : '';
+  return `<div class="hw-tile"${click}${accent}>
     <div class="hw-tile-eyebrow">${eyebrow}</div>
     <div class="hw-tile-value">${value}</div>
-    ${delta ? `<div class="hw-tile-delta ${delta.positive ? 'pos' : 'neg'}">${delta.text}</div>` : ''}
+    ${delta ? `<div class="hw-tile-delta ${delta.positive ? 'pos' : 'neg'}">${delta.positive ? '↑' : '↓'} ${delta.text}</div>` : ''}
     ${sub ? `<div class="hw-tile-sub">${sub}</div>` : ''}
+    ${details}
   </div>`;
 }
 
 function _kpiResults() {
   const now = new Date();
   const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const lastKey = now.getMonth() === 0
+    ? `${now.getFullYear()-1}-12`
+    : `${now.getFullYear()}-${String(now.getMonth()).padStart(2,'0')}`;
   const monthReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(monthKey));
-  let rev = 0;
-  monthReps.forEach(r => { rev += r.netRev || 0; });
-  if (!rev) STATE.affiliates.forEach(a => { rev += a.netRev || 0; });
+  const lastReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(lastKey));
+  let rev = 0, lastRev = 0, qftd = 0;
+  monthReps.forEach(r => { rev += r.netRev || 0; qftd += (typeof r.qftd === 'number' ? r.qftd : 0); });
+  lastReps.forEach(r => { lastRev += r.netRev || 0; });
+  if (!rev && !qftd) STATE.affiliates.forEach(a => { rev += a.netRev || 0; qftd += a.qftds || 0; });
   const monthLbl = now.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
-  return _kpiTile(`Receita · ${monthLbl}`, fc(rev), null, 'Net Revenue do período', "openMod('dashboard')");
+  const delta = lastRev > 0 ? { text: `${Math.round((rev - lastRev) / lastRev * 100)}% vs. mês anterior`, positive: rev >= lastRev } : null;
+  const details = `<div class="hw-tile-detail-row"><span>QFTDs</span><span>${qftd}</span></div>`;
+  return _kpiTile(`Receita · ${monthLbl}`, fc(rev), delta, null, "openMod('dashboard')", details);
 }
 
 function _kpiTasks() {
   const all = STATE.tasks || [];
   const done = all.filter(t => t.status === 'concluída').length;
   const pending = all.filter(t => t.status !== 'concluída').length;
-  return _kpiTile('Tarefas', pending, null, `${done} concluídas · ${pending} pendentes`, "openMod('tasks')");
+  const urgent = all.filter(t => t.status !== 'concluída' && t.priority === 'alta').length;
+  let details = '';
+  const next = all.filter(t => t.status !== 'concluída').sort((a,b) => {
+    const pa = {alta:0,média:1,baixa:2}; return (pa[a.priority]||2) - (pa[b.priority]||2);
+  }).slice(0, 2);
+  if (next.length) {
+    details = next.map(t => {
+      const dot = t.priority === 'alta' ? 'var(--red)' : t.priority === 'média' ? 'var(--amber)' : 'var(--green)';
+      return `<div class="hw-tile-detail-row"><span><span class="hw-tile-dot" style="background:${dot}"></span>${t.title.length > 28 ? t.title.slice(0,28)+'…' : t.title}</span></div>`;
+    }).join('');
+  }
+  const accent = urgent > 0 ? 'var(--red)' : undefined;
+  return _kpiTile('Tarefas', pending, null, `${done} concluídas${urgent ? ` · <strong style="color:var(--red)">${urgent} urgentes</strong>` : ''}`, "openMod('tasks')", details, accent);
 }
 
 function _kpiPaymentsQueue() {
-  const overdue = (STATE.payments || []).filter(p => {
+  const payments = STATE.payments || [];
+  const overdue = payments.filter(p => {
     const s = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
     return s === 'vencido' || s === 'atrasado';
-  }).length;
-  const total = (STATE.payments || []).length;
-  return _kpiTile('Pagamentos', overdue, overdue ? { text: `${overdue} atrasados`, positive: false } : null, `${total} no total`, "openMod('payments')");
+  });
+  const pending = payments.filter(p => p.status === 'pendente');
+  const total = payments.length;
+  const overdueAmt = overdue.reduce((s, p) => s + (p.amount || 0), 0);
+  let details = '';
+  if (overdue.length) {
+    details = overdue.slice(0, 2).map(p =>
+      `<div class="hw-tile-detail-row warn"><span>${(p.affiliate || '').split(' ')[0]} · ${p.brand}</span><span>${fc(p.amount || 0)}</span></div>`
+    ).join('');
+  } else if (pending.length) {
+    details = `<div class="hw-tile-detail-row"><span>${pending.length} pendentes</span><span>${fc(pending.reduce((s,p)=>s+(p.amount||0),0))}</span></div>`;
+  }
+  const delta = overdue.length ? { text: `${fc(overdueAmt)} em atraso`, positive: false } : null;
+  const accent = overdue.length ? 'var(--red)' : undefined;
+  return _kpiTile('Pagamentos', total, delta, overdue.length ? null : 'Nenhum em atraso', "openMod('payments')", details, accent);
 }
 
 function _kpiNotifications() {
-  const unread = (STATE.notifications || []).filter(n => !n.read).length;
-  return _kpiTile('Notificações', unread, null, unread ? 'Novas mensagens' : 'Tudo em dia', 'toggleActionCenter()');
+  const all = STATE.notifications || [];
+  const unread = all.filter(n => !n.read);
+  const count = unread.length;
+  let details = '';
+  const preview = (count > 0 ? unread : all).slice(0, 2);
+  if (preview.length) {
+    details = preview.map(n => {
+      const dotColor = n.type || 'theme';
+      const text = n.text.length > 36 ? n.text.slice(0, 36) + '…' : n.text;
+      return `<div class="hw-tile-detail-row"><span><span class="hw-tile-dot" style="background:var(--${dotColor})"></span>${text}</span></div>`;
+    }).join('');
+  }
+  const accent = count > 0 ? 'var(--amber)' : undefined;
+  return _kpiTile('Notificações', count, null, count ? `${count} não lidas` : 'Tudo em dia', 'toggleActionCenter()', details, accent);
 }
 
 function _kpiTopAffiliates() {
-  const top = [...(STATE.affiliates || [])].sort((a, b) => (b.profit || 0) - (a.profit || 0))[0];
-  return _kpiTile('Top Afiliado', top ? top.name.split(' ')[0] : '—', null, top ? fc(top.profit || 0) + ' lucro' : 'Sem dados', "openMod('affiliates')");
+  const sorted = [...(STATE.affiliates || [])].sort((a, b) => (b.profit || 0) - (a.profit || 0));
+  const top = sorted[0];
+  let details = '';
+  if (sorted.length > 1) {
+    details = sorted.slice(0, 3).map((a, i) =>
+      `<div class="hw-tile-detail-row"><span>${i+1}. ${a.name.split(' ')[0]}</span><span>${fc(a.profit || 0)}</span></div>`
+    ).join('');
+  }
+  return _kpiTile('Top Afiliados', top ? top.name.split(' ')[0] : '—', null, top ? fc(top.profit || 0) + ' lucro' : 'Sem dados', "openMod('affiliates')", details);
 }
 
 function _kpiPipelineStatus() {
-  const total = (STATE.pipeline?.cards || []).length;
-  return _kpiTile('Pipeline', total, null, `${total} negociações ativas`, "openMod('pipeline')");
+  const cards = STATE.pipeline?.cards || [];
+  const stages = STATE.pipeline?.stages || [];
+  const total = cards.length;
+  let details = '';
+  if (stages.length && cards.length) {
+    details = stages.filter(s => cards.some(c => c.stageId === s.id)).slice(0, 3).map(s => {
+      const n = cards.filter(c => c.stageId === s.id).length;
+      return `<div class="hw-tile-detail-row"><span><span class="hw-tile-dot" style="background:${s.color || 'var(--text3)'}"></span>${s.name}</span><span>${n}</span></div>`;
+    }).join('');
+  }
+  return _kpiTile('Pipeline', total, null, `${total} negociações`, "openMod('pipeline')", details);
 }
 
 function _kpiRecentActivity() {
-  const count = (STATE.auditLog || []).length;
-  return _kpiTile('Atividade', count, null, 'Logs recentes', "openMod('audit')");
+  const logs = STATE.auditLog || [];
+  const count = logs.length;
+  let details = '';
+  if (logs.length) {
+    details = logs.slice(0, 2).map(l =>
+      `<div class="hw-tile-detail-row"><span>${(l.action || '').length > 30 ? l.action.slice(0,30)+'…' : l.action}</span></div>`
+    ).join('');
+  }
+  return _kpiTile('Atividade', count, null, 'Registros recentes', "openMod('audit')", details);
 }
 
 // ── PICKER MODAL ──────────────────────────────────────────
