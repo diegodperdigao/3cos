@@ -190,88 +190,94 @@ function _widgetShell(id, title, icon, bodyHTML, footerHTML = '') {
   </div>`;
 }
 
-// ── MOUNTING (carousel) ───────────────────────────────────
-
-let _carouselIndex = 0;
-let _carouselTimer = null;
-let _carouselLen = 0;
+// ── MOUNTING (compact KPI strip) ──────────────────────────
+// Renders the active widgets as a row of small KPI tiles (max 3 visible)
+// with an "Add widget" dashed placeholder if the user has room for more.
 
 window.buildHubWidgets = () => {
-  const track = document.getElementById('carousel-track');
-  const dots = document.getElementById('carousel-dots');
-  if (!track || !dots) return;
-  const active = _activeWidgets();
-  if (!active.length) { track.innerHTML = ''; dots.innerHTML = ''; return; }
+  const wrap = document.getElementById('hub-widget-strip');
+  if (!wrap) return;
+  const active = _activeWidgets().slice(0, 3);
   const renderMap = {
-    notifications: _widgetNotifications,
-    payments_queue: _widgetPaymentsQueue,
-    tasks: _widgetTasks,
-    results: _widgetResults,
-    top_affiliates: _widgetTopAffiliates,
-    pipeline_status: _widgetPipelineStatus,
-    recent_activity: _widgetRecentActivity,
+    notifications: _kpiNotifications,
+    payments_queue: _kpiPaymentsQueue,
+    tasks: _kpiTasks,
+    results: _kpiResults,
+    top_affiliates: _kpiTopAffiliates,
+    pipeline_status: _kpiPipelineStatus,
+    recent_activity: _kpiRecentActivity,
   };
-  const slides = active.map(id => {
+  const tiles = active.map(id => {
     const fn = renderMap[id];
-    return fn ? `<div class="carousel-slide">${fn()}</div>` : '';
+    return fn ? fn() : '';
   }).filter(Boolean);
-  track.innerHTML = slides.join('');
-  _carouselLen = slides.length;
-  _carouselIndex = Math.min(_carouselIndex, _carouselLen - 1);
-  dots.innerHTML = active.map((_, i) => `<button class="carousel-dot${i === _carouselIndex ? ' active' : ''}" onclick="carouselGo(${i})"></button>`).join('');
-  _updateCarousel();
-  _startCarouselAuto();
+  // Add a dashed "add widget" tile if fewer than 3 active
+  if (tiles.length < 3) {
+    tiles.push(`<button class="hw-tile hw-tile-add" onclick="openHubWidgetPicker()">
+      <i data-lucide="plus"></i><span>Adicionar widget</span>
+    </button>`);
+  }
+  wrap.innerHTML = tiles.join('');
   if (typeof lucide !== 'undefined') lucide.createIcons();
 };
 
-function _updateCarousel() {
-  const track = document.getElementById('carousel-track');
-  if (!track) return;
-  track.style.transform = `translateX(-${_carouselIndex * 100}%)`;
-  document.querySelectorAll('.carousel-dot').forEach((d, i) => {
-    d.classList.toggle('active', i === _carouselIndex);
-  });
+// Compact KPI renderers — single metric, eyebrow label, optional delta
+function _kpiTile(eyebrow, value, delta, sub, onClick) {
+  const click = onClick ? `onclick="event.stopPropagation();${onClick}"` : '';
+  return `<div class="hw-tile"${click?' '+click:''}>
+    <div class="hw-tile-eyebrow">${eyebrow}</div>
+    <div class="hw-tile-value">${value}</div>
+    ${delta ? `<div class="hw-tile-delta ${delta.positive ? 'pos' : 'neg'}">${delta.text}</div>` : ''}
+    ${sub ? `<div class="hw-tile-sub">${sub}</div>` : ''}
+  </div>`;
 }
 
-function _startCarouselAuto() {
-  clearInterval(_carouselTimer);
-  if (_carouselLen <= 1) return;
-  _carouselTimer = setInterval(() => {
-    _carouselIndex = (_carouselIndex + 1) % _carouselLen;
-    _updateCarousel();
-  }, 6000);
-  // Pause on hover
-  const car = document.getElementById('hub-carousel');
-  if (car && !car._pauseBound) {
-    car.addEventListener('mouseenter', () => clearInterval(_carouselTimer));
-    car.addEventListener('mouseleave', () => {
-      clearInterval(_carouselTimer);
-      _carouselTimer = setInterval(() => {
-        _carouselIndex = (_carouselIndex + 1) % _carouselLen;
-        _updateCarousel();
-      }, 6000);
-    });
-    car._pauseBound = true;
-  }
+function _kpiResults() {
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(monthKey));
+  let rev = 0;
+  monthReps.forEach(r => { rev += r.netRev || 0; });
+  if (!rev) STATE.affiliates.forEach(a => { rev += a.netRev || 0; });
+  const monthLbl = now.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
+  return _kpiTile(`Receita · ${monthLbl}`, fc(rev), null, 'Net Revenue do período', "openMod('dashboard')");
 }
 
-window.carouselNext = () => {
-  if (_carouselLen <= 1) return;
-  _carouselIndex = (_carouselIndex + 1) % _carouselLen;
-  _updateCarousel();
-  _startCarouselAuto();
-};
-window.carouselPrev = () => {
-  if (_carouselLen <= 1) return;
-  _carouselIndex = (_carouselIndex - 1 + _carouselLen) % _carouselLen;
-  _updateCarousel();
-  _startCarouselAuto();
-};
-window.carouselGo = (i) => {
-  _carouselIndex = i;
-  _updateCarousel();
-  _startCarouselAuto();
-};
+function _kpiTasks() {
+  const all = STATE.tasks || [];
+  const done = all.filter(t => t.status === 'concluída').length;
+  const pending = all.filter(t => t.status !== 'concluída').length;
+  return _kpiTile('Tarefas', pending, null, `${done} concluídas · ${pending} pendentes`, "openMod('tasks')");
+}
+
+function _kpiPaymentsQueue() {
+  const overdue = (STATE.payments || []).filter(p => {
+    const s = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
+    return s === 'vencido' || s === 'atrasado';
+  }).length;
+  const total = (STATE.payments || []).length;
+  return _kpiTile('Pagamentos', overdue, overdue ? { text: `${overdue} atrasados`, positive: false } : null, `${total} no total`, "openMod('payments')");
+}
+
+function _kpiNotifications() {
+  const unread = (STATE.notifications || []).filter(n => !n.read).length;
+  return _kpiTile('Notificações', unread, null, unread ? 'Novas mensagens' : 'Tudo em dia', 'toggleActionCenter()');
+}
+
+function _kpiTopAffiliates() {
+  const top = [...(STATE.affiliates || [])].sort((a, b) => (b.profit || 0) - (a.profit || 0))[0];
+  return _kpiTile('Top Afiliado', top ? top.name.split(' ')[0] : '—', null, top ? fc(top.profit || 0) + ' lucro' : 'Sem dados', "openMod('affiliates')");
+}
+
+function _kpiPipelineStatus() {
+  const total = (STATE.pipeline?.cards || []).length;
+  return _kpiTile('Pipeline', total, null, `${total} negociações ativas`, "openMod('pipeline')");
+}
+
+function _kpiRecentActivity() {
+  const count = (STATE.auditLog || []).length;
+  return _kpiTile('Atividade', count, null, 'Logs recentes', "openMod('audit')");
+}
 
 // ── PICKER MODAL ──────────────────────────────────────────
 

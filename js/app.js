@@ -923,7 +923,11 @@ function showHub(){
     // Avatar (foto se tiver URL, senão iniciais coloridas)
     const avEl=document.getElementById('hub-user-avatar');
     if (avEl) avEl.innerHTML=window.userAvatar?window.userAvatar(STATE.user,32):'';
-    document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
+    // Time-aware greeting: Bom dia / Boa tarde / Boa noite
+    const _h=new Date().getHours();
+    const _g=_h<12?'Bom dia':(_h<18?'Boa tarde':'Boa noite');
+    const _heroT=document.getElementById('hub-hero-title');
+    if(_heroT)_heroT.innerHTML=`${_g}, <span class="hub-hero-name">${fn}</span>.`;
     const hub=document.getElementById('hub');hub.style.display='flex';
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
@@ -956,14 +960,15 @@ function buildHubCards(){
   const userMods=STATE.user?.modules||[];
   const isAdmin=STATE.user?.role==='admin';
   const visible=MODS.filter(m=>!m.adminOnly||isAdmin).filter(m=>isAdmin||userMods.includes(m.id));
-  const strip=document.getElementById('hub-modstrip');
-  if(strip){
-    strip.innerHTML=visible.map(m=>`
-      <button class="modpill" onclick="openMod('${m.id}')"
-        style="--app-bg:${m.bg};--app-border:${m.color};--app-stroke:${m.stroke}">
-        <span class="modpill-icon"><i data-lucide="${m.icon}"></i></span>
-        <span class="modpill-label">${m.label}</span>
-      </button>`).join('');
+  const el=document.getElementById('hub-cards');
+  if(el){
+    el.innerHTML=visible.map(m=>`
+      <div class="hub-app" onclick="openMod('${m.id}')"
+        style="--app-border:${m.color};--app-glow:${m.glow};--app-bg:${m.bg};--app-stroke:${m.stroke}">
+        <div class="hub-app-icon"><i data-lucide="${m.icon}"></i></div>
+        <div class="hub-app-name">${m.label}</div>
+        ${m.sub?`<div class="hub-app-sub">${m.sub}</div>`:''}
+      </div>`).join('');
   }
   lucide.createIcons();
 }
