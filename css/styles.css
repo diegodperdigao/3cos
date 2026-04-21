@@ -5227,6 +5227,26 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 /* Empty filter state */
 .bh-empty-filter{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 20px;text-align:center;font-size:13px;color:var(--text2);}
 
+/* ── Image upload UI (Brand Hub material form) ── */
+.bm-img-upload{display:flex;flex-direction:column;gap:8px;}
+.bm-img-tabs{display:flex;gap:4px;}
+.bm-img-tab{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;
+  background:var(--bg3);border:1px solid var(--gb);color:var(--text2);font-size:11px;font-weight:500;
+  cursor:pointer;transition:all 0.15s;font-family:var(--fb);}
+.bm-img-tab:hover{border-color:var(--gb2);color:var(--text);}
+.bm-img-tab.on{background:var(--theme-dim);border-color:var(--theme-b);color:var(--theme);font-weight:600;}
+.bm-img-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  padding:28px 20px;border:2px dashed var(--gb2);border-radius:12px;cursor:pointer;
+  transition:all 0.18s;text-align:center;}
+.bm-img-drop:hover{border-color:var(--theme);background:var(--theme-dim);}
+.bm-img-drop-lbl{font-size:12px;font-weight:600;color:var(--text);}
+.bm-img-drop-hint{font-size:10px;color:var(--text3);}
+.bm-img-preview{display:flex;align-items:center;gap:12px;padding:10px;
+  background:var(--bg3);border:1px solid var(--gb);border-radius:10px;}
+.bm-img-preview img{width:80px;height:56px;border-radius:6px;object-fit:cover;background:var(--bg2);flex-shrink:0;}
+.bm-img-preview-meta{display:flex;align-items:center;gap:8px;flex:1;
+  font-size:11px;color:var(--text2);font-family:var(--fb);}
+
 /* Automations */
 .auto-list{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;}
 .auto-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--gb);border-radius:10px;}

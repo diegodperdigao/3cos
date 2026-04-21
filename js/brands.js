@@ -625,9 +625,82 @@ window.openAddBrandMaterial = (brandName, presetCat) => {
     <div class="fgp ff"><label>Título *</label><input class="fi" id="bm-title" placeholder="Ex: Promo Welcome Bonus 200%" autofocus></div>
     <div class="fgp ff"><label>Descrição</label><textarea class="fi" id="bm-desc" rows="3" placeholder="Detalhes, regras, observações..."></textarea></div>
     <div class="fgp ff"><label>URL / Link</label><input class="fi" id="bm-url" placeholder="https://..."></div>
-    <div class="fgp ff"><label>URL da Imagem / Banner</label><input class="fi" id="bm-img" placeholder="https://...banner.jpg"></div>
+    <div class="fgp ff"><label>Imagem / Banner</label>
+      <div class="bm-img-upload" id="bm-img-upload">
+        <div class="bm-img-tabs">
+          <button type="button" class="bm-img-tab on" onclick="_switchImgTab('file',this)"><i data-lucide="upload" style="width:12px;height:12px"></i> Enviar arquivo</button>
+          <button type="button" class="bm-img-tab" onclick="_switchImgTab('url',this)"><i data-lucide="link" style="width:12px;height:12px"></i> Colar URL</button>
+        </div>
+        <div class="bm-img-panel" id="bm-img-file-panel">
+          <input type="file" id="bm-img-file" accept="image/*" style="display:none" onchange="_handleBMImgFile(event)">
+          <div class="bm-img-drop" id="bm-img-drop" onclick="document.getElementById('bm-img-file').click()">
+            <i data-lucide="image-up" style="width:22px;height:22px;stroke:var(--text3)"></i>
+            <div class="bm-img-drop-lbl">Clique para escolher uma imagem</div>
+            <div class="bm-img-drop-hint">PNG, JPG, WebP — será otimizada automaticamente</div>
+          </div>
+          <div class="bm-img-preview" id="bm-img-preview" style="display:none">
+            <img id="bm-img-preview-img" alt="preview">
+            <div class="bm-img-preview-meta">
+              <span id="bm-img-preview-size">—</span>
+              <button type="button" class="ibt danger" onclick="_clearBMImg()" title="Remover"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="bm-img-panel" id="bm-img-url-panel" style="display:none">
+          <input class="fi" id="bm-img-url-input" placeholder="https://...banner.jpg">
+        </div>
+        <input type="hidden" id="bm-img" value="">
+      </div>
+    </div>
   </div>`, `<button class="btn btn-ghost" onclick="closeModal();openBrandHub('${brandName}')">Cancelar</button>
     <button class="btn btn-theme" onclick="saveBrandMaterial('${brandName}')"><i data-lucide="check"></i> Adicionar</button>`);
+  lucide.createIcons();
+};
+
+window._switchImgTab = (tab, btn) => {
+  btn.parentElement.querySelectorAll('.bm-img-tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('bm-img-file-panel').style.display = tab === 'file' ? 'block' : 'none';
+  document.getElementById('bm-img-url-panel').style.display = tab === 'url' ? 'block' : 'none';
+};
+
+window._handleBMImgFile = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return toast('Arquivo deve ser uma imagem', 'e');
+  if (file.size > 8 * 1024 * 1024) return toast('Imagem muito grande (máx 8MB)', 'e');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      // Compress: resize to max 1200px width, JPEG quality 0.82
+      const maxW = 1200;
+      const scale = img.width > maxW ? maxW / img.width : 1;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      const sizeKB = Math.round(dataUrl.length * 0.75 / 1024);
+      document.getElementById('bm-img').value = dataUrl;
+      document.getElementById('bm-img-preview-img').src = dataUrl;
+      document.getElementById('bm-img-preview-size').textContent = `${canvas.width}×${canvas.height} · ~${sizeKB} KB`;
+      document.getElementById('bm-img-preview').style.display = 'flex';
+      document.getElementById('bm-img-drop').style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window._clearBMImg = () => {
+  document.getElementById('bm-img').value = '';
+  document.getElementById('bm-img-preview').style.display = 'none';
+  document.getElementById('bm-img-drop').style.display = 'flex';
+  document.getElementById('bm-img-file').value = '';
 };
 
 window.saveBrandMaterial = (brandName) => {
@@ -635,6 +708,9 @@ window.saveBrandMaterial = (brandName) => {
   if (!title) return toast('Título obrigatório', 'e');
   if (!STATE.brandMaterials) STATE.brandMaterials = {};
   if (!STATE.brandMaterials[brandName]) STATE.brandMaterials[brandName] = [];
+  // Image: prefer uploaded file (base64), fallback to URL input
+  let imageUrl = document.getElementById('bm-img')?.value?.trim() || '';
+  if (!imageUrl) imageUrl = document.getElementById('bm-img-url-input')?.value?.trim() || '';
   STATE.brandMaterials[brandName].unshift({
     id: 'bm' + Date.now(),
     brandName,
@@ -642,7 +718,7 @@ window.saveBrandMaterial = (brandName) => {
     title,
     desc: document.getElementById('bm-desc')?.value?.trim() || '',
     url: document.getElementById('bm-url')?.value?.trim() || '',
-    imageUrl: document.getElementById('bm-img')?.value?.trim() || '',
+    imageUrl,
     createdAt: new Date().toISOString(),
   });
   logAction('Material adicionado', `${brandName}: ${title}`);
