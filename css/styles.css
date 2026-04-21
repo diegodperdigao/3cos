@@ -2652,13 +2652,13 @@ textarea.fi{resize:vertical;min-height:60px;}
   opacity: 0.7;
 }
 
-/* ── Wallpaper: soft orbs (light) ── */
+/* ── Wallpaper: vivid orbs (light) — need to be visible on #f6f3ff ── */
 [data-edition="glass"][data-theme="light"] .hub-bg{
   background:
-    radial-gradient(600px 500px at 12% 18%, rgba(236,72,153,0.22), transparent 70%),
-    radial-gradient(700px 600px at 88% 28%, rgba(139,92,246,0.18), transparent 70%),
-    radial-gradient(620px 580px at 30% 88%, rgba(14,165,233,0.15), transparent 70%),
-    radial-gradient(500px 500px at 78% 80%, rgba(251,191,36,0.12), transparent 70%),
+    radial-gradient(600px 500px at 12% 18%, rgba(236,72,153,0.40), transparent 70%),
+    radial-gradient(700px 600px at 88% 28%, rgba(139,92,246,0.35), transparent 70%),
+    radial-gradient(620px 580px at 30% 88%, rgba(14,165,233,0.30), transparent 70%),
+    radial-gradient(500px 500px at 78% 80%, rgba(251,191,36,0.25), transparent 70%),
     #f6f3ff !important;
 }
 
@@ -2744,14 +2744,21 @@ textarea.fi{resize:vertical;min-height:60px;}
 }
 [data-edition="glass"][data-theme="light"] .hub-app:hover{
   transform: translateY(-5px) scale(1.015) !important;
-  border-color: rgba(255,255,255,0.90) !important;
+  background: rgba(255,255,255,0.72) !important;
+  border-color: rgba(167,139,250,0.18) !important;
   box-shadow:
-    0 12px 30px rgba(0,0,0,0.06),
+    0 16px 40px rgba(124,58,237,0.08),
+    0 4px 12px rgba(0,0,0,0.04),
     inset 0 1px 0 rgba(255,255,255,0.95) !important;
 }
-/* Specular sweep visible on light: use a stronger white flash */
+/* Specular sweep on light: prismatic tint (white alone is invisible on white cards) */
 [data-edition="glass"][data-theme="light"] .hub-app::before{
-  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.65) 48%, transparent 66%) !important;
+  background: linear-gradient(120deg,
+    transparent 25%,
+    rgba(167,139,250,0.12) 38%,
+    rgba(255,255,255,0.85) 48%,
+    rgba(236,72,153,0.10) 58%,
+    transparent 70%) !important;
 }
 [data-edition="glass"][data-theme="light"] .hub-app-icon{
   background: linear-gradient(135deg,
@@ -4319,18 +4326,7 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="glass"] .hero .mosaic-wrapper{
   display: none !important;
 }
-[data-edition="glass"][data-theme="dark"] .hub-bg{
-  background:
-    radial-gradient(circle at 20% 30%, rgba(167,139,250,0.10), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(236,72,153,0.06), transparent 40%),
-    #07070c !important;
-}
-[data-edition="glass"][data-theme="light"] .hub-bg{
-  background:
-    radial-gradient(circle at 20% 30%, rgba(124,58,237,0.06), transparent 45%),
-    radial-gradient(circle at 80% 70%, rgba(167,139,250,0.04), transparent 45%),
-    #fafaff !important;
-}
+/* Orb wallpaper defined earlier — no override here */
 [data-edition="glass"] .hero{
   background: var(--bg2) !important;
   overflow: hidden;
