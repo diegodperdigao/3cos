@@ -2719,13 +2719,13 @@ textarea.fi{resize:vertical;min-height:60px;}
     0 28px 60px -10px var(--theme-glow),
     inset 0 1px 0 rgba(255,255,255,0.24) !important;
 }
-/* Squircle icons (22.37% ≈ iOS continuous corners) with inset shadows for depth */
+/* Squircle icons (22.37% ≈ iOS continuous corners) with gradient fill from module color */
 [data-edition="glass"] .hub-app-icon{
   border-radius: 22.37% !important;
-  background: linear-gradient(135deg, var(--app-stroke, #a78bfa), color-mix(in srgb, var(--app-stroke, #a78bfa) 60%, #000)) !important;
+  background: linear-gradient(135deg, var(--app-stroke, #a78bfa), color-mix(in srgb, var(--app-stroke, #a78bfa) 55%, #1a0a2e)) !important;
   border: none !important;
   box-shadow:
-    0 8px 18px -4px color-mix(in srgb, var(--app-stroke, #a78bfa) 40%, transparent),
+    0 8px 18px -4px color-mix(in srgb, var(--app-stroke, #a78bfa) 35%, transparent),
     inset 0 1px 0 rgba(255,255,255,0.35),
     inset 0 -6px 14px rgba(0,0,0,0.22) !important;
 }
@@ -2919,6 +2919,83 @@ textarea.fi{resize:vertical;min-height:60px;}
 
 /* ── Section labels ── */
 [data-edition="glass"] .sec-lbl{color: var(--text2) !important;}
+
+/* ── Module body + internal surfaces: glass material everywhere ── */
+[data-edition="glass"][data-theme="dark"] .mod-body{
+  background: rgba(6,4,15,0.88) !important;
+}
+[data-edition="glass"][data-theme="light"] .mod-body{
+  background: #f6f3ff !important;
+}
+/* Hero sections inside modules */
+[data-edition="glass"][data-theme="dark"] .hero{
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%) !important;
+  border-bottom: 1px solid var(--gb) !important;
+}
+[data-edition="glass"][data-theme="light"] .hero{
+  background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(246,243,255,0.5) 100%) !important;
+}
+/* Section headers / dividers */
+[data-edition="glass"] .sec-hdr{border-bottom-color: var(--gb) !important;}
+/* Settings cards */
+[data-edition="glass"][data-theme="dark"] .st-card{
+  background: rgba(255,255,255,0.035) !important;
+  border: 1px solid var(--gb) !important;
+  backdrop-filter: blur(16px);-webkit-backdrop-filter: blur(16px);
+}
+[data-edition="glass"][data-theme="light"] .st-card{
+  background: rgba(255,255,255,0.75) !important;
+  border: 1px solid rgba(255,255,255,0.85) !important;
+}
+/* Backup cards */
+[data-edition="glass"][data-theme="dark"] .bk-card{
+  background: rgba(255,255,255,0.035) !important;
+  border: 1px solid var(--gb) !important;
+}
+/* Form groups */
+[data-edition="glass"][data-theme="dark"] .fi{
+  background: rgba(255,255,255,0.04) !important;
+  border-color: var(--gb) !important;
+}
+[data-edition="glass"][data-theme="light"] .fi{
+  background: rgba(255,255,255,0.7) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+/* Tables */
+[data-edition="glass"][data-theme="dark"] table{
+  background: transparent !important;
+}
+[data-edition="glass"][data-theme="dark"] table thead{
+  background: rgba(255,255,255,0.03) !important;
+}
+[data-edition="glass"][data-theme="dark"] .tr:hover,
+[data-edition="glass"][data-theme="dark"] table tbody tr:hover{
+  background: rgba(167,139,250,0.06) !important;
+}
+/* Brands hero */
+[data-edition="glass"][data-theme="dark"] #brands-hero{
+  background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%) !important;
+}
+/* Widget tiles inside modules */
+[data-edition="glass"][data-theme="dark"] .hw-tile{
+  background: rgba(255,255,255,0.04) !important;
+  backdrop-filter: blur(22px) saturate(180%);-webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--gb) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+[data-edition="glass"][data-theme="light"] .hw-tile{
+  background: rgba(255,255,255,0.70) !important;
+  backdrop-filter: blur(22px) saturate(180%);-webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.85) !important;
+}
+/* Forecast card */
+[data-edition="glass"][data-theme="dark"] .forecast-card{
+  background: rgba(255,255,255,0.035) !important;
+  border: 1px solid var(--gb) !important;
+  backdrop-filter: blur(16px);-webkit-backdrop-filter: blur(16px);
+}
+/* Hub modules label */
+[data-edition="glass"] .hub-modules-label{color: var(--text3) !important;}
 
 /* ── Link/button hover ── */
 [data-edition="glass"] .ibt:hover,
