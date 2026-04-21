@@ -967,7 +967,6 @@ function buildHubCards(){
         style="--app-border:${m.color};--app-glow:${m.glow};--app-bg:${m.bg};--app-stroke:${m.stroke}">
         <div class="hub-app-icon"><i data-lucide="${m.icon}"></i></div>
         <div class="hub-app-name">${m.label}</div>
-        ${m.sub?`<div class="hub-app-sub">${m.sub}</div>`:''}
       </div>`).join('');
   }
   lucide.createIcons();
