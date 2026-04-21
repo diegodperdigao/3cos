@@ -262,10 +262,12 @@ body::before {
   background:linear-gradient(135deg,var(--theme) 0%,#ec4899 60%,#f59e0b 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   font-weight:700;}
-/* Default light: deeper, saturated gradient with better contrast on white */
+/* Default light: premium duotone (deep purple → electric rose)
+   Heavy contrast on white, avoids the flat indigo→violet→pink look */
 [data-theme="light"] .hub-hero-name{
-  background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 45%,#ec4899 100%);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  background:linear-gradient(120deg,#1e1b4b 0%,#5b21b6 35%,#db2777 75%,#f43f5e 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  font-weight:800 !important;}
 
 /* ── Per-edition hero signatures ── */
 /* Each edition gets a distinct typographic treatment on the user's name */
@@ -280,15 +282,15 @@ body::before {
 [data-edition="mono"] .hub-hero-title{font-weight:900 !important;letter-spacing:-0.04em !important;}
 [data-edition="mono"] .hub-hero-eyebrow{color:var(--text) !important;opacity:0.55;}
 
-/* MERIDIAN — magazine editorial serif italic in theme color (no underline) */
+/* MERIDIAN — magazine editorial serif italic in theme color (bolder, no underline) */
 [data-edition="meridian"] .hub-hero-name{
   background:none !important;-webkit-background-clip:initial !important;background-clip:initial !important;
   -webkit-text-fill-color:currentColor !important;
   color:var(--theme) !important;
   font-family:'Playfair Display',serif !important;
-  font-style:italic;font-weight:700 !important;
+  font-style:italic;font-weight:900 !important;
   text-decoration:none !important;}
-[data-edition="meridian"] .hub-hero-title{font-family:'Playfair Display',serif !important;font-weight:700 !important;letter-spacing:-0.01em !important;}
+[data-edition="meridian"] .hub-hero-title{font-family:'Playfair Display',serif !important;font-weight:800 !important;letter-spacing:-0.01em !important;}
 [data-edition="meridian"] .hub-hero-eyebrow{color:var(--text) !important;opacity:0.6;font-family:var(--fb) !important;}
 
 /* BENTO — soft pastel highlight block, Montserrat display, subtle accent */
@@ -1815,6 +1817,36 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="mono"] .dock-tooltip{
   background:var(--text) !important;color:var(--bg) !important;border-radius:4px !important;}
 [data-edition="mono"] .dock-tooltip::after{border-top-color:var(--text) !important;}
+
+/* ── Mono edition: monochrome module tiles (icons follow theme, not per-module colors) ── */
+[data-edition="mono"] .hub-app{
+  background:var(--bg2) !important;
+  border:1px solid var(--gb) !important;
+  border-radius:12px !important;
+  backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .hub-app:hover{
+  background:var(--bg2) !important;
+  border-color:var(--text) !important;
+  box-shadow:0 6px 18px rgba(0,0,0,0.35) !important;}
+[data-edition="mono"] .hub-app::before{display:none !important;}
+[data-edition="mono"] .hub-app-icon{
+  background:var(--bg3) !important;
+  border:1px solid var(--gb2) !important;
+  border-radius:11px !important;
+  box-shadow:none !important;}
+[data-edition="mono"] .hub-app-icon svg{
+  stroke:var(--text) !important;
+  stroke-width:1.8 !important;}
+[data-edition="mono"] .hub-app:hover .hub-app-icon{
+  background:var(--text) !important;
+  border-color:var(--text) !important;}
+[data-edition="mono"] .hub-app:hover .hub-app-icon svg{stroke:var(--bg) !important;}
+[data-edition="mono"] .hub-app-name{
+  color:var(--text) !important;
+  font-weight:700 !important;
+  letter-spacing:0.02em !important;}
+
 [data-edition="mono"] .hub-app-sub{
   color:var(--text) !important;
   opacity:0.55;
