@@ -257,22 +257,78 @@ body::before {
   text-transform:uppercase;color:var(--theme);margin-bottom:10px;}
 .hub-hero-title{font-family:var(--fd);font-size:52px;font-weight:700;line-height:1.05;
   letter-spacing:-0.02em;color:var(--text);margin:0 0 8px;}
+/* Default: colorful gradient (warm theme→pink→amber) */
 .hub-hero-name{
   background:linear-gradient(135deg,var(--theme) 0%,#ec4899 60%,#f59e0b 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   font-weight:700;}
 
-/* Editorial / minimalist editions: solid colored name, no gradient */
-[data-edition="mono"] .hub-hero-name,
+/* ── Per-edition hero signatures ── */
+/* Each edition gets a distinct typographic treatment on the user's name */
+
+/* MONO — editorial serif italic, no gradient, single accent color */
+[data-edition="mono"] .hub-hero-name{
+  background:none !important;-webkit-background-clip:initial !important;background-clip:initial !important;
+  -webkit-text-fill-color:currentColor !important;
+  color:var(--text) !important;
+  font-family:'Playfair Display',serif !important;
+  font-style:italic;font-weight:700 !important;letter-spacing:-0.01em;}
+[data-edition="mono"] .hub-hero-title{font-weight:800 !important;letter-spacing:-0.03em !important;}
+[data-edition="mono"] .hub-hero-eyebrow{color:var(--text) !important;opacity:0.55;}
+
+/* MERIDIAN — full serif with underline accent, magazine editorial */
 [data-edition="meridian"] .hub-hero-name{
   background:none !important;-webkit-background-clip:initial !important;background-clip:initial !important;
   -webkit-text-fill-color:currentColor !important;
-  color:var(--text) !important;}
-[data-edition="mono"] .hub-hero-eyebrow,
-[data-edition="meridian"] .hub-hero-eyebrow{color:var(--text) !important;opacity:0.55;}
+  color:var(--theme) !important;
+  font-family:'Playfair Display',serif !important;
+  font-style:italic;font-weight:700 !important;
+  text-decoration:underline;text-decoration-thickness:3px;
+  text-underline-offset:10px;text-decoration-color:var(--theme);}
 [data-edition="meridian"] .hub-hero-title{font-family:'Playfair Display',serif !important;font-weight:700 !important;letter-spacing:-0.01em !important;}
-[data-edition="meridian"] .hub-hero-name{color:var(--theme) !important;font-style:italic;}
-[data-edition="mono"] .hub-hero-title{font-weight:800 !important;letter-spacing:-0.03em !important;}
+[data-edition="meridian"] .hub-hero-eyebrow{color:var(--text) !important;opacity:0.6;font-family:var(--fb) !important;}
+
+/* BENTO — blocky monospace with highlight block */
+[data-edition="bento"] .hub-hero-name{
+  background:var(--theme-dim) !important;-webkit-background-clip:initial !important;background-clip:initial !important;
+  -webkit-text-fill-color:currentColor !important;
+  color:var(--theme) !important;
+  font-family:'JetBrains Mono',monospace !important;
+  font-weight:700 !important;
+  padding:0 10px;border-radius:6px;
+  display:inline-block;line-height:1.05;
+  box-shadow:4px 4px 0 0 var(--text);}
+[data-theme="light"][data-edition="bento"] .hub-hero-name{box-shadow:4px 4px 0 0 var(--text);}
+[data-edition="bento"] .hub-hero-title{font-weight:800 !important;}
+
+/* NEONFLOW — neon glow effect */
+[data-edition="neonflow"] .hub-hero-name{
+  background:none !important;-webkit-background-clip:initial !important;background-clip:initial !important;
+  -webkit-text-fill-color:currentColor !important;
+  color:var(--theme) !important;
+  text-shadow:
+    0 0 8px var(--theme),
+    0 0 22px var(--theme),
+    0 0 45px var(--theme-b);
+  font-weight:700;}
+[data-edition="neonflow"] .hub-hero-title{font-weight:700 !important;}
+
+/* GLASS (Liquid Glass) — animated shimmer gradient */
+[data-edition="glass"] .hub-hero-name{
+  background:linear-gradient(90deg,
+    var(--theme) 0%,
+    #ec4899 30%,
+    #a78bfa 50%,
+    #ec4899 70%,
+    var(--theme) 100%) !important;
+  background-size:200% 100% !important;
+  -webkit-background-clip:text !important;background-clip:text !important;
+  -webkit-text-fill-color:transparent !important;
+  animation:heroShimmer 8s linear infinite;}
+@keyframes heroShimmer{
+  0%{background-position:0% 50%;}
+  100%{background-position:200% 50%;}
+}
 .hub-hero-sub{font-size:14px;font-weight:400;color:var(--text2);margin-top:2px;}
 .hub-greeting strong{color:var(--text);font-weight:600;}
 
