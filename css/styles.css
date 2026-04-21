@@ -324,14 +324,17 @@ body::before {
   font-weight:700;}
 [data-edition="neonflow"] .hub-hero-title{font-weight:700 !important;}
 
-/* GLASS (Liquid Glass) — animated shimmer gradient */
+/* GLASS (Liquid Glass) — greeting with glow + shimmer gradient on name */
+[data-edition="glass"] .hub-hero-title{
+  text-shadow: 0 0 40px var(--theme-glow) !important;
+}
 [data-edition="glass"] .hub-hero-name{
   background:linear-gradient(90deg,
-    var(--theme) 0%,
-    #ec4899 30%,
-    #a78bfa 50%,
-    #ec4899 70%,
-    var(--theme) 100%) !important;
+    #ff87b2 0%,
+    #a78bfa 30%,
+    #ec4899 50%,
+    #a78bfa 70%,
+    #ff87b2 100%) !important;
   background-size:200% 100% !important;
   -webkit-background-clip:text !important;background-clip:text !important;
   -webkit-text-fill-color:transparent !important;
@@ -339,6 +342,36 @@ body::before {
 @keyframes heroShimmer{
   0%{background-position:0% 50%;}
   100%{background-position:200% 50%;}
+}
+/* Glass light: deeper gradient for contrast on white */
+[data-edition="glass"][data-theme="light"] .hub-hero-title{text-shadow:none !important;}
+[data-edition="glass"][data-theme="light"] .hub-hero-name{
+  background:linear-gradient(135deg, #db2777, #7c3aed) !important;
+  background-size:100% 100% !important;
+  -webkit-background-clip:text !important;background-clip:text !important;
+  -webkit-text-fill-color:transparent !important;
+  animation:none !important;}
+[data-edition="glass"] .hub-hero-eyebrow{color:var(--theme) !important;}
+
+/* Glass widget tiles — translucent material */
+[data-edition="glass"][data-theme="dark"] .hw-tile{
+  background: rgba(255,255,255,0.04) !important;
+  backdrop-filter: blur(22px) saturate(180%);-webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--gb) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+[data-edition="glass"][data-theme="light"] .hw-tile{
+  background: rgba(255,255,255,0.70) !important;
+  backdrop-filter: blur(22px) saturate(180%);-webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.85) !important;
+}
+
+/* Glass modals — frosted glass */
+[data-edition="glass"][data-theme="dark"] .modal{
+  background: rgba(20,14,30,0.82) !important;
+  backdrop-filter: blur(50px) saturate(200%) !important;-webkit-backdrop-filter: blur(50px) saturate(200%) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.10) !important;
 }
 .hub-hero-sub{font-size:14px;font-weight:400;color:var(--text2);margin-top:2px;}
 .hub-greeting strong{color:var(--text);font-weight:600;}
@@ -2554,37 +2587,51 @@ textarea.fi{resize:vertical;min-height:60px;}
    Not loud — quiet confidence.
    ══════════════════════════════════════════════════════════ */
 
-/* ── Dark mode: deep space ── */
+/* ── Dark mode: deep space with glass surfaces ── */
 [data-edition="glass"][data-theme="dark"]{
-  --bg: #07070c;
-  --bg2: #0e0e16;
-  --bg3: #16161f;
-  --gb: rgba(255,255,255,0.06);
-  --gb2: rgba(255,255,255,0.12);
-  --text: #f5f5f8;
-  --text2: #9c9ca8;
-  --text3: #5c5c68;
+  --bg: #06040f;
+  --bg2: rgba(255,255,255,0.055);
+  --bg3: rgba(255,255,255,0.03);
+  --gb: rgba(255,255,255,0.10);
+  --gb2: rgba(255,255,255,0.16);
+  --glass-border: rgba(255,255,255,0.18);
+  --text: #f5f5f7;
+  --text2: #a6a5af;
+  --text3: #6b6a75;
   --theme: #a78bfa;
-  --theme-dim: rgba(167,139,250,0.08);
-  --theme-b: rgba(167,139,250,0.24);
+  --theme-glow: rgba(167,139,250,0.28);
+  --theme-dim: rgba(167,139,250,0.10);
+  --theme-b: rgba(167,139,250,0.22);
 }
 
-/* ── Light mode: soft lavender-tinted white ── */
+/* ── Light mode: soft lavender glass ── */
 [data-edition="glass"][data-theme="light"]{
-  --bg: #fafaff;
-  --bg2: #ffffff;
-  --bg3: #f3f2fa;
-  --gb: rgba(0,0,0,0.06);
-  --gb2: rgba(0,0,0,0.12);
-  --text: #131120;
-  --text2: #54546a;
-  --text3: #8888a0;
+  --bg: #f6f3ff;
+  --bg2: rgba(255,255,255,0.70);
+  --bg3: rgba(255,255,255,0.45);
+  --gb: rgba(15,10,40,0.08);
+  --gb2: rgba(15,10,40,0.14);
+  --glass-border: rgba(255,255,255,0.85);
+  --text: #1c1a2e;
+  --text2: #4a485a;
+  --text3: #6b6980;
   --theme: #7c3aed;
+  --theme-glow: rgba(124,58,237,0.20);
   --theme-dim: rgba(124,58,237,0.07);
   --theme-b: rgba(124,58,237,0.20);
 }
 
-/* ── Starfield: subtle CSS-generated stars on the hub background (dark only) ── */
+/* ── Wallpaper: colorful orbs (dark) ── */
+[data-edition="glass"][data-theme="dark"] .hub-bg{
+  background:
+    radial-gradient(600px 500px at 12% 18%, rgba(236,72,153,0.55), transparent 70%),
+    radial-gradient(700px 600px at 88% 28%, rgba(99,102,241,0.50), transparent 70%),
+    radial-gradient(620px 580px at 30% 88%, rgba(6,182,212,0.40), transparent 70%),
+    radial-gradient(500px 500px at 78% 80%, rgba(245,158,11,0.30), transparent 70%),
+    #06040f !important;
+  filter: saturate(115%);
+}
+/* Starfield overlay */
 [data-edition="glass"][data-theme="dark"] .hub-bg::after{
   content: '';
   position: absolute;
@@ -2605,7 +2652,17 @@ textarea.fi{resize:vertical;min-height:60px;}
   opacity: 0.7;
 }
 
-/* ── Cards: solid dark surface, subtle border, no gradient noise ── */
+/* ── Wallpaper: soft orbs (light) ── */
+[data-edition="glass"][data-theme="light"] .hub-bg{
+  background:
+    radial-gradient(600px 500px at 12% 18%, rgba(236,72,153,0.22), transparent 70%),
+    radial-gradient(700px 600px at 88% 28%, rgba(139,92,246,0.18), transparent 70%),
+    radial-gradient(620px 580px at 30% 88%, rgba(14,165,233,0.15), transparent 70%),
+    radial-gradient(500px 500px at 78% 80%, rgba(251,191,36,0.12), transparent 70%),
+    #f6f3ff !important;
+}
+
+/* ── Cards: translucent glass surfaces ── */
 [data-edition="glass"][data-theme="dark"] .kpi,
 [data-edition="glass"][data-theme="dark"] .intel-wrap,
 [data-edition="glass"][data-theme="dark"] .intel-card,
@@ -2614,9 +2671,10 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="glass"][data-theme="dark"] .tk,
 [data-edition="glass"][data-theme="dark"] .st-card,
 [data-edition="glass"][data-theme="dark"] .ac-card{
-  background: var(--bg2) !important;
+  background: rgba(255,255,255,0.04) !important;
+  backdrop-filter: blur(22px) saturate(180%);-webkit-backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid var(--gb) !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 [data-edition="glass"][data-theme="light"] .kpi,
 [data-edition="glass"][data-theme="light"] .intel-wrap,
@@ -2626,30 +2684,67 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="glass"][data-theme="light"] .tk,
 [data-edition="glass"][data-theme="light"] .st-card,
 [data-edition="glass"][data-theme="light"] .ac-card{
-  background: #ffffff !important;
-  border: 1px solid var(--gb) !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  background: rgba(255,255,255,0.70) !important;
+  backdrop-filter: blur(22px) saturate(180%);-webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.85) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
 }
 
-/* ── Hub apps: subtle violet hover glow (no overwhelming color) ── */
+/* ── Hub apps: glass material + specular sweep + squircle icons ── */
 [data-edition="glass"] .hub-app{
-  --app-border: rgba(255,255,255,0.08) !important;
-  --app-glow: rgba(167,139,250,0.05) !important;
-  --app-bg: rgba(255,255,255,0.015) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;-webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.18)) !important;
+  border-radius: 20px !important;
+  box-shadow:
+    0 16px 40px -12px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -12px 24px rgba(0,0,0,0.10) !important;
+  position: relative !important; overflow: hidden !important;
 }
-[data-edition="glass"][data-theme="light"] .hub-app{
-  --app-border: rgba(124,58,237,0.12) !important;
-  --app-glow: rgba(124,58,237,0.04) !important;
-  --app-bg: rgba(255,255,255,0.8) !important;
+/* Specular sweep — diagonal shine on hover */
+[data-edition="glass"] .hub-app::before{
+  content:'' !important; position:absolute !important; inset:0 !important; border-radius:inherit !important;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.18) 48%, transparent 66%) !important;
+  transform: translateX(-120%) !important;
+  transition: transform .7s ease !important;
+  pointer-events:none !important; z-index:1 !important;
+  opacity:1 !important;
 }
+[data-edition="glass"] .hub-app:hover::before{ transform: translateX(120%) !important; }
 [data-edition="glass"] .hub-app:hover{
-  --app-border: var(--theme-b) !important;
-  box-shadow: 0 8px 24px rgba(167,139,250,0.10) !important;
+  transform: translateY(-5px) scale(1.015) !important;
+  border-color: rgba(255,255,255,0.28) !important;
+  box-shadow:
+    0 28px 60px -10px var(--theme-glow),
+    inset 0 1px 0 rgba(255,255,255,0.24) !important;
 }
-[data-edition="glass"] .hub-app-icon svg{stroke: var(--text2) !important;}
-[data-edition="glass"] .hub-app:hover .hub-app-icon svg{stroke: var(--theme) !important;}
-[data-edition="glass"] .hub-apps-label{color: var(--text3) !important;}
-[data-edition="glass"] .hub-apps-label::after{background: var(--gb) !important;}
+/* Squircle icons (22.37% ≈ iOS continuous corners) with inset shadows for depth */
+[data-edition="glass"] .hub-app-icon{
+  border-radius: 22.37% !important;
+  background: linear-gradient(135deg, var(--app-stroke, #a78bfa), color-mix(in srgb, var(--app-stroke, #a78bfa) 60%, #000)) !important;
+  border: none !important;
+  box-shadow:
+    0 8px 18px -4px color-mix(in srgb, var(--app-stroke, #a78bfa) 40%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.35),
+    inset 0 -6px 14px rgba(0,0,0,0.22) !important;
+}
+[data-edition="glass"] .hub-app-icon svg{stroke: #fff !important; stroke-width: 2 !important;}
+[data-edition="glass"] .hub-app-name{color: var(--text) !important;}
+
+/* Light mode glass cards */
+[data-edition="glass"][data-theme="light"] .hub-app{
+  background: linear-gradient(135deg, rgba(255,255,255,0.75), rgba(255,255,255,0.45)) !important;
+  border: 1px solid rgba(255,255,255,0.90) !important;
+  box-shadow:
+    0 12px 32px -8px rgba(0,0,0,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.9) !important;
+}
+[data-edition="glass"][data-theme="light"] .hub-app:hover{
+  box-shadow:
+    0 20px 50px -8px rgba(124,58,237,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.95) !important;
+}
 
 /* ── Hub header icons ── */
 [data-edition="glass"] .hub-icon-btn:hover{background: var(--theme-dim) !important;}
@@ -2740,36 +2835,35 @@ textarea.fi{resize:vertical;min-height:60px;}
 
 /* ── Module header ── */
 [data-edition="glass"][data-theme="dark"] .mod-hdr{
-  background: rgba(7,7,12,0.92) !important;
-  border-bottom: 1px solid var(--gb) !important;
+  background: rgba(12,8,20,0.72) !important;
+  backdrop-filter: blur(32px) saturate(200%) !important;-webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
 }
 [data-edition="glass"][data-theme="light"] .mod-hdr{
   background: rgba(255,255,255,0.94) !important;
   border-bottom: 1px solid var(--gb) !important;
 }
 
-/* ── Modals ── */
-[data-edition="glass"][data-theme="dark"] .modal{
-  background: var(--bg2) !important;
-  border: 1px solid var(--gb) !important;
-}
-[data-edition="glass"][data-theme="light"] .modal{
-  background: #ffffff !important;
-  border: 1px solid var(--gb) !important;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.10) !important;
-}
-[data-edition="glass"][data-theme="dark"] #modal-ov{background: rgba(0,0,0,0.75) !important;}
+[data-edition="glass"][data-theme="dark"] #modal-ov{background: rgba(0,0,0,0.65) !important;}
 [data-edition="glass"][data-theme="light"] #modal-ov{background: rgba(19,17,32,0.28) !important;}
+[data-edition="glass"][data-theme="light"] .modal{
+  background: rgba(255,255,255,0.88) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;-webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  border: 1px solid rgba(255,255,255,0.85) !important;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.08) !important;
+}
 [data-edition="glass"] .modal-ttl{color: var(--text) !important;}
 
 /* ── Action center ── */
 [data-edition="glass"][data-theme="dark"] #action-center{
-  background: var(--bg2) !important;
-  border-left: 1px solid var(--gb) !important;
+  background: rgba(12,8,20,0.82) !important;
+  backdrop-filter: blur(50px) saturate(200%) !important;-webkit-backdrop-filter: blur(50px) saturate(200%) !important;
+  border-left: 1px solid var(--glass-border) !important;
 }
 [data-edition="glass"][data-theme="light"] #action-center{
-  background: #ffffff !important;
-  border-left: 1px solid var(--gb) !important;
+  background: rgba(255,255,255,0.88) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;-webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  border-left: 1px solid rgba(255,255,255,0.85) !important;
 }
 [data-edition="glass"] .ac-title i{stroke: var(--theme) !important;}
 [data-edition="glass"] .ac-card:hover{border-color: var(--theme-b) !important;}
@@ -2859,7 +2953,12 @@ textarea.fi{resize:vertical;min-height:60px;}
   border-radius: 12px !important;
 }
 [data-edition="glass"] .hub-app{
-  border-radius: 12px !important;
+  border-radius: 20px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-edition="glass"] .hub-app::before{display:none !important;}
+  [data-edition="glass"] .hub-hero-name{animation:none !important;}
 }
 
 /* Subtle violet glow on hover — signature of Nebula */
