@@ -302,7 +302,9 @@ window.applyAppTheme = () => {
     'meridian-dark':  { edition: 'meridian', theme: 'dark'  },
     'default':        { edition: '',         theme: 'dark'  },
     'mono':           { edition: 'mono',     theme: 'dark'  },
-    'glass':          { edition: '',         theme: 'dark'  },
+    'glass-dark':     { edition: 'glass',    theme: 'dark'  },
+    'glass-light':    { edition: 'glass',    theme: 'light' },
+    'glass':          { edition: 'glass',    theme: 'dark'  },
     'neonflow':       { edition: '',         theme: 'dark'  },
     'bento':          { edition: 'bento',    theme: 'light' },
   };
