@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=99">
+<link rel="stylesheet" href="css/styles.css?v=100">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div class="hub-id-tagline">CRM & Gestão</div>
       <div class="hub-greeting" id="hub-greeting">Selecione o módulo de trabalho</div>
     </div>
-    <!-- Top: widgets / Bottom: horizontal modules bar -->
+    <!-- Widgets area -->
     <div class="hub-layout hub-desktop-only">
       <div class="hub-section hub-section-widgets">
         <div class="hub-col-hdr">
@@ -208,11 +208,9 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>
         <div class="hub-widgets" id="hub-widgets"></div>
       </div>
-      <div class="hub-section hub-section-modules">
-        <div class="hub-col-hdr"><span class="hub-col-label">Módulos</span></div>
-        <div class="hub-apps" id="hub-cards"></div>
-      </div>
     </div>
+    <!-- macOS-style Dock -->
+    <div class="hub-dock hub-desktop-only" id="hub-dock"></div>
     <!-- Mobile Home: Tasks + Notifications -->
     <div class="hub-mobile-home" id="hub-mobile-home"></div>
   </div>
@@ -303,27 +301,27 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=99"></script>
+<script src="js/app.js?v=100"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=99"></script>
-<script src="js/data.js?v=99"></script>
+<script src="js/supabase-client.js?v=100"></script>
+<script src="js/data.js?v=100"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=99"></script>
-<script src="js/widgets.js?v=99"></script>
+<script src="js/lab.js?v=100"></script>
+<script src="js/widgets.js?v=100"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=99"></script>
+<script src="js/search.js?v=100"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=99"></script>
-<script src="js/affiliates.js?v=99"></script>
-<script src="js/brands.js?v=99"></script>
-<script src="js/payments.js?v=99"></script>
-<script src="js/tasks.js?v=99"></script>
-<script src="js/pipeline.js?v=99"></script>
-<script src="js/import.js?v=99"></script>
-<script src="js/watchdog.js?v=99"></script>
-<script src="js/audit.js?v=99"></script>
-<script src="js/users.js?v=99"></script>
-<script src="js/settings.js?v=99"></script>
-<script src="js/copilot.js?v=99"></script>
+<script src="js/dashboard.js?v=100"></script>
+<script src="js/affiliates.js?v=100"></script>
+<script src="js/brands.js?v=100"></script>
+<script src="js/payments.js?v=100"></script>
+<script src="js/tasks.js?v=100"></script>
+<script src="js/pipeline.js?v=100"></script>
+<script src="js/import.js?v=100"></script>
+<script src="js/watchdog.js?v=100"></script>
+<script src="js/audit.js?v=100"></script>
+<script src="js/users.js?v=100"></script>
+<script src="js/settings.js?v=100"></script>
+<script src="js/copilot.js?v=100"></script>
 </body>
 </html>
