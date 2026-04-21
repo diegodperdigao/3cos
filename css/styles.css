@@ -2732,22 +2732,34 @@ textarea.fi{resize:vertical;min-height:60px;}
 [data-edition="glass"] .hub-app-icon svg{stroke: #fff !important; stroke-width: 2 !important;}
 [data-edition="glass"] .hub-app-name{color: var(--text) !important;}
 
-/* Light mode glass cards — frosted, minimal, no heavy shadows */
+/* Light mode glass cards — frosted, clean, with glass details */
 [data-edition="glass"][data-theme="light"] .hub-app{
   background: rgba(255,255,255,0.55) !important;
   backdrop-filter: blur(20px) saturate(160%) !important;-webkit-backdrop-filter: blur(20px) saturate(160%) !important;
   border: 1px solid rgba(255,255,255,0.75) !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.03),
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    inset 0 -8px 16px rgba(0,0,0,0.02) !important;
 }
 [data-edition="glass"][data-theme="light"] .hub-app:hover{
-  box-shadow: 0 6px 18px rgba(0,0,0,0.05) !important;
+  transform: translateY(-5px) scale(1.015) !important;
   border-color: rgba(255,255,255,0.90) !important;
+  box-shadow:
+    0 12px 30px rgba(0,0,0,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.95) !important;
+}
+/* Specular sweep visible on light: use a stronger white flash */
+[data-edition="glass"][data-theme="light"] .hub-app::before{
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.65) 48%, transparent 66%) !important;
 }
 [data-edition="glass"][data-theme="light"] .hub-app-icon{
   background: linear-gradient(135deg,
     color-mix(in srgb, var(--app-stroke, #a78bfa) 35%, #fff),
     color-mix(in srgb, var(--app-stroke, #a78bfa) 55%, #fff)) !important;
-  box-shadow: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.7),
+    inset 0 -4px 8px rgba(0,0,0,0.04) !important;
   border: 1px solid color-mix(in srgb, var(--app-stroke, #a78bfa) 18%, transparent) !important;
 }
 [data-edition="glass"][data-theme="light"] .hub-app-icon svg{
