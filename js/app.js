@@ -956,38 +956,16 @@ function buildHubCards(){
   const userMods=STATE.user?.modules||[];
   const isAdmin=STATE.user?.role==='admin';
   const visible=MODS.filter(m=>!m.adminOnly||isAdmin).filter(m=>isAdmin||userMods.includes(m.id));
-  const dock=document.getElementById('hub-dock');
-  if(dock){
-    dock.innerHTML=`<div class="dock-bar">${visible.map(m=>`
-      <div class="dock-item" onclick="openMod('${m.id}')"
+  const strip=document.getElementById('hub-modstrip');
+  if(strip){
+    strip.innerHTML=visible.map(m=>`
+      <button class="modpill" onclick="openMod('${m.id}')"
         style="--app-bg:${m.bg};--app-border:${m.color};--app-stroke:${m.stroke}">
-        <div class="dock-icon"><i data-lucide="${m.icon}"></i></div>
-        <div class="dock-label">${m.label}</div>
-        <div class="dock-tooltip">${m.label}</div>
-      </div>`).join('')}</div>`;
-    _initDockMagnify(dock.querySelector('.dock-bar'));
+        <span class="modpill-icon"><i data-lucide="${m.icon}"></i></span>
+        <span class="modpill-label">${m.label}</span>
+      </button>`).join('');
   }
   lucide.createIcons();
-}
-
-function _initDockMagnify(bar){
-  if(!bar)return;
-  const items=[...bar.querySelectorAll('.dock-item')];
-  bar.addEventListener('mousemove',e=>{
-    const barRect=bar.getBoundingClientRect();
-    items.forEach(item=>{
-      const itemRect=item.getBoundingClientRect();
-      const itemCenter=itemRect.left+itemRect.width/2;
-      const dist=Math.abs(e.clientX-itemCenter);
-      const maxDist=140;
-      const scale=dist>maxDist?1:1+0.35*(1-dist/maxDist);
-      const lift=dist>maxDist?0:12*(1-dist/maxDist);
-      item.style.transform=`scale(${scale}) translateY(${-lift}px)`;
-    });
-  });
-  bar.addEventListener('mouseleave',()=>{
-    items.forEach(item=>{item.style.transform='';});
-  });
 }
 
 // ── MOBILE HOME (tasks + notifications) ──
