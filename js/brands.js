@@ -488,61 +488,141 @@ window.openBrandHub = (brandName) => {
   if (!br) return;
   if (!STATE.brandMaterials) STATE.brandMaterials = {};
   const materials = STATE.brandMaterials[brandName] || [];
-  const catTabs = Object.entries(MATERIAL_CATEGORIES).map(([k, v]) => {
-    const count = materials.filter(m => m.category === k).length;
-    return `<button class="pill ${count ? '' : 'dim'}" onclick="_filterBrandMaterials('${brandName}','${k}',this)" style="--pill-c:${v.color}">
-      <i data-lucide="${v.icon}" style="width:11px;height:11px"></i> ${v.label} ${count ? `(${count})` : ''}
-    </button>`;
-  }).join('');
-  const list = _renderBrandMaterialsList(materials);
 
-  openModal(`<div style="display:flex;align-items:center;gap:10px">
-    ${br.logo ? `<img src="${br.logo}" style="width:28px;height:28px;border-radius:6px;object-fit:cover">` : ''}
-    <span>${brandName} — Materiais</span>
-  </div>`, `
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">${catTabs}
-      <button class="pill on" onclick="_filterBrandMaterials('${brandName}','all',this)">Todos (${materials.length})</button>
-    </div>
-    <div id="brand-materials-list">${list}</div>
-  `, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
-      <button class="btn btn-theme" onclick="openAddBrandMaterial('${brandName}')"><i data-lucide="plus"></i> Novo Material</button>`);
+  // Store current filter state on module
+  window._bhCurrentBrand = brandName;
+  window._bhCurrentFilter = 'all';
+
+  openModal(brandName + ' — Brand Hub', _renderBrandHubBody(brandName, 'all'),
+    `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+
+  // Make modal wider for the gallery view
+  const mbd = document.getElementById('mbd');
+  if (mbd) { mbd.style.maxWidth = 'none'; }
+  const modal = document.querySelector('#modal-ov .modal');
+  if (modal) { modal.style.maxWidth = '920px'; modal.style.width = '92vw'; }
+
   lucide.createIcons();
 };
 
-function _renderBrandMaterialsList(materials, filterCat) {
-  const filtered = filterCat && filterCat !== 'all' ? materials.filter(m => m.category === filterCat) : materials;
-  if (!filtered.length) return '<div style="text-align:center;padding:30px;color:var(--text3);font-size:12px">Nenhum material cadastrado.</div>';
-  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">${filtered.map(m => {
-    const cat = MATERIAL_CATEGORIES[m.category] || MATERIAL_CATEGORIES.asset;
-    return `<div class="bm-card">
-      ${m.imageUrl ? `<div class="bm-card-img"><img src="${m.imageUrl}" alt="${m.title}"></div>` : ''}
-      <div class="bm-card-body">
-        <div class="bm-card-cat" style="color:${cat.color}"><i data-lucide="${cat.icon}" style="width:10px;height:10px"></i> ${cat.label}</div>
-        <div class="bm-card-title">${m.title}</div>
-        ${m.desc ? `<div class="bm-card-desc">${m.desc}</div>` : ''}
-        ${m.url ? `<a href="${m.url}" target="_blank" class="bm-card-link"><i data-lucide="external-link" style="width:10px;height:10px"></i> Acessar</a>` : ''}
-      </div>
-      <div class="bm-card-actions">
-        <button class="ibt" onclick="deleteBrandMaterial('${m.brandName}','${m.id}')" title="Remover"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+function _renderBrandHubBody(brandName, filter) {
+  const br = STATE.brands[brandName];
+  const materials = STATE.brandMaterials?.[brandName] || [];
+  const filtered = filter === 'all' ? materials : materials.filter(m => m.category === filter);
+
+  // Header: brand logo + name + quick-add row
+  const logoBlock = br.logo
+    ? `<img src="${br.logo}" class="bh-logo" alt="${brandName}">`
+    : `<div class="bh-logo bh-logo-fallback">${brandName[0]}</div>`;
+
+  const catCounts = Object.fromEntries(
+    Object.keys(MATERIAL_CATEGORIES).map(k => [k, materials.filter(m => m.category === k).length])
+  );
+
+  // Category filter chips
+  const chipsRow = `<div class="bh-chips">
+    <button class="bh-chip ${filter === 'all' ? 'on' : ''}" onclick="_filterBH('all')">
+      <i data-lucide="grid" style="width:11px;height:11px"></i> Todos
+      <span class="bh-chip-count">${materials.length}</span>
+    </button>
+    ${Object.entries(MATERIAL_CATEGORIES).map(([k, v]) => `
+      <button class="bh-chip ${filter === k ? 'on' : ''}" onclick="_filterBH('${k}')" style="--chip-c:${v.color}">
+        <i data-lucide="${v.icon}" style="width:11px;height:11px"></i> ${v.label}
+        <span class="bh-chip-count">${catCounts[k]}</span>
+      </button>
+    `).join('')}
+  </div>`;
+
+  // Quick-add: colored icons for each category
+  const quickAdd = `<div class="bh-quick-add">
+    <span class="bh-quick-add-lbl">Criar rápido:</span>
+    ${Object.entries(MATERIAL_CATEGORIES).map(([k, v]) => `
+      <button class="bh-quick-btn" onclick="openAddBrandMaterial('${brandName}','${k}')" title="Nova ${v.label}" style="--qb-c:${v.color}">
+        <i data-lucide="${v.icon}"></i>
+      </button>
+    `).join('')}
+    <button class="bh-quick-btn bh-quick-btn-primary" onclick="openAddBrandMaterial('${brandName}')">
+      <i data-lucide="plus"></i> <span>Novo Material</span>
+    </button>
+  </div>`;
+
+  // Content: gallery view if has materials, landing view if empty
+  let content;
+  if (!materials.length) {
+    content = `<div class="bh-empty">
+      <div class="bh-empty-icon"><i data-lucide="folder-open"></i></div>
+      <div class="bh-empty-title">Comece a montar o hub da ${brandName}</div>
+      <div class="bh-empty-sub">Adicione promoções, banners, features da casa, links e assets. Os afiliados encontram tudo em um só lugar.</div>
+      <div class="bh-empty-grid">
+        ${Object.entries(MATERIAL_CATEGORIES).map(([k, v]) => `
+          <button class="bh-empty-card" onclick="openAddBrandMaterial('${brandName}','${k}')" style="--ec-c:${v.color}">
+            <div class="bh-empty-card-icon"><i data-lucide="${v.icon}"></i></div>
+            <div class="bh-empty-card-lbl">${v.label}</div>
+            <div class="bh-empty-card-hint">+ Adicionar</div>
+          </button>
+        `).join('')}
       </div>
     </div>`;
-  }).join('')}</div>`;
+  } else if (!filtered.length) {
+    const cat = MATERIAL_CATEGORIES[filter];
+    content = `<div class="bh-empty-filter">
+      <i data-lucide="${cat?.icon || 'folder'}" style="width:32px;height:32px;stroke:${cat?.color || 'var(--text3)'}"></i>
+      <div>Nenhum material na categoria <strong>${cat?.label || filter}</strong>.</div>
+      <button class="btn btn-theme" onclick="openAddBrandMaterial('${brandName}','${filter}')"><i data-lucide="plus"></i> Criar ${cat?.label || ''}</button>
+    </div>`;
+  } else {
+    content = `<div class="bh-gallery">${filtered.map(m => _renderBHCard(m)).join('')}</div>`;
+  }
+
+  return `<div class="bh-wrap">
+    <div class="bh-header">
+      ${logoBlock}
+      <div class="bh-header-body">
+        <div class="bh-header-name">${brandName}</div>
+        <div class="bh-header-meta">${materials.length} material${materials.length !== 1 ? 'is' : ''} cadastrado${materials.length !== 1 ? 's' : ''}</div>
+      </div>
+    </div>
+    ${quickAdd}
+    ${materials.length ? chipsRow : ''}
+    <div id="bh-content">${content}</div>
+  </div>`;
 }
 
-window._filterBrandMaterials = (brandName, cat, btn) => {
-  btn.closest('div').querySelectorAll('.pill').forEach(p => p.classList.remove('on'));
-  btn.classList.add('on');
-  const materials = STATE.brandMaterials?.[brandName] || [];
-  document.getElementById('brand-materials-list').innerHTML = _renderBrandMaterialsList(materials, cat);
+function _renderBHCard(m) {
+  const cat = MATERIAL_CATEGORIES[m.category] || MATERIAL_CATEGORIES.asset;
+  const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString('pt-BR') : '';
+  return `<div class="bh-card">
+    ${m.imageUrl
+      ? `<div class="bh-card-img" style="background-image:url('${m.imageUrl.replace(/'/g,'')}')"></div>`
+      : `<div class="bh-card-img bh-card-img-fallback" style="--c:${cat.color}"><i data-lucide="${cat.icon}"></i></div>`}
+    <div class="bh-card-body">
+      <div class="bh-card-cat" style="--c:${cat.color}"><i data-lucide="${cat.icon}" style="width:10px;height:10px"></i> ${cat.label}</div>
+      <div class="bh-card-title">${m.title}</div>
+      ${m.desc ? `<div class="bh-card-desc">${m.desc}</div>` : ''}
+      <div class="bh-card-footer">
+        ${m.url ? `<a href="${m.url}" target="_blank" class="bh-card-link" onclick="event.stopPropagation()"><i data-lucide="external-link" style="width:10px;height:10px"></i> Abrir</a>` : '<span class="bh-card-date">' + date + '</span>'}
+        <button class="ibt" onclick="event.stopPropagation();deleteBrandMaterial('${m.brandName}','${m.id}')" title="Remover"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window._filterBH = (cat) => {
+  window._bhCurrentFilter = cat;
+  const brandName = window._bhCurrentBrand;
+  if (!brandName) return;
+  const mbd = document.getElementById('mbd');
+  if (mbd) mbd.innerHTML = _renderBrandHubBody(brandName, cat);
   lucide.createIcons();
 };
 
-window.openAddBrandMaterial = (brandName) => {
+window.openAddBrandMaterial = (brandName, presetCat) => {
   const catOpts = Object.entries(MATERIAL_CATEGORIES).map(([k, v]) =>
-    `<option value="${k}">${v.label}</option>`).join('');
-  openModal('Novo Material — ' + brandName, `<div class="fg">
+    `<option value="${k}" ${k === presetCat ? 'selected' : ''}>${v.label}</option>`).join('');
+  const catLabel = presetCat && MATERIAL_CATEGORIES[presetCat] ? ` · ${MATERIAL_CATEGORIES[presetCat].label}` : '';
+  openModal(`Novo Material${catLabel} — ${brandName}`, `<div class="fg">
     <div class="fgp"><label>Categoria</label><select class="fi" id="bm-cat">${catOpts}</select></div>
-    <div class="fgp ff"><label>Título *</label><input class="fi" id="bm-title" placeholder="Ex: Promo Welcome Bonus 200%"></div>
+    <div class="fgp ff"><label>Título *</label><input class="fi" id="bm-title" placeholder="Ex: Promo Welcome Bonus 200%" autofocus></div>
     <div class="fgp ff"><label>Descrição</label><textarea class="fi" id="bm-desc" rows="3" placeholder="Detalhes, regras, observações..."></textarea></div>
     <div class="fgp ff"><label>URL / Link</label><input class="fi" id="bm-url" placeholder="https://..."></div>
     <div class="fgp ff"><label>URL da Imagem / Banner</label><input class="fi" id="bm-img" placeholder="https://...banner.jpg"></div>
