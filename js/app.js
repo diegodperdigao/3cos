@@ -962,8 +962,6 @@ function buildHubCards(){
       <div class="hub-app-icon"><i data-lucide="${m.icon}"></i></div>
       <div class="hub-app-name">${m.label}</div>
     </div>`).join('');
-  const count=visible.length;
-  document.getElementById('hub-cards').style.gridTemplateColumns=`repeat(${Math.min(count,6)},1fr)`;
   lucide.createIcons();
 }
 
