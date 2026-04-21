@@ -22,6 +22,10 @@ window.openNewBrandModal = () => {
       <div class="fgp"><label>CPA Padrão (R$)</label>
         <input type="number" class="fi" id="nb-cpa" placeholder="0">
       </div>
+      <div class="fgp"><label>Baseline (R$)</label>
+        <input type="number" class="fi" id="nb-baseline" placeholder="0">
+        <div style="font-size:9px;color:var(--text3);margin-top:4px">Valor mínimo de depósito/movimentação para qualificar o CPA</div>
+      </div>
       <div class="fgp"><label>RevShare Padrão (%)</label>
         <input type="number" class="fi" id="nb-rs" placeholder="0">
       </div>
@@ -36,6 +40,7 @@ window.saveNewBrand = () => {
   const type = document.getElementById('nb-type').value;
   const cpa = parseFloat(document.getElementById('nb-cpa').value)||0;
   const rs = parseFloat(document.getElementById('nb-rs').value)||0;
+  const baseline = parseFloat(document.getElementById('nb-baseline').value)||0;
   const logoUrl = document.getElementById('nb-logo').value.trim();
 
   if(!name) return toast("Nome da marca é obrigatório", "e");
@@ -53,9 +58,10 @@ window.saveNewBrand = () => {
     rgb: hexToRgb(color),
     cpa: cpa,
     rs: rs,
+    baseline: baseline,
     type: type,
     logo: logoUrl || defaultLogo,
-    levels: type === 'tiered' ? [{key:'l1',name:'L1',cpa:cpa,baseline:10}] : undefined
+    levels: type === 'tiered' ? [{key:'l1',name:'L1',cpa:cpa,baseline:baseline||30}] : undefined
   };
 
   logAction('Marca Adicionada', name);
@@ -75,6 +81,9 @@ window.openEditBrand=(name)=>{
     <div class="fgp ff"><label>URL da Logo</label><input type="text" class="fi" id="eb-logo" value="${br.logo||''}"></div>
     <div class="fgp"><label>Cor (Hex)</label><input type="text" class="fi" id="eb-color" value="${br.color}"></div>
     <div class="fgp"><label>CPA Padrão (R$)</label><input type="number" class="fi" id="eb-cpa" value="${br.cpa||0}"></div>
+    <div class="fgp"><label>Baseline (R$)</label><input type="number" class="fi" id="eb-baseline" value="${br.baseline||0}">
+      <div style="font-size:9px;color:var(--text3);margin-top:4px">Valor mínimo de depósito/movimentação para qualificar o CPA</div>
+    </div>
     <div class="fgp"><label>RevShare Padrão (%)</label><input type="number" class="fi" id="eb-rs" value="${br.rs||0}"></div>
   </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-danger" onclick="confirmDeleteBrand('${name}')"><i data-lucide="trash-2"></i> Excluir</button>
@@ -87,6 +96,7 @@ window.saveEditBrand=name=>{
   br.color=document.getElementById('eb-color')?.value||br.color;
   br.rgb=hexToRgb(br.color);
   br.cpa=parseFloat(document.getElementById('eb-cpa')?.value)||0;
+  br.baseline=parseFloat(document.getElementById('eb-baseline')?.value)||0;
   br.rs=parseFloat(document.getElementById('eb-rs')?.value)||0;
   br.logo=document.getElementById('eb-logo')?.value.trim()||br.logo;
   logAction('Marca editada',name);saveToLocal();closeModal();
@@ -433,10 +443,14 @@ function bBrands(el){
               ${typeof isBetaEnabled === 'function' && isBetaEnabled('brand_hub') ? `<button class="btn btn-outline" onclick="event.stopPropagation();openBrandHub('${name}')" style="padding:5px 10px;font-size:9px" title="Materiais"><i data-lucide="palette" style="width:12px;height:12px"></i></button>` : ''}
               <button class="btn btn-outline" onclick="event.stopPropagation();openEditBrand('${name}')" style="padding:5px 10px;font-size:9px"><i data-lucide="edit-3" style="width:12px;height:12px"></i></button>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
               <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">CPA Base</div>
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">CPA</div>
                 <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text)">R$${br.cpa||0}</div>
+              </div>
+              <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Baseline</div>
+                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text)">R$${br.baseline||0}</div>
               </div>
               <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Rev Share</div>
