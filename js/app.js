@@ -972,58 +972,11 @@ function buildHubCards(){
   lucide.createIcons();
 }
 
-// ── MOBILE HOME (tasks + notifications) ──
+// ── MOBILE HOME (legacy — mobile now reuses the desktop hub layout
+// via responsive CSS; keep this as a no-op for backwards-compat calls).
 function buildMobileHome(){
-  const el=document.getElementById('hub-mobile-home');if(!el)return;
-  const myTasks=STATE.tasks.filter(t=>t.status!=='concluída').sort((a,b)=>{
-    const pr={alta:0,média:1,baixa:2};return(pr[a.priority]||2)-(pr[b.priority]||2);
-  }).slice(0,6);
-  const notifs=STATE.notifications.filter(n=>!n.read).slice(0,4);
-  const pendPay=STATE.payments.filter(p=>p.status==='pendente'||p.status==='ajuste').slice(0,3);
-
-  el.innerHTML=`
-    ${notifs.length?`<div class="mob-home-section">
-      <div class="mob-home-title"><i data-lucide="bell"></i> Alertas</div>
-      ${notifs.map(n=>`<div class="mob-home-card" onclick="toggleActionCenter()" style="display:flex;gap:10px;align-items:flex-start">
-        <div style="width:6px;height:6px;border-radius:50%;background:var(--${n.type});margin-top:6px;flex-shrink:0"></div>
-        <div><div style="font-size:12px;font-weight:500;color:var(--text);line-height:1.4">${n.text}</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:3px">${n.time}</div></div>
-      </div>`).join('')}
-    </div>`:''}
-
-    <div class="mob-home-section">
-      <div class="mob-home-title"><i data-lucide="check-square"></i> Tarefas Pendentes (${myTasks.length})</div>
-      ${myTasks.length?myTasks.map(t=>{
-        const priCol=t.priority==='alta'?'var(--red)':t.priority==='média'?'var(--amber)':'var(--text3)';
-        return `<div class="mob-home-card" onclick="openMod('tasks')" style="border-left:3px solid ${priCol}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-            <div style="font-size:12px;font-weight:600;color:var(--text);line-height:1.3;flex:1">${t.title}</div>
-            <span class="pri pri-${t.priority[0]==='a'?'a':t.priority[0]==='m'?'m':'b'}" style="flex-shrink:0">${t.priority.toUpperCase()}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text2)">
-            <span>${t.assignee||'Sem responsável'}</span>
-            ${t.dueDate?`<span style="${new Date(t.dueDate)<new Date()?'color:var(--red)':''}">${new Date(t.dueDate).toLocaleDateString('pt-BR')}</span>`:''}
-          </div>
-        </div>`;
-      }).join(''):`<div class="mob-home-empty">Nenhuma tarefa pendente</div>`}
-    </div>
-
-    ${pendPay.length?`<div class="mob-home-section">
-      <div class="mob-home-title"><i data-lucide="banknote"></i> Pagamentos Pendentes</div>
-      ${pendPay.map(p=>`<div class="mob-home-card" onclick="openMod('payments')" style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:12px;font-weight:600;color:var(--text)">${p.affiliate}</div>
-        <div style="font-size:10px;color:var(--text2)">${p.contract}</div></div>
-        <div style="text-align:right"><div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--theme)">${fc(p.amount)}</div>
-        <div style="font-size:9px;color:var(--text3)">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):''}</div></div>
-      </div>`).join('')}
-    </div>`:''}
-
-    <div class="mob-home-section" style="margin-top:8px">
-      <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openMobSidebar()">
-        <i data-lucide="grid"></i> Abrir Módulos
-      </button>
-    </div>`;
-  lucide.createIcons();
+  const el=document.getElementById('hub-mobile-home');
+  if(el)el.innerHTML='';
 }
 
 // ── MODULE OPEN/CLOSE ──

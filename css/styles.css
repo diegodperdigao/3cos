@@ -139,10 +139,15 @@ body::before {
 /* Lock-screen theme selector — button reveals a row of swatch dots below.
    Hover previews the theme, click commits. Works in both light and dark. */
 .lock-theme-toggle{display:inline-flex;align-items:center;gap:6px;margin-top:18px;
-  background:var(--bg3);border:1px solid var(--gb2);border-radius:8px;
-  padding:8px 16px;color:var(--text);font-size:12px;font-family:var(--fb);font-weight:500;
-  cursor:pointer;transition:all 0.15s;}
-.lock-theme-toggle:hover{border-color:var(--theme);color:var(--theme);background:var(--bg2);}
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.22);border-radius:8px;
+  padding:8px 16px;color:#fff;font-size:12px;font-family:var(--fb);font-weight:500;
+  cursor:pointer;transition:all 0.15s;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.lock-theme-toggle svg{stroke:#fff;}
+.lock-theme-toggle:hover{border-color:var(--theme);color:var(--theme);background:rgba(255,255,255,0.14);}
+.lock-theme-toggle:hover svg{stroke:var(--theme);}
+[data-theme="light"] .lock-theme-toggle{background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.12);color:#0f172a;}
+[data-theme="light"] .lock-theme-toggle svg{stroke:#0f172a;}
+[data-theme="light"] .lock-theme-toggle:hover{background:rgba(0,0,0,0.08);color:var(--theme);}
 .lock-theme-panel{display:none;justify-content:center;flex-wrap:wrap;gap:10px;
   margin-top:14px;padding:14px 12px;background:var(--bg3);
   border:1px solid var(--gb);border-radius:12px;}
@@ -1317,11 +1322,6 @@ textarea.fi{resize:vertical;min-height:60px;}
 
 @media (max-width: 480px) {
   .kpi-row { grid-template-columns: 1fr; }
-  .hub-apps { grid-template-columns: 1fr !important; }
-  .hub-app { padding: 10px 14px; }
-  .hub-app-icon { width: 32px; height: 32px; border-radius: 8px; }
-  .hub-app-icon svg { width: 16px; height: 16px; }
-  .hub-app-name { font-size: 10px; }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -4988,8 +4988,43 @@ input[type="week"]{
   .hub-widget-strip{grid-template-columns:repeat(2,1fr);}
   .hub-hero-title{font-size:38px;}
 }
+
+/* ── Mobile: compact hero + single-column widgets + 3-col module grid ── */
 @media(max-width:720px){
-  .hub-hero,.hub-widget-strip,.hub-modules-section{display:none !important;}
+  .hub-main{padding:24px 18px 90px;justify-content:flex-start;}
+
+  /* Hero: smaller logo, title scaled down, tighter spacing */
+  .hub-hero{margin-bottom:20px;}
+  .hub-hero-logo{width:56px;height:56px;border-radius:14px;margin-bottom:12px;}
+  .hub-hero-eyebrow{font-size:9px;letter-spacing:0.22em;margin-bottom:6px;}
+  .hub-hero-title{font-size:28px !important;line-height:1.1;margin-bottom:4px;letter-spacing:-0.02em !important;}
+  .hub-hero-sub{font-size:12px;}
+  /* Mono/Meridian bold still carries at 28px */
+  [data-edition="mono"] .hub-hero-title{font-size:28px !important;}
+  [data-edition="meridian"] .hub-hero-title{font-size:28px !important;}
+  [data-edition="bento"] .hub-hero-name::after{bottom:2px;height:8px;}
+
+  /* Widget strip: 1 column stacked, hide detail rows on mobile to keep tiles compact */
+  .hub-widget-strip{grid-template-columns:1fr !important;gap:10px;margin-bottom:22px;}
+  .hw-tile{padding:16px 18px;border-radius:16px;}
+  .hw-tile-details{display:none;}
+  .hw-tile-value{font-size:26px;}
+  .hw-tile-add{padding:18px;font-size:12px;}
+
+  /* Modules: 4-column grid on mobile (compact) */
+  .hub-modules-section{margin-bottom:12px;}
+  .hub-modules-label{font-size:9px;margin-bottom:10px;}
+  .hub-apps{grid-template-columns:repeat(4,1fr) !important;gap:8px !important;}
+  .hub-app{padding:14px 6px 12px !important;border-radius:14px !important;gap:8px !important;}
+  .hub-app-icon{width:36px !important;height:36px !important;border-radius:10px !important;}
+  .hub-app-icon svg{width:18px !important;height:18px !important;}
+  .hub-app-name{font-size:10px !important;font-weight:600 !important;}
+}
+
+/* Very narrow phones: drop to 3 columns for modules */
+@media(max-width:380px){
+  .hub-apps{grid-template-columns:repeat(3,1fr) !important;}
+  .hub-hero-title{font-size:24px !important;}
 }
 
 /* Batch-closing row: whole row is clickable to toggle selection */
