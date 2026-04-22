@@ -444,7 +444,7 @@ window.toggleTheme = _wrapToggleTheme;
         }
         // Show hub first (always stable)
         const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
-        try { buildHubCards(); buildMobileHome(); if(window.buildHubWidgets)buildHubWidgets(); } catch(e){ console.error('[boot] buildHub failed:', e); }
+        try { buildHubCards(); buildMobileHome(); if(window.buildHubWidgets)buildHubWidgets(); if(window.renderHolidayPostIt)renderHolidayPostIt(); } catch(e){ console.error('[boot] buildHub failed:', e); }
         updateNotifBadge();initMosaics();lucide.createIcons();
         if (typeof applyAppTheme === 'function') applyAppTheme();
         else if (typeof applyBetaEdition === 'function') applyBetaEdition();

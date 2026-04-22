@@ -252,6 +252,75 @@ const loadFromLocal = () => {
 };
 loadFromLocal();
 
+// ══════════════════════════════════════════════════════════
+// BRAZILIAN HOLIDAY CALENDAR — Post-it on hub
+// ══════════════════════════════════════════════════════════
+// Fixed holidays + moveable (Easter-based). Shows a subtle themed
+// post-it in the hub corner when today is a holiday or the day before.
+
+function _getBrazilianHolidays(year) {
+  // Easter calculation (Anonymous Gregorian algorithm)
+  const a=year%19, b=Math.floor(year/100), c=year%100;
+  const d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const eMonth=Math.floor((h+l-7*m+114)/31)-1;
+  const eDay=((h+l-7*m+114)%31)+1;
+  const easter=new Date(year,eMonth,eDay);
+  const offset=(days)=>{const d=new Date(easter);d.setDate(d.getDate()+days);return d;};
+  const fmt=(d)=>`${year}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  return [
+    { date: `${year}-01-01`, name: 'Ano Novo', emoji: '🎆', msg: 'Feliz Ano Novo! Que este ano traga grandes resultados.' },
+    { date: fmt(offset(-47)), name: 'Carnaval', emoji: '🎭', msg: 'É Carnaval! Boa folia e bom descanso.' },
+    { date: fmt(offset(-46)), name: 'Quarta de Cinzas', emoji: '✝️', msg: 'Quarta de Cinzas — retorno gradual.' },
+    { date: fmt(offset(-2)), name: 'Sexta-feira Santa', emoji: '✝️', msg: 'Sexta-feira Santa. Feriado nacional.' },
+    { date: fmt(easter), name: 'Páscoa', emoji: '🐣', msg: 'Feliz Páscoa! Renovação e esperança.' },
+    { date: fmt(offset(60)), name: 'Corpus Christi', emoji: '⛪', msg: 'Corpus Christi. Ponto facultativo em muitas cidades.' },
+    { date: `${year}-04-21`, name: 'Tiradentes', emoji: '🇧🇷', msg: 'Dia de Tiradentes — herói nacional.' },
+    { date: `${year}-05-01`, name: 'Dia do Trabalho', emoji: '⚒️', msg: 'Dia do Trabalho. Parabéns a todos que constroem resultados!' },
+    { date: `${year}-09-07`, name: 'Independência', emoji: '🇧🇷', msg: 'Independência do Brasil! 🇧🇷' },
+    { date: `${year}-10-12`, name: 'N. Sra. Aparecida', emoji: '🙏', msg: 'Dia de Nossa Senhora Aparecida.' },
+    { date: `${year}-11-02`, name: 'Finados', emoji: '🕯️', msg: 'Dia de Finados. Momento de reflexão.' },
+    { date: `${year}-11-15`, name: 'Proclamação da República', emoji: '🇧🇷', msg: 'Proclamação da República.' },
+    { date: `${year}-11-20`, name: 'Consciência Negra', emoji: '✊', msg: 'Dia da Consciência Negra. Respeito e igualdade.' },
+    { date: `${year}-12-25`, name: 'Natal', emoji: '🎄', msg: 'Feliz Natal! Boas festas e muito sucesso.' },
+    { date: `${year}-12-31`, name: 'Véspera de Ano Novo', emoji: '🥂', msg: 'Último dia do ano. Hora de celebrar as conquistas!' },
+  ];
+}
+
+window.renderHolidayPostIt = () => {
+  const el = document.getElementById('holiday-postit');
+  if (!el) return;
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+
+  const holidays = _getBrazilianHolidays(now.getFullYear());
+  const todayH = holidays.find(h => h.date === today);
+  const tomorrowH = !todayH ? holidays.find(h => h.date === tomorrowStr) : null;
+  const holiday = todayH || tomorrowH;
+
+  if (!holiday) { el.style.display = 'none'; return; }
+
+  const isToday = !!todayH;
+  const label = isToday ? 'Hoje' : 'Amanhã';
+  const dateLabel = new Date(holiday.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+
+  el.style.display = 'flex';
+  el.innerHTML = `
+    <button class="postit-close" onclick="this.parentElement.style.display='none'" title="Fechar">×</button>
+    <div class="postit-emoji">${holiday.emoji}</div>
+    <div class="postit-body">
+      <div class="postit-label">${label} · ${dateLabel}</div>
+      <div class="postit-name">${holiday.name}</div>
+      <div class="postit-msg">${holiday.msg}</div>
+    </div>
+  `;
+};
+
 // ── HELPERS ──
 const fc=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0}).format(v||0);
 const pct=(a,b)=>b>0?Math.round(a/b*100):0;
@@ -934,6 +1003,7 @@ function showHub(){
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
     if (window.buildHubWidgets) buildHubWidgets();
+    if (window.renderHolidayPostIt) renderHolidayPostIt();
     if(window.updateLabButton)updateLabButton();
     if(window.syncBetaAttributes)syncBetaAttributes();
     if(window.updateCopilotVisibility)updateCopilotVisibility();
