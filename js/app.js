@@ -449,9 +449,11 @@ window.deleteNotice = (id) => {
 };
 
 // ── Hub customize menu (anchored popover from the + button) ──
+// Admins see: Widgets + Avisos. Regular users see only Widgets.
 window.openHubCustomizeMenu = (anchor) => {
   document.getElementById('hub-customize-menu')?.remove();
   const rect = anchor.getBoundingClientRect();
+  const isAdmin = STATE.user?.role === 'admin';
   const menu = document.createElement('div');
   menu.id = 'hub-customize-menu';
   menu.className = 'hub-customize-menu';
@@ -460,14 +462,10 @@ window.openHubCustomizeMenu = (anchor) => {
       <i data-lucide="layout-grid"></i>
       <div><div class="hcm-name">Widgets</div><div class="hcm-desc">Adicionar ou remover do hub</div></div>
     </button>
-    <button class="hcm-item" onclick="document.getElementById('hub-customize-menu')?.remove();openNoticesManager()">
+    ${isAdmin ? `<button class="hcm-item" onclick="document.getElementById('hub-customize-menu')?.remove();openNoticesManager()">
       <i data-lucide="sticky-note"></i>
       <div><div class="hcm-name">Avisos</div><div class="hcm-desc">Feriados, fiscal, lembretes</div></div>
-    </button>
-    <button class="hcm-item" onclick="document.getElementById('hub-customize-menu')?.remove();openMod('settings')">
-      <i data-lucide="settings"></i>
-      <div><div class="hcm-name">Configurações</div><div class="hcm-desc">Tema, preferências, Lab</div></div>
-    </button>
+    </button>` : ''}
   `;
   menu.style.position = 'fixed';
   menu.style.top = `${rect.bottom + 8}px`;
