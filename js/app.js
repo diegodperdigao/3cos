@@ -349,7 +349,6 @@ window.renderHolidayPostIt = () => {
       </div>`;
     }).join('')}
     ${matches.length > 2 ? `<div class="postit-more">+${matches.length - 2} aviso(s)</div>` : ''}
-    <button class="postit-manage" onclick="openNoticesManager()"><i data-lucide="settings" style="width:10px;height:10px"></i> Gerenciar avisos</button>
   `;
   lucide.createIcons();
 };
@@ -367,7 +366,10 @@ window.openNoticesManager = () => {
         <div class="notice-row-meta">${n.date} · ${recur} · ${t.label}</div>
         ${n.msg ? `<div class="notice-row-msg">${n.msg}</div>` : ''}
       </div>
-      <button class="ibt danger" onclick="deleteNotice('${n.id}')" title="Excluir"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+      <div style="display:flex;gap:4px">
+        <button class="ibt" onclick="openEditNotice('${n.id}')" title="Editar"><i data-lucide="edit-3" style="width:12px;height:12px"></i></button>
+        <button class="ibt danger" onclick="deleteNotice('${n.id}')" title="Excluir"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+      </div>
     </div>`;
   }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum aviso personalizado.</div>';
 
@@ -397,44 +399,59 @@ window.openNoticesManager = () => {
   lucide.createIcons();
 };
 
-window.openAddNotice = () => {
+window.openAddNotice = () => _openNoticeForm(null);
+window.openEditNotice = (id) => {
+  const n = (STATE.customNotices || []).find(x => x.id === id);
+  if (n) _openNoticeForm(n);
+};
+
+function _openNoticeForm(notice) {
+  const isEdit = !!notice;
   const typeOpts = Object.entries(NOTICE_TYPES).filter(([k]) => k !== 'holiday').map(([k, v]) =>
-    `<option value="${k}">${v.emoji} ${v.label}</option>`).join('');
+    `<option value="${k}" ${notice?.type === k ? 'selected' : ''}>${v.emoji} ${v.label}</option>`).join('');
   const today = new Date().toISOString().split('T')[0];
-  openModal('Novo Aviso', `<div class="fg">
+  openModal(isEdit ? 'Editar Aviso' : 'Novo Aviso', `<div class="fg">
     <div class="fgp"><label>Tipo</label><select class="fi" id="notice-type">${typeOpts}</select></div>
-    <div class="fgp ff"><label>Título *</label><input class="fi" id="notice-name" placeholder="Ex: Emitir NF dos salários" autofocus></div>
-    <div class="fgp ff"><label>Mensagem (opcional)</label><input class="fi" id="notice-msg" placeholder="Detalhes ou lembrete..."></div>
-    <div class="fgp"><label>Data *</label><input type="date" class="fi" id="notice-date" value="${today}"></div>
-    <div class="fgp"><label>Emoji (opcional)</label><input class="fi" id="notice-emoji" placeholder="📌" style="width:60px"></div>
+    <div class="fgp ff"><label>Título *</label><input class="fi" id="notice-name" value="${notice?.name || ''}" placeholder="Ex: Emitir NF dos salários" autofocus></div>
+    <div class="fgp ff"><label>Mensagem (opcional)</label><input class="fi" id="notice-msg" value="${notice?.msg || ''}" placeholder="Detalhes ou lembrete..."></div>
+    <div class="fgp"><label>Data *</label><input type="date" class="fi" id="notice-date" value="${notice?.date || today}"></div>
+    <div class="fgp"><label>Emoji (opcional)</label><input class="fi" id="notice-emoji" value="${notice?.emoji || ''}" placeholder="📌" style="width:60px"></div>
     <div class="fgp"><label>Recorrência</label>
       <select class="fi" id="notice-recur">
-        <option value="once">Única vez</option>
-        <option value="monthly">Todo mês (mesmo dia)</option>
-        <option value="yearly">Todo ano (mesma data)</option>
+        <option value="once" ${notice?.recurring === 'once' ? 'selected' : ''}>Única vez</option>
+        <option value="monthly" ${notice?.recurring === 'monthly' ? 'selected' : ''}>Todo mês (mesmo dia)</option>
+        <option value="yearly" ${notice?.recurring === 'yearly' ? 'selected' : ''}>Todo ano (mesma data)</option>
       </select>
     </div>
   </div>`, `<button class="btn btn-ghost" onclick="closeModal();openNoticesManager()">Cancelar</button>
-    <button class="btn btn-theme" onclick="saveNotice()"><i data-lucide="check"></i> Criar</button>`);
-};
+    <button class="btn btn-theme" onclick="saveNotice('${notice?.id || ''}')"><i data-lucide="check"></i> ${isEdit ? 'Salvar' : 'Criar'}</button>`);
+}
 
-window.saveNotice = () => {
+window.saveNotice = (editId) => {
   const name = document.getElementById('notice-name')?.value?.trim();
   const date = document.getElementById('notice-date')?.value;
   if (!name || !date) return toast('Título e data obrigatórios', 'e');
   if (!STATE.customNotices) STATE.customNotices = [];
-  STATE.customNotices.push({
-    id: 'ntc' + Date.now(),
+  const data = {
     type: document.getElementById('notice-type')?.value || 'info',
     name,
     msg: document.getElementById('notice-msg')?.value?.trim() || '',
     date,
     emoji: document.getElementById('notice-emoji')?.value?.trim() || '',
     recurring: document.getElementById('notice-recur')?.value || 'once',
-  });
-  logAction('Aviso criado', name);
+  };
+  if (editId) {
+    const idx = STATE.customNotices.findIndex(n => n.id === editId);
+    if (idx >= 0) {
+      STATE.customNotices[idx] = { ...STATE.customNotices[idx], ...data };
+      logAction('Aviso editado', name);
+    }
+  } else {
+    STATE.customNotices.push({ id: 'ntc' + Date.now(), ...data });
+    logAction('Aviso criado', name);
+  }
   saveToLocal(); closeModal();
-  toast('Aviso criado!');
+  toast(editId ? 'Aviso atualizado!' : 'Aviso criado!');
   renderHolidayPostIt();
   setTimeout(() => openNoticesManager(), 200);
 };
