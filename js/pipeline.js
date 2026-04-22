@@ -204,13 +204,13 @@ window.openAddPipelineCard=(defaultStage)=>{
             </div>`).join('')}
         </div>
       </div>
-      <div class="fgp ff"><label>Redes Sociais</label>
+      <div class="fgp" style="grid-column:1/-1"><label>Redes Sociais</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-          <div style="position:relative"><input class="fi" id="pk-instagram" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">📷</span></div>
-          <div style="position:relative"><input class="fi" id="pk-twitter" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">𝕏</span></div>
-          <div style="position:relative"><input class="fi" id="pk-youtube" placeholder="Canal YouTube" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">▶</span></div>
-          <div style="position:relative"><input class="fi" id="pk-tiktok" placeholder="@usuario" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">♪</span></div>
-          <div style="position:relative;grid-column:1/-1"><input class="fi" id="pk-website" placeholder="https://site.com" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">🌐</span></div>
+          <input class="fi" id="pk-instagram" placeholder="Instagram — @usuario">
+          <input class="fi" id="pk-twitter" placeholder="X (Twitter) — @usuario">
+          <input class="fi" id="pk-youtube" placeholder="YouTube — canal">
+          <input class="fi" id="pk-tiktok" placeholder="TikTok — @usuario">
+          <input class="fi" id="pk-website" placeholder="Website — https://..." style="grid-column:1/-1">
         </div>
       </div>
       <div class="fgp" style="grid-column:1/-1"><label>Observações</label><textarea class="fi" id="pk-notes" rows="2" placeholder="Notas sobre este afiliado..."></textarea></div>

@@ -666,8 +666,8 @@ function renderClosingTab(){
         <td><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span></td>
         <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
         <td class="td-acts">
-          <button class="ibt" onclick="regenerateClosingPDF('${c.id}')" data-tooltip="Gerar PDF do fechamento"><i data-lucide="file-text"></i></button>
-          <button class="ibt" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" data-tooltip="Enviar email ao financeiro"><i data-lucide="send"></i></button>
+          <button class="py-act-btn" onclick="regenerateClosingPDF('${c.id}')" title="Gerar PDF"><i data-lucide="file-text"></i></button>
+          <button class="py-act-btn" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" title="Enviar email"><i data-lucide="send"></i></button>
         </td>
       </tr>`).join('')}
     </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
