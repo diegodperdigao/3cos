@@ -413,7 +413,6 @@ window.openPostItStack = () => {
   }).join('');
   openModal('Avisos de hoje', rows, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
 };
-};
 
 // ── Notices Manager (CRUD modal) ──
 window.openNoticesManager = () => {

@@ -462,6 +462,7 @@ window.toggleTheme = _wrapToggleTheme;
   document.documentElement.removeAttribute('data-edition');
   document.getElementById('lock').style.display='flex';
   document.getElementById('lock').style.opacity='1';
+  if(typeof lucide!=='undefined')lucide.createIcons();
 })();
 
 // 2) Validate session against Supabase OR Firebase (whichever is the source)
