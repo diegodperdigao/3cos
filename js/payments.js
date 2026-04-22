@@ -174,9 +174,9 @@ function renderPyTbl(list){
         <td>${p.nfLink?`<a href="${p.nfLink}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue);text-decoration:none" onclick="event.stopPropagation()">🔗 ${p.nfName||'Ver NF'}</a>`:p.nfName?`<span style="font-size:10px;color:var(--blue)">📎 ${p.nfName}</span>`:'<span style="font-size:10px;color:var(--text3)">—</span>'}</td>
         <td><span class="pb pb-${cs}">${pl(cs)}</span></td>
         <td><div style="display:inline-flex;gap:4px;align-items:center">
-          ${(p.status==='pendente'||p.status==='ajuste')?`<button class="py-act-btn py-act-approve" onclick="event.stopPropagation();approvePay('${p.id}')" title="Aprovar"><i data-lucide="check"></i></button><button class="py-act-btn py-act-adjust" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')" title="Ajuste"><i data-lucide="undo-2"></i></button><button class="py-act-btn py-act-reject" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')" title="Recusar"><i data-lucide="x"></i></button>`:''}
-          ${p.status==='aprovado'?`<button class="py-act-btn py-act-approve" onclick="event.stopPropagation();markPaid('${p.id}')" title="Confirmar pago"><i data-lucide="banknote"></i></button>`:''}
-          <button class="py-act-btn" onclick="event.stopPropagation();openEditPay('${p.id}')" title="Editar"><i data-lucide="edit-2"></i></button>
+          ${(p.status==='pendente'||p.status==='ajuste')?`<button class="py-act-btn py-act-approve" onclick="event.stopPropagation();approvePay('${p.id}')"><i data-lucide="check"></i><span>Aprovar</span></button><button class="py-act-btn py-act-adjust" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')"><i data-lucide="undo-2"></i><span>Ajuste</span></button><button class="py-act-btn py-act-reject" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')"><i data-lucide="x"></i><span>Recusar</span></button>`:''}
+          ${p.status==='aprovado'?`<button class="py-act-btn py-act-approve" onclick="event.stopPropagation();markPaid('${p.id}')"><i data-lucide="banknote"></i><span>Pago</span></button>`:''}
+          <button class="py-act-btn" onclick="event.stopPropagation();openEditPay('${p.id}')"><i data-lucide="edit-2"></i><span>Editar</span></button>
         </div></td></tr>`;
       }).join('')}</tbody></table>`;
     hdr.onclick=()=>{body.style.display=body.style.display==='none'?'block':'none';hdr.querySelector('.py-chev').style.transform=body.style.display==='none'?'':'rotate(180deg)';};
