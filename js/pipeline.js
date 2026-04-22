@@ -1,17 +1,47 @@
 // ══════════════════════════════════════════════════════════
 // PIPELINE (KANBAN)
 // ══════════════════════════════════════════════════════════
+let _pipeFilter = { period: 'all', owner: 'all' };
+
 function bPipeline(el){
   if(!STATE.pipeline)STATE.pipeline={stages:[{id:'s1',name:'Lead',color:'#94a3b8'},{id:'s2',name:'Negociação',color:'#f59e0b'},{id:'s3',name:'Deal Fechado',color:'#3b82f6'},{id:'s4',name:'Ativo',color:'#10b981'},{id:'s5',name:'Inativo',color:'#ef4444'}],cards:[]};
+
+  // Build owner options from users
+  const ownerOpts = STATE.users.map(u => `<option value="${u.name}" ${_pipeFilter.owner === u.name ? 'selected' : ''}>${u.name}</option>`).join('');
+
   el.innerHTML=modHdr('Pipeline — Kanban')+`<div class="mod-body">
     ${heroHTML('pipeline','','Pipeline','Funil e negociações com afiliados')}
     <div class="mod-main">
       <div class="sec-hdr">
         <div class="sec-lbl">Pipeline Kanban</div>
-        <div class="sec-actions">
-          <button class="btn btn-outline" onclick="openManageStages()"><i data-lucide="settings"></i> Editar Etapas</button>
-          ${STATE.affiliates.length>0&&STATE.pipeline.cards.length===0?`<button class="btn btn-outline" onclick="importAffiliatesToPipeline()"><i data-lucide="download"></i> Importar Afiliados</button>`:''}
+        <div class="sec-actions" style="flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="openManageStages()"><i data-lucide="settings"></i> Etapas</button>
+          ${STATE.affiliates.length>0&&STATE.pipeline.cards.length===0?`<button class="btn btn-outline" onclick="importAffiliatesToPipeline()"><i data-lucide="download"></i> Importar</button>`:''}
           <button class="btn btn-theme" onclick="openAddPipelineCard()"><i data-lucide="plus"></i> Novo Lead</button>
+        </div>
+      </div>
+      <!-- Pipeline filters -->
+      <div class="pipe-filters">
+        <div class="pipe-filter-group">
+          <label>Período</label>
+          <select class="fi pipe-filter-select" onchange="_pipeFilter.period=this.value;renderKanban()">
+            <option value="all" ${_pipeFilter.period==='all'?'selected':''}>Todos</option>
+            <option value="month" ${_pipeFilter.period==='month'?'selected':''}>Este mês</option>
+            <option value="last" ${_pipeFilter.period==='last'?'selected':''}>Mês passado</option>
+            <option value="quarter" ${_pipeFilter.period==='quarter'?'selected':''}>Trimestre</option>
+          </select>
+        </div>
+        <div class="pipe-filter-group">
+          <label>Responsável</label>
+          <select class="fi pipe-filter-select" onchange="_pipeFilter.owner=this.value;renderKanban()">
+            <option value="all" ${_pipeFilter.owner==='all'?'selected':''}>Todos</option>
+            <option value="mine" ${_pipeFilter.owner==='mine'?'selected':''}>Meus negócios</option>
+            ${ownerOpts}
+          </select>
+        </div>
+        <div class="pipe-filter-group">
+          <label>Busca</label>
+          <input class="fi pipe-filter-select" placeholder="Nome do lead..." oninput="_pipeFilter.search=this.value;renderKanban()">
         </div>
       </div>
       <div class="kanban" id="kanban-board"></div>
@@ -22,7 +52,36 @@ function bPipeline(el){
 function renderKanban(){
   const board=document.getElementById('kanban-board');if(!board)return;
   const stages=STATE.pipeline.stages;
-  const cards=STATE.pipeline.cards;
+  let cards=STATE.pipeline.cards;
+
+  // Apply filters
+  const f = _pipeFilter || {};
+  if (f.period && f.period !== 'all') {
+    const now = new Date();
+    cards = cards.filter(c => {
+      const d = c.createdAt ? new Date(c.createdAt.split('/').reverse().join('-')) : null;
+      if (!d || isNaN(d)) return true;
+      if (f.period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (f.period === 'last') { const lm = new Date(now); lm.setMonth(lm.getMonth()-1); return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear(); }
+      if (f.period === 'quarter') { const q = Math.floor(now.getMonth()/3); return Math.floor(d.getMonth()/3) === q && d.getFullYear() === now.getFullYear(); }
+      return true;
+    });
+  }
+  if (f.owner && f.owner !== 'all') {
+    if (f.owner === 'mine') {
+      const me = STATE.user?.name;
+      cards = cards.filter(c => (c.owner || c.createdBy || '') === me);
+    } else {
+      cards = cards.filter(c => (c.owner || c.createdBy || '') === f.owner);
+    }
+  }
+  if (f.search) {
+    const q = f.search.toLowerCase();
+    cards = cards.filter(c => {
+      const aff = STATE.affiliates.find(a => a.id === c.affiliateId);
+      return (c.affiliateName || '').toLowerCase().includes(q) || (aff?.name || '').toLowerCase().includes(q);
+    });
+  }
 
   board.innerHTML=stages.map(stage=>{
     const stageCards=cards.filter(c=>c.stageId===stage.id);
@@ -49,6 +108,7 @@ function renderKanban(){
             </div>
             ${c.note?`<div style="font-size:9px;color:var(--text2);margin-top:4px;line-height:1.3">${c.note.length>60?c.note.slice(0,60)+'...':c.note}</div>`:''}
             ${c.value?`<div style="font-family:var(--fd);font-size:12px;font-weight:700;color:var(--theme);margin-top:4px">${fc(c.value)}</div>`:''}
+            ${c.owner?`<div style="font-size:9px;color:var(--text3);margin-top:4px;display:flex;align-items:center;gap:4px"><i data-lucide="user" style="width:9px;height:9px"></i>${c.owner}</div>`:''}
           </div>`;
         }).join('')}
         <div class="kanban-add" onclick="openAddPipelineCard('${stage.id}')">+ Novo Lead</div>
@@ -86,24 +146,28 @@ window.openAddPipelineCard=(defaultStage)=>{
     </div>
 
     <!-- EXISTING AFFILIATE -->
-    <div id="pk-existing" style="display:none">
+    <div id="pk-existing" style="display:none;grid-column:1/-1">
       <div class="fgp ff"><label>Selecionar Afiliado</label>
         <select class="fi" id="pk-aff">${affOpts.length?affOpts:'<option value="">Todos já estão no funil</option>'}</select>
       </div>
     </div>
 
-    <!-- NEW AFFILIATE (full form) -->
-    <div id="pk-new">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="fgp"><label>Nome *</label><input class="fi" id="pk-name" placeholder="Ex: Agência FMG"></div>
-        <div class="fgp"><label>Email</label><input class="fi" id="pk-email" placeholder="afiliado@email.com"></div>
-      </div>
+    <!-- NEW AFFILIATE (full form) — uses parent .fg 2-col grid -->
+    <div id="pk-new" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:11px">
+      <div class="fgp"><label>Nome *</label><input class="fi" id="pk-name" placeholder="Ex: Agência FMG"></div>
+      <div class="fgp"><label>Email</label><input class="fi" id="pk-email" placeholder="afiliado@email.com"></div>
       <div class="fgp"><label>Tipo de Comissão</label><select class="fi" id="pk-ct" onchange="updatePkDealFields()">
         <option value="cpa">CPA + Rev Share</option>
         <option value="tiered">CPA Escalonado</option>
         <option value="pct_deposit">% de Depósitos</option>
       </select></div>
-      <div class="fgp ff"><label>Marcas e Comissões</label>
+      <div class="fgp"><label>Etapa no Funil *</label><select class="fi" id="pk-stage">${stageOpts}</select></div>
+      <div class="fgp"><label>Valor Potencial (R$)</label><input type="number" class="fi" id="pk-value" placeholder="0"></div>
+      <div class="fgp"><label>Responsável</label><select class="fi" id="pk-owner">
+        ${STATE.users.map(u=>`<option value="${u.name}" ${u.name===STATE.user?.name?'selected':''}>${u.name}</option>`).join('')}
+      </select></div>
+      <div class="fgp" style="grid-column:1/-1"><label>Nota do Funil</label><input class="fi" id="pk-note" placeholder="Observação rápida..."></div>
+      <div class="fgp" style="grid-column:1/-1"><label>Marcas e Comissões</label>
         <div id="pk-deals" style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
           ${brandsList.map(([n,br])=>`
             <div class="pk-brand-deal" style="padding:12px;background:rgba(${br.rgb},0.06);border:1px solid rgba(${br.rgb},0.2);border-radius:12px">
@@ -149,13 +213,7 @@ window.openAddPipelineCard=(defaultStage)=>{
           <div style="position:relative;grid-column:1/-1"><input class="fi" id="pk-website" placeholder="https://site.com" style="padding-left:30px"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px">🌐</span></div>
         </div>
       </div>
-      <div class="fgp ff"><label>Observações</label><textarea class="fi" id="pk-notes" rows="2" placeholder="Notas sobre este afiliado..."></textarea></div>
-    </div>
-
-    <div style="border-top:1px solid var(--gb);padding-top:12px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="fgp"><label>Etapa no Funil *</label><select class="fi" id="pk-stage">${stageOpts}</select></div>
-      <div class="fgp"><label>Valor Potencial (R$)</label><input type="number" class="fi" id="pk-value" placeholder="0"></div>
-      <div class="fgp" style="grid-column:1/-1"><label>Nota do Funil</label><input class="fi" id="pk-note" placeholder="Observação rápida sobre o deal..."></div>
+      <div class="fgp" style="grid-column:1/-1"><label>Observações</label><textarea class="fi" id="pk-notes" rows="2" placeholder="Notas sobre este afiliado..."></textarea></div>
     </div>
   </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-theme" onclick="savePipelineCard()"><i data-lucide="plus"></i> Adicionar</button>`);
@@ -246,6 +304,7 @@ window.savePipelineCard=()=>{
     id:'pk'+Date.now(),affiliateId:affId,affiliateName:affName,stageId,
     value:parseFloat(document.getElementById('pk-value')?.value)||0,
     note:document.getElementById('pk-note')?.value.trim()||'',
+    owner:document.getElementById('pk-owner')?.value||STATE.user?.name||'',
     createdAt:new Date().toLocaleDateString('pt-BR'),updatedAt:new Date().toLocaleDateString('pt-BR')
   });
   logAction('Pipeline: adicionado',`${affName} → ${STATE.pipeline.stages.find(s=>s.id===stageId)?.name}`);
