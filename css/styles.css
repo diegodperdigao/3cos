@@ -424,9 +424,39 @@ body::before {
 [data-theme="light"] .hub-app-name{color:#0f172a;}
 .hub-app-sub{display:none;}
 
+/* ── Hub customize button (+) — subtle top-right ── */
+.hub-customize-btn{position:absolute;top:20px;right:24px;z-index:6;
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,0.06);border:1px solid var(--gb);
+  color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1);padding:0;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+.hub-customize-btn:hover{transform:scale(1.08) rotate(90deg);
+  background:var(--theme-dim);border-color:var(--theme-b);color:var(--theme);}
+[data-theme="light"] .hub-customize-btn{background:rgba(255,255,255,0.7);border-color:rgba(0,0,0,0.06);}
+
+/* Hub customize popover menu */
+.hub-customize-menu{display:flex;flex-direction:column;gap:2px;
+  padding:6px;min-width:240px;
+  background:var(--bg2);border:1px solid var(--gb);border-radius:14px;
+  box-shadow:0 16px 40px rgba(0,0,0,0.3);
+  backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  animation:hcmIn 0.22s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes hcmIn{from{opacity:0;transform:translateY(-8px) scale(0.96);}to{opacity:1;transform:translateY(0) scale(1);}}
+[data-theme="light"] .hub-customize-menu{background:rgba(255,255,255,0.96);border-color:rgba(0,0,0,0.06);
+  box-shadow:0 12px 32px rgba(0,0,0,0.08);}
+.hcm-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;
+  border:none;background:transparent;cursor:pointer;text-align:left;transition:background 0.12s;
+  color:var(--text);font-family:var(--fb);}
+.hcm-item:hover{background:var(--bg3);}
+.hcm-item svg{width:16px;height:16px;stroke:var(--text2);flex-shrink:0;}
+.hcm-item:hover svg{stroke:var(--theme);}
+.hcm-name{font-size:12px;font-weight:600;color:var(--text);}
+.hcm-desc{font-size:10px;color:var(--text3);margin-top:1px;}
+
 /* ── Holiday Post-it — subtle themed note in hub corner ── */
 .holiday-postit{
-  position:absolute;top:20px;right:24px;z-index:5;
+  position:absolute;top:62px;right:24px;z-index:5;
   display:flex;flex-direction:column;
   max-width:280px;padding:14px 16px;
   background:rgba(255,255,255,0.06);

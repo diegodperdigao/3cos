@@ -448,6 +448,44 @@ window.deleteNotice = (id) => {
   openNoticesManager();
 };
 
+// ── Hub customize menu (anchored popover from the + button) ──
+window.openHubCustomizeMenu = (anchor) => {
+  document.getElementById('hub-customize-menu')?.remove();
+  const rect = anchor.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.id = 'hub-customize-menu';
+  menu.className = 'hub-customize-menu';
+  menu.innerHTML = `
+    <button class="hcm-item" onclick="document.getElementById('hub-customize-menu')?.remove();openHubWidgetPicker()">
+      <i data-lucide="layout-grid"></i>
+      <div><div class="hcm-name">Widgets</div><div class="hcm-desc">Adicionar ou remover do hub</div></div>
+    </button>
+    <button class="hcm-item" onclick="document.getElementById('hub-customize-menu')?.remove();openNoticesManager()">
+      <i data-lucide="sticky-note"></i>
+      <div><div class="hcm-name">Avisos</div><div class="hcm-desc">Feriados, fiscal, lembretes</div></div>
+    </button>
+    <button class="hcm-item" onclick="document.getElementById('hub-customize-menu')?.remove();openMod('settings')">
+      <i data-lucide="settings"></i>
+      <div><div class="hcm-name">Configurações</div><div class="hcm-desc">Tema, preferências, Lab</div></div>
+    </button>
+  `;
+  menu.style.position = 'fixed';
+  menu.style.top = `${rect.bottom + 8}px`;
+  menu.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
+  menu.style.zIndex = '300';
+  document.body.appendChild(menu);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  setTimeout(() => {
+    const closer = (e) => {
+      if (!menu.contains(e.target) && !anchor.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', closer);
+      }
+    };
+    document.addEventListener('click', closer);
+  }, 0);
+};
+
 // ── HELPERS ──
 const fc=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0}).format(v||0);
 const pct=(a,b)=>b>0?Math.round(a/b*100):0;
