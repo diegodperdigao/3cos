@@ -666,8 +666,8 @@ function renderClosingTab(){
         <td><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span></td>
         <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
         <td><div style="display:inline-flex;gap:6px;align-items:center">
-          <button class="btn btn-outline" onclick="regenerateClosingPDF('${c.id}')" style="padding:6px 10px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px"><i data-lucide="file-text" style="width:12px;height:12px"></i> PDF</button>
-          <button class="btn btn-outline" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" style="padding:6px 10px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px"><i data-lucide="send" style="width:12px;height:12px"></i> Email</button>
+          <button class="btn btn-outline" onclick="regenerateClosingPDF('${c.id}')" style="padding:6px 10px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px"><i data-lucide="file-text" style="width:12px;height:12px"></i> Gerar Relatório</button>
+          <button class="btn btn-outline" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" style="padding:6px 10px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px"><i data-lucide="send" style="width:12px;height:12px"></i> Enviar ao Financeiro</button>
         </div></td>
       </tr>`).join('')}
     </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
