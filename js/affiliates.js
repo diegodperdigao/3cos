@@ -134,12 +134,6 @@ function _renderAffProfile(el, a) {
         ${a.contactEmail?`<div style="font-size:11px;color:var(--text2);margin-top:4px">${a.contactEmail}</div>`:''}
         ${socialHTML}
       </div>
-      <div class="aff-profile-kpis">
-        <div class="aff-kpi"><div class="aff-kpi-val" style="color:var(--blue)">${a.ftds}</div><div class="aff-kpi-lbl">FTDs</div></div>
-        <div class="aff-kpi"><div class="aff-kpi-val" style="color:var(--pink)">${a.qftds}</div><div class="aff-kpi-lbl">QFTDs</div></div>
-        <div class="aff-kpi"><div class="aff-kpi-val" style="color:${cvC(p)}">${p}%</div><div class="aff-kpi-lbl">Conv.</div></div>
-        <div class="aff-kpi"><div class="aff-kpi-val" style="color:var(--green)">${fc(a.profit)}</div><div class="aff-kpi-lbl">Lucro 3C</div></div>
-      </div>
     </div>
 
     <!-- Tabs -->
@@ -215,7 +209,10 @@ function _affTabPerfil(a) {
 function _affTabPerformance(a) {
   const id = a.id;
   let reports = STATE.reports.filter(r => r.affiliateId === id);
-  const brandOptions = [...new Set(reports.map(r=>r.brand))];
+  const affBrands = Object.keys(a.deals || {});
+  const brandOptions = affBrands.length ? affBrands : [...new Set(reports.map(r=>r.brand))];
+  // Auto-select the single brand if only one
+  if (brandOptions.length === 1 && _affPerfBrand === 'all') _affPerfBrand = brandOptions[0];
 
   // Apply brand filter
   if (_affPerfBrand !== 'all') reports = reports.filter(r => r.brand === _affPerfBrand);
@@ -263,8 +260,8 @@ function _affTabPerformance(a) {
       <div class="pipe-filter-group">
         <label>Marca</label>
         <select class="fi pipe-filter-select" onchange="_affPerfBrand=this.value;_renderAffProfile(document.getElementById('mod-affiliates'),STATE.affiliates.find(x=>x.id==='${id}'))">
-          <option value="all" ${_affPerfBrand==='all'?'selected':''}>Todas</option>
           ${brandOptions.map(b => `<option value="${b}" ${_affPerfBrand===b?'selected':''}>${b}</option>`).join('')}
+          ${brandOptions.length > 1 ? `<option value="all" ${_affPerfBrand==='all'?'selected':''}>Todas</option>` : ''}
         </select>
       </div>
     </div>

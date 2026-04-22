@@ -665,7 +665,7 @@ function renderClosingTab(){
         <td class="td-money">${fc(c.commission)}</td>
         <td><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span></td>
         <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
-        <td class="td-acts">
+        <td class="td-acts" style="display:flex;gap:4px;align-items:center;justify-content:center">
           <button class="py-act-btn" onclick="regenerateClosingPDF('${c.id}')" title="Gerar PDF"><i data-lucide="file-text"></i></button>
           <button class="py-act-btn" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" title="Enviar email"><i data-lucide="send"></i></button>
         </td>

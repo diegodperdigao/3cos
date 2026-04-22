@@ -2773,13 +2773,13 @@ textarea.fi{resize:vertical;min-height:60px;}
   opacity: 0.7;
 }
 
-/* ── Wallpaper: vivid orbs (light) — need to be visible on #f6f3ff ── */
+/* ── Wallpaper: subtle orbs (light) — visible but not overwhelming ── */
 [data-edition="glass"][data-theme="light"] .hub-bg{
   background:
-    radial-gradient(600px 500px at 12% 18%, rgba(236,72,153,0.40), transparent 70%),
-    radial-gradient(700px 600px at 88% 28%, rgba(139,92,246,0.35), transparent 70%),
-    radial-gradient(620px 580px at 30% 88%, rgba(14,165,233,0.30), transparent 70%),
-    radial-gradient(500px 500px at 78% 80%, rgba(251,191,36,0.25), transparent 70%),
+    radial-gradient(600px 500px at 12% 18%, rgba(236,72,153,0.18), transparent 70%),
+    radial-gradient(700px 600px at 88% 28%, rgba(139,92,246,0.15), transparent 70%),
+    radial-gradient(620px 580px at 30% 88%, rgba(14,165,233,0.12), transparent 70%),
+    radial-gradient(500px 500px at 78% 80%, rgba(251,191,36,0.10), transparent 70%),
     #f6f3ff !important;
 }
 
@@ -5380,10 +5380,8 @@ input[type="week"]{color-scheme:inherit !important;}
   padding:12px 14px;background:var(--bg3);border:1px solid var(--gb);border-radius:12px;}
 .pipe-filter-group{display:flex;flex-direction:column;gap:4px;min-width:140px;}
 .pipe-filter-group label{font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);}
-.pipe-filter-select{padding:7px 28px 7px 10px !important;font-size:11px !important;min-height:0 !important;border-radius:8px !important;}
-select.pipe-filter-select{-webkit-appearance:none;appearance:none;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6a75' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>");
-  background-repeat:no-repeat;background-position:right 10px center;background-size:12px;}
+.pipe-filter-select{padding:7px 10px !important;font-size:11px !important;min-height:0 !important;border-radius:8px !important;}
+select.pipe-filter-select{padding-right:26px !important;}
 
 /* ── Affiliate Profile Page ── */
 .aff-profile-header{display:flex;align-items:flex-start;gap:18px;padding:20px;
