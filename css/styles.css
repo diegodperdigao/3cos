@@ -475,11 +475,11 @@ body::before {
 .postit-close{position:absolute;top:6px;right:8px;background:none;border:none;
   color:var(--text3);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px;opacity:0.5;transition:opacity 0.15s;}
 .postit-close:hover{opacity:1;}
-.postit-item{display:flex;gap:12px;align-items:flex-start;}
+.postit-item{display:flex;gap:10px;align-items:flex-start;}
 .postit-item+.postit-item{margin-top:12px;padding-top:12px;border-top:1px solid var(--gb);}
-.postit-emoji{font-size:28px;line-height:1;flex-shrink:0;margin-top:1px;}
+.postit-emoji{font-size:16px;line-height:1.1;flex-shrink:0;margin-top:2px;opacity:0.85;}
 .postit-body{flex:1;min-width:0;}
-.postit-label{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--theme);margin-bottom:3px;}
+.postit-label{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:3px;}
 .postit-name{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text);line-height:1.25;margin-bottom:3px;}
 .postit-msg{font-size:11px;color:var(--text2);line-height:1.5;}
 .postit-more{font-size:9px;color:var(--text3);text-align:center;margin-top:8px;}

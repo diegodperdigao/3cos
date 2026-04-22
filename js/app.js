@@ -290,12 +290,14 @@ function _getBrazilianHolidays(year) {
   ];
 }
 
+const NOTICE_PRIORITIES = {
+  low:    { label: 'Baixa',  color: 'var(--text)' },
+  medium: { label: 'Média',  color: 'var(--amber)' },
+  high:   { label: 'Alta',   color: 'var(--red)' },
+};
+// Kept for backwards-compat with existing holiday entries (the emoji field)
 const NOTICE_TYPES = {
-  holiday:  { label: 'Feriado',   emoji: '📅', color: 'var(--blue)' },
-  fiscal:   { label: 'Fiscal',    emoji: '🧾', color: 'var(--amber)' },
-  alert:    { label: 'Alerta',    emoji: '⚠️', color: 'var(--red)' },
-  info:     { label: 'Informação',emoji: 'ℹ️', color: 'var(--theme)' },
-  reminder: { label: 'Lembrete',  emoji: '📌', color: 'var(--green)' },
+  holiday: { label: 'Feriado', emoji: '📅' },
 };
 
 window.renderHolidayPostIt = () => {
@@ -338,12 +340,14 @@ window.renderHolidayPostIt = () => {
     <button class="postit-close" onclick="this.parentElement.style.display='none'" title="Fechar">×</button>
     ${items.map(h => {
       const dateLabel = new Date(h.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
-      const typeInfo = NOTICE_TYPES[h.type] || NOTICE_TYPES.info;
+      const isHoliday = h.type === 'holiday';
+      const pri = NOTICE_PRIORITIES[h.priority] || NOTICE_PRIORITIES.low;
+      const nameColor = isHoliday ? 'var(--text)' : pri.color;
       return `<div class="postit-item">
         <div class="postit-emoji">${h.emoji}</div>
         <div class="postit-body">
-          <div class="postit-label" style="color:${typeInfo.color}">${h.when} · ${dateLabel} · ${typeInfo.label}</div>
-          <div class="postit-name">${h.name}</div>
+          <div class="postit-label">${h.when} · ${dateLabel}</div>
+          <div class="postit-name" style="color:${nameColor}">${h.name}</div>
           ${h.msg ? `<div class="postit-msg">${h.msg}</div>` : ''}
         </div>
       </div>`;
@@ -357,13 +361,13 @@ window.renderHolidayPostIt = () => {
 window.openNoticesManager = () => {
   if (!STATE.customNotices) STATE.customNotices = [];
   const rows = STATE.customNotices.length ? STATE.customNotices.map(n => {
-    const t = NOTICE_TYPES[n.type] || NOTICE_TYPES.info;
+    const pri = NOTICE_PRIORITIES[n.priority] || NOTICE_PRIORITIES.low;
     const recur = n.recurring === 'monthly' ? 'Todo mês' : n.recurring === 'yearly' ? 'Todo ano' : 'Única vez';
     return `<div class="notice-row">
-      <span class="notice-row-emoji">${n.emoji || t.emoji}</span>
+      <span class="notice-row-emoji">${n.emoji || '📌'}</span>
       <div class="notice-row-body">
-        <div class="notice-row-name">${n.name}</div>
-        <div class="notice-row-meta">${n.date} · ${recur} · ${t.label}</div>
+        <div class="notice-row-name" style="color:${pri.color}">${n.name}</div>
+        <div class="notice-row-meta">${n.date} · ${recur} · Prioridade ${pri.label}</div>
         ${n.msg ? `<div class="notice-row-msg">${n.msg}</div>` : ''}
       </div>
       <div class="notice-row-actions">
@@ -407,15 +411,18 @@ window.openEditNotice = (id) => {
 
 function _openNoticeForm(notice) {
   const isEdit = !!notice;
-  const typeOpts = Object.entries(NOTICE_TYPES).filter(([k]) => k !== 'holiday').map(([k, v]) =>
-    `<option value="${k}" ${notice?.type === k ? 'selected' : ''}>${v.emoji} ${v.label}</option>`).join('');
+  const priOpts = Object.entries(NOTICE_PRIORITIES).map(([k, v]) =>
+    `<option value="${k}" ${notice?.priority === k ? 'selected' : ''}>${v.label}</option>`).join('');
   const today = new Date().toISOString().split('T')[0];
   openModal(isEdit ? 'Editar Aviso' : 'Novo Aviso', `<div class="fg">
-    <div class="fgp"><label>Tipo</label><select class="fi" id="notice-type">${typeOpts}</select></div>
     <div class="fgp ff"><label>Título *</label><input class="fi" id="notice-name" value="${notice?.name || ''}" placeholder="Ex: Emitir NF dos salários" autofocus></div>
     <div class="fgp ff"><label>Mensagem (opcional)</label><input class="fi" id="notice-msg" value="${notice?.msg || ''}" placeholder="Detalhes ou lembrete..."></div>
     <div class="fgp"><label>Data *</label><input type="date" class="fi" id="notice-date" value="${notice?.date || today}"></div>
-    <div class="fgp"><label>Emoji (opcional)</label><input class="fi" id="notice-emoji" value="${notice?.emoji || ''}" placeholder="📌" style="width:60px"></div>
+    <div class="fgp"><label>Emoji</label><input class="fi" id="notice-emoji" value="${notice?.emoji || '📌'}" placeholder="📌" style="width:80px;font-size:16px;text-align:center"></div>
+    <div class="fgp"><label>Prioridade</label>
+      <select class="fi" id="notice-priority">${priOpts}</select>
+      <div style="font-size:9px;color:var(--text3);margin-top:4px">Define a cor do título no aviso (baixa = padrão, média = amber, alta = vermelho)</div>
+    </div>
     <div class="fgp"><label>Recorrência</label>
       <select class="fi" id="notice-recur">
         <option value="once" ${notice?.recurring === 'once' ? 'selected' : ''}>Única vez</option>
@@ -433,11 +440,11 @@ window.saveNotice = (editId) => {
   if (!name || !date) return toast('Título e data obrigatórios', 'e');
   if (!STATE.customNotices) STATE.customNotices = [];
   const data = {
-    type: document.getElementById('notice-type')?.value || 'info',
     name,
     msg: document.getElementById('notice-msg')?.value?.trim() || '',
     date,
-    emoji: document.getElementById('notice-emoji')?.value?.trim() || '',
+    emoji: document.getElementById('notice-emoji')?.value?.trim() || '📌',
+    priority: document.getElementById('notice-priority')?.value || 'low',
     recurring: document.getElementById('notice-recur')?.value || 'once',
   };
   if (editId) {
