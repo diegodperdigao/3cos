@@ -333,17 +333,21 @@ window.renderHolidayPostIt = () => {
 
   if (!matches.length) { el.style.display = 'none'; return; }
 
-  // Show up to 2 notices stacked
-  const items = matches.slice(0, 2);
+  // Sort by priority: high > medium > low > holiday
+  const priOrder = { high: 0, medium: 1, low: 2 };
+  matches.sort((a, b) => (priOrder[a.priority] ?? 3) - (priOrder[b.priority] ?? 3));
+
   el.style.display = 'flex';
-  el.innerHTML = `
-    <button class="postit-close" onclick="this.parentElement.style.display='none'" title="Fechar">×</button>
-    ${items.map(h => {
-      const dateLabel = new Date(h.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
-      const isHoliday = h.type === 'holiday';
-      const pri = NOTICE_PRIORITIES[h.priority] || NOTICE_PRIORITIES.low;
-      const nameColor = isHoliday ? 'var(--text)' : pri.color;
-      return `<div class="postit-item">
+
+  if (matches.length === 1) {
+    // Single notice — clean render
+    const h = matches[0];
+    const dateLabel = new Date(h.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+    const pri = NOTICE_PRIORITIES[h.priority] || NOTICE_PRIORITIES.low;
+    const nameColor = h.type === 'holiday' ? 'var(--text)' : pri.color;
+    el.innerHTML = `
+      <button class="postit-close" onclick="this.parentElement.style.display='none'" title="Fechar">×</button>
+      <div class="postit-item">
         <div class="postit-emoji">${h.emoji}</div>
         <div class="postit-body">
           <div class="postit-label">${h.when} · ${dateLabel}</div>
@@ -351,10 +355,64 @@ window.renderHolidayPostIt = () => {
           ${h.msg ? `<div class="postit-msg">${h.msg}</div>` : ''}
         </div>
       </div>`;
-    }).join('')}
-    ${matches.length > 2 ? `<div class="postit-more">+${matches.length - 2} aviso(s)</div>` : ''}
-  `;
+  } else {
+    // Stacked: show front card + peeking cards behind (like phone notifications)
+    const front = matches[0];
+    const dateLabel = new Date(front.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+    const pri = NOTICE_PRIORITIES[front.priority] || NOTICE_PRIORITIES.low;
+    const nameColor = front.type === 'holiday' ? 'var(--text)' : pri.color;
+    const behind = matches.length - 1;
+    el.innerHTML = `
+      <button class="postit-close" onclick="this.parentElement.style.display='none'" title="Fechar">×</button>
+      ${behind >= 2 ? '<div class="postit-stack-3"></div>' : ''}
+      ${behind >= 1 ? '<div class="postit-stack-2"></div>' : ''}
+      <div class="postit-front">
+        <div class="postit-item">
+          <div class="postit-emoji">${front.emoji}</div>
+          <div class="postit-body">
+            <div class="postit-label">${front.when} · ${dateLabel}</div>
+            <div class="postit-name" style="color:${nameColor}">${front.name}</div>
+            ${front.msg ? `<div class="postit-msg">${front.msg}</div>` : ''}
+          </div>
+        </div>
+        <button class="postit-expand" onclick="openPostItStack()">Ver todos (${matches.length})</button>
+      </div>`;
+  }
   lucide.createIcons();
+};
+
+window.openPostItStack = () => {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+  const holidays = _getBrazilianHolidays(now.getFullYear());
+  const custom = (STATE.customNotices || []).filter(n => {
+    if (n.recurring === 'monthly') return now.getDate() === parseInt(n.date.split('-')[2]) || tomorrow.getDate() === parseInt(n.date.split('-')[2]);
+    if (n.recurring === 'yearly') return today.slice(5) === n.date?.slice(5) || tomorrowStr.slice(5) === n.date?.slice(5);
+    return n.date === today || n.date === tomorrowStr;
+  }).map(n => ({ ...n, emoji: n.emoji || '📌' }));
+  const all = [...custom, ...holidays];
+  const todayMatch = all.filter(h => h.date === today).map(h => ({...h, when: 'Hoje'}));
+  const tomorrowMatch = all.filter(h => h.date === tomorrowStr).map(h => ({...h, when: 'Amanhã'}));
+  const matches = [...todayMatch, ...tomorrowMatch];
+  const priOrder = { high: 0, medium: 1, low: 2 };
+  matches.sort((a, b) => (priOrder[a.priority] ?? 3) - (priOrder[b.priority] ?? 3));
+  const rows = matches.map(h => {
+    const dateLabel = new Date(h.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+    const pri = NOTICE_PRIORITIES[h.priority] || NOTICE_PRIORITIES.low;
+    const nameColor = h.type === 'holiday' ? 'var(--text)' : pri.color;
+    return `<div class="postit-item" style="padding:12px 0;border-bottom:1px solid var(--gb)">
+      <div class="postit-emoji">${h.emoji}</div>
+      <div class="postit-body">
+        <div class="postit-label">${h.when} · ${dateLabel}</div>
+        <div class="postit-name" style="color:${nameColor}">${h.name}</div>
+        ${h.msg ? `<div class="postit-msg">${h.msg}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  openModal('Avisos de hoje', rows, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+};
 };
 
 // ── Notices Manager (CRUD modal) ──

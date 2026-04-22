@@ -94,8 +94,10 @@ window.openAddPipelineCard=(defaultStage)=>{
 
     <!-- NEW AFFILIATE (full form) -->
     <div id="pk-new">
-      <div class="fgp ff"><label>Nome *</label><input class="fi" id="pk-name" placeholder="Ex: Agência FMG"></div>
-      <div class="fgp"><label>Email</label><input class="fi" id="pk-email" placeholder="afiliado@email.com"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fgp"><label>Nome *</label><input class="fi" id="pk-name" placeholder="Ex: Agência FMG"></div>
+        <div class="fgp"><label>Email</label><input class="fi" id="pk-email" placeholder="afiliado@email.com"></div>
+      </div>
       <div class="fgp"><label>Tipo de Comissão</label><select class="fi" id="pk-ct" onchange="updatePkDealFields()">
         <option value="cpa">CPA + Rev Share</option>
         <option value="tiered">CPA Escalonado</option>
@@ -150,10 +152,10 @@ window.openAddPipelineCard=(defaultStage)=>{
       <div class="fgp ff"><label>Observações</label><textarea class="fi" id="pk-notes" rows="2" placeholder="Notas sobre este afiliado..."></textarea></div>
     </div>
 
-    <div style="border-top:1px solid var(--gb);padding-top:12px;margin-top:8px">
+    <div style="border-top:1px solid var(--gb);padding-top:12px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="fgp"><label>Etapa no Funil *</label><select class="fi" id="pk-stage">${stageOpts}</select></div>
       <div class="fgp"><label>Valor Potencial (R$)</label><input type="number" class="fi" id="pk-value" placeholder="0"></div>
-      <div class="fgp ff"><label>Nota do Funil</label><input class="fi" id="pk-note" placeholder="Observação rápida sobre o deal..."></div>
+      <div class="fgp" style="grid-column:1/-1"><label>Nota do Funil</label><input class="fi" id="pk-note" placeholder="Observação rápida sobre o deal..."></div>
     </div>
   </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-theme" onclick="savePipelineCard()"><i data-lucide="plus"></i> Adicionar</button>`);
