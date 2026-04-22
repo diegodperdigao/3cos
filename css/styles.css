@@ -5212,8 +5212,7 @@ input[type="week"]{color-scheme:inherit !important;}
 .hw-tile-icon svg{width:12px;height:12px;stroke:var(--theme);stroke-width:2;}
 .hw-tile:hover .hw-tile-icon{background:var(--theme);transform:scale(1.08) rotate(-3deg);}
 .hw-tile:hover .hw-tile-icon svg{stroke:#fff;}
-.hw-tile[style*="--tile-accent"] .hw-tile-icon{background:color-mix(in srgb,var(--tile-accent) 18%,transparent);}
-.hw-tile[style*="--tile-accent"] .hw-tile-icon svg{stroke:var(--tile-accent);}
+/* Accent tiles — no special icon color, same as all widgets */
 .hw-detail-ico{width:10px;height:10px;stroke:var(--text3);stroke-width:2;margin-right:6px;
   vertical-align:middle;flex-shrink:0;}
 .hw-tile-detail-row span:first-child{display:inline-flex;align-items:center;}
@@ -5224,7 +5223,7 @@ input[type="week"]{color-scheme:inherit !important;}
 .hw-tile-delta.neg{color:var(--red);}
 .hw-tile-sub{font-size:11px;color:var(--text3);margin-top:2px;font-weight:400;}
 /* Tile accent indicator — left colored bar when urgent */
-.hw-tile[style*="--tile-accent"]{border-left:3px solid var(--tile-accent);}
+/* Removed accent border-left — keeps widgets uniform */
 
 /* Detail rows inside tile — mini table for context */
 .hw-tile-details{display:flex;flex-direction:column;gap:4px;margin-top:6px;
