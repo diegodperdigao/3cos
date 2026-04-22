@@ -427,8 +427,8 @@ body::before {
 /* ── Holiday Post-it — subtle themed note in hub corner ── */
 .holiday-postit{
   position:absolute;top:20px;right:24px;z-index:5;
-  display:flex;align-items:flex-start;gap:12px;
-  max-width:260px;padding:14px 16px;
+  display:flex;flex-direction:column;
+  max-width:280px;padding:14px 16px;
   background:rgba(255,255,255,0.06);
   backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
   border:1px solid rgba(255,255,255,0.10);
@@ -445,11 +445,30 @@ body::before {
 .postit-close{position:absolute;top:6px;right:8px;background:none;border:none;
   color:var(--text3);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px;opacity:0.5;transition:opacity 0.15s;}
 .postit-close:hover{opacity:1;}
-.postit-emoji{font-size:28px;line-height:1;flex-shrink:0;margin-top:2px;}
+.postit-item{display:flex;gap:10px;align-items:flex-start;}
+.postit-item+.postit-item{margin-top:10px;padding-top:10px;border-top:1px solid var(--gb);}
+.postit-emoji{font-size:24px;line-height:1;flex-shrink:0;margin-top:1px;}
 .postit-body{flex:1;min-width:0;}
-.postit-label{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--theme);margin-bottom:3px;}
-.postit-name{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text);line-height:1.25;margin-bottom:4px;}
-.postit-msg{font-size:11px;color:var(--text2);line-height:1.5;}
+.postit-label{font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--theme);margin-bottom:2px;}
+.postit-name{font-family:var(--fd);font-size:13px;font-weight:700;color:var(--text);line-height:1.25;margin-bottom:2px;}
+.postit-msg{font-size:10px;color:var(--text2);line-height:1.45;}
+.postit-more{font-size:9px;color:var(--text3);text-align:center;margin-top:8px;}
+.postit-manage{display:flex;align-items:center;gap:4px;justify-content:center;
+  width:100%;margin-top:8px;padding:6px;border:none;background:rgba(255,255,255,0.04);
+  border-radius:8px;color:var(--text3);font-size:9px;font-family:var(--fb);cursor:pointer;
+  transition:all 0.15s;font-weight:500;}
+.postit-manage:hover{color:var(--theme);background:var(--theme-dim);}
+[data-theme="light"] .postit-manage{background:rgba(0,0,0,0.03);}
+
+/* Notice manager rows */
+.notice-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.notice-row{display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:var(--bg3);border:1px solid var(--gb);border-radius:10px;}
+.notice-row-emoji{font-size:20px;flex-shrink:0;}
+.notice-row-body{flex:1;min-width:0;}
+.notice-row-name{font-size:12px;font-weight:600;color:var(--text);}
+.notice-row-meta{font-size:9px;color:var(--text3);margin-top:2px;font-family:var(--fb);}
+.notice-row-msg{font-size:10px;color:var(--text2);margin-top:3px;}
 
 /* Edition-specific post-it styles */
 [data-edition="mono"] .holiday-postit{

@@ -253,13 +253,13 @@ const loadFromLocal = () => {
 loadFromLocal();
 
 // ══════════════════════════════════════════════════════════
-// BRAZILIAN HOLIDAY CALENDAR — Post-it on hub
+// BRAZILIAN HOLIDAY CALENDAR + CUSTOM NOTICES — Post-it system
 // ══════════════════════════════════════════════════════════
-// Fixed holidays + moveable (Easter-based). Shows a subtle themed
-// post-it in the hub corner when today is a holiday or the day before.
+// Fixed holidays + moveable (Easter-based) + user-created notices.
+// Shows a subtle themed post-it in the hub corner when today/tomorrow
+// matches a holiday or custom notice date.
 
 function _getBrazilianHolidays(year) {
-  // Easter calculation (Anonymous Gregorian algorithm)
   const a=year%19, b=Math.floor(year/100), c=year%100;
   const d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
   const g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
@@ -272,23 +272,31 @@ function _getBrazilianHolidays(year) {
   const fmt=(d)=>`${year}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
   return [
-    { date: `${year}-01-01`, name: 'Ano Novo', emoji: '🎆', msg: 'Feliz Ano Novo! Que este ano traga grandes resultados.' },
-    { date: fmt(offset(-47)), name: 'Carnaval', emoji: '🎭', msg: 'É Carnaval! Boa folia e bom descanso.' },
-    { date: fmt(offset(-46)), name: 'Quarta de Cinzas', emoji: '✝️', msg: 'Quarta de Cinzas — retorno gradual.' },
-    { date: fmt(offset(-2)), name: 'Sexta-feira Santa', emoji: '✝️', msg: 'Sexta-feira Santa. Feriado nacional.' },
-    { date: fmt(easter), name: 'Páscoa', emoji: '🐣', msg: 'Feliz Páscoa! Renovação e esperança.' },
-    { date: fmt(offset(60)), name: 'Corpus Christi', emoji: '⛪', msg: 'Corpus Christi. Ponto facultativo em muitas cidades.' },
-    { date: `${year}-04-21`, name: 'Tiradentes', emoji: '🇧🇷', msg: 'Dia de Tiradentes — herói nacional.' },
-    { date: `${year}-05-01`, name: 'Dia do Trabalho', emoji: '⚒️', msg: 'Dia do Trabalho. Parabéns a todos que constroem resultados!' },
-    { date: `${year}-09-07`, name: 'Independência', emoji: '🇧🇷', msg: 'Independência do Brasil! 🇧🇷' },
-    { date: `${year}-10-12`, name: 'N. Sra. Aparecida', emoji: '🙏', msg: 'Dia de Nossa Senhora Aparecida.' },
-    { date: `${year}-11-02`, name: 'Finados', emoji: '🕯️', msg: 'Dia de Finados. Momento de reflexão.' },
-    { date: `${year}-11-15`, name: 'Proclamação da República', emoji: '🇧🇷', msg: 'Proclamação da República.' },
-    { date: `${year}-11-20`, name: 'Consciência Negra', emoji: '✊', msg: 'Dia da Consciência Negra. Respeito e igualdade.' },
-    { date: `${year}-12-25`, name: 'Natal', emoji: '🎄', msg: 'Feliz Natal! Boas festas e muito sucesso.' },
-    { date: `${year}-12-31`, name: 'Véspera de Ano Novo', emoji: '🥂', msg: 'Último dia do ano. Hora de celebrar as conquistas!' },
+    { date: `${year}-01-01`, name: 'Ano Novo', emoji: '🎆', msg: 'Feliz Ano Novo! Que este ano traga grandes resultados.', type: 'holiday' },
+    { date: fmt(offset(-47)), name: 'Carnaval', emoji: '🎭', msg: 'É Carnaval! Boa folia e bom descanso.', type: 'holiday' },
+    { date: fmt(offset(-46)), name: 'Quarta de Cinzas', emoji: '✝️', msg: 'Quarta de Cinzas — retorno gradual.', type: 'holiday' },
+    { date: fmt(offset(-2)), name: 'Sexta-feira Santa', emoji: '✝️', msg: 'Sexta-feira Santa. Feriado nacional.', type: 'holiday' },
+    { date: fmt(easter), name: 'Páscoa', emoji: '🐣', msg: 'Feliz Páscoa! Renovação e esperança.', type: 'holiday' },
+    { date: fmt(offset(60)), name: 'Corpus Christi', emoji: '⛪', msg: 'Corpus Christi. Ponto facultativo em muitas cidades.', type: 'holiday' },
+    { date: `${year}-04-21`, name: 'Tiradentes', emoji: '🇧🇷', msg: 'Dia de Tiradentes — herói nacional.', type: 'holiday' },
+    { date: `${year}-05-01`, name: 'Dia do Trabalho', emoji: '⚒️', msg: 'Dia do Trabalho. Parabéns a todos que constroem resultados!', type: 'holiday' },
+    { date: `${year}-09-07`, name: 'Independência', emoji: '🇧🇷', msg: 'Independência do Brasil!', type: 'holiday' },
+    { date: `${year}-10-12`, name: 'N. Sra. Aparecida', emoji: '🙏', msg: 'Dia de Nossa Senhora Aparecida.', type: 'holiday' },
+    { date: `${year}-11-02`, name: 'Finados', emoji: '🕯️', msg: 'Dia de Finados. Momento de reflexão.', type: 'holiday' },
+    { date: `${year}-11-15`, name: 'Proclamação da República', emoji: '🇧🇷', msg: 'Proclamação da República.', type: 'holiday' },
+    { date: `${year}-11-20`, name: 'Consciência Negra', emoji: '✊', msg: 'Dia da Consciência Negra. Respeito e igualdade.', type: 'holiday' },
+    { date: `${year}-12-25`, name: 'Natal', emoji: '🎄', msg: 'Feliz Natal! Boas festas e muito sucesso.', type: 'holiday' },
+    { date: `${year}-12-31`, name: 'Véspera de Ano Novo', emoji: '🥂', msg: 'Último dia do ano. Hora de celebrar as conquistas!', type: 'holiday' },
   ];
 }
+
+const NOTICE_TYPES = {
+  holiday:  { label: 'Feriado',   emoji: '📅', color: 'var(--blue)' },
+  fiscal:   { label: 'Fiscal',    emoji: '🧾', color: 'var(--amber)' },
+  alert:    { label: 'Alerta',    emoji: '⚠️', color: 'var(--red)' },
+  info:     { label: 'Informação',emoji: 'ℹ️', color: 'var(--theme)' },
+  reminder: { label: 'Lembrete',  emoji: '📌', color: 'var(--green)' },
+};
 
 window.renderHolidayPostIt = () => {
   const el = document.getElementById('holiday-postit');
@@ -298,27 +306,146 @@ window.renderHolidayPostIt = () => {
   const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
   const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
 
+  // Merge holidays + custom notices
   const holidays = _getBrazilianHolidays(now.getFullYear());
-  const todayH = holidays.find(h => h.date === today);
-  const tomorrowH = !todayH ? holidays.find(h => h.date === tomorrowStr) : null;
-  const holiday = todayH || tomorrowH;
+  const custom = (STATE.customNotices || []).filter(n => {
+    if (n.recurring === 'monthly') {
+      const day = parseInt(n.date.split('-')[2]);
+      return now.getDate() === day || tomorrow.getDate() === day;
+    }
+    if (n.recurring === 'yearly') {
+      const md = n.date.slice(5);
+      return today.slice(5) === md || tomorrowStr.slice(5) === md;
+    }
+    return n.date === today || n.date === tomorrowStr;
+  }).map(n => ({
+    ...n,
+    date: now.getDate() === parseInt(n.date.split('-')[2]) || today.slice(5) === n.date?.slice(5) || n.date === today ? today : tomorrowStr,
+    emoji: n.emoji || NOTICE_TYPES[n.type]?.emoji || '📌',
+  }));
 
-  if (!holiday) { el.style.display = 'none'; return; }
+  const all = [...custom, ...holidays];
+  const todayMatch = all.filter(h => h.date === today);
+  const tomorrowMatch = all.filter(h => h.date === tomorrowStr && !todayMatch.find(t => t.name === h.name));
+  const matches = [...todayMatch.map(h => ({...h, when: 'Hoje'})), ...tomorrowMatch.map(h => ({...h, when: 'Amanhã'}))];
 
-  const isToday = !!todayH;
-  const label = isToday ? 'Hoje' : 'Amanhã';
-  const dateLabel = new Date(holiday.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+  if (!matches.length) { el.style.display = 'none'; return; }
 
+  // Show up to 2 notices stacked
+  const items = matches.slice(0, 2);
   el.style.display = 'flex';
   el.innerHTML = `
     <button class="postit-close" onclick="this.parentElement.style.display='none'" title="Fechar">×</button>
-    <div class="postit-emoji">${holiday.emoji}</div>
-    <div class="postit-body">
-      <div class="postit-label">${label} · ${dateLabel}</div>
-      <div class="postit-name">${holiday.name}</div>
-      <div class="postit-msg">${holiday.msg}</div>
-    </div>
+    ${items.map(h => {
+      const dateLabel = new Date(h.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+      const typeInfo = NOTICE_TYPES[h.type] || NOTICE_TYPES.info;
+      return `<div class="postit-item">
+        <div class="postit-emoji">${h.emoji}</div>
+        <div class="postit-body">
+          <div class="postit-label" style="color:${typeInfo.color}">${h.when} · ${dateLabel} · ${typeInfo.label}</div>
+          <div class="postit-name">${h.name}</div>
+          ${h.msg ? `<div class="postit-msg">${h.msg}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
+    ${matches.length > 2 ? `<div class="postit-more">+${matches.length - 2} aviso(s)</div>` : ''}
+    <button class="postit-manage" onclick="openNoticesManager()"><i data-lucide="settings" style="width:10px;height:10px"></i> Gerenciar avisos</button>
   `;
+  lucide.createIcons();
+};
+
+// ── Notices Manager (CRUD modal) ──
+window.openNoticesManager = () => {
+  if (!STATE.customNotices) STATE.customNotices = [];
+  const rows = STATE.customNotices.length ? STATE.customNotices.map(n => {
+    const t = NOTICE_TYPES[n.type] || NOTICE_TYPES.info;
+    const recur = n.recurring === 'monthly' ? 'Todo mês' : n.recurring === 'yearly' ? 'Todo ano' : 'Única vez';
+    return `<div class="notice-row">
+      <span class="notice-row-emoji">${n.emoji || t.emoji}</span>
+      <div class="notice-row-body">
+        <div class="notice-row-name">${n.name}</div>
+        <div class="notice-row-meta">${n.date} · ${recur} · ${t.label}</div>
+        ${n.msg ? `<div class="notice-row-msg">${n.msg}</div>` : ''}
+      </div>
+      <button class="ibt danger" onclick="deleteNotice('${n.id}')" title="Excluir"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+    </div>`;
+  }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum aviso personalizado.</div>';
+
+  // Next holidays preview
+  const now = new Date();
+  const holidays = _getBrazilianHolidays(now.getFullYear());
+  const upcoming = holidays.filter(h => h.date >= `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`).slice(0, 4);
+  const holidayPreview = upcoming.map(h => {
+    const d = new Date(h.date + 'T12:00:00');
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11px">
+      <span>${h.emoji}</span>
+      <span style="color:var(--text)">${h.name}</span>
+      <span style="margin-left:auto;color:var(--text3);font-family:var(--fb)">${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span>
+    </div>`;
+  }).join('');
+
+  openModal('Gerenciar Avisos', `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+      Crie avisos personalizados que aparecem como post-it no hub. Feriados nacionais são automáticos.
+    </div>
+    <div class="sec-hdr"><div class="sec-lbl">Meus avisos</div></div>
+    <div class="notice-list">${rows}</div>
+    <div class="sec-hdr" style="margin-top:18px"><div class="sec-lbl">Próximos feriados</div></div>
+    <div style="padding:0 4px">${holidayPreview}</div>
+  `, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+      <button class="btn btn-theme" onclick="openAddNotice()"><i data-lucide="plus"></i> Novo Aviso</button>`);
+  lucide.createIcons();
+};
+
+window.openAddNotice = () => {
+  const typeOpts = Object.entries(NOTICE_TYPES).filter(([k]) => k !== 'holiday').map(([k, v]) =>
+    `<option value="${k}">${v.emoji} ${v.label}</option>`).join('');
+  const today = new Date().toISOString().split('T')[0];
+  openModal('Novo Aviso', `<div class="fg">
+    <div class="fgp"><label>Tipo</label><select class="fi" id="notice-type">${typeOpts}</select></div>
+    <div class="fgp ff"><label>Título *</label><input class="fi" id="notice-name" placeholder="Ex: Emitir NF dos salários" autofocus></div>
+    <div class="fgp ff"><label>Mensagem (opcional)</label><input class="fi" id="notice-msg" placeholder="Detalhes ou lembrete..."></div>
+    <div class="fgp"><label>Data *</label><input type="date" class="fi" id="notice-date" value="${today}"></div>
+    <div class="fgp"><label>Emoji (opcional)</label><input class="fi" id="notice-emoji" placeholder="📌" style="width:60px"></div>
+    <div class="fgp"><label>Recorrência</label>
+      <select class="fi" id="notice-recur">
+        <option value="once">Única vez</option>
+        <option value="monthly">Todo mês (mesmo dia)</option>
+        <option value="yearly">Todo ano (mesma data)</option>
+      </select>
+    </div>
+  </div>`, `<button class="btn btn-ghost" onclick="closeModal();openNoticesManager()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveNotice()"><i data-lucide="check"></i> Criar</button>`);
+};
+
+window.saveNotice = () => {
+  const name = document.getElementById('notice-name')?.value?.trim();
+  const date = document.getElementById('notice-date')?.value;
+  if (!name || !date) return toast('Título e data obrigatórios', 'e');
+  if (!STATE.customNotices) STATE.customNotices = [];
+  STATE.customNotices.push({
+    id: 'ntc' + Date.now(),
+    type: document.getElementById('notice-type')?.value || 'info',
+    name,
+    msg: document.getElementById('notice-msg')?.value?.trim() || '',
+    date,
+    emoji: document.getElementById('notice-emoji')?.value?.trim() || '',
+    recurring: document.getElementById('notice-recur')?.value || 'once',
+  });
+  logAction('Aviso criado', name);
+  saveToLocal(); closeModal();
+  toast('Aviso criado!');
+  renderHolidayPostIt();
+  setTimeout(() => openNoticesManager(), 200);
+};
+
+window.deleteNotice = (id) => {
+  if (!confirm('Excluir este aviso?')) return;
+  STATE.customNotices = (STATE.customNotices || []).filter(n => n.id !== id);
+  saveToLocal();
+  toast('Aviso removido');
+  renderHolidayPostIt();
+  openNoticesManager();
 };
 
 // ── HELPERS ──
