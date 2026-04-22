@@ -122,17 +122,22 @@ function _renderAffProfile(el, a) {
       <div class="aff-profile-info">
         <h2 class="aff-profile-name">${a.name}</h2>
         <div class="aff-profile-meta">
-          <span class="b b-${a.status}">${sl(a.status)}</span>
-          <span style="color:var(--theme);font-weight:600">${ct.label}</span>
-          ${brands.map(b=>`<span style="color:${STATE.brands[b]?.color||'#888'};font-weight:600;font-size:11px">${b}</span>`).join(' · ')}
-          ${pipeStage?`<span style="color:${pipeStage.color};font-weight:600;font-size:11px">${pipeStage.name}</span>`:''}
+          <span class="aff-profile-badge aff-badge-${a.status}">${sl(a.status)}</span>
+          <span class="aff-profile-badge aff-badge-contract">${ct.label}</span>
+          ${pipeStage?`<span class="aff-profile-badge" style="background:${pipeStage.color}22;color:${pipeStage.color};border-color:${pipeStage.color}44">${pipeStage.name}</span>`:''}
         </div>
+        ${a.contactEmail?`<div style="font-size:12px;color:var(--text2);margin-top:6px">${a.contactEmail}</div>`:''}
         ${owner?`<div class="aff-profile-owner">
           ${ownerUser ? (typeof userAvatar === 'function' ? userAvatar(ownerUser, 22) : ownerUser.name[0]) : ''}
           <span>Responsável: <strong>${owner}</strong></span>
         </div>`:''}
-        ${a.contactEmail?`<div style="font-size:11px;color:var(--text2);margin-top:4px">${a.contactEmail}</div>`:''}
         ${socialHTML}
+      </div>
+      <div class="aff-profile-brands">
+        ${brands.map(b=>{const br=STATE.brands[b];return br?.logo
+          ?`<img src="${br.logo}" alt="${b}" class="aff-profile-brand-logo" title="${b}">`
+          :`<div class="aff-profile-brand-logo aff-profile-brand-fallback" style="background:${br?.color||'#888'}22;color:${br?.color||'#888'}" title="${b}">${b[0]}</div>`;
+        }).join('')}
       </div>
     </div>
 
