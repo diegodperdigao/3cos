@@ -5385,6 +5385,37 @@ select.pipe-filter-select{-webkit-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6a75' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>");
   background-repeat:no-repeat;background-position:right 10px center;background-size:12px;}
 
+/* ── Affiliate Profile Page ── */
+.aff-profile-header{display:flex;align-items:flex-start;gap:18px;padding:20px;
+  background:var(--bg2);border:1px solid var(--gb);border-radius:16px;margin-bottom:18px;flex-wrap:wrap;}
+.aff-profile-avatar{width:56px;height:56px;border-radius:14px;background:var(--theme-dim);border:1px solid var(--theme-b);
+  display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:24px;font-weight:800;color:var(--theme);flex-shrink:0;}
+.aff-profile-info{flex:1;min-width:200px;}
+.aff-profile-name{font-family:var(--fd);font-size:22px;font-weight:800;color:var(--text);margin:0 0 6px;letter-spacing:-0.01em;}
+.aff-profile-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;}
+.aff-profile-owner{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--text2);}
+.aff-profile-kpis{display:flex;gap:14px;flex-shrink:0;flex-wrap:wrap;}
+.aff-kpi{text-align:center;min-width:70px;}
+.aff-kpi-val{font-family:var(--fd);font-size:20px;font-weight:800;line-height:1;}
+.aff-kpi-lbl{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-top:4px;}
+
+.aff-profile-tabs{margin-bottom:18px;}
+.aff-profile-content{min-height:300px;}
+.aff-section{margin-bottom:20px;}
+.aff-section-hdr{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+
+.aff-tag-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;}
+
+.aff-perf-kpi{background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:14px 10px;text-align:center;}
+.aff-perf-kpi-val{font-family:var(--fd);font-size:20px;font-weight:800;line-height:1;}
+.aff-perf-kpi-lbl{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-top:6px;}
+
+@media(max-width:768px){
+  .aff-profile-header{flex-direction:column;}
+  .aff-profile-kpis{width:100%;justify-content:space-between;}
+  .aff-perf-kpi{padding:10px 6px;}
+}
+
 .batch-row-clickable{cursor:pointer;transition:background 0.12s;}
 .batch-row-clickable:hover{background:var(--bg3);}
 

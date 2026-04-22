@@ -75,7 +75,287 @@ function _computeAffList(){
   return list;
 }
 
+// ══════════════════════════════════════════════════════════
+// AFFILIATE PROFILE — full page within the affiliates module
+// ══════════════════════════════════════════════════════════
+let _affProfileTab = 'perfil';
+let _affPerfBrand = 'all';
+let _affPerfPeriod = 'all';
+
 window.openAffDetail=id=>{
+  const a=STATE.affiliates.find(x=>x.id===id);if(!a)return;
+  const el=document.getElementById('mod-affiliates');if(!el)return;
+  _affProfileTab = 'perfil';
+  _renderAffProfile(el, a);
+};
+
+function _renderAffProfile(el, a) {
+  const id = a.id;
+  const ct=CONTRACT_TYPES[a.contractType]||{label:'CPA'};
+  const brands=Object.keys(a.deals||{});
+  const pipeCard=STATE.pipeline?.cards?.find(c=>c.affiliateId===id);
+  const pipeStage=pipeCard?STATE.pipeline.stages.find(s=>s.id===pipeCard.stageId):null;
+  const owner = pipeCard?.owner || '';
+  const ownerUser = owner ? STATE.users.find(u => u.name === owner) : null;
+  const p=pct(a.qftds,a.ftds);
+
+  const socialHTML=a.social&&Object.values(a.social).some(v=>v)?`<div style="display:flex;gap:6px;flex-wrap:wrap">
+    ${a.social.instagram?`<a href="https://instagram.com/${a.social.instagram.replace('@','')}" target="_blank" rel="noopener" class="social-pill">📷 ${a.social.instagram}</a>`:''}
+    ${a.social.twitter?`<a href="https://x.com/${a.social.twitter.replace('@','')}" target="_blank" rel="noopener" class="social-pill">𝕏 ${a.social.twitter}</a>`:''}
+    ${a.social.youtube?`<a href="https://youtube.com/${a.social.youtube.startsWith('@')?a.social.youtube:'@'+a.social.youtube}" target="_blank" rel="noopener" class="social-pill">▶ ${a.social.youtube}</a>`:''}
+    ${a.social.tiktok?`<a href="https://tiktok.com/@${a.social.tiktok.replace('@','')}" target="_blank" rel="noopener" class="social-pill">♪ ${a.social.tiktok}</a>`:''}
+    ${a.social.website?`<a href="${a.social.website.startsWith('http')?a.social.website:'https://'+a.social.website}" target="_blank" rel="noopener" class="social-pill">🌐 Site</a>`:''}
+  </div>`:'';
+
+  el.innerHTML = modHdr('Afiliados — ' + a.name) + `<div class="mod-body"><div class="mod-main">
+    <!-- Back + actions bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <button class="btn btn-ghost" onclick="bAffs(document.getElementById('mod-affiliates'))"><i data-lucide="arrow-left"></i> Voltar</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="openEditAff('${id}')"><i data-lucide="edit-3"></i> Editar</button>
+      </div>
+    </div>
+
+    <!-- Profile header -->
+    <div class="aff-profile-header">
+      <div class="aff-profile-avatar">${a.name[0]}</div>
+      <div class="aff-profile-info">
+        <h2 class="aff-profile-name">${a.name}</h2>
+        <div class="aff-profile-meta">
+          <span class="b b-${a.status}">${sl(a.status)}</span>
+          <span style="color:var(--theme);font-weight:600">${ct.label}</span>
+          ${brands.map(b=>`<span style="color:${STATE.brands[b]?.color||'#888'};font-weight:600;font-size:11px">${b}</span>`).join(' · ')}
+          ${pipeStage?`<span style="color:${pipeStage.color};font-weight:600;font-size:11px">${pipeStage.name}</span>`:''}
+        </div>
+        ${owner?`<div class="aff-profile-owner">
+          ${ownerUser ? (typeof userAvatar === 'function' ? userAvatar(ownerUser, 22) : ownerUser.name[0]) : ''}
+          <span>Responsável: <strong>${owner}</strong></span>
+        </div>`:''}
+        ${a.contactEmail?`<div style="font-size:11px;color:var(--text2);margin-top:4px">${a.contactEmail}</div>`:''}
+        ${socialHTML}
+      </div>
+      <div class="aff-profile-kpis">
+        <div class="aff-kpi"><div class="aff-kpi-val" style="color:var(--blue)">${a.ftds}</div><div class="aff-kpi-lbl">FTDs</div></div>
+        <div class="aff-kpi"><div class="aff-kpi-val" style="color:var(--pink)">${a.qftds}</div><div class="aff-kpi-lbl">QFTDs</div></div>
+        <div class="aff-kpi"><div class="aff-kpi-val" style="color:${cvC(p)}">${p}%</div><div class="aff-kpi-lbl">Conv.</div></div>
+        <div class="aff-kpi"><div class="aff-kpi-val" style="color:var(--green)">${fc(a.profit)}</div><div class="aff-kpi-lbl">Lucro 3C</div></div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="pills aff-profile-tabs">
+      <button class="pill ${_affProfileTab==='perfil'?'on':''}" onclick="_affProfileTab='perfil';_renderAffProfile(document.getElementById('mod-affiliates'),STATE.affiliates.find(x=>x.id==='${id}'))">Perfil</button>
+      <button class="pill ${_affProfileTab==='performance'?'on':''}" onclick="_affProfileTab='performance';_renderAffProfile(document.getElementById('mod-affiliates'),STATE.affiliates.find(x=>x.id==='${id}'))">Performance</button>
+      <button class="pill ${_affProfileTab==='timeline'?'on':''}" onclick="_affProfileTab='timeline';_renderAffProfile(document.getElementById('mod-affiliates'),STATE.affiliates.find(x=>x.id==='${id}'))">Timeline</button>
+    </div>
+
+    <!-- Tab content -->
+    <div class="aff-profile-content">
+      ${_affProfileTab === 'perfil' ? _affTabPerfil(a) : ''}
+      ${_affProfileTab === 'performance' ? _affTabPerformance(a) : ''}
+      ${_affProfileTab === 'timeline' ? _affTabTimeline(a) : ''}
+    </div>
+  </div></div>`;
+  lucide.createIcons();
+}
+
+function _affTabPerfil(a) {
+  const brands = Object.keys(a.deals || {});
+  const tags = a.tags || [];
+  return `
+    <!-- Tags -->
+    <div class="aff-section">
+      <div class="aff-section-hdr">Tags
+        <button class="btn btn-outline" style="padding:4px 10px;font-size:10px" onclick="_openTagPicker('${a.id}')"><i data-lucide="plus" style="width:10px;height:10px"></i> Tag</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${tags.length ? tags.map(tid => {
+          const t = (STATE.availableTags||[]).find(x=>x.id===tid);
+          return t ? `<span class="aff-tag-chip" style="background:${t.color}22;color:${t.color};border:1px solid ${t.color}44">${t.name}
+            <button onclick="toggleAffTag('${a.id}','${t.id}')" style="background:none;border:none;color:inherit;cursor:pointer;margin-left:4px;font-size:12px;line-height:1">×</button>
+          </span>` : '';
+        }).join('') : '<span style="font-size:11px;color:var(--text3)">Nenhuma tag atribuída</span>'}
+      </div>
+    </div>
+
+    <!-- Deals por marca -->
+    <div class="aff-section">
+      <div class="aff-section-hdr">Deals por Marca</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
+        ${brands.map(brand=>{const deal=a.deals[brand];const br=STATE.brands[brand]||{color:'#888',rgb:'136,136,136'};
+          let info=a.contractType==='tiered'?`Escalonado: ${(deal.levels||[]).map(l=>`${l.name||l.key?.toUpperCase()||''} R$${l.cpa} (base ${l.baseline})`).join(' | ')} + RS ${deal.rs||br.rs}%`:
+            a.contractType==='pct_deposit'?`% Depósitos: ${deal.pctDeposit||0}% + CPA R$${deal.cpa||0}`:
+            `CPA R$${deal.cpa||br.cpa} + RS ${deal.rs||br.rs}%`;
+          return `<div style="padding:14px;background:rgba(${br.rgb},0.06);border:1px solid rgba(${br.rgb},0.18);border-radius:12px">
+            <div style="font-size:12px;font-weight:700;color:${br.color};margin-bottom:4px">${brand}</div>
+            <div style="font-size:11px;color:var(--text2);line-height:1.5">${info}</div></div>`;}).join('')}
+      </div>
+    </div>
+
+    <!-- Contrato -->
+    <div class="aff-section">
+      <div class="aff-section-hdr">Contrato</div>
+      ${a.contractFile
+        ? `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px">
+            <i data-lucide="file-text" style="width:20px;height:20px;stroke:var(--theme)"></i>
+            <div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">Contrato anexado</div><div style="font-size:10px;color:var(--text3)">${a.contractFileName || 'documento'}</div></div>
+            <a href="${a.contractFile}" target="_blank" class="btn btn-outline" style="padding:5px 10px;font-size:10px">Abrir</a>
+          </div>`
+        : `<div style="display:flex;align-items:center;gap:10px">
+            <button class="btn btn-outline" onclick="document.getElementById('aff-contract-upload').click()" style="font-size:11px"><i data-lucide="upload"></i> Anexar contrato</button>
+            <input type="file" id="aff-contract-upload" accept=".pdf,.doc,.docx,.jpg,.png" style="display:none" onchange="_uploadAffContract('${a.id}',event)">
+            <span style="font-size:10px;color:var(--text3)">PDF, DOC, imagem</span>
+          </div>`}
+    </div>
+
+    ${a.notes?`<div class="aff-section"><div class="aff-section-hdr">Observações</div><p style="font-size:12px;color:var(--text2);line-height:1.7">${a.notes}</p></div>`:''}
+  `;
+}
+
+function _affTabPerformance(a) {
+  const id = a.id;
+  let reports = STATE.reports.filter(r => r.affiliateId === id);
+  const brandOptions = [...new Set(reports.map(r=>r.brand))];
+
+  // Apply brand filter
+  if (_affPerfBrand !== 'all') reports = reports.filter(r => r.brand === _affPerfBrand);
+
+  // Apply period filter
+  const now = new Date();
+  if (_affPerfPeriod === 'month') {
+    const key = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    reports = reports.filter(r => (r.date||'').startsWith(key));
+  } else if (_affPerfPeriod === 'last') {
+    const lm = new Date(now); lm.setMonth(lm.getMonth()-1);
+    const key = `${lm.getFullYear()}-${String(lm.getMonth()+1).padStart(2,'0')}`;
+    reports = reports.filter(r => (r.date||'').startsWith(key));
+  } else if (_affPerfPeriod === 'quarter') {
+    const q = Math.floor(now.getMonth()/3);
+    reports = reports.filter(r => {
+      const d = new Date(r.date);
+      return Math.floor(d.getMonth()/3) === q && d.getFullYear() === now.getFullYear();
+    });
+  }
+
+  reports.sort((x,y) => new Date(y.date) - new Date(x.date));
+
+  let tFTD=0, tQFTD=0, tDep=0, tRev=0;
+  reports.forEach(r => {
+    tFTD += r.ftd||0;
+    tQFTD += typeof r.qftd === 'number' ? r.qftd : 0;
+    tDep += r.deposits||0;
+    tRev += r.netRev||0;
+  });
+  const conv = pct(tQFTD, tFTD);
+
+  return `
+    <!-- Filters -->
+    <div class="pipe-filters" style="margin-bottom:16px">
+      <div class="pipe-filter-group">
+        <label>Período</label>
+        <select class="fi pipe-filter-select" onchange="_affPerfPeriod=this.value;_renderAffProfile(document.getElementById('mod-affiliates'),STATE.affiliates.find(x=>x.id==='${id}'))">
+          <option value="all" ${_affPerfPeriod==='all'?'selected':''}>Todo período</option>
+          <option value="month" ${_affPerfPeriod==='month'?'selected':''}>Este mês</option>
+          <option value="last" ${_affPerfPeriod==='last'?'selected':''}>Mês passado</option>
+          <option value="quarter" ${_affPerfPeriod==='quarter'?'selected':''}>Trimestre</option>
+        </select>
+      </div>
+      <div class="pipe-filter-group">
+        <label>Marca</label>
+        <select class="fi pipe-filter-select" onchange="_affPerfBrand=this.value;_renderAffProfile(document.getElementById('mod-affiliates'),STATE.affiliates.find(x=>x.id==='${id}'))">
+          <option value="all" ${_affPerfBrand==='all'?'selected':''}>Todas</option>
+          ${brandOptions.map(b => `<option value="${b}" ${_affPerfBrand===b?'selected':''}>${b}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <!-- KPIs filtered -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
+      <div class="aff-perf-kpi"><div class="aff-perf-kpi-val" style="color:var(--blue)">${tFTD}</div><div class="aff-perf-kpi-lbl">FTDs</div></div>
+      <div class="aff-perf-kpi"><div class="aff-perf-kpi-val" style="color:var(--pink)">${tQFTD}</div><div class="aff-perf-kpi-lbl">QFTDs</div></div>
+      <div class="aff-perf-kpi"><div class="aff-perf-kpi-val" style="color:${cvC(conv)}">${conv}%</div><div class="aff-perf-kpi-lbl">Conversão</div></div>
+      <div class="aff-perf-kpi"><div class="aff-perf-kpi-val">${fc(tDep)}</div><div class="aff-perf-kpi-lbl">Depósitos</div></div>
+      <div class="aff-perf-kpi"><div class="aff-perf-kpi-val" style="color:var(--green)">${fc(tRev)}</div><div class="aff-perf-kpi-lbl">Net Revenue</div></div>
+    </div>
+
+    <!-- Reports table -->
+    <div class="aff-section-hdr">Lançamentos (${reports.length})</div>
+    ${reports.length?`<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Marca</th><th>FTDs</th><th>QFTDs</th><th>Depósitos</th><th>Net Rev</th></tr></thead>
+      <tbody>${reports.slice(0,50).map(r=>{
+        const q=typeof r.qftd==='object'?Object.values(r.qftd).reduce((s,v)=>s+v,0):(r.qftd||0);
+        return `<tr class="tr"><td style="font-size:11px">${new Date(r.date).toLocaleDateString('pt-BR')}</td>
+          <td><span class="td-brand">${r.brand}</span></td>
+          <td class="td-num">${r.ftd}</td><td class="td-num">${q}</td>
+          <td class="td-money">${fc(r.deposits)}</td>
+          <td class="td-money">${fc(r.netRev)}</td></tr>`;
+      }).join('')}</tbody></table></div>`:'<span style="font-size:11px;color:var(--text3)">Nenhum lançamento neste período.</span>'}
+  `;
+}
+
+function _affTabTimeline(a) {
+  const id = a.id;
+  const history = STATE.auditLog.filter(log=>(log.detail||'').includes(a.name)||(log.action||'').includes(a.name)).slice(0,30);
+  const tks = STATE.tasks.filter(t=>t.affiliateId===id&&t.status!=='concluída');
+
+  return `
+    <!-- Activity Timeline (Lab feature) -->
+    ${typeof renderActivityTimeline === 'function' ? renderActivityTimeline(id) : ''}
+
+    <!-- System history -->
+    <div class="aff-section-hdr" style="margin-top:18px;display:flex;justify-content:space-between;align-items:center">
+      Histórico do sistema (${history.length})
+      <button class="btn btn-outline" onclick="addCRMNote('${id}')" style="padding:4px 10px;font-size:10px"><i data-lucide="plus" style="width:10px;height:10px"></i> Nota</button>
+    </div>
+    <div style="position:relative;padding-left:22px;border-left:2px solid var(--gb);margin-top:10px">
+      ${history.length?history.map(h=>{
+        const isNote=h.action.includes('Nota');const isPay=h.action.includes('Pagamento')||h.action.includes('Fechamento');
+        const isTask=h.action.includes('Tarefa');const isPipe=h.action.includes('Pipeline');
+        const dotColor=isNote?'var(--theme)':isPay?'var(--green)':isTask?'var(--amber)':isPipe?'var(--blue)':'var(--text3)';
+        return `<div style="position:relative;padding:10px 0 18px">
+          <div style="position:absolute;left:-27px;top:12px;width:10px;height:10px;border-radius:50%;background:${dotColor};border:2px solid var(--bg)"></div>
+          <div style="font-size:12px;font-weight:500;color:var(--text)">${h.action}</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px">${h.detail||''}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:3px">${h.user} · ${h.time}</div>
+        </div>`;
+      }).join(''):'<span style="font-size:11px;color:var(--text3)">Nenhum registro.</span>'}
+    </div>
+
+    ${tks.length?`<div style="margin-top:18px"><div class="aff-section-hdr">Tarefas em aberto (${tks.length})</div>
+      <div class="mini-list" style="margin-top:8px">${tks.map(t=>`<div class="mini"><div class="mini-info"><span class="mini-n">${t.title}</span><span class="mini-s">${t.assignee}</span></div>
+        <div class="mini-r"><span class="pri pri-${t.priority[0]==='a'?'a':t.priority[0]==='m'?'m':'b'}">${t.priority.toUpperCase()}</span></div></div>`).join('')}</div></div>`:''}
+  `;
+}
+
+window._openTagPicker = (affId) => {
+  const a = STATE.affiliates.find(x=>x.id===affId); if(!a) return;
+  const rows = (STATE.availableTags||[]).map(t => {
+    const on = (a.tags||[]).includes(t.id);
+    return `<label class="hwp-row" style="cursor:pointer" onclick="toggleAffTag('${affId}','${t.id}');closeModal();setTimeout(()=>openAffDetail('${affId}'),200)">
+      <span class="aff-tag-dot" style="background:${t.color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></span>
+      <span style="flex:1;font-size:13px;font-weight:${on?'700':'500'};color:var(--text)">${t.name}</span>
+      ${on?'<i data-lucide="check" style="width:14px;height:14px;stroke:var(--green)"></i>':''}
+    </label>`;
+  }).join('');
+  openModal('Atribuir Tags', rows, `<button class="btn btn-ghost" onclick="closeModal();openAffDetail('${affId}')">Fechar</button>`);
+  lucide.createIcons();
+};
+
+window._uploadAffContract = (affId, event) => {
+  const file = event.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const a = STATE.affiliates.find(x=>x.id===affId); if(!a) return;
+    a.contractFile = e.target.result;
+    a.contractFileName = file.name;
+    saveToLocal();
+    toast('Contrato anexado!');
+    openAffDetail(affId);
+  };
+  reader.readAsDataURL(file);
+};
+
+// Legacy modal-based detail (kept for calls from other modules like payments)
+window._openAffDetailModal=id=>{
   const a=STATE.affiliates.find(x=>x.id===id);if(!a)return;
   const ct=CONTRACT_TYPES[a.contractType]||{label:'CPA'};
   const cts=STATE.contracts.filter(c=>c.affiliateId===id);
