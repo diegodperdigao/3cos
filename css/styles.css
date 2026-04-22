@@ -499,6 +499,12 @@ body::before {
 .notice-row-name{font-size:12px;font-weight:600;color:var(--text);}
 .notice-row-meta{font-size:9px;color:var(--text3);margin-top:2px;font-family:var(--fb);}
 .notice-row-msg{font-size:10px;color:var(--text2);margin-top:3px;}
+.notice-row-actions{display:flex;gap:6px;flex-shrink:0;}
+.notice-action-btn{padding:6px 10px !important;font-size:10px !important;font-weight:600;display:inline-flex !important;align-items:center;gap:4px;min-height:28px;}
+.notice-action-btn svg{width:11px;height:11px;}
+.notice-action-btn.is-danger{color:var(--red);border-color:rgba(239,68,68,0.3);}
+.notice-action-btn.is-danger:hover{background:rgba(239,68,68,0.08);border-color:var(--red);color:var(--red);}
+@media(max-width:600px){.notice-row-actions{width:100%;justify-content:flex-end;margin-top:6px;}}
 
 /* Edition-specific post-it styles */
 [data-edition="mono"] .holiday-postit{

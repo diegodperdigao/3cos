@@ -366,9 +366,9 @@ window.openNoticesManager = () => {
         <div class="notice-row-meta">${n.date} · ${recur} · ${t.label}</div>
         ${n.msg ? `<div class="notice-row-msg">${n.msg}</div>` : ''}
       </div>
-      <div style="display:flex;gap:4px">
-        <button class="ibt" onclick="openEditNotice('${n.id}')" title="Editar"><i data-lucide="edit-3" style="width:12px;height:12px"></i></button>
-        <button class="ibt danger" onclick="deleteNotice('${n.id}')" title="Excluir"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+      <div class="notice-row-actions">
+        <button class="btn btn-outline notice-action-btn" onclick="openEditNotice('${n.id}')" title="Editar"><i data-lucide="pencil"></i><span>Editar</span></button>
+        <button class="btn btn-outline notice-action-btn is-danger" onclick="deleteNotice('${n.id}')" title="Excluir"><i data-lucide="trash-2"></i><span>Excluir</span></button>
       </div>
     </div>`;
   }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum aviso personalizado.</div>';
