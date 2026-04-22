@@ -173,11 +173,11 @@ function renderPyTbl(list){
         <td style="font-size:11px;${dueOver?'color:var(--red);font-weight:700':''}">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):'<span style="color:var(--text3)">—</span>'}</td>
         <td>${p.nfLink?`<a href="${p.nfLink}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue);text-decoration:none" onclick="event.stopPropagation()">🔗 ${p.nfName||'Ver NF'}</a>`:p.nfName?`<span style="font-size:10px;color:var(--blue)">📎 ${p.nfName}</span>`:'<span style="font-size:10px;color:var(--text3)">—</span>'}</td>
         <td><span class="pb pb-${cs}">${pl(cs)}</span></td>
-        <td class="td-acts">
+        <td><div style="display:inline-flex;gap:4px;align-items:center">
           ${(p.status==='pendente'||p.status==='ajuste')?`<button class="py-act-btn py-act-approve" onclick="event.stopPropagation();approvePay('${p.id}')" title="Aprovar"><i data-lucide="check"></i></button><button class="py-act-btn py-act-adjust" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')" title="Ajuste"><i data-lucide="undo-2"></i></button><button class="py-act-btn py-act-reject" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')" title="Recusar"><i data-lucide="x"></i></button>`:''}
           ${p.status==='aprovado'?`<button class="py-act-btn py-act-approve" onclick="event.stopPropagation();markPaid('${p.id}')" title="Confirmar pago"><i data-lucide="banknote"></i></button>`:''}
           <button class="py-act-btn" onclick="event.stopPropagation();openEditPay('${p.id}')" title="Editar"><i data-lucide="edit-2"></i></button>
-        </td></tr>`;
+        </div></td></tr>`;
       }).join('')}</tbody></table>`;
     hdr.onclick=()=>{body.style.display=body.style.display==='none'?'block':'none';hdr.querySelector('.py-chev').style.transform=body.style.display==='none'?'':'rotate(180deg)';};
     div.appendChild(hdr);div.appendChild(body);el.appendChild(div);
@@ -665,10 +665,10 @@ function renderClosingTab(){
         <td class="td-money">${fc(c.commission)}</td>
         <td><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span></td>
         <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
-        <td class="td-acts" style="display:flex;gap:4px;align-items:center;justify-content:center">
+        <td><div style="display:inline-flex;gap:6px;align-items:center">
           <button class="py-act-btn" onclick="regenerateClosingPDF('${c.id}')" title="Gerar PDF"><i data-lucide="file-text"></i></button>
           <button class="py-act-btn" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" title="Enviar email"><i data-lucide="send"></i></button>
-        </td>
+        </div></td>
       </tr>`).join('')}
     </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
   lucide.createIcons();

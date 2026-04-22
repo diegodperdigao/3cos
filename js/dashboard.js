@@ -415,7 +415,7 @@ window.refreshDash=()=>{
           const dealStr=brand==='all'?`${aFTD} FTDs · ${CONTRACT_TYPES[a.contractType]?.label||''}`:
             (()=>{const deal=a.deals?.[brand];return a.contractType==='tiered'?'CPA Escalonado':
               a.contractType==='rs'?`RS ${deal?.rs||STATE.brands[brand]?.rs||0}%`:`CPA R$${deal?.cpa||STATE.brands[brand]?.cpa||0}`;})()+(aFTD?` · ${aFTD} FTDs`:'');
-          return `<div class="intel-card" onclick="openMod('affiliates');setTimeout(()=>openAffDetail('${a.id}'),300)">
+          return `<div class="intel-card" onclick="openMod('affiliates');setTimeout(()=>openAffDetail('${a.id}'),500)">
             <div class="intel-name">${a.name}</div>
             <div class="intel-meta">${dealStr}</div>
             <div class="conv-row"><span class="conv-label">Conversão FTD→QFTD</span><span class="conv-pct">${p2}%</span></div>
@@ -436,7 +436,7 @@ window.refreshDash=()=>{
       <th style="text-align:center" class="col-theme">QFTDs</th>
       <th>Depósitos</th>${isAllTime&&brand==='all'?'<th>Comissão</th><th>Lucro 3C</th>':''}
     </tr></thead><tbody>
-      ${ranked.map((a,i)=>`<tr class="tr" onclick="openMod('affiliates');setTimeout(()=>openAffDetail('${a.id}'),300)">
+      ${ranked.map((a,i)=>`<tr class="tr" onclick="openMod('affiliates');setTimeout(()=>openAffDetail('${a.id}'),500)">
         <td><span class="td-rank">${medal(i)}</span> <span class="td-name">${a.name}</span></td>
         <td><span class="ct-badge ${CONTRACT_TYPES[a.contractType]?.css||''}">${CONTRACT_TYPES[a.contractType]?.label||''}</span></td>
         <td class="td-num">${a.ftds}</td><td class="td-num">${a.qftds}</td>
