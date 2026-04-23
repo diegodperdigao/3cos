@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório de Fechamento — {{MES_REF}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; color: #0f172a; font-size: 13px; line-height: 1.6; background: #fff; }
+    @page { size: A4; margin: 15mm 15mm 15mm 15mm; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      @page { margin-top: 10mm; margin-bottom: 10mm; }
+    }
+    .page { max-width: 800px; margin: 0 auto; padding: 40px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- HEADER: logo + label + data de emissão -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div style="background:#0f172a;border-radius:10px;padding:10px 18px;display:inline-flex;align-items:center">
+        <img src="https://i.ibb.co/chfw0cND/Horizontal-Com-Tag-W.png" style="height:36px" crossorigin="anonymous">
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#64748b">Relatório de Fechamento</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:2px">{{DATA_EMISSAO}}</div>
+      </div>
+    </div>
+    <div style="height:3px;background:linear-gradient(to right,#ec4899,#a855f7);border-radius:2px;margin-bottom:28px"></div>
+
+    <!-- TÍTULO -->
+    <div style="font-family:'Montserrat',sans-serif;font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">{{TITLE}}</div>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:24px">Referência: {{MES_REF_CAPITALIZED}}</div>
+
+    <!-- SEÇÃO DE AFILIADO (repetir este bloco para cada afiliado;
+         no modo consolidado, envolver cada bloco com a div `page-break-inside:avoid` abaixo) -->
+    <div style="page-break-inside:avoid;margin-bottom:28px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+
+      <div style="background:#f8fafc;padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:18px;font-weight:800;color:#0f172a">{{AFFILIATE_NAME}}</div>
+          <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em;margin-top:2px">{{CONTRACT_TYPE_LABEL}} · {{CONTACT_EMAIL}}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Comissão Total</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#ec4899">R$ {{COMMISSION}}</div>
+        </div>
+      </div>
+
+      <div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div style="background:#f1f5f9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">FTDs</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:24px;font-weight:800;color:#0f172a">{{FTDS}}</div>
+        </div>
+        <div style="background:#f1f5f9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">QFTDs</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:24px;font-weight:800;color:#ec4899">{{QFTDS}}</div>
+        </div>
+        <div style="background:#f1f5f9;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Depósitos</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:18px;font-weight:800;color:#0f172a">R$ {{DEPOSITS}}</div>
+        </div>
+      </div>
+
+      <div style="padding:0 20px 16px">
+        <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-bottom:8px">Deals por Marca</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <!-- Repetir uma <tr> para cada marca -->
+          <tr>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600;color:{{BRAND_COLOR}}">{{BRAND_NAME}}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:11px;color:#666">{{DEAL_DESCRIPTION}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="padding:0 20px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Net Revenue</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:16px;font-weight:700;color:{{NET_REV_COLOR}}">R$ {{NET_REV}}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Lucro 3C</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:16px;font-weight:700;color:#10b981">R$ {{PROFIT}}</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- FIM SEÇÃO DE AFILIADO -->
+
+    <!-- TOTAIS CONSOLIDADOS (só aparece no modo consolidado, com 2+ afiliados) -->
+    <div style="margin-top:24px;padding:20px;background:linear-gradient(135deg,#fdf2f8,#f5f3ff);border-radius:12px;border:1px solid #f0abfc">
+      <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em;font-weight:700;margin-bottom:12px">Totais Consolidados — {{AFFILIATES_COUNT}} afiliado(s)</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        <div>
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase">Total Comissões</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#ec4899">R$ {{TOTAL_COMMISSIONS}}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase">Total Depósitos</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#3b82f6">R$ {{TOTAL_DEPOSITS}}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:#64748b;text-transform:uppercase">Lucro 3C Total</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:#10b981">R$ {{TOTAL_PROFIT}}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center">
+      <div style="font-size:9px;color:#cbd5e1;letter-spacing:0.15em;text-transform:uppercase">Confidencial · 3C Gaming BizDev · {{YEAR}}</div>
+    </div>
+
+  </div>
+</body>
+</html>
