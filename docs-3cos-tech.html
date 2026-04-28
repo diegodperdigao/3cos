@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3C OS Pro — Referência Técnica (Hub, Copilot, Widgets)</title>
+<style>
+:root {
+  --bg: #0b0d12;
+  --bg2: #131722;
+  --surface: #1a1f2e;
+  --border: #2a3142;
+  --text: #e6e9f0;
+  --text2: #9ba3b8;
+  --text3: #6b7388;
+  --accent: #8cb400;
+  --accent2: #5b9bd5;
+  --code-bg: #0f1320;
+  --code-border: #232a3d;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 14px;
+}
+.wrap { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+h1 {
+  font-size: 32px;
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.subtitle { color: var(--text2); font-size: 15px; }
+.meta {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text3);
+}
+.meta span { display: flex; align-items: center; gap: 6px; }
+.toc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 40px;
+}
+.toc-title { font-weight: 700; margin-bottom: 12px; color: var(--accent); }
+.toc ol { margin: 0; padding-left: 20px; }
+.toc li { padding: 4px 0; }
+.toc a { color: var(--text); text-decoration: none; }
+.toc a:hover { color: var(--accent); }
+section { margin-bottom: 56px; }
+h2 {
+  font-size: 24px;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+h3 {
+  font-size: 18px;
+  margin-top: 28px;
+  margin-bottom: 12px;
+  color: var(--accent2);
+}
+h4 {
+  font-size: 15px;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+p { margin: 0 0 12px; }
+ul, ol { margin: 8px 0 16px; padding-left: 24px; }
+li { padding: 3px 0; }
+code {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: var(--accent);
+}
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 13px;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  text-align: left;
+}
+th {
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 700;
+}
+td code { font-size: 11.5px; }
+.callout {
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 16px 0;
+  color: var(--text2);
+  font-size: 13px;
+}
+.callout strong { color: var(--accent); }
+.tag {
+  display: inline-block;
+  background: rgba(140,180,0,0.12);
+  border: 1px solid rgba(140,180,0,0.3);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.tag.blue { background: rgba(91,155,213,0.12); border-color: rgba(91,155,213,0.3); color: var(--accent2); }
+.tag.amber { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: #f59e0b; }
+.tag.red { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+details {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 12px 0;
+}
+details summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--accent2);
+  user-select: none;
+}
+details[open] summary { margin-bottom: 12px; }
+.file-ref {
+  display: inline-block;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  color: var(--text2);
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-family: "SF Mono", Menlo, Monaco, monospace;
+  font-size: 11.5px;
+}
+hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+@media print {
+  body { background: white; color: black; }
+  details { border: 1px solid #ccc; }
+  details[open] { page-break-inside: avoid; }
+  pre { background: #f5f5f5; color: black; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>3C OS Pro — Referência Técnica</h1>
+  <div class="subtitle">Documentação dos sistemas: Hub Inicial · Copilot (IA) · Widgets</div>
+  <div class="meta">
+    <span>Versão: v144</span>
+    <span>Stack: Vanilla JS · Sem build system</span>
+    <span>Tema base: Dark (multi-edition)</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="toc-title">Índice</div>
+  <ol>
+    <li><a href="#overview">Visão geral da arquitetura</a></li>
+    <li><a href="#hub">Hub Inicial</a></li>
+    <li><a href="#copilot">Copilot (IA Chat)</a></li>
+    <li><a href="#widgets">Widgets</a></li>
+    <li><a href="#integration">Como integrar em outro projeto</a></li>
+  </ol>
+</nav>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SEÇÃO 1: VISÃO GERAL                          -->
+<!-- ════════════════════════════════════════════ -->
+<section id="overview">
+  <h2>1. Visão geral da arquitetura</h2>
+  <p>Placeholder — preenchido em seguida.</p>
+</section>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SEÇÃO 2: HUB                                  -->
+<!-- ════════════════════════════════════════════ -->
+<section id="hub">
+  <h2>2. Hub Inicial</h2>
+  <p>Placeholder — preenchido em seguida.</p>
+</section>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SEÇÃO 3: COPILOT                              -->
+<!-- ════════════════════════════════════════════ -->
+<section id="copilot">
+  <h2>3. Copilot (IA Chat)</h2>
+  <p>Placeholder — preenchido em seguida.</p>
+</section>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SEÇÃO 4: WIDGETS                              -->
+<!-- ════════════════════════════════════════════ -->
+<section id="widgets">
+  <h2>4. Widgets</h2>
+  <p>Placeholder — preenchido em seguida.</p>
+</section>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SEÇÃO 5: INTEGRAÇÃO                           -->
+<!-- ════════════════════════════════════════════ -->
+<section id="integration">
+  <h2>5. Como integrar em outro projeto</h2>
+  <p>Placeholder — preenchido em seguida.</p>
+</section>
+
+</div>
+</body>
+</html>
