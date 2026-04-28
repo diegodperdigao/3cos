@@ -219,7 +219,74 @@ hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
 <!-- ════════════════════════════════════════════ -->
 <section id="overview">
   <h2>1. Visão geral da arquitetura</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <h3>Stack</h3>
+  <ul>
+    <li><strong>Frontend</strong>: HTML + CSS + Vanilla JavaScript, sem build system. Scripts carregados via <code>&lt;script src&gt;</code> com cache busting (<code>?v=144</code>).</li>
+    <li><strong>Estado global</strong>: objeto <code>STATE</code> mantido em memória + persistência via <code>localStorage</code> (<code>saveToLocal()</code>) e Supabase (camada <code>js/data.js</code>).</li>
+    <li><strong>Ícones</strong>: <a href="https://lucide.dev" style="color:var(--accent2)">Lucide</a> via <code>data-lucide="..."</code> + <code>lucide.createIcons()</code> após cada render.</li>
+    <li><strong>Temas</strong>: combinação <code>data-edition</code> + <code>data-theme</code> no <code>&lt;html&gt;</code>. Editions: <code>default</code>, <code>mono</code>, <code>bento</code>, <code>meridian</code>, <code>neonflow</code>, <code>glass</code>. Modes: <code>dark</code>, <code>light</code>.</li>
+    <li><strong>Backend IA</strong>: <code>/api/ai</code> serverless Vercel → Google Gemini (free tier).</li>
+    <li><strong>Banco</strong>: Supabase (Postgres) — schema em <code>supabase/schema.sql</code>.</li>
+  </ul>
+
+  <h3>Hierarquia de arquivos relevantes</h3>
+  <pre><code>index.html              ← entry point, carrega todos os JS
+css/styles.css          ← todo o CSS (~5600 linhas, único arquivo)
+js/
+├── app.js              ← estado global, navegação, hub, helpers
+├── widgets.js          ← tiles de KPI no hub + AI Insights engine
+├── copilot.js          ← chat IA Gemini (FAB + drawer)
+├── lab.js              ← feature flags (beta toggles)
+├── data.js             ← camada Supabase + sync
+├── settings.js         ← temas, automations, weekly digest
+├── dashboard.js        ← módulo Dashboard (KPIs, ranking)
+├── affiliates.js       ← módulo Afiliados (CRM)
+├── brands.js           ← módulo Marcas + Brand Hub
+├── payments.js         ← módulo Financeiro
+├── tasks.js            ← módulo Tarefas
+├── pipeline.js         ← módulo Pipeline (Kanban)
+├── audit.js            ← módulo Auditoria
+├── users.js            ← módulo Usuários + boot/login
+├── search.js           ← busca universal (Ctrl+K)
+└── watchdog.js         ← alertas automáticos de pagamentos</code></pre>
+
+  <h3>Fluxo de boot</h3>
+  <ol>
+    <li><code>users.js</code> carrega último usuário do localStorage / Supabase.</li>
+    <li>Se há sessão → chama <code>showHub()</code>. Senão → renderiza tela de lock.</li>
+    <li><code>showHub()</code> (em <code>app.js</code>) faz fade out do lock, monta greeting, chama <code>buildHubCards()</code>, <code>buildHubWidgets()</code>, <code>renderHolidayPostIt()</code>, <code>updateCopilotVisibility()</code>, <code>applyAppTheme()</code>, <code>initMosaics()</code>, <code>lucide.createIcons()</code>.</li>
+    <li>Após 3s, roda <code>runPaymentWatchdog()</code> silenciosamente (alertas vão pro sino, não pra toast).</li>
+  </ol>
+
+  <h3>Convenções globais</h3>
+  <ul>
+    <li><strong>Funções globais</strong>: tudo exposto via <code>window.fnName = ...</code> para acesso entre arquivos sem imports.</li>
+    <li><strong>Helpers de formatação</strong>: <code>fc(v)</code> = currency BRL, <code>pct(a,b)</code> = porcentagem, <code>medal(i)</code> = badge de ranking.</li>
+    <li><strong>Avatar</strong>: <code>userAvatar(nameOrUser, size)</code> retorna <code>&lt;img&gt;</code> se tiver URL, senão círculo com iniciais coloridas (cor determinística do nome).</li>
+    <li><strong>Modal</strong>: <code>openModal(title, bodyHTML, footerHTML)</code> + <code>closeModal()</code>.</li>
+    <li><strong>Toast</strong>: <code>toast(text, type)</code> — type: <code>'s'</code> success, <code>'w'</code> warning, <code>'e'</code> error.</li>
+  </ul>
+
+  <h3>Como os 3 sistemas se conectam</h3>
+  <div class="callout">
+    <strong>Hub</strong> é o container visual: greeting + faixa de widgets + grid de módulos.<br>
+    <strong>Widgets</strong> são montados pelo hub via <code>buildHubWidgets()</code> e leem <code>STATE</code> diretamente.<br>
+    <strong>Copilot</strong> é independente (FAB flutuante visível em qualquer tela quando <code>STATE.betaMode === true</code>) — recebe <code>STATE</code> resumido como contexto a cada mensagem.
+  </div>
+
+  <h3>Estado mínimo necessário</h3>
+  <p>Os 3 sistemas dependem dessas chaves em <code>STATE</code>:</p>
+  <table>
+    <tr><th>Chave</th><th>Tipo</th><th>Usada por</th></tr>
+    <tr><td><code>user</code></td><td>{ name, role, title, modules, avatar }</td><td>Hub (greeting, role gating), Copilot (contexto)</td></tr>
+    <tr><td><code>betaMode</code></td><td>boolean</td><td>Copilot (visibilidade do FAB)</td></tr>
+    <tr><td><code>settings.hubWidgets</code></td><td>string[]</td><td>Widgets (seleção do usuário)</td></tr>
+    <tr><td><code>settings.theme</code></td><td>string (ex: <code>"glass-dark"</code>)</td><td>Hub (tema)</td></tr>
+    <tr><td><code>customNotices</code></td><td>array</td><td>Hub (post-it)</td></tr>
+    <tr><td><code>affiliates, payments, tasks, reports, brands</code></td><td>arrays/objetos</td><td>Widgets + Copilot (dados de domínio)</td></tr>
+    <tr><td><code>notifications, auditLog, pipeline</code></td><td>arrays/objetos</td><td>Widgets</td></tr>
+  </table>
 </section>
 
 <!-- ════════════════════════════════════════════ -->
