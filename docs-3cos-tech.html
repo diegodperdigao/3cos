@@ -294,7 +294,174 @@ js/
 <!-- ════════════════════════════════════════════ -->
 <section id="hub">
   <h2>2. Hub Inicial</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <p>Tela inicial pós-login. Exibe identidade da marca, widgets customizáveis e grid de módulos. É renderizada por <code>showHub()</code> e reconstruída sempre que o usuário volta ao hub via <code>goBack()</code>.</p>
+
+  <h3>2.1. Estrutura HTML</h3>
+  <p>Container raiz <code>#hub</code> com 4 blocos: background animado, top bar, main area, mobile home.</p>
+
+  <pre><code>&lt;div id="hub" style="display:none;flex-direction:column"&gt;
+  &lt;!-- Background animado (mosaic pattern) --&gt;
+  &lt;div class="hub-bg"&gt;
+    &lt;div class="mosaic-wrapper"&gt;
+      &lt;div class="mosaic-container"&gt;
+        &lt;div class="mosaic-pattern" id="hub-mosaic"&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="hub-overlay"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- TOP BAR (logo · search · ações) --&gt;
+  &lt;div class="hub-bar"&gt;
+    &lt;div class="hub-bar-l"&gt;...logo + wordmark...&lt;/div&gt;
+    &lt;div class="hub-bar-c"&gt;...search pill (Ctrl+K)...&lt;/div&gt;
+    &lt;div class="hub-bar-r"&gt;...beta + notif + tema + user chip...&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- MAIN AREA --&gt;
+  &lt;div class="hub-main"&gt;
+    &lt;!-- Identidade (logo + tagline + greeting) --&gt;
+    &lt;div class="hub-identity"&gt;
+      &lt;img src="..." class="hub-id-logo"&gt;
+      &lt;div class="hub-id-tagline"&gt;CRM &amp; Gestão&lt;/div&gt;
+      &lt;div class="hub-greeting" id="hub-greeting"&gt;Selecione o módulo de trabalho&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Widgets customizáveis --&gt;
+    &lt;div class="hub-widgets hub-desktop-only" id="hub-widgets"&gt;&lt;/div&gt;
+
+    &lt;!-- Label "Módulos" + botão "Personalizar widgets" --&gt;
+    &lt;div class="hub-apps-label-row hub-desktop-only"&gt;
+      &lt;span class="hub-apps-label"&gt;Módulos&lt;/span&gt;
+      &lt;button class="hub-widget-settings-btn" onclick="openHubWidgetPicker()"&gt;
+        &lt;i data-lucide="layout-dashboard"&gt;&lt;/i&gt; Personalizar widgets
+      &lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;!-- Grid de módulos --&gt;
+    &lt;div class="hub-apps hub-desktop-only" id="hub-cards"&gt;&lt;/div&gt;
+
+    &lt;!-- Versão mobile (tasks + notifs) --&gt;
+    &lt;div class="hub-mobile-home" id="hub-mobile-home"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>2.2. Top Bar — 3 zonas (CSS Grid)</h3>
+  <table>
+    <tr><th>Zona</th><th>Conteúdo</th><th>Funções</th></tr>
+    <tr>
+      <td><code>.hub-bar-l</code></td>
+      <td>Hamburger (mobile) + logo (32px) + wordmark "3C<em>OS</em>"</td>
+      <td><code>openMobSidebar()</code></td>
+    </tr>
+    <tr>
+      <td><code>.hub-bar-c</code></td>
+      <td>Search pill com placeholder "Buscar em tudo..." e hint <span class="tag">Ctrl K</span></td>
+      <td><code>focusSearchInput()</code>, <code>onSearchInput(event)</code>, <code>onSearchFocus(event)</code>, <code>onSearchKeydown(event)</code></td>
+    </tr>
+    <tr>
+      <td><code>.hub-bar-r</code></td>
+      <td>4 itens: <strong>Beta</strong> (flask-conical) · <strong>Notif</strong> (bell + badge) · <strong>Tema</strong> (sun/moon) · <strong>User chip</strong> (avatar + nome + role + dropdown)</td>
+      <td><code>toggleBetaMode(this)</code>, <code>toggleActionCenter()</code>, <code>toggleTheme()</code>, <code>toggleHubUserMenu(event)</code>, <code>doLogout()</code></td>
+    </tr>
+  </table>
+
+  <div class="callout">
+    <strong>Search pill</strong>: o input é montado direto no HTML, mas a lógica de resultados está em <code>js/search.js</code>. O painel <code>.search-panel</code> é populado dinamicamente. Atalho global Ctrl+K registrado via keydown listener no <code>document</code>.
+  </div>
+
+  <h3>2.3. Catálogo de módulos (<code>MODS[]</code> em <code>app.js</code>)</h3>
+  <p>10 módulos. Cada item: <code>{ id, label, icon (lucide), sub, color, glow, bg, stroke, adminOnly? }</code>.</p>
+  <table>
+    <tr><th>ID</th><th>Label</th><th>Ícone</th><th>Stroke (cor do ícone)</th><th>Acesso</th></tr>
+    <tr><td><code>dashboard</code></td><td>Dashboard</td><td>bar-chart-2</td><td><code>#ec4899</code> rosa</td><td>todos</td></tr>
+    <tr><td><code>affiliates</code></td><td>Afiliados</td><td>users</td><td><code>#3b82f6</code> azul</td><td>todos</td></tr>
+    <tr><td><code>brands</code></td><td>Marcas</td><td>tag</td><td><code>#a855f7</code> roxo</td><td>todos</td></tr>
+    <tr><td><code>payments</code></td><td>Financeiro</td><td>banknote</td><td><code>#f59e0b</code> âmbar</td><td>todos</td></tr>
+    <tr><td><code>tasks</code></td><td>Tarefas</td><td>check-square</td><td><code>#10b981</code> verde</td><td>todos</td></tr>
+    <tr><td><code>pipeline</code></td><td>Pipeline</td><td>git-branch</td><td><code>#0ea5e9</code> ciano</td><td>todos</td></tr>
+    <tr><td><code>audit</code></td><td>Auditoria</td><td>activity</td><td><code>#c8ff00</code> lima</td><td>todos</td></tr>
+    <tr><td><code>backup</code></td><td>Backup</td><td>cloud</td><td><code>#0ea5e9</code> ciano</td><td>todos</td></tr>
+    <tr><td><code>users</code></td><td>Usuários</td><td>shield</td><td><code>#ef4444</code> vermelho</td><td><span class="tag red">admin</span></td></tr>
+    <tr><td><code>settings</code></td><td>Configurações</td><td>settings</td><td><code>#94a3b8</code> cinza</td><td>todos</td></tr>
+  </table>
+
+  <h3>2.4. Renderização — <code>showHub()</code></h3>
+  <ol>
+    <li>Fade out lock screen (<code>opacity: 0</code> → <code>display: none</code> após 650ms).</li>
+    <li>Pega primeiro nome: <code>STATE.user.name.split(' ')[0]</code>.</li>
+    <li>Preenche header: <code>#hub-uname</code>, <code>#hub-urole</code> (usa <code>title</code> > <code>ROLES[role].label</code> > <code>role</code>).</li>
+    <li>Avatar via <code>userAvatar(STATE.user, 32)</code>.</li>
+    <li>Greeting: <code>Bem-vindo(a), &lt;strong&gt;{firstName}&lt;/strong&gt; — selecione o módulo de trabalho</code>.</li>
+    <li>Fade in hub (<code>display: flex</code> → <code>opacity: 1</code> após 50ms).</li>
+    <li>Chama em sequência: <code>buildHubCards()</code>, <code>buildMobileHome()</code>, <code>updateNotifBadge()</code>, <code>buildHubWidgets()</code> (se existir), <code>updateLabButton()</code>, <code>syncBetaAttributes()</code>, <code>updateCopilotVisibility()</code>, <code>applyAppTheme()</code>, <code>initMosaics()</code>, <code>lucide.createIcons()</code>.</li>
+    <li>Após 3s, dispara <code>runPaymentWatchdog()</code> silenciosamente (alertas vão para o sino).</li>
+  </ol>
+
+  <h3>2.5. Renderização do grid — <code>buildHubCards()</code></h3>
+  <pre><code>function buildHubCards(){
+  const userMods = STATE.user?.modules || [];
+  const isAdmin = STATE.user?.role === 'admin';
+  // Admin vê tudo; user comum só vê módulos atribuídos a ele
+  const visible = MODS
+    .filter(m =&gt; !m.adminOnly || isAdmin)
+    .filter(m =&gt; isAdmin || userMods.includes(m.id));
+  document.getElementById('hub-cards').innerHTML = visible.map(m =&gt; `
+    &lt;div class="hub-app" onclick="openMod('${m.id}')"
+      style="--app-border:${m.color};--app-glow:${m.glow};--app-bg:${m.bg};--app-stroke:${m.stroke}"&gt;
+      &lt;div class="hub-app-icon"&gt;&lt;i data-lucide="${m.icon}"&gt;&lt;/i&gt;&lt;/div&gt;
+      &lt;div class="hub-app-name"&gt;${m.label}&lt;/div&gt;
+    &lt;/div&gt;`).join('');
+  // Auto-ajusta colunas (max 6) baseado em quantos módulos o usuário tem acesso
+  const count = visible.length;
+  document.getElementById('hub-cards').style.gridTemplateColumns = `repeat(${Math.min(count,6)},1fr)`;
+  lucide.createIcons();
+}</code></pre>
+
+  <div class="callout">
+    <strong>Variáveis CSS inline</strong>: cada card recebe 4 custom properties (<code>--app-border</code>, <code>--app-glow</code>, <code>--app-bg</code>, <code>--app-stroke</code>) que o CSS consome para colorir borda/sombra/fundo/ícone — permite cor diferente por módulo sem CSS específico para cada um.
+  </div>
+
+  <h3>2.6. Navegação entre hub e módulos</h3>
+  <p><strong><code>openMod(id)</code></strong>: abre um módulo a partir do hub (ou troca entre módulos).</p>
+  <ol>
+    <li>Salva <code>id</code> em <code>sessionStorage['3cos_activeMod']</code> (para restaurar após F5).</li>
+    <li>Se já há módulo ativo: fade out (320ms) → <code>display: none</code> → <code>buildMod(id, el)</code> → fade in.</li>
+    <li>Se está vindo do hub: fade out hub → <code>buildMod()</code> → fade in módulo.</li>
+    <li><code>buildMod(id, el)</code> está em try/catch — se quebrar, mostra fallback "Erro ao abrir o módulo" + botão "Voltar ao Hub".</li>
+    <li>Atualiza bottom nav mobile via <code>updateBottomNav(id)</code>.</li>
+  </ol>
+
+  <p><strong><code>goBack()</code></strong>: volta ao hub.</p>
+  <ol>
+    <li>Limpa <code>sessionStorage['3cos_activeMod']</code>.</li>
+    <li>Fade out de todos os <code>.mod.active</code>.</li>
+    <li>Fade in do <code>#hub</code>.</li>
+    <li>Destrói chart instances (<code>window.mainChartInstance.destroy()</code>) para evitar memory leak.</li>
+    <li>Reconstrói: <code>buildHubCards() · buildMobileHome() · updateNotifBadge() · initMosaics() · lucide.createIcons()</code>.</li>
+  </ol>
+
+  <h3>2.7. CSS-chave</h3>
+  <p>Classes principais (definidas em <code>css/styles.css</code>, ~linhas 173-305):</p>
+  <table>
+    <tr><th>Classe</th><th>Função</th></tr>
+    <tr><td><code>.hub-bg</code></td><td><code>position: absolute; inset: 0; z-index: 0</code> — wallpaper de fundo</td></tr>
+    <tr><td><code>.hub-bar</code></td><td>Top bar 60px de altura, padding 0 40px, position relative z-index 10</td></tr>
+    <tr><td><code>.hub-main</code></td><td>flex: 1, position relative z-index 2 — conteúdo central</td></tr>
+    <tr><td><code>.hub-apps</code></td><td><code>display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; max-width: 900px</code></td></tr>
+    <tr><td><code>.hub-app</code></td><td>Card individual: position relative, overflow hidden, hover <code>scale(1.02) translateY(-4px)</code></td></tr>
+    <tr><td><code>.hub-app::before</code></td><td>Pseudo-element para efeito de glow no hover (opacidade 0 → 1)</td></tr>
+    <tr><td><code>.hub-app-icon</code></td><td>54×54px, border-radius 14px, ícone 24px com <code>stroke: var(--app-stroke)</code></td></tr>
+    <tr><td><code>.hub-desktop-only</code></td><td>Visível só em desktop. Em mobile, <code>display: none</code> e <code>.hub-mobile-home</code> assume.</td></tr>
+  </table>
+
+  <h3>2.8. Componentes auxiliares conectados ao Hub</h3>
+  <ul>
+    <li><strong>User dropdown</strong> (<code>.hub-user-dropdown</code>): popup ao clicar no chip do usuário com "Configurações" + "Sair". Toggle via <code>toggleHubUserMenu(event)</code>.</li>
+    <li><strong>Action Center</strong> (<code>#action-center</code>): drawer lateral direito com notificações, alertas e tarefas. Toggle via <code>toggleActionCenter()</code>. Tem overlay <code>#ac-overlay</code> que fecha ao clicar fora.</li>
+    <li><strong>Bottom nav mobile</strong> (<code>.mob-bottom-nav</code>): 5 atalhos fixos no rodapé em mobile: Hub · Dash · Afiliados · Pipeline · Financ. Item ativo destacado via <code>updateBottomNav(activeId)</code>.</li>
+    <li><strong>Mosaic background</strong> (<code>initMosaics()</code>): pattern animado renderizado em <code>.mosaic-pattern</code>. Re-inicializado a cada render do hub.</li>
+  </ul>
 </section>
 
 <!-- ════════════════════════════════════════════ -->
