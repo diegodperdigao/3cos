@@ -469,7 +469,209 @@ js/
 <!-- ════════════════════════════════════════════ -->
 <section id="copilot">
   <h2>3. Copilot (IA Chat)</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <p>Chat de IA conectado aos dados da plataforma. Visível como FAB flutuante apenas quando <code>STATE.betaMode === true</code>. Backend serverless no Vercel proxia para o <strong>Google Gemini</strong> (free tier — 15 RPM, 1500 RPD). Conversas multi-thread persistidas em <code>localStorage</code>.</p>
+
+  <div class="callout">
+    <strong>Arquivos envolvidos:</strong> <span class="file-ref">js/copilot.js</span> (frontend, 639 linhas) · <span class="file-ref">api/ai.js</span> (Vercel serverless) · markup do FAB e drawer em <span class="file-ref">index.html</span> linhas 236-273.
+  </div>
+
+  <h3>3.1. Estrutura HTML</h3>
+  <pre><code>&lt;!-- FAB flutuante (visível só em betaMode) --&gt;
+&lt;button id="copilot-fab" onclick="toggleCopilot()" style="display:none"&gt;
+  &lt;svg viewBox="0 0 24 24" class="cp-gemini-icon"&gt;
+    &lt;path d="M12 2C12 8.627 15.373 12 22 12C15.373 12 12 15.373 12 22..."/&gt;
+  &lt;/svg&gt;
+  &lt;span class="cp-fab-pulse"&gt;&lt;/span&gt;
+&lt;/button&gt;
+
+&lt;!-- Overlay (fecha drawer ao clicar fora) --&gt;
+&lt;div id="copilot-overlay" onclick="closeCopilot()"&gt;&lt;/div&gt;
+
+&lt;!-- Drawer principal --&gt;
+&lt;div id="copilot-drawer"&gt;
+  &lt;!-- HEADER --&gt;
+  &lt;div class="cp-hdr"&gt;
+    &lt;div class="cp-title"&gt;
+      &lt;button onclick="toggleCopilotHistory()"&gt;&lt;i data-lucide="menu"&gt;&lt;/i&gt;&lt;/button&gt;
+      &lt;div class="cp-title-icon"&gt;...gemini-icon...&lt;/div&gt;
+      &lt;div&gt;
+        &lt;div class="cp-title-main"&gt;3C Copilot&lt;/div&gt;
+        &lt;div class="cp-title-sub"&gt;IA conectada aos seus dados&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="cp-hdr-actions"&gt;
+      &lt;button onclick="newCopilotChat()"&gt;&lt;i data-lucide="plus"&gt;&lt;/i&gt;&lt;/button&gt;
+      &lt;button onclick="closeCopilot()"&gt;&lt;i data-lucide="x"&gt;&lt;/i&gt;&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- MAIN: sidebar histórico + chat --&gt;
+  &lt;div class="cp-main"&gt;
+    &lt;div class="cp-history-panel"&gt;
+      &lt;div class="cp-history-list" id="copilot-history"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="cp-chat"&gt;
+      &lt;div class="cp-body" id="copilot-body"&gt;&lt;/div&gt;
+      &lt;div class="cp-input-row"&gt;
+        &lt;textarea id="copilot-input" rows="1"
+                  placeholder="Pergunte ao Copilot..."
+                  onkeydown="onCopilotKeydown(event)"&gt;&lt;/textarea&gt;
+        &lt;button onclick="sendCopilotMessage()"&gt;&lt;i data-lucide="send"&gt;&lt;/i&gt;&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>3.2. Estado interno (frontend)</h3>
+  <table>
+    <tr><th>Variável</th><th>Função</th></tr>
+    <tr><td><code>_copilotConvs[]</code></td><td>Array de conversas: <code>{ id, title, messages, createdAt, updatedAt }</code></td></tr>
+    <tr><td><code>_copilotActiveId</code></td><td>ID da conversa ativa</td></tr>
+    <tr><td><code>_copilotOpen</code></td><td>boolean — drawer aberto?</td></tr>
+    <tr><td><code>_copilotSending</code></td><td>boolean — request em andamento (mostra typing dots)</td></tr>
+    <tr><td><code>_copilotHistoryOpen</code></td><td>boolean — sidebar de histórico aberta?</td></tr>
+    <tr><td><code>_copilotSelectMode</code></td><td>boolean — modo seleção bulk para apagar várias</td></tr>
+    <tr><td><code>_copilotSelected</code></td><td><code>Set</code> — IDs selecionadas no modo bulk</td></tr>
+  </table>
+
+  <h3>3.3. Chaves do localStorage</h3>
+  <table>
+    <tr><th>Chave</th><th>Conteúdo</th></tr>
+    <tr><td><code>3cos_copilot_convs</code></td><td>JSON array com todas as conversas</td></tr>
+    <tr><td><code>3cos_copilot_active</code></td><td>ID da conversa ativa</td></tr>
+    <tr><td><code>3cos_copilot_msgs</code></td><td><span class="tag amber">legado</span> Formato single-thread antigo. Migrado automaticamente em <code>_loadConvs()</code> para o novo formato e depois apagado.</td></tr>
+  </table>
+
+  <h3>3.4. API pública (window.*)</h3>
+  <table>
+    <tr><th>Função</th><th>Descrição</th></tr>
+    <tr><td><code>openCopilot()</code></td><td>Abre drawer. <strong>Sempre cria nova conversa vazia</strong> ao abrir (se a ativa tinha conteúdo, vai pra história). Foco no input após 250ms.</td></tr>
+    <tr><td><code>closeCopilot()</code></td><td>Fecha drawer + overlay + sidebar de histórico</td></tr>
+    <tr><td><code>toggleCopilot()</code></td><td>Open ou close conforme estado atual</td></tr>
+    <tr><td><code>toggleCopilotHistory()</code></td><td>Mostra/esconde sidebar com lista de conversas</td></tr>
+    <tr><td><code>newCopilotChat()</code></td><td>Nova conversa (reusa atual se já estiver vazia)</td></tr>
+    <tr><td><code>switchCopilotConv(id)</code></td><td>Troca para outra conversa do histórico</td></tr>
+    <tr><td><code>deleteCopilotConv(id, ev)</code></td><td>Apaga conversa específica (com confirm)</td></tr>
+    <tr><td><code>copilotAsk(q)</code></td><td>Preenche input com <code>q</code> e envia (usado pelas suggestion chips)</td></tr>
+    <tr><td><code>sendCopilotMessage()</code></td><td>Lê input, envia ao backend, atualiza UI</td></tr>
+    <tr><td><code>updateCopilotVisibility()</code></td><td>Mostra/esconde FAB baseado em <code>STATE.betaMode &amp;&amp; STATE.user</code></td></tr>
+    <tr><td><code>cpEnter/Exit/Toggle/SelectAll/BulkDelete</code></td><td>Controles do modo seleção bulk no histórico</td></tr>
+  </table>
+
+  <h3>3.5. Tela de boas-vindas</h3>
+  <p>Renderizada quando a conversa ativa não tem mensagens. Mostra ícone Gemini SVG + título + 4 chips de sugestão clicáveis:</p>
+  <ul>
+    <li>"Pagamentos vencidos?" → <code>copilotAsk('Quais pagamentos estão vencidos no momento?')</code></li>
+    <li>"Top 3 afiliados por lucro" → <code>copilotAsk('Quem são os 3 afiliados que mais deram lucro pra 3C?')</code></li>
+    <li>"Resumo financeiro" → <code>copilotAsk('Resuma a situação financeira do mês atual')</code></li>
+    <li>"Afiliados em risco" → <code>copilotAsk('Há algum afiliado sem contato recente que mereça atenção?')</code></li>
+  </ul>
+
+  <h3>3.6. Fluxo de envio de mensagem (<code>sendCopilotMessage</code>)</h3>
+  <ol>
+    <li>Lê texto do <code>#copilot-input</code>. Aborta se vazio ou <code>_copilotSending</code> já ativo.</li>
+    <li>Pega ou cria conversa ativa.</li>
+    <li><strong>Auto re-sync</strong>: se <code>STATE.affiliates</code> e <code>STATE.payments</code> estão vazios, chama <code>Data.loadAll()</code> antes de enviar (evita "tenho dados stale" após fresh login).</li>
+    <li>Loga estatísticas do estado: <code>{ hasUser, affiliates, payments, contracts, tasks, brands, reports }</code>.</li>
+    <li>Push da mensagem do usuário em <code>conv.messages</code>. Se for a primeira, gera <code>conv.title</code> via <code>_titleFromText</code> (max 40 chars).</li>
+    <li>Limpa input, marca <code>_copilotSending = true</code>, salva e re-renderiza (mostra typing dots).</li>
+    <li>Constrói contexto com <code>buildCopilotContext()</code>.</li>
+    <li><code>POST /api/ai</code> com <code>{ messages: conv.messages, context }</code>.</li>
+    <li>Se OK → push da reply do assistant. Se erro → <code>_friendlyCopilotError(err)</code> mostra mensagem amigável em PT.</li>
+    <li>Marca <code>_copilotSending = false</code>, atualiza <code>conv.updatedAt</code>, salva, re-renderiza.</li>
+  </ol>
+
+  <h3>3.7. Contexto enviado à IA — <code>buildCopilotContext()</code></h3>
+  <p>Otimizado para minimizar tokens. Estrutura:</p>
+  <pre><code>{
+  today: "2026-04-28",
+  user: { name, role },
+  brands: { ...todas as marcas... },
+
+  // AFILIADOS: só ativos, campos compactos, notas truncadas em 100 chars
+  affiliates: [{
+    id, name, contractType, ftds, qftds,
+    deposits, netRev, commission, profit, deals,
+    notes?, tags?
+  }],
+
+  contracts: [{ affiliate, brand, type, value, paid, paymentStatus }],
+
+  // PAGAMENTOS: agregado por status + lista somente dos críticos
+  payments: {
+    by_status: { pendente: { count, total }, vencido: {...}, ... },
+    critical: [...só vencidos+atrasados, item a item...]
+  },
+
+  tasks_open: [{ title, priority, status, assignee, dueDate?, description? }],
+
+  closings: [...últimos 6...],
+
+  // REPORTS em DOIS formatos:
+  reports_monthly: [...agregado afiliado×marca×mês — economia de tokens...],
+  reports_daily_last30: [...linhas diárias dos últimos 30 dias para perguntas precisas...],
+
+  deadlines: ...,
+
+  _empty_state: boolean,  // flag para o backend
+  _empty_note: "IMPORTANTE: A plataforma não tem dados cadastrados..." | null
+}</code></pre>
+
+  <div class="callout">
+    <strong>Truque de tokens</strong>: agregar reports por mês economiza muito (1 linha por mês vs 30 por mês). O <code>reports_daily_last30</code> mantém detalhe recente para perguntas como "ontem" ou "dia 3 de abril".
+  </div>
+
+  <h3>3.8. Backend — <code>api/ai.js</code> (Vercel serverless)</h3>
+
+  <h4>Configuração</h4>
+  <ul>
+    <li><strong>Endpoint</strong>: <code>POST /api/ai</code></li>
+    <li><strong>Env vars</strong>: <code>GEMINI_API_KEY</code> (obrigatório, pega em <a href="https://aistudio.google.com/apikey" style="color:var(--accent2)">aistudio.google.com/apikey</a>), <code>GEMINI_MODEL</code> (opcional)</li>
+    <li><strong>Modelo padrão</strong>: <code>gemini-1.5-flash</code></li>
+    <li><strong>Fallback chain</strong>: se o modelo retornar quota exceeded, tenta na ordem <code>1.5-flash → 1.5-flash-8b → 2.5-flash-lite → 2.0-flash</code></li>
+    <li><strong>maxOutputTokens</strong>: 2048 · <strong>temperature</strong>: 0.4</li>
+  </ul>
+
+  <h4>System prompt (resumo)</h4>
+  <ul>
+    <li><strong>Identidade blindada</strong>: "Você é o 3C Copilot. Nunca mencione Google, Gemini, LLM, modelo, treinamento. Se perguntarem 'quem é você', responda sempre: 3C Copilot, criado pela 3C Gaming, exclusivamente para o 3C OS Pro."</li>
+    <li>Contexto de negócio (iGaming): 3C = operadora, afiliados trazem jogadores, comissões CPA/Rev Share/híbrido, lucro 3C = receita marca − comissão paga.</li>
+    <li>Glossário: FTD, QFTD, Net Revenue, CPA, Rev Share.</li>
+    <li>Regras de resposta: PT-BR, conciso, listas, markdown. Não inventar dados — usar <strong>SEMPRE</strong> o JSON snapshot. Apenas consultar (não pode executar ações).</li>
+    <li>Para perguntas sobre dia específico → <code>reports_daily_last30</code>. Totais históricos → <code>reports_monthly</code>.</li>
+  </ul>
+
+  <h4>Truque do "primed context" (importante)</h4>
+  <p>O backend NÃO envia o contexto como <code>systemInstruction</code> (que o Gemini às vezes ignora). Em vez disso, fabrica uma falsa primeira troca <code>user→model</code> onde:</p>
+  <ol>
+    <li>O "user" entrega o JSON do snapshot.</li>
+    <li>O "model" finge confirmar listando contagens reais (afiliados, top 3 por lucro, marcas, contratos, pagamentos por status, tarefas).</li>
+  </ol>
+  <p>Como o modelo "já disse" esses números, ele os trata como verdade conhecida nas perguntas seguintes. Fica muito mais difícil dele alucinar ou dizer "não tenho acesso aos dados". Implementado em <code>_buildAckMessage(ctx)</code>.</p>
+
+  <h3>3.9. Tratamento de erros</h3>
+  <p><strong><code>_friendlyCopilotError(err)</code></strong>: traduz erros técnicos em PT amigável:</p>
+  <ul>
+    <li><strong>429 / quota / limit</strong>: "Copilot está com muitas solicitações... aguarde ~Xs e tente de novo." Extrai retry hint do erro raw.</li>
+    <li><strong>API key missing</strong>: "Copilot ainda não foi configurado por um administrador."</li>
+    <li><strong>Network / timeout / status 0</strong>: "Não consegui me conectar... verifique sua conexão."</li>
+    <li><strong>5xx</strong>: "Copilot está temporariamente indisponível."</li>
+    <li><strong>Default</strong>: "Tive um problema para processar sua pergunta. Tente reformular."</li>
+  </ul>
+  <p><strong><code>_sanitizeCopilotMessage(content)</code></strong>: roda em RENDER time. Se o texto da resposta tem padrões de erro raw da API (ex: <code>quota exceeded</code>, <code>generativelanguage.googleapis.com</code>, <code>retry in 30s</code>, <code>resource_exhausted</code>) → substitui pelo texto amigável. Protege mensagens antigas no localStorage de antes da implementação dos friendly errors.</p>
+
+  <h3>3.10. Renderização — pontos importantes</h3>
+  <ul>
+    <li><strong><code>renderCopilot()</code></strong>: monta corpo (welcome ou lista de mensagens). Adiciona indicador <code>cp-typing</code> com 3 dots se <code>_copilotSending</code>. Roda <code>lucide.createIcons()</code> e re-renderiza histórico.</li>
+    <li><strong><code>renderCopilotMessage(m)</code></strong>: bubble do user (sem avatar) ou assistant (com ícone Gemini). Aplica <code>_sanitizeCopilotMessage</code> + <code>formatMarkdown</code> em mensagens do assistant.</li>
+    <li><strong><code>formatMarkdown(text)</code></strong>: regex simples para <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, listas <code>- item</code>, quebras de linha. Faz escape de <code>&amp;&lt;&gt;</code> primeiro.</li>
+    <li><strong><code>renderCopilotHistory()</code></strong>: lista ordenada por <code>updatedAt</code> desc. Mostra título, timestamp relativo (<code>formatRelativeTime</code>: "agora", "há 5m", "há 2h", "há 3d", data), número de mensagens. Botão lixeira por item. Toolbar de seleção bulk se <code>_copilotSelectMode</code>.</li>
+    <li><strong><code>onCopilotKeydown(e)</code></strong>: Enter envia, Shift+Enter quebra linha.</li>
+  </ul>
+
+  <h3>3.11. Visibility safety net</h3>
+  <p><code>updateCopilotVisibility()</code> mostra FAB se <code>STATE.betaMode === true &amp;&amp; STATE.user</code>. Como <code>STATE</code> pode carregar async (Supabase), há um intervalo no <code>DOMContentLoaded</code> que re-checa a cada 2s nos primeiros 20s para evitar FAB invisível em sessões com login restaurado.</p>
 </section>
 
 <!-- ════════════════════════════════════════════ -->
