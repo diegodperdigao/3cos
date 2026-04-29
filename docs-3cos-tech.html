@@ -855,7 +855,186 @@ js/
 <!-- ════════════════════════════════════════════ -->
 <section id="integration">
   <h2>5. Como integrar em outro projeto</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <p>Guia prático para portar Hub, Copilot e Widgets para outra plataforma. As 3 partes podem ser portadas separadamente ou em conjunto.</p>
+
+  <h3>5.1. Pré-requisitos</h3>
+  <ul>
+    <li><strong>Lucide icons</strong>: <code>&lt;script src="https://unpkg.com/lucide@latest"&gt;&lt;/script&gt;</code> + <code>lucide.createIcons()</code> após cada render dinâmico.</li>
+    <li><strong>Objeto STATE global</strong>: pode ser <code>window.STATE</code> ou similar. Os módulos esperam acessar diretamente — sem getters/imports.</li>
+    <li><strong>Helpers globais</strong>: <code>fc(v)</code> (currency BRL), <code>openModal/closeModal</code>, <code>toast(msg, type)</code>, <code>saveToLocal()</code>, <code>userAvatar(user, size)</code>. Replicar ou substituir.</li>
+    <li><strong>CSS variables</strong>: <code>--text</code>, <code>--text2</code>, <code>--text3</code>, <code>--bg</code>, <code>--bg2</code>, <code>--gb</code>, <code>--theme</code>, <code>--red</code>, <code>--amber</code>, <code>--green</code>, <code>--accent</code>. O sistema de temas inteiro depende delas.</li>
+  </ul>
+
+  <h3>5.2. Portando o Hub</h3>
+
+  <h4>Arquivos a copiar</h4>
+  <ul>
+    <li>Trecho HTML do <code>#hub</code> de <code>index.html</code> (linhas ~143-212).</li>
+    <li>Função <code>showHub()</code>, <code>buildHubCards()</code>, <code>buildMobileHome()</code>, <code>openMod(id)</code>, <code>goBack()</code>, <code>updateBottomNav(id)</code> de <code>app.js</code>.</li>
+    <li>Array <code>MODS[]</code> — adaptar com os módulos do novo projeto.</li>
+    <li>CSS: linhas ~173-305 de <code>css/styles.css</code> (todas as classes <code>.hub-*</code>).</li>
+  </ul>
+
+  <h4>Adaptações típicas</h4>
+  <ol>
+    <li><strong>Logo e wordmark</strong>: trocar <code>https://i.ibb.co/...</code> + texto <code>3C&lt;em&gt;OS&lt;/em&gt;</code>.</li>
+    <li><strong>MODS[]</strong>: adicionar/remover módulos. Cada item precisa de <code>id, label, icon (lucide), color, glow, bg, stroke</code>.</li>
+    <li><strong>Greeting</strong>: ajustar texto em <code>showHub()</code> linha do <code>#hub-greeting</code>.</li>
+    <li><strong>Role gating</strong>: <code>buildHubCards()</code> filtra por <code>STATE.user.role === 'admin'</code> e <code>STATE.user.modules[]</code>. Adapte para o sistema de roles do novo projeto.</li>
+    <li><strong>buildMod(id, el)</strong>: função do projeto original que cada módulo registra. No novo projeto, criar um equivalente que rote para os builders certos.</li>
+  </ol>
+
+  <h4>Dependências mínimas no STATE</h4>
+  <pre><code>STATE = {
+  user: { name, role, title, modules, avatar },  // obrigatório para greeting + role gating
+  notifications: [],   // para o badge do sino
+  // ...resto do estado do app
+}</code></pre>
+
+  <h3>5.3. Portando o Copilot</h3>
+
+  <h4>Arquivos a copiar</h4>
+  <ul>
+    <li><span class="file-ref">js/copilot.js</span> — copiar quase integralmente (639 linhas).</li>
+    <li><span class="file-ref">api/ai.js</span> — copiar para <code>/api/ai.js</code> no novo projeto Vercel.</li>
+    <li>Trecho HTML do FAB + drawer (linhas ~236-273 de <code>index.html</code>).</li>
+    <li>CSS: classes <code>.cp-*</code> (FAB, drawer, history-panel, msg, bubble, typing, welcome, suggestions).</li>
+  </ul>
+
+  <h4>Adaptações</h4>
+  <ol>
+    <li><strong>Storage keys</strong>: renomeie <code>3cos_copilot_convs</code>, <code>3cos_copilot_active</code>, <code>3cos_copilot_msgs</code> para o prefixo do novo projeto (ex: <code>superbet_copilot_*</code>).</li>
+    <li><strong>System prompt</strong> em <code>api/ai.js</code>: reescrever a identidade do bot, contexto de negócio, entidades e métricas-chave para o novo domínio.</li>
+    <li><strong><code>_buildAckMessage(ctx)</code></strong>: ajustar quais campos do contexto entram no "primed acknowledgement" (top 3 por X, contagens de Y, etc).</li>
+    <li><strong><code>buildCopilotContext()</code></strong>: redesenhar o que vai no JSON. Manter a regra: enviar agregados em vez de listas longas, manter dados críticos sempre, truncar campos de texto longos. Atenção a tokens.</li>
+    <li><strong>Suggestion chips</strong> na tela de boas-vindas (4 botões em <code>renderCopilot()</code>).</li>
+    <li><strong>Visibility gate</strong>: trocar <code>STATE.betaMode</code> pelo flag de feature flag do novo projeto, ou remover o gating se for público.</li>
+    <li><strong>Vercel env vars</strong>: configurar <code>GEMINI_API_KEY</code> em Settings → Environment Variables. Free tier em <a href="https://aistudio.google.com/apikey" style="color:var(--accent2)">aistudio.google.com/apikey</a>.</li>
+  </ol>
+
+  <h4>Endpoint alternativo</h4>
+  <p>Se não usar Vercel, troque o <code>fetch('/api/ai', ...)</code> em <code>sendCopilotMessage()</code> por endpoint próprio que receba <code>{ messages, context }</code> e devolva <code>{ reply }</code>. O backend pode ser qualquer coisa — Cloudflare Workers, AWS Lambda, Express, FastAPI — desde que monte o request ao Gemini com a mesma estratégia (systemInstruction com persona + primed turn user/model com snapshot + reais messages).</p>
+
+  <div class="callout">
+    <strong>Dica</strong>: O modelo Gemini 1.5 Flash aguenta um snapshot grande (1M tokens). Mas ainda assim, otimize: se sua plataforma for grande, agregue dados antes de enviar.
+  </div>
+
+  <h3>5.4. Portando os Widgets</h3>
+
+  <h4>Arquivos a copiar</h4>
+  <ul>
+    <li><span class="file-ref">js/widgets.js</span> — copiar inteiro (250 linhas).</li>
+    <li>HTML: <code>&lt;div id="hub-widgets"&gt;&lt;/div&gt;</code> + botão "Personalizar widgets" no <code>.hub-main</code>.</li>
+    <li>CSS: classes <code>.hub-widget</code>, <code>.hw-*</code> (header, body, footer, stat-row, empty, cta, pri-*, results-big, etc), <code>.hwp-*</code> (picker modal).</li>
+  </ul>
+
+  <h4>Adaptações</h4>
+  <ol>
+    <li><strong>Catálogo <code>HUB_WIDGETS[]</code></strong>: redesenhar com os widgets relevantes ao novo domínio. Manter o formato <code>{ id, name, icon, desc }</code>.</li>
+    <li><strong>Renderers <code>_widget*()</code></strong>: cada um lê <code>STATE.x</code> direto. Substitua pelas chaves do novo estado.</li>
+    <li><strong><code>renderMap</code></strong> em <code>buildHubWidgets()</code>: atualizar mapeamento id → função.</li>
+    <li><strong>DEFAULT_HUB_WIDGETS</strong>: 4 IDs que aparecem para usuários novos.</li>
+    <li><strong>Storage</strong>: <code>STATE.settings.hubWidgets</code> + <code>saveToLocal()</code>. Adapte se sua persistência for diferente.</li>
+  </ol>
+
+  <h3>5.5. Estratégia de portabilidade — recomendado</h3>
+  <ol>
+    <li><strong>Comece pelo Hub</strong>: é a base visual. Sem ele, widgets não têm container.</li>
+    <li><strong>Depois Widgets</strong>: validar que <code>buildHubWidgets()</code> aparece no hub e o picker funciona — mesmo com 1 widget de mock.</li>
+    <li><strong>Por último Copilot</strong>: precisa do backend Vercel + API key Gemini funcionando antes de testar end-to-end.</li>
+    <li><strong>Tema e CSS</strong>: pode portar tudo de uma vez (todas as variáveis CSS) ou ir adaptando conforme cada componente é integrado.</li>
+  </ol>
+
+  <h3>5.6. Checklist de smoke test</h3>
+
+  <h4>Hub</h4>
+  <ul>
+    <li>Login → fade out lock → fade in hub funcionando</li>
+    <li>Greeting mostra primeiro nome corretamente</li>
+    <li>Avatar renderiza (foto OU iniciais coloridas)</li>
+    <li>Grid de módulos respeita role (admin vê tudo, user vê só os atribuídos)</li>
+    <li>Click em módulo → fade out hub → fade in módulo</li>
+    <li>Botão "Voltar" → fade out módulo → fade in hub</li>
+    <li>Search pill abre com Ctrl+K</li>
+    <li>Toggle tema persiste após reload</li>
+  </ul>
+
+  <h4>Widgets</h4>
+  <ul>
+    <li>Usuário novo vê os 4 defaults</li>
+    <li>Cada widget renderiza dados corretos do STATE</li>
+    <li>Widget vazio mostra mensagem amigável (não quebra)</li>
+    <li>Botão "Personalizar widgets" abre modal</li>
+    <li>Selecionar/deselecionar + Salvar → widgets do hub atualizam imediatamente</li>
+    <li>Reload mantém seleção</li>
+    <li>Footer CTA de cada widget navega para o módulo certo</li>
+  </ul>
+
+  <h4>Copilot</h4>
+  <ul>
+    <li>Toggle Beta no header → FAB aparece/some</li>
+    <li>Click no FAB → drawer abre com tela de welcome</li>
+    <li>Suggestion chip → preenche input e envia</li>
+    <li>Resposta da IA chega em &lt;5s</li>
+    <li>Quebra de linha com Shift+Enter funciona</li>
+    <li>Botão "+" no header → cria nova conversa em branco</li>
+    <li>Toggle hamburger → sidebar de histórico aparece</li>
+    <li>Click em conversa antiga → carrega messages</li>
+    <li>Modo "Selecionar" + bulk delete funciona</li>
+    <li>Sem API key → mensagem amigável (não vaza erro técnico)</li>
+    <li>Quota exceeded → mensagem "muitas solicitações... tente em ~Xs"</li>
+    <li>Reload mantém histórico de conversas</li>
+  </ul>
+
+  <h3>5.7. Erros comuns</h3>
+  <table>
+    <tr><th>Sintoma</th><th>Causa provável</th><th>Solução</th></tr>
+    <tr>
+      <td>Hub aparece mas ícones são quadrados vazios</td>
+      <td><code>lucide.createIcons()</code> não foi chamado após render</td>
+      <td>Adicionar a chamada no fim de cada função que injeta HTML</td>
+    </tr>
+    <tr>
+      <td>FAB do Copilot nunca aparece</td>
+      <td><code>STATE.betaMode</code> nunca vira <code>true</code> ou <code>STATE.user</code> está vazio quando <code>updateCopilotVisibility()</code> roda</td>
+      <td>Verificar boot order. O safety net já tenta a cada 2s nos primeiros 20s, mas pode demorar</td>
+    </tr>
+    <tr>
+      <td>IA responde "não tenho acesso aos dados"</td>
+      <td>Snapshot enviado vazio — STATE não populado quando <code>buildCopilotContext()</code> rodou</td>
+      <td>Confirmar que <code>Data.loadAll()</code> rodou antes. O auto re-sync no <code>sendCopilotMessage()</code> ajuda</td>
+    </tr>
+    <tr>
+      <td>Widget customizado não aparece</td>
+      <td>ID do widget não está em <code>renderMap</code> ou função renderer ausente</td>
+      <td>Garantir que ID em <code>HUB_WIDGETS</code> bate com chave em <code>renderMap</code></td>
+    </tr>
+    <tr>
+      <td>Picker salva mas nada muda no hub</td>
+      <td><code>buildHubWidgets()</code> não está sendo chamado após <code>_saveHubWidgets()</code></td>
+      <td>Verificar se a chamada está dentro do fluxo de save</td>
+    </tr>
+    <tr>
+      <td>Mensagens antigas do Copilot mostram "quota exceeded" raw</td>
+      <td>Foram salvas no localStorage antes do <code>_sanitizeCopilotMessage</code> existir</td>
+      <td>O sanitizer já roda em render time — basta atualizar o JS para a versão nova</td>
+    </tr>
+  </table>
+
+  <h3>5.8. Recursos adicionais</h3>
+  <ul>
+    <li><strong>Gemini docs</strong>: <a href="https://ai.google.dev/gemini-api/docs" style="color:var(--accent2)">ai.google.dev/gemini-api/docs</a></li>
+    <li><strong>Lucide icons</strong>: <a href="https://lucide.dev/icons" style="color:var(--accent2)">lucide.dev/icons</a></li>
+    <li><strong>Vercel functions</strong>: <a href="https://vercel.com/docs/functions" style="color:var(--accent2)">vercel.com/docs/functions</a></li>
+    <li><strong>Repositório original</strong>: <code>github.com/diegodperdigao/3cos</code></li>
+    <li><strong>Repositório derivado (Superbet)</strong>: <code>github.com/diegodperdigao/superbet</code></li>
+  </ul>
+
+  <hr>
+  <p style="text-align:center;color:var(--text3);font-size:12px;margin-top:40px">
+    Documentação técnica · 3C OS Pro v97 · Gerada em 2026-04-29
+  </p>
 </section>
 
 </div>
