@@ -679,7 +679,175 @@ js/
 <!-- ════════════════════════════════════════════ -->
 <section id="widgets">
   <h2>4. Widgets</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <p>Cards customizáveis exibidos no hub, acima do grid de módulos. Cada widget lê uma fatia do <code>STATE</code> e renderiza dados resumidos com um botão de ação. O usuário escolhe quais ativar via modal "Personalizar widgets". Defaults aplicados automaticamente para usuários novos.</p>
+
+  <div class="callout">
+    <strong>Arquivo único:</strong> <span class="file-ref">js/widgets.js</span> (250 linhas). Container no HTML: <code>&lt;div id="hub-widgets"&gt;</code> dentro de <code>.hub-main</code>.
+  </div>
+
+  <h3>4.1. Catálogo (<code>HUB_WIDGETS[]</code>)</h3>
+  <p>7 widgets disponíveis. Cada item: <code>{ id, name, icon (lucide), desc }</code>.</p>
+  <table>
+    <tr><th>ID</th><th>Nome</th><th>Ícone</th><th>Descrição</th></tr>
+    <tr><td><code>notifications</code></td><td>Notificações</td><td>bell</td><td>Últimas notificações do sistema</td></tr>
+    <tr><td><code>payments_queue</code></td><td>Fila de pagamentos</td><td>banknote</td><td>Vencidos, atrasados e a processar</td></tr>
+    <tr><td><code>tasks</code></td><td>Minhas tarefas</td><td>check-square</td><td>Pendentes e em andamento</td></tr>
+    <tr><td><code>results</code></td><td>Resultado do mês</td><td>trending-up</td><td>QFTDs, receita e lucro 3C no período</td></tr>
+    <tr><td><code>top_affiliates</code></td><td>Top afiliados</td><td>award</td><td>5 melhores por lucro 3C</td></tr>
+    <tr><td><code>pipeline_status</code></td><td>Pipeline</td><td>git-branch</td><td>Kanban compacto de negociações</td></tr>
+    <tr><td><code>recent_activity</code></td><td>Atividade recente</td><td>activity</td><td>Últimas ações no sistema</td></tr>
+  </table>
+
+  <h3>4.2. Defaults</h3>
+  <pre><code>const DEFAULT_HUB_WIDGETS = ['results', 'payments_queue', 'tasks', 'notifications'];</code></pre>
+  <p>Aplicados quando <code>STATE.settings.hubWidgets</code> é <code>undefined</code> ou array vazio. Lógica em <code>_activeWidgets()</code>:</p>
+  <pre><code>function _activeWidgets() {
+  const saved = STATE.settings?.hubWidgets;
+  if (Array.isArray(saved) &amp;&amp; saved.length &gt; 0) {
+    // Filtra contra catálogo válido (ignora IDs antigos / removidos)
+    return saved.filter(id =&gt; HUB_WIDGETS.some(w =&gt; w.id === id));
+  }
+  return DEFAULT_HUB_WIDGETS;
+}</code></pre>
+
+  <h3>4.3. Visual shell compartilhado</h3>
+  <p>Todos os widgets passam por <code>_widgetShell(id, title, icon, bodyHTML, footerHTML)</code> para garantir layout consistente:</p>
+  <pre><code>&lt;div class="hub-widget" data-wid="..."&gt;
+  &lt;div class="hw-hdr"&gt;
+    &lt;i data-lucide="..."&gt;&lt;/i&gt;
+    &lt;span class="hw-title"&gt;...&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="hw-body"&gt;...&lt;/div&gt;
+  &lt;div class="hw-ftr"&gt;...&lt;/div&gt;  &lt;!-- opcional --&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>4.4. Renderers individuais</h3>
+
+  <h4>_widgetNotifications</h4>
+  <ul>
+    <li>Lê <code>STATE.notifications</code>, pega as 4 primeiras.</li>
+    <li>Cada item: dot colorido por <code>n.type</code> (red/amber/green/theme) + texto + tempo.</li>
+    <li>Vazio: "Nada novo por aqui."</li>
+    <li>Footer: "Ver todas" → <code>toggleActionCenter()</code>.</li>
+  </ul>
+
+  <h4>_widgetPaymentsQueue</h4>
+  <ul>
+    <li>Agrupa <code>STATE.payments</code> por status via <code>computePaymentStatus(p)</code> (que considera vencimento real, não só campo <code>status</code>).</li>
+    <li>Mostra 4 stat rows: <strong>Vencidos</strong> (red) · <strong>Em atraso</strong> (amber) · <strong>Pendentes</strong> (text2) · <strong>Pagos (mês)</strong> (green). Cada um com count + total formatado em BRL.</li>
+    <li>Footer: "Abrir financeiro" → <code>openMod('payments')</code>.</li>
+  </ul>
+
+  <h4>_widgetTasks</h4>
+  <ul>
+    <li>Filtra <code>STATE.tasks</code> não concluídas, pega as 4 primeiras.</li>
+    <li>Cada item: dot priorizado (<code>.hw-pri-a/m/b</code>) + título + meta (assignee + dueDate em pt-BR).</li>
+    <li>Vazio: "Tudo em dia. 🎯" + footer "Nova tarefa".</li>
+    <li>Cheio: footer "Abrir todas (N)".</li>
+  </ul>
+
+  <h4>_widgetResults</h4>
+  <ul>
+    <li>Calcula KPIs do mês corrente a partir de <code>STATE.reports</code> filtrados por <code>monthKey</code> (<code>YYYY-MM</code>).</li>
+    <li>Soma: <code>ftd</code>, <code>qftd</code> (suporta tanto número quanto objeto <code>{brand: count}</code>), <code>netRev</code>.</li>
+    <li><strong>Fallback</strong>: se nenhum report no mês, faz rollup de todos os afiliados (<code>a.ftds + a.qftds + a.netRev</code>) e troca o título para <em>"Resultado consolidado"</em> com label <em>"Total acumulado"</em>.</li>
+    <li>Body: <code>.hw-results-big</code> com QFTD em destaque + 2 stat rows (FTDs, Net Revenue).</li>
+    <li>Footer: "Ver dashboard" → <code>openMod('dashboard')</code>.</li>
+  </ul>
+
+  <h4>_widgetTopAffiliates</h4>
+  <ul>
+    <li>Filtra afiliados com <code>profit &gt; 0</code>, ordena desc, top 5.</li>
+    <li>Cada item: rank (1-5) + nome + lucro formatado em BRL.</li>
+    <li>Título: "Top afiliados · Lucro 3C". Footer: "Ver todos" → <code>openMod('affiliates')</code>.</li>
+  </ul>
+
+  <h4>_widgetPipelineStatus</h4>
+  <ul>
+    <li>Lê <code>STATE.pipeline.stages</code> e <code>STATE.pipeline.cards</code>.</li>
+    <li>Para cada stage, conta cards com <code>stageId === s.id</code>. Mostra dot colorido (<code>s.color</code>) + nome + count.</li>
+    <li>Vazio: "Nenhuma negociação no funil." + footer ainda abre o módulo.</li>
+  </ul>
+
+  <h4>_widgetRecentActivity</h4>
+  <ul>
+    <li>Lê <code>STATE.auditLog</code>, pega os 4 mais recentes.</li>
+    <li>Cada item: ação (<code>l.action</code>) + meta (<code>l.user || 'Sistema'</code> · <code>l.time</code>).</li>
+    <li>Footer: "Ver auditoria" → <code>openMod('audit')</code>.</li>
+  </ul>
+
+  <h3>4.5. Mounting — <code>buildHubWidgets()</code></h3>
+  <pre><code>window.buildHubWidgets = () =&gt; {
+  const wrap = document.getElementById('hub-widgets');
+  if (!wrap) return;
+  const active = _activeWidgets();
+  if (!active.length) { wrap.innerHTML = ''; return; }
+
+  const renderMap = {
+    notifications: _widgetNotifications,
+    payments_queue: _widgetPaymentsQueue,
+    tasks: _widgetTasks,
+    results: _widgetResults,
+    top_affiliates: _widgetTopAffiliates,
+    pipeline_status: _widgetPipelineStatus,
+    recent_activity: _widgetRecentActivity,
+  };
+  wrap.innerHTML = active.map(id =&gt; {
+    const fn = renderMap[id];
+    return fn ? fn() : '';
+  }).join('');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+};</code></pre>
+  <p>Chamado por <code>showHub()</code> após login. A ordem dos widgets na renderização segue a ordem do array salvo em <code>STATE.settings.hubWidgets</code>.</p>
+
+  <h3>4.6. Picker modal — <code>openHubWidgetPicker()</code></h3>
+  <p>Acionado pelo botão "Personalizar widgets" no hub (lado direito do label "Módulos"). Abre <code>openModal()</code> com:</p>
+  <ul>
+    <li><strong>Nota explicativa</strong>: "Escolha quais widgets aparecem... A ordem de exibição segue a ordem marcada abaixo."</li>
+    <li><strong>Lista de checkboxes</strong> (<code>.hwp-row</code>): cada item com checkbox + ícone + nome + descrição. <code>checked</code> determinado pelo <code>_activeWidgets()</code> atual.</li>
+    <li><strong>Footer</strong>: <code>Cancelar</code> + <code>Salvar</code>.</li>
+  </ul>
+
+  <h3>4.7. Persistência — <code>_saveHubWidgets()</code></h3>
+  <pre><code>window._saveHubWidgets = () =&gt; {
+  const selected = [...document.querySelectorAll('.hwp-check:checked')].map(c =&gt; c.value);
+  if (!STATE.settings) STATE.settings = {};
+  STATE.settings.hubWidgets = selected;
+  saveToLocal();        // localStorage
+  closeModal();
+  buildHubWidgets();    // re-render imediato
+  toast('Widgets atualizados', 's');
+};</code></pre>
+  <p><strong>Storage</strong>: ID dos widgets ativos vai para <code>STATE.settings.hubWidgets</code>, persistido em <code>localStorage</code> via <code>saveToLocal()</code> + sincronizado com Supabase pela camada <code>data.js</code>.</p>
+
+  <h3>4.8. CSS-chave</h3>
+  <table>
+    <tr><th>Classe</th><th>Função</th></tr>
+    <tr><td><code>#hub-widgets</code></td><td>Container que recebe a string de widgets concatenados — geralmente um grid horizontal</td></tr>
+    <tr><td><code>.hub-widget</code></td><td>Wrapper individual de cada card</td></tr>
+    <tr><td><code>.hw-hdr</code></td><td>Header: ícone + título</td></tr>
+    <tr><td><code>.hw-body</code></td><td>Área de conteúdo principal</td></tr>
+    <tr><td><code>.hw-ftr</code></td><td>Footer: CTA</td></tr>
+    <tr><td><code>.hw-stat-row</code></td><td>Linha label + valor (usado em payments, pipeline, results)</td></tr>
+    <tr><td><code>.hw-empty</code></td><td>Estado vazio dentro do body</td></tr>
+    <tr><td><code>.hw-cta</code></td><td>Botão de ação no footer</td></tr>
+    <tr><td><code>.hw-pri-a / .hw-pri-m / .hw-pri-b</code></td><td>Prioridade alta/média/baixa em tasks</td></tr>
+    <tr><td><code>.hw-results-big</code></td><td>Bloco de destaque do widget Results (QFTD grande)</td></tr>
+    <tr><td><code>.hwp-row / .hwp-check / .hwp-icon</code></td><td>Picker modal — uma row por widget no catálogo</td></tr>
+  </table>
+
+  <h3>4.9. Como adicionar um novo widget</h3>
+  <ol>
+    <li>Adicione entrada no array <code>HUB_WIDGETS</code> (id único, name, icon, desc).</li>
+    <li>Crie a função renderer <code>_widgetSeuNome()</code> seguindo o padrão (lê <code>STATE</code>, retorna via <code>_widgetShell()</code>).</li>
+    <li>Adicione mapeamento em <code>renderMap</code> dentro de <code>buildHubWidgets()</code>.</li>
+    <li><em>Opcional</em>: adicione o id em <code>DEFAULT_HUB_WIDGETS</code> se quiser que apareça por padrão.</li>
+  </ol>
+
+  <div class="callout">
+    <strong>Padrão recomendado</strong>: sempre tratar o estado vazio com <code>_widgetShell(...'<div class="hw-empty">Mensagem</div>'...)</code> e oferecer footer com CTA mesmo no vazio (para guiar o próximo passo do usuário).
+  </div>
 </section>
 
 <!-- ════════════════════════════════════════════ -->
