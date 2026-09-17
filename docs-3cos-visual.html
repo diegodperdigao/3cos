@@ -676,7 +676,459 @@ backdrop-filter: blur(12px);</code></pre>
 <!-- 3. COMPONENTS -->
 <section id="components">
   <h2>3. Componentes reutilizáveis</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <p>Copie-cole os blocos abaixo direto em outro projeto. Cada componente inclui HTML + CSS + demo visual. Dependem apenas das CSS variables da Seção 1 e da lib Lucide.</p>
+
+  <h3>3.1. Botões</h3>
+  <p>Sistema com 4 variantes (theme, outline, ghost, danger). Todos compartilham a classe base <code>.btn</code>.</p>
+
+  <h4>CSS</h4>
+  <pre><code>.btn{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 16px; border-radius:10px;
+  font-family:var(--fb); font-size:12px; font-weight:500;
+  cursor:pointer; border:none; transition:all 0.2s; white-space:nowrap;
+}
+.btn svg{ width:12px; height:12px; }
+
+.btn-theme{ background:var(--theme); color:#fff; }
+.btn-theme:hover{ transform:translateY(-1px); box-shadow:0 4px 12px var(--theme-dim); }
+
+.btn-outline{ background:transparent; color:var(--text); border:1px solid var(--gb2); }
+.btn-outline:hover{ border-color:var(--theme-b); color:var(--theme); }
+
+.btn-ghost{ background:transparent; color:var(--text2); }
+.btn-ghost:hover{ background:var(--bg3); color:var(--text); }
+
+.btn-danger{ background:transparent; color:var(--red); border:1px solid rgba(239,68,68,0.3); }
+.btn-danger:hover{ background:rgba(239,68,68,0.08); }</code></pre>
+
+  <h4>HTML</h4>
+  <pre><code>&lt;button class="btn btn-theme"&gt;&lt;i data-lucide="check"&gt;&lt;/i&gt; Salvar&lt;/button&gt;
+&lt;button class="btn btn-outline"&gt;Cancelar&lt;/button&gt;
+&lt;button class="btn btn-ghost"&gt;Fechar&lt;/button&gt;
+&lt;button class="btn btn-danger"&gt;&lt;i data-lucide="trash-2"&gt;&lt;/i&gt; Excluir&lt;/button&gt;</code></pre>
+
+  <h4>Demo</h4>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px">
+    <button style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:#ec4899;color:#fff">✓ Salvar</button>
+    <button style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:#f1f5f9;border:1px solid rgba(255,255,255,0.1)">Cancelar</button>
+    <button style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:#94a3b8;border:none">Fechar</button>
+    <button style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Excluir</button>
+  </div>
+
+  <h3>3.2. Icon Button (top bar)</h3>
+  <p>Usado no top bar do hub (sino, tema, beta). Quadrado com ícone centralizado.</p>
+
+  <h4>CSS + HTML</h4>
+  <pre><code>.hub-icon-btn{
+  width:34px; height:34px; border-radius:9px; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:transparent; color:var(--text2); border:none;
+  transition:all 0.15s; position:relative;
+}
+.hub-icon-btn:hover{ background:rgba(255,255,255,0.12); color:var(--text); }
+.hub-icon-btn svg{ width:15px; height:15px; }
+/* Badge de contagem */
+.hub-notif-badge{
+  position:absolute; top:-4px; right:-4px;
+  width:15px; height:15px; border-radius:50%;
+  background:var(--red); color:#fff; font-size:9px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+}
+
+&lt;button class="hub-icon-btn"&gt;
+  &lt;i data-lucide="bell"&gt;&lt;/i&gt;
+  &lt;div class="hub-notif-badge"&gt;3&lt;/div&gt;
+&lt;/button&gt;</code></pre>
+
+  <h3>3.3. Cards / Painéis (Widget shell)</h3>
+  <p>Base visual dos widgets do hub. Card com header + body + footer opcional.</p>
+
+  <h4>CSS</h4>
+  <pre><code>.hub-widget{
+  background:var(--bg2);
+  border:1px solid var(--gb);
+  border-radius:14px;
+  padding:16px 18px 14px;
+  display:flex; flex-direction:column;
+  min-height:160px;
+}
+.hw-hdr{
+  display:flex; align-items:center; gap:8px;
+  color:var(--text2); margin-bottom:10px;
+  font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.05em;
+}
+.hw-hdr svg{ width:12px; height:12px; }
+.hw-body{ flex:1; }
+.hw-ftr{
+  margin-top:12px; padding-top:10px;
+  border-top:1px solid var(--gb);
+}
+.hw-cta{
+  width:100%; padding:8px; background:transparent;
+  color:var(--text2); border:none; cursor:pointer;
+  font-size:11px; font-weight:600; border-radius:8px;
+  transition:all 0.15s;
+}
+.hw-cta:hover{ background:var(--bg3); color:var(--text); }
+/* Linha de stat (label + valor) */
+.hw-stat-row{
+  display:flex; justify-content:space-between;
+  padding:6px 0; font-size:12px;
+}
+.hw-stat-lbl{ color:var(--text2); font-weight:500; }
+.hw-stat-val{ color:var(--text); font-weight:700; }
+.hw-empty{
+  text-align:center; padding:20px 0;
+  color:var(--text3); font-size:12px;
+}</code></pre>
+
+  <h4>HTML (widget de exemplo)</h4>
+  <pre><code>&lt;div class="hub-widget" data-wid="payments_queue"&gt;
+  &lt;div class="hw-hdr"&gt;
+    &lt;i data-lucide="banknote"&gt;&lt;/i&gt;
+    &lt;span class="hw-title"&gt;Fila de pagamentos&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="hw-body"&gt;
+    &lt;div class="hw-stat-row"&gt;
+      &lt;span class="hw-stat-lbl" style="color:var(--red)"&gt;Vencidos&lt;/span&gt;
+      &lt;span class="hw-stat-val"&gt;1 · R$ 15.000&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class="hw-stat-row"&gt;
+      &lt;span class="hw-stat-lbl" style="color:var(--amber)"&gt;Em atraso&lt;/span&gt;
+      &lt;span class="hw-stat-val"&gt;0 · R$ 0&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class="hw-stat-row"&gt;
+      &lt;span class="hw-stat-lbl"&gt;Pendentes&lt;/span&gt;
+      &lt;span class="hw-stat-val"&gt;1 · R$ 8.500&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="hw-ftr"&gt;
+    &lt;button class="hw-cta"&gt;Abrir financeiro&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>3.4. Modal (overlay + card centralizado)</h3>
+  <p>Estrutura genérica usada por todos os modais do sistema. Fechado por default (opacity 0), animado com transition.</p>
+
+  <h4>CSS</h4>
+  <pre><code>#modal-ov{
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,0.75);
+  display:none; align-items:center; justify-content:center;
+  opacity:0; transition:opacity 0.25s;
+  backdrop-filter:blur(6px);
+}
+#modal-ov.on{ display:flex; opacity:1; }
+.modal{
+  background:var(--bg2);
+  border:1px solid var(--gb2);
+  border-radius:14px;
+  width:min(560px, 90vw);
+  max-height:85vh;
+  display:flex; flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.modal-hdr{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 22px; border-bottom:1px solid var(--gb);
+}
+.modal-ttl{ font-weight:700; font-size:14px; color:var(--text); }
+.modal-cls{
+  background:transparent; border:none; color:var(--text2);
+  cursor:pointer; padding:4px; border-radius:6px;
+}
+.modal-cls:hover{ background:var(--bg3); color:var(--text); }
+.modal-bd{ padding:20px 22px; overflow-y:auto; font-size:13px; }
+.modal-ft{
+  padding:14px 22px; border-top:1px solid var(--gb);
+  display:flex; justify-content:flex-end; gap:8px;
+}</code></pre>
+
+  <h4>HTML + JS de abertura</h4>
+  <pre><code>&lt;div id="modal-ov"&gt;
+  &lt;div class="modal"&gt;
+    &lt;div class="modal-hdr"&gt;
+      &lt;span class="modal-ttl" id="mttl"&gt;&lt;/span&gt;
+      &lt;button class="modal-cls" onclick="closeModal()"&gt;&lt;i data-lucide="x"&gt;&lt;/i&gt;&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;div class="modal-bd" id="mbd"&gt;&lt;/div&gt;
+    &lt;div class="modal-ft" id="mft"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+function openModal(title, bodyHTML, footerHTML){
+  document.getElementById('mttl').textContent = title;
+  document.getElementById('mbd').innerHTML = bodyHTML;
+  document.getElementById('mft').innerHTML = footerHTML || '';
+  document.getElementById('modal-ov').classList.add('on');
+  if (window.lucide) lucide.createIcons();
+}
+function closeModal(){
+  document.getElementById('modal-ov').classList.remove('on');
+}
+&lt;/script&gt;</code></pre>
+
+  <h3>3.5. Toast (notificações efêmeras)</h3>
+  <p>Balão de mensagem no canto inferior direito. Auto-dismiss em 3.5s. 3 tipos: success (verde), warning (âmbar), error (vermelho).</p>
+
+  <h4>CSS</h4>
+  <pre><code>#toasts{
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  display:flex; flex-direction:column-reverse; gap:8px;
+  pointer-events:none;
+}
+.toast{
+  background:var(--bg2);
+  border:1px solid var(--gb2);
+  border-radius:10px;
+  padding:12px 16px;
+  min-width:220px; max-width:360px;
+  font-size:13px; color:var(--text);
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  pointer-events:auto;
+  animation:toast-in 0.25s ease-out;
+}
+.toast.s{ border-left:3px solid var(--green); }
+.toast.w{ border-left:3px solid var(--amber); }
+.toast.e{ border-left:3px solid var(--red); }
+@keyframes toast-in{ from{transform:translateX(20px);opacity:0} to{transform:translateX(0);opacity:1} }</code></pre>
+
+  <h4>JS</h4>
+  <pre><code>function toast(text, type = 's'){  // 's', 'w', 'e'
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = text;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() =&gt; el.remove(), 3500);
+}</code></pre>
+
+  <h3>3.6. Prioridade / status badges</h3>
+  <h4>CSS</h4>
+  <pre><code>.pri{
+  display:inline-block; padding:2px 8px; border-radius:5px;
+  font-size:9px; font-weight:700; letter-spacing:0.05em;
+  text-transform:uppercase;
+}
+.pri-a{ background:rgba(239,68,68,0.14); color:var(--red); }    /* alta */
+.pri-m{ background:rgba(245,158,11,0.14); color:var(--amber); } /* média */
+.pri-b{ background:rgba(16,185,129,0.14); color:var(--green); } /* baixa */
+
+/* Dot da tarefa (usado em widget de tarefas) */
+.hw-task-dot{
+  width:8px; height:8px; border-radius:50%;
+  flex-shrink:0; margin-top:5px;
+}
+.hw-pri-a{ background:var(--red); }
+.hw-pri-m{ background:var(--amber); }
+.hw-pri-b{ background:var(--green); }</code></pre>
+
+  <h3>3.7. Search pill (barra de busca)</h3>
+  <h4>CSS + HTML</h4>
+  <pre><code>.search-pill{
+  position:relative;
+  display:inline-flex; align-items:center; gap:10px;
+  background:var(--bg2); border:1px solid var(--gb);
+  border-radius:20px; padding:8px 16px;
+  min-width:420px; cursor:text;
+  transition:all 0.15s;
+}
+.search-pill:hover, .search-pill:focus-within{
+  border-color:var(--gb2); background:var(--bg3);
+}
+.search-pill-icon{ width:14px; height:14px; color:var(--text2); }
+.search-pill-input{
+  flex:1; background:none; border:none; outline:none;
+  color:var(--text); font-size:13px;
+}
+.search-pill-input::placeholder{ color:var(--text3); }
+.search-pill-hint{
+  font-size:10px; font-weight:600; color:var(--text3);
+  padding:2px 6px; border-radius:4px;
+  background:var(--bg3); border:1px solid var(--gb);
+}
+
+&lt;div class="search-pill"&gt;
+  &lt;i data-lucide="search" class="search-pill-icon"&gt;&lt;/i&gt;
+  &lt;input type="text" class="search-pill-input" placeholder="Buscar em tudo..."&gt;
+  &lt;span class="search-pill-hint"&gt;Ctrl K&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>3.8. User chip (perfil no top bar)</h3>
+  <h4>CSS + HTML</h4>
+  <pre><code>.hub-user-chip{
+  position:relative;
+  display:flex; align-items:center; gap:12px;
+  padding:6px 14px 6px 6px;
+  cursor:pointer; border-radius:20px;
+  transition:background 0.15s;
+}
+.hub-user-chip:hover{ background:var(--bg2); }
+.hub-user-avatar{
+  width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; flex-shrink:0;
+}
+.hub-user-info{ display:flex; flex-direction:column; gap:1px; }
+.hub-user-name{
+  font-size:13px; font-weight:600; color:var(--text);
+  line-height:1.3; white-space:nowrap;
+}
+.hub-user-role{
+  font-size:11px; color:var(--text3);
+  line-height:1.2; white-space:nowrap;
+}
+
+&lt;div class="hub-user-chip"&gt;
+  &lt;div class="hub-user-avatar"&gt;
+    &lt;span style="width:32px;height:32px;border-radius:50%;background:hsl(220,60%,45%);
+                 display:flex;align-items:center;justify-content:center;
+                 color:#fff;font-weight:700;font-size:12px"&gt;DP&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="hub-user-info"&gt;
+    &lt;div class="hub-user-name"&gt;Diego Perdigão&lt;/div&gt;
+    &lt;span class="hub-user-role"&gt;Administrador&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;i data-lucide="chevron-down" style="width:12px;height:12px;opacity:0.5"&gt;&lt;/i&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>3.9. Módulo card (do grid do hub)</h3>
+  <p>Card clicável que abre um módulo. Cor customizada por CSS variables inline.</p>
+  <h4>CSS</h4>
+  <pre><code>.hub-app{
+  position:relative; overflow:hidden;
+  background:var(--bg2);
+  border:1px solid var(--gb);
+  border-radius:14px;
+  padding:18px 12px 14px;
+  text-align:center; cursor:pointer;
+  transition:transform 0.2s, border-color 0.2s;
+  aspect-ratio:1;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+.hub-app:hover{
+  transform:scale(1.02) translateY(-4px);
+  border-color:var(--app-border);
+}
+.hub-app::before{
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(circle at center, var(--app-glow), transparent 70%);
+  opacity:0; transition:opacity 0.2s;
+}
+.hub-app:hover::before{ opacity:1; }
+.hub-app-icon{
+  width:54px; height:54px; border-radius:14px;
+  background:var(--app-bg);
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:10px;
+}
+.hub-app-icon svg{
+  width:24px; height:24px;
+  stroke:var(--app-stroke); stroke-width:1.7;
+}
+.hub-app-name{
+  font-family:var(--fd); font-size:11px; font-weight:700;
+  color:var(--text); letter-spacing:0.02em;
+  position:relative; z-index:1;
+}</code></pre>
+  <h4>HTML (com cores inline)</h4>
+  <pre><code>&lt;div class="hub-app"
+     onclick="openMod('affiliates')"
+     style="--app-border:rgba(96,165,250,0.32);
+            --app-glow:rgba(96,165,250,0.14);
+            --app-bg:rgba(96,165,250,0.1);
+            --app-stroke:#3b82f6"&gt;
+  &lt;div class="hub-app-icon"&gt;&lt;i data-lucide="users"&gt;&lt;/i&gt;&lt;/div&gt;
+  &lt;div class="hub-app-name"&gt;Afiliados&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+  <h3>3.10. Copilot bubbles</h3>
+  <p>Diferentes para user (right-aligned) e assistant (left-aligned com avatar).</p>
+  <h4>CSS</h4>
+  <pre><code>.cp-msg{
+  display:flex; gap:10px; padding:8px 20px;
+  align-items:flex-start;
+}
+.cp-msg-user{ justify-content:flex-end; }
+.cp-msg-assist .cp-msg-avatar{
+  width:28px; height:28px; border-radius:50%;
+  background:linear-gradient(135deg, #ec4899, #a855f7);
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; flex-shrink:0;
+}
+.cp-bubble{
+  max-width:76%; padding:10px 14px;
+  border-radius:14px;
+  font-size:13px; line-height:1.5;
+  color:var(--text);
+}
+.cp-msg-user .cp-bubble{
+  background:var(--theme-dim);
+  border:1px solid var(--theme-b);
+  border-radius:14px 14px 4px 14px;
+}
+.cp-msg-assist .cp-bubble{
+  background:var(--bg2);
+  border:1px solid var(--gb);
+  border-radius:14px 14px 14px 4px;
+}
+.cp-bubble strong{ color:var(--text); font-weight:700; }
+.cp-bubble code{
+  background:var(--bg3); padding:2px 5px; border-radius:4px;
+  font-family:'SF Mono', monospace; font-size:11.5px;
+}
+/* Typing indicator (3 dots animados) */
+.cp-typing{ display:flex; gap:4px; padding:12px 14px; }
+.cp-typing span{
+  width:6px; height:6px; border-radius:50%;
+  background:var(--text3);
+  animation:cp-dot 1.4s infinite;
+}
+.cp-typing span:nth-child(2){ animation-delay:0.2s; }
+.cp-typing span:nth-child(3){ animation-delay:0.4s; }
+@keyframes cp-dot{
+  0%,60%,100%{ opacity:0.3; }
+  30%{ opacity:1; }
+}</code></pre>
+
+  <h3>3.11. Drawer lateral direito</h3>
+  <p>Padrão usado por Copilot, Action Center e Mobile Sidebar. Sliding panel com backdrop.</p>
+  <h4>CSS</h4>
+  <pre><code>.drawer{
+  position:fixed; top:0; right:0; bottom:0;
+  width:440px; max-width:90vw;
+  background:var(--bg);
+  border-left:1px solid var(--gb2);
+  z-index:9500;
+  transform:translateX(100%);
+  transition:transform 0.28s ease-out;
+  display:flex; flex-direction:column;
+  box-shadow:-20px 0 60px rgba(0,0,0,0.5);
+}
+.drawer.open{ transform:translateX(0); }
+
+.drawer-overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.4);
+  z-index:9400;
+  opacity:0; pointer-events:none;
+  transition:opacity 0.2s;
+  backdrop-filter:blur(2px);
+}
+.drawer-overlay.open{ opacity:1; pointer-events:auto; }</code></pre>
+
+  <h3>3.12. Utilitários finais</h3>
+  <table>
+    <tr><th>Classe</th><th>Uso</th></tr>
+    <tr><td><code>.hub-desktop-only</code></td><td>Some em <code>max-width:768px</code></td></tr>
+    <tr><td><code>.mob-only</code></td><td>Aparece só em mobile</td></tr>
+    <tr><td><code>.on</code></td><td>Flag genérica de "ativo" — usada em modais, drawers, dropdowns</td></tr>
+    <tr><td><code>.hub-beta-dot</code></td><td>Dot pulsante no ícone Beta</td></tr>
+  </table>
 </section>
 
 <!-- 4. THEMES -->
