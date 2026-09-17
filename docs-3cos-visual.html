@@ -1134,13 +1134,258 @@ function closeModal(){
 <!-- 4. THEMES -->
 <section id="themes">
   <h2>4. Sistema de temas e editions</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <p>O sistema tem 2 dimensões: <strong>mode</strong> (dark/light) e <strong>edition</strong> (default/mono/bento/meridian/neonflow/glass). Aplicadas via 2 atributos no <code>&lt;html&gt;</code>:</p>
+
+  <pre><code>&lt;html data-theme="dark" data-edition=""&gt;         &lt;!-- default dark --&gt;
+&lt;html data-theme="light" data-edition=""&gt;        &lt;!-- default light --&gt;
+&lt;html data-theme="dark" data-edition="glass"&gt;    &lt;!-- Liquid Glass dark --&gt;
+&lt;html data-theme="light" data-edition="mono"&gt;    &lt;!-- Mono light --&gt;</code></pre>
+
+  <h3>4.1. Storage e THEME_MAP</h3>
+  <p>Salvo em <code>STATE.settings.theme</code> como string composta (<code>edition-mode</code>). Decodificado em <code>applyAppTheme()</code>:</p>
+
+  <pre><code>const THEME_MAP = {
+  'default-dark':   { edition: '',         theme: 'dark'  },
+  'default-light':  { edition: '',         theme: 'light' },
+  'mono-dark':      { edition: 'mono',     theme: 'dark'  },
+  'mono-light':     { edition: 'mono',     theme: 'light' },
+  'bento-dark':     { edition: 'bento',    theme: 'dark'  },
+  'bento-light':    { edition: 'bento',    theme: 'light' },
+  'meridian-dark':  { edition: 'meridian', theme: 'dark'  },
+  'meridian-light': { edition: 'meridian', theme: 'light' },
+  'neonflow-dark':  { edition: 'neonflow', theme: 'dark'  },
+  'neonflow-light': { edition: 'neonflow', theme: 'light' },
+  'glass-dark':     { edition: 'glass',    theme: 'dark'  },
+  'glass-light':    { edition: 'glass',    theme: 'light' },
+};
+
+window.applyAppTheme = () =&gt; {
+  const key = STATE.settings?.theme || 'default-dark';
+  const pair = THEME_MAP[key] || THEME_MAP['default-dark'];
+  const root = document.documentElement;
+  root.setAttribute('data-theme', pair.theme);
+  if (pair.edition &amp;&amp; STATE.user) root.setAttribute('data-edition', pair.edition);
+  else root.removeAttribute('data-edition');
+};</code></pre>
+
+  <div class="callout">
+    <strong>Regra importante</strong>: <code>data-edition</code> só é aplicado quando <code>STATE.user</code> existe. A tela de lock/login sempre fica no default para consistência visual.
+  </div>
+
+  <h3>4.2. Como um novo tema é definido no CSS</h3>
+  <p>Cada tema sobrescreve as mesmas CSS variables. Os componentes nunca dependem do tema — eles consomem apenas variables.</p>
+
+  <pre><code>/* Default dark é o :root */
+:root {
+  --theme: #ec4899;
+  --bg: #060810;
+  --text: #f1f5f9;
+  /* ... */
+}
+
+/* Light override — só as variables que mudam */
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --text: #0f172a;
+  --theme: #db2777;
+  /* ... */
+}
+
+/* Mono edition — deixa tudo preto/branco */
+[data-edition="mono"] {
+  --theme: #ffffff;
+  --pink: #ffffff; --blue: #ffffff;
+  --fd: 'Space Mono', monospace;
+}
+[data-edition="mono"][data-theme="light"] {
+  --theme: #000000;
+  --bg: #ffffff;
+}
+
+/* Glass edition — habilita backdrop-filter em componentes */
+[data-edition="glass"] .hub-widget,
+[data-edition="glass"] .modal,
+[data-edition="glass"] .drawer{
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+[data-edition="glass"] body::before {
+  content:''; position:fixed; inset:0;
+  background:
+    radial-gradient(60% 60% at 20% 30%, rgba(236,72,153,0.35), transparent 70%),
+    radial-gradient(50% 50% at 80% 70%, rgba(168,85,247,0.30), transparent 70%);
+  z-index:-1;
+}</code></pre>
+
+  <h3>4.3. Toggle simples (só dark ⇄ light)</h3>
+  <p>Botão do sun/moon no top bar. Não muda a edition, só o mode.</p>
+  <pre><code>window.toggleTheme = () =&gt; {
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  // Sincroniza com settings.theme
+  const curKey = STATE.settings.theme || 'default-dark';
+  const [edition] = curKey.split('-');
+  STATE.settings.theme = `${edition}-${next}`;
+  saveToLocal();
+  // Atualiza o ícone
+  const icon = document.getElementById('theme-icon');
+  if (icon) icon.setAttribute('data-lucide', next === 'dark' ? 'moon' : 'sun');
+  if (window.lucide) lucide.createIcons();
+};</code></pre>
+
+  <h3>4.4. Editions disponíveis (resumo)</h3>
+  <table>
+    <tr><th>Edition</th><th>Estética</th><th>Destaque técnico</th></tr>
+    <tr><td><code>default</code></td><td>Padrão · pink brand, gradientes suaves</td><td>Só o :root — base do sistema</td></tr>
+    <tr><td><code>mono</code></td><td>Monocromático · P&amp;B extremo, font mono</td><td>Sobrescreve TODAS as cores para grayscale + font-family Space Mono</td></tr>
+    <tr><td><code>bento</code></td><td>Grid harmônico · cards mais quadrados, spacing maior</td><td>Ajusta gaps + border-radius menor</td></tr>
+    <tr><td><code>meridian</code></td><td>Editorial · Playfair Display italic para títulos</td><td>Muda <code>--fd</code> + hover animation elegante</td></tr>
+    <tr><td><code>neonflow</code></td><td>Cyberpunk · glow forte, cores vibrantes</td><td>Adiciona box-shadow com theme-glow em quase tudo</td></tr>
+    <tr><td><code>glass</code></td><td>Liquid Glass (iOS) · backdrop-filter blur, orb wallpaper</td><td>Requer suporte a backdrop-filter no navegador</td></tr>
+  </table>
+
+  <h3>4.5. Boas práticas para novos temas</h3>
+  <ul>
+    <li><strong>Nunca hardcode cor em componente</strong> — sempre <code>var(--nome)</code>. Se precisar de uma cor nova, adicione ao <code>:root</code>.</li>
+    <li><strong>Light mode = simetria</strong> — para cada var no <code>:root</code>, defina o equivalente em <code>[data-theme="light"]</code>. Não deixa <code>rgba(255,255,255,X)</code> aparecer em light (fica invisível).</li>
+    <li><strong>Editions são aditivas</strong> — sobrescrevem só o que muda. Se um edition não define uma variável, herda do <code>:root</code>.</li>
+    <li><strong>Ícone do tema</strong> — atualize o <code>data-lucide</code> do <code>#theme-icon</code> sempre que trocar (sun ↔ moon) e re-rode <code>lucide.createIcons()</code>.</li>
+    <li><strong>Persistência</strong> — sempre salve em <code>STATE.settings.theme</code> + <code>saveToLocal()</code> para sobreviver reload.</li>
+  </ul>
 </section>
 
 <!-- 5. USAGE -->
 <section id="usage">
   <h2>5. Como reusar em outro projeto</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <p>Guia prático para portar o design system inteiro — ou pedaços dele — para outro projeto. As instruções assumem stack sem build system (mesmo que o original), mas funcionam em qualquer framework se você extrair só o CSS.</p>
+
+  <h3>5.1. Portabilidade mínima (starter kit)</h3>
+  <p>Se quiser apenas a base visual (paleta + tipografia + botões + cards), você precisa de:</p>
+
+  <ol>
+    <li><strong>Fonts</strong> no <code>&lt;head&gt;</code>:
+      <pre><code>&lt;link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Montserrat:wght@600;700;800;900&amp;display=swap" rel="stylesheet"&gt;</code></pre>
+    </li>
+    <li><strong>Lucide</strong> antes do <code>&lt;/body&gt;</code>:
+      <pre><code>&lt;script src="https://unpkg.com/lucide@latest"&gt;&lt;/script&gt;
+&lt;script&gt;lucide.createIcons();&lt;/script&gt;</code></pre>
+    </li>
+    <li><strong>CSS foundation</strong> (paleta + reset + tipografia base) — copiar as Seções 1 deste doc.</li>
+    <li><strong>Componentes que precisar</strong> — Seção 3 tem cada um isolado com HTML+CSS+demo.</li>
+  </ol>
+
+  <h3>5.2. Portabilidade completa (visual system inteiro)</h3>
+  <p>Para trazer todo o sistema, incluindo hub + widgets + copilot + temas:</p>
+
+  <ol>
+    <li>
+      <strong>Arquivos a copiar</strong>:
+      <ul>
+        <li><code>css/styles.css</code> — todo o CSS (paleta, componentes, temas)</li>
+        <li><code>js/app.js</code> — funções globais (showHub, buildHubCards, openMod, goBack, helpers)</li>
+        <li><code>js/widgets.js</code> — sistema de widgets</li>
+        <li><code>js/copilot.js</code> — chat IA (opcional)</li>
+        <li><code>js/settings.js</code> — apenas as funções <code>applyAppTheme</code>, <code>toggleTheme</code>, THEME_MAP</li>
+        <li>Trecho HTML do <code>#hub</code> (linhas 143-212 do index.html original)</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Adaptar</strong>:
+      <ul>
+        <li>Array <code>MODS[]</code> em <code>app.js</code> — módulos do novo projeto</li>
+        <li>Wordmark: substituir <code>3C&lt;em&gt;OS&lt;/em&gt;</code> pelo nome do novo produto</li>
+        <li>Logo: trocar <code>src</code> das imagens imgbb pelas do novo projeto</li>
+        <li>Prefixos do <code>localStorage</code>: <code>3cos_*</code> → <code>seuprojeto_*</code></li>
+        <li>Cores dos módulos no <code>MODS[]</code> — adaptar ao branding</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Não copiar</strong> (dependências do domínio 3C):
+      <ul>
+        <li>System prompt do Copilot (linguagem sobre iGaming)</li>
+        <li><code>MODS[]</code> com IDs 3C-específicos (payments, affiliates, etc)</li>
+        <li>Renderers de widgets que leem <code>STATE.payments</code>, <code>STATE.affiliates</code>, etc — reescrever para dados do novo domínio</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h3>5.3. Ordem recomendada de porte</h3>
+  <ol>
+    <li><strong>Foundations</strong> (paleta + tipografia + espaçamento) — a base sem a qual nada funciona.</li>
+    <li><strong>Um botão + um card</strong> — validar que as CSS vars estão OK.</li>
+    <li><strong>Top bar</strong> do hub (logo + search + icon buttons + user chip).</li>
+    <li><strong>Grid de módulos</strong> com <code>MODS[]</code> adaptado.</li>
+    <li><strong>Sistema de temas</strong> (dark ⇄ light no mínimo).</li>
+    <li><strong>Modal + toast</strong> — infraestrutura para modais de configuração.</li>
+    <li><strong>Widgets</strong> — depois que hub estiver estável.</li>
+    <li><strong>Copilot</strong> — por último, requer backend Vercel + Gemini key.</li>
+  </ol>
+
+  <h3>5.4. Cheatsheet — variáveis usadas por cada componente</h3>
+  <table>
+    <tr><th>Componente</th><th>CSS vars consumidas</th></tr>
+    <tr><td>Botão .btn-theme</td><td><code>--theme</code>, <code>--theme-dim</code></td></tr>
+    <tr><td>Botão .btn-outline</td><td><code>--text</code>, <code>--gb2</code>, <code>--theme-b</code>, <code>--theme</code></td></tr>
+    <tr><td>Widget shell</td><td><code>--bg2</code>, <code>--gb</code>, <code>--text</code>, <code>--text2</code>, <code>--bg3</code></td></tr>
+    <tr><td>Modal</td><td><code>--bg2</code>, <code>--gb</code>, <code>--gb2</code>, <code>--text</code>, <code>--text2</code>, <code>--bg3</code></td></tr>
+    <tr><td>Toast</td><td><code>--bg2</code>, <code>--gb2</code>, <code>--text</code>, <code>--green</code>, <code>--amber</code>, <code>--red</code></td></tr>
+    <tr><td>Search pill</td><td><code>--bg2</code>, <code>--gb</code>, <code>--gb2</code>, <code>--bg3</code>, <code>--text</code>, <code>--text2</code>, <code>--text3</code></td></tr>
+    <tr><td>Hub app card</td><td>consome as vars <code>--app-*</code> injetadas inline</td></tr>
+    <tr><td>Copilot bubbles</td><td><code>--theme-dim</code>, <code>--theme-b</code>, <code>--bg2</code>, <code>--gb</code>, <code>--bg3</code>, <code>--text</code>, <code>--text3</code></td></tr>
+  </table>
+
+  <h3>5.5. Erros comuns na portabilidade</h3>
+  <table>
+    <tr><th>Sintoma</th><th>Causa</th><th>Fix</th></tr>
+    <tr>
+      <td>Botão .btn-theme invisível</td>
+      <td><code>--theme</code> não definida no :root do novo projeto</td>
+      <td>Copiar a Seção 1.1 completa antes de qualquer componente</td>
+    </tr>
+    <tr>
+      <td>Ícones aparecem como <code>&lt;i&gt;</code> vazio</td>
+      <td>Esqueceu de chamar <code>lucide.createIcons()</code> após render</td>
+      <td>Sempre finalizar renders com essa chamada</td>
+    </tr>
+    <tr>
+      <td>Light mode fica com texto invisível</td>
+      <td>Componente usa <code>rgba(255,255,255,X)</code> hardcoded em vez de <code>var(--gb)</code></td>
+      <td>Trocar todas as rgba brancas por CSS vars</td>
+    </tr>
+    <tr>
+      <td>Módulos com cor errada no hub</td>
+      <td>MODS[] não foi migrado ou <code>--app-*</code> vars não estão sendo aplicadas</td>
+      <td>Confirmar que <code>style="--app-border:...;..."</code> vai no <code>&lt;div class="hub-app"&gt;</code> em cada card</td>
+    </tr>
+    <tr>
+      <td>Modal não abre</td>
+      <td>Faltou classe <code>.on</code> no <code>#modal-ov</code> ou CSS default é <code>display:none</code></td>
+      <td>Verificar CSS de <code>.modal-ov.on</code> — deve ter <code>display:flex; opacity:1</code></td>
+    </tr>
+    <tr>
+      <td>Copilot mostra erro raw da Gemini</td>
+      <td>Faltou <code>_friendlyCopilotError</code> ou <code>_sanitizeCopilotMessage</code></td>
+      <td>Copiar essas funções em conjunto — elas trabalham juntas</td>
+    </tr>
+  </table>
+
+  <h3>5.6. Recursos</h3>
+  <ul>
+    <li>Documento técnico completo (Hub, Copilot, Widgets): <span class="tag">docs-3cos-tech.html</span> — na mesma pasta deste arquivo.</li>
+    <li>Repositório original: <code>github.com/diegodperdigao/3cos</code></li>
+    <li>Novo projeto derivado: <code>github.com/diegodperdigao/superbet</code></li>
+    <li>Lucide icons library: <a href="https://lucide.dev" style="color:var(--brand)">lucide.dev</a></li>
+    <li>Google Fonts (Inter + Montserrat): <a href="https://fonts.google.com" style="color:var(--brand)">fonts.google.com</a></li>
+  </ul>
+
+  <hr>
+  <p style="text-align:center;color:var(--text3);font-size:12px;margin-top:40px">
+    Visual Reference · 3C OS Pro · Gerado em 2026-09-17
+  </p>
 </section>
 
 </div>
