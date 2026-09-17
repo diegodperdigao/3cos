@@ -609,7 +609,68 @@ backdrop-filter: blur(12px);</code></pre>
 <!-- 2. SCREENSHOTS -->
 <section id="screenshots">
   <h2>2. Screenshots das telas principais</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <p>Capturas em viewport <code>1440×900</code> · tema <code>dark</code> · usuário admin com todos os módulos. Os ícones dos módulos aparecem como quadrados placeholders porque o Lucide (CDN) foi bloqueado no ambiente de captura — no navegador real aparecem os ícones específicos de cada função.</p>
+
+  <h3>2.1. Hub (tela inicial)</h3>
+  <p>Fluxo pós-login. Contém top bar, greeting hero, faixa de widgets customizáveis e grid de módulos. Container: <code>#hub</code> em <code>position: fixed; inset: 0; z-index: 190</code>.</p>
+  <div class="shot">
+    <img src="docs-assets/hub-default.png" alt="Hub inicial">
+    <div class="shot-caption">Hub padrão · usuário admin · 4 widgets defaults (Resultado, Fila de pagamentos, Minhas tarefas, Notificações) · 10 módulos no grid</div>
+  </div>
+
+  <h3>2.2. Copilot — tela de boas-vindas</h3>
+  <p>Drawer lateral direito (~440px) sobreposto ao hub. Fundo do hub é escurecido via <code>#copilot-overlay</code> (backdrop). Botão <strong>+</strong> no header inicia nova conversa, hamburger abre histórico.</p>
+  <div class="shot">
+    <img src="docs-assets/copilot-welcome.png" alt="Copilot welcome">
+    <div class="shot-caption">Copilot aberto sem mensagens · ícone Gemini brand-pink + 4 suggestion chips clicáveis</div>
+  </div>
+
+  <h3>2.3. Copilot — conversa em andamento</h3>
+  <p>Bubbles diferentes para user (sem avatar, alinhado à direita) e assistant (com avatar Gemini pink, alinhado à esquerda). Suporta markdown básico (<code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, listas <code>- item</code>).</p>
+  <div class="shot">
+    <img src="docs-assets/copilot-chat.png" alt="Copilot com mensagens">
+    <div class="shot-caption">Conversa exemplo — pergunta do usuário + resposta formatada em markdown com lista e negrito</div>
+  </div>
+
+  <h3>2.4. Widget picker modal</h3>
+  <p>Modal disparado pelo botão "Personalizar widgets" (canto superior do grid de módulos). Cada row é um <code>&lt;label class="hwp-row"&gt;</code> com checkbox nativo + ícone + nome + descrição. Widgets ativos ganham border e background rosa via <code>.hwp-row:has(:checked)</code>.</p>
+  <div class="shot">
+    <img src="docs-assets/widget-picker.png" alt="Widget picker">
+    <div class="shot-caption">Modal de personalização · 4 widgets ativos destacados em rosa · 2 inativos em cinza · botão Salvar em cor de marca</div>
+  </div>
+
+  <h3>2.5. Action Center (drawer de notificações)</h3>
+  <p>Drawer lateral direito acionado pelo botão sino no top bar. Diferente do Copilot: <code>#action-center</code> tem largura menor (~360px) e é para notificações do sistema.</p>
+  <div class="shot">
+    <img src="docs-assets/action-center.png" alt="Action Center">
+    <div class="shot-caption">Central de Ações aberta · lista de alertas do sistema em drawer lateral</div>
+  </div>
+
+  <h3>2.6. Light mode</h3>
+  <p>Ativado por <code>document.documentElement.setAttribute('data-theme', 'light')</code>. Sobrescreve <code>--bg</code>, <code>--text</code>, borders e as cores semânticas (theme vira <code>#db2777</code>, verde mais escuro, etc). Toggle no botão sun/moon do top bar.</p>
+  <div class="shot">
+    <img src="docs-assets/hub-light.png" alt="Hub em light mode">
+    <div class="shot-caption">Hub no tema light · mesma estrutura, paleta invertida · usa <code>--bg: #f8fafc</code> + <code>--text: #0f172a</code></div>
+  </div>
+
+  <h3>2.7. Anatomia do Hub — regiões</h3>
+  <p>Referência para localizar cada componente na tela:</p>
+  <table>
+    <tr><th>Região</th><th>Container</th><th>Z-index</th><th>Descrição</th></tr>
+    <tr><td>Background wallpaper</td><td><code>.hub-bg</code> + <code>.mosaic-pattern</code></td><td>0</td><td>Absolute inset 0 · pattern animado + overlay</td></tr>
+    <tr><td>Top bar</td><td><code>.hub-bar</code></td><td>10</td><td>60px altura, padding 0 40px · grid 3-col (l/c/r)</td></tr>
+    <tr><td>Main content</td><td><code>.hub-main</code></td><td>2</td><td>Flex 1, coluna, centro, max-width 900px</td></tr>
+    <tr><td>Widgets strip</td><td><code>#hub-widgets</code></td><td>—</td><td>Grid horizontal, até 4 tiles visíveis</td></tr>
+    <tr><td>Módulos grid</td><td><code>#hub-cards</code></td><td>—</td><td>Grid dinâmico (colunas = módulos visíveis, max 6)</td></tr>
+    <tr><td>Copilot FAB</td><td><code>#copilot-fab</code></td><td>9000</td><td>Fixed bottom 24px right 24px · só visível em beta</td></tr>
+    <tr><td>Copilot drawer</td><td><code>#copilot-drawer</code></td><td>9500</td><td>Fixed right 0 top 0 · largura 440px</td></tr>
+    <tr><td>Action Center</td><td><code>#action-center</code></td><td>—</td><td>Fixed right 0 · largura 360px</td></tr>
+    <tr><td>Modal</td><td><code>#modal-ov</code></td><td>500</td><td>Fixed inset 0 · overlay + card centralizado</td></tr>
+    <tr><td>Toasts</td><td><code>#toasts</code></td><td>9999</td><td>Bottom right · stack de mensagens temporárias</td></tr>
+    <tr><td>Splash (boot)</td><td><code>#splash</code></td><td>9999</td><td>Fixed inset 0 · sobrepõe tudo até primeiro click</td></tr>
+    <tr><td>Lock screen</td><td><code>#lock</code></td><td>200</td><td>Login/tema pré-hub</td></tr>
+  </table>
 </section>
 
 <!-- 3. COMPONENTS -->
