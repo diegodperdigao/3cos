@@ -265,7 +265,345 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
 <!-- 1. FOUNDATIONS -->
 <section id="foundations">
   <h2>1. Fundações</h2>
-  <p>Placeholder — preenchido em seguida.</p>
+
+  <h3>1.1. Paleta de cores</h3>
+  <p>Todas as cores são expostas como CSS variables no <code>:root</code>. Cada tema (dark/light) sobrescreve o mesmo conjunto de variáveis — os componentes nunca hardcodam hex.</p>
+
+  <h4>Brand (theme accent)</h4>
+  <div class="palette-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#ec4899"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Theme (dark)</div>
+        <span class="swatch-var">--theme</span>
+        <div class="swatch-hex">#ec4899 · pink 500</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#db2777"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Theme (light)</div>
+        <span class="swatch-var">--theme</span>
+        <div class="swatch-hex">#db2777 · pink 600</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:rgba(236,72,153,0.2)"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Theme glow</div>
+        <span class="swatch-var">--theme-glow</span>
+        <div class="swatch-hex">rgba(236,72,153,0.2)</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:rgba(236,72,153,0.08)"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Theme dim</div>
+        <span class="swatch-var">--theme-dim</span>
+        <div class="swatch-hex">rgba(236,72,153,0.08)</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Backgrounds e surfaces (dark mode)</h4>
+  <div class="palette-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#060810"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">BG base</div>
+        <span class="swatch-var">--bg</span>
+        <div class="swatch-hex">#060810</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:rgba(15,18,28,0.7);border-bottom:1px solid #1e2536"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">BG surface</div>
+        <span class="swatch-var">--bg2</span>
+        <div class="swatch-hex">rgba(15,18,28,0.7)</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#1a1f2e"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">BG raised</div>
+        <span class="swatch-var">--bg3</span>
+        <div class="swatch-hex">rgba(255,255,255,0.04)</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Borders (glass borders escalonadas)</h4>
+  <div class="palette-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0a0d14;border:2px solid rgba(255,255,255,0.07)"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Border subtle</div>
+        <span class="swatch-var">--gb</span>
+        <div class="swatch-hex">rgba(255,255,255,0.07)</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0a0d14;border:2px solid rgba(255,255,255,0.1)"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Border default</div>
+        <span class="swatch-var">--gb2</span>
+        <div class="swatch-hex">rgba(255,255,255,0.1)</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0a0d14;border:2px solid rgba(255,255,255,0.14)"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Border strong</div>
+        <span class="swatch-var">--gb3</span>
+        <div class="swatch-hex">rgba(255,255,255,0.14)</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Text (3 níveis)</h4>
+  <div class="palette-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0a0d14;color:#f1f5f9;align-items:center;justify-content:center;font-size:28px;font-weight:700">Aa</div>
+      <div class="swatch-info">
+        <div class="swatch-name">Text primary</div>
+        <span class="swatch-var">--text</span>
+        <div class="swatch-hex">#f1f5f9 · slate 100</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0a0d14;color:#94a3b8;align-items:center;justify-content:center;font-size:28px;font-weight:600">Aa</div>
+      <div class="swatch-info">
+        <div class="swatch-name">Text secondary</div>
+        <span class="swatch-var">--text2</span>
+        <div class="swatch-hex">#94a3b8 · slate 400</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0a0d14;color:#4b5563;align-items:center;justify-content:center;font-size:28px;font-weight:500">Aa</div>
+      <div class="swatch-info">
+        <div class="swatch-name">Text tertiary</div>
+        <span class="swatch-var">--text3</span>
+        <div class="swatch-hex">#4b5563 · gray 600</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Cores semânticas (status)</h4>
+  <div class="palette-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#c8ff00"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Lime · sucesso alt</div>
+        <span class="swatch-var">--lime</span>
+        <div class="swatch-hex">#c8ff00</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#10b981"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Green · sucesso</div>
+        <span class="swatch-var">--green</span>
+        <div class="swatch-hex">#10b981 · emerald 500</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#3b82f6"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Blue · info</div>
+        <span class="swatch-var">--blue</span>
+        <div class="swatch-hex">#3b82f6 · blue 500</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#f59e0b"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Amber · warning</div>
+        <span class="swatch-var">--amber</span>
+        <div class="swatch-hex">#f59e0b · amber 500</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#ef4444"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Red · erro/vencido</div>
+        <span class="swatch-var">--red</span>
+        <div class="swatch-hex">#ef4444 · red 500</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#a855f7"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Purple · marca</div>
+        <span class="swatch-var">--purple</span>
+        <div class="swatch-hex">#a855f7 · purple 500</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#ec4899"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Pink · destaque</div>
+        <span class="swatch-var">--pink</span>
+        <div class="swatch-hex">#ec4899</div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Cores dos módulos (do array MODS[])</h4>
+  <p>Cada módulo tem uma cor <code>stroke</code> (ícone) e 3 tonalidades derivadas (<code>color</code>, <code>glow</code>, <code>bg</code>). Injetadas como CSS vars por instância: <code>--app-stroke</code>, <code>--app-border</code>, <code>--app-glow</code>, <code>--app-bg</code>.</p>
+  <div class="palette-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#ec4899"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Dashboard</div>
+        <span class="swatch-var">stroke: #ec4899</span>
+        <div class="swatch-hex">rosa</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#3b82f6"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Afiliados</div>
+        <span class="swatch-var">stroke: #3b82f6</span>
+        <div class="swatch-hex">azul</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#a855f7"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Marcas</div>
+        <span class="swatch-var">stroke: #a855f7</span>
+        <div class="swatch-hex">roxo</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#f59e0b"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Financeiro</div>
+        <span class="swatch-var">stroke: #f59e0b</span>
+        <div class="swatch-hex">âmbar</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#10b981"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Tarefas</div>
+        <span class="swatch-var">stroke: #10b981</span>
+        <div class="swatch-hex">verde</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0ea5e9"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Pipeline</div>
+        <span class="swatch-var">stroke: #0ea5e9</span>
+        <div class="swatch-hex">ciano</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#c8ff00"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Auditoria</div>
+        <span class="swatch-var">stroke: #c8ff00</span>
+        <div class="swatch-hex">lima</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#0ea5e9"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Backup</div>
+        <span class="swatch-var">stroke: #0ea5e9</span>
+        <div class="swatch-hex">ciano</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#ef4444"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Usuários</div>
+        <span class="swatch-var">stroke: #ef4444</span>
+        <div class="swatch-hex">vermelho</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#94a3b8"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">Configurações</div>
+        <span class="swatch-var">stroke: #94a3b8</span>
+        <div class="swatch-hex">cinza</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>1.2. Tipografia</h3>
+  <p>Duas famílias — <strong>Montserrat</strong> para display (títulos, wordmark), <strong>Inter</strong> para body/UI.</p>
+
+  <pre><code>--fd: 'Montserrat', sans-serif;   /* display: títulos, wordmarks, labels */
+--fb: 'Inter', sans-serif;        /* body: textos, botões, forms, UI */</code></pre>
+
+  <p>Carregadas via Google Fonts no <code>&lt;head&gt;</code>:</p>
+  <pre><code>&lt;link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Montserrat:wght@600;700;800;900&amp;display=swap" rel="stylesheet"&gt;</code></pre>
+
+  <h4>Escala de tamanhos</h4>
+  <div class="type-sample">
+    <div class="type-sample-label">Display XL · Montserrat 900 · 34-42px</div>
+    <div class="type-sample-demo" style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:38px;letter-spacing:-0.5px">3C OS Pro</div>
+  </div>
+  <div class="type-sample">
+    <div class="type-sample-label">Display · Montserrat 800 · 22-28px</div>
+    <div class="type-sample-demo" style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:24px">Módulo de Afiliados</div>
+  </div>
+  <div class="type-sample">
+    <div class="type-sample-label">Heading · Montserrat 700 · 16-18px</div>
+    <div class="type-sample-demo" style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:17px;letter-spacing:0.08em;text-transform:uppercase">3C<span style="color:var(--brand)">OS</span></div>
+  </div>
+  <div class="type-sample">
+    <div class="type-sample-label">Body · Inter 400 · 13-14px (--fb, tamanho base do body)</div>
+    <div class="type-sample-demo" style="font-family:'Inter',sans-serif;font-weight:400;font-size:14px;line-height:1.5">O 3C OS Pro é uma plataforma completa de gestão de afiliados. Este texto usa a fonte body padrão do sistema com line-height 1.5.</div>
+  </div>
+  <div class="type-sample">
+    <div class="type-sample-label">Body strong · Inter 600 · 13-14px</div>
+    <div class="type-sample-demo" style="font-family:'Inter',sans-serif;font-weight:600;font-size:14px">Nome do usuário · Título do card · Valor destaque</div>
+  </div>
+  <div class="type-sample">
+    <div class="type-sample-label">Small / meta · Inter 400 · 11-12px, color: text2</div>
+    <div class="type-sample-demo" style="font-family:'Inter',sans-serif;font-weight:400;font-size:11px;color:var(--text2)">assignee · 20/09/2026 · há 2 min</div>
+  </div>
+  <div class="type-sample">
+    <div class="type-sample-label">Eyebrow · Inter 600 · 11px · uppercase · letter-spacing 0.22em</div>
+    <div class="type-sample-demo" style="font-family:'Inter',sans-serif;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.22em;color:var(--text2)">CRM &amp; Gestão</div>
+  </div>
+
+  <h3>1.3. Espaçamento e radius</h3>
+  <table>
+    <tr><th>Token</th><th>Valor</th><th>Uso</th></tr>
+    <tr><td><code>--radius</code></td><td>14px</td><td>Cards, painéis, modais (default)</td></tr>
+    <tr><td><code>--space</code></td><td>16px</td><td>Base do sistema de spacing</td></tr>
+    <tr><td>Radius pequeno</td><td>6-9px</td><td>Botões pequenos, dots, tags</td></tr>
+    <tr><td>Radius médio</td><td>10-14px</td><td>Cards padrão, ícones de módulo</td></tr>
+    <tr><td>Radius grande</td><td>16-20px</td><td>Painéis grandes, hero logo</td></tr>
+    <tr><td>Radius circle</td><td>50%</td><td>Avatares, dots, badges arredondados</td></tr>
+  </table>
+
+  <h3>1.4. Shadows e efeitos</h3>
+  <p>Poucos shadows explícitos — o app depende mais de <strong>borders sutis</strong> + <strong>glow colorido</strong> (via <code>box-shadow</code> spread) do que sombras densas.</p>
+  <pre><code>/* Glow accent (usado em botões theme, cards ativos) */
+box-shadow: 0 0 0 3px var(--theme-glow);
+
+/* Card lift no hover */
+box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+/* Glass border (transparente + backdrop-filter) */
+border: 1px solid var(--glass-border);
+backdrop-filter: blur(12px);</code></pre>
+
+  <h3>1.5. Iconografia</h3>
+  <p><strong>Lucide</strong> (<a href="https://lucide.dev" style="color:var(--brand)">lucide.dev</a>) via CDN. Todos os ícones no HTML como <code>&lt;i data-lucide="X"&gt;&lt;/i&gt;</code> — a função <code>lucide.createIcons()</code> substitui por SVG inline após cada render.</p>
+  <ul>
+    <li>Tamanho padrão: 15-16px (top bar), 24px (module cards), 18px (buttons)</li>
+    <li>Stroke default: 2px (Lucide padrão)</li>
+    <li>Stroke fino em cards de módulo: 1.7px (via <code>.hub-app-icon svg { stroke-width: 1.7 }</code>)</li>
+    <li>Cor sempre via <code>stroke: currentColor</code> ou custom (<code>--app-stroke</code>)</li>
+  </ul>
 </section>
 
 <!-- 2. SCREENSHOTS -->
