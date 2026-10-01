@@ -6976,3 +6976,19 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
     0 16px 36px color-mix(in srgb, var(--app-stroke) 25%, transparent),
     0 1px 0 rgba(255,255,255,0.1) inset;
 }
+
+/* ══════════════════════════════════════════════════════════ */
+/* HUB — Pass 5: dock logo abaixo dos widgets (sem bottom push) */
+/* ══════════════════════════════════════════════════════════ */
+
+.hub-stage{
+  min-height: 0 !important;  /* não força fill viewport */
+  justify-content: flex-start !important;
+  padding-bottom: clamp(20px, 3vh, 40px) !important;
+}
+
+/* Dock: fica LOGO abaixo dos widgets, não empurra pro bottom */
+.hub-stage .hub-dock{
+  margin-top: 10px !important;
+  align-self: center !important;
+}
