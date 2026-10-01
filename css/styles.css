@@ -7875,3 +7875,112 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 
 .kan-cards{gap: 10px !important;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* INSTAGRAM — Input com botão + CTA grande no detalhe         */
+/* ══════════════════════════════════════════════════════════ */
+
+/* Input com botão abrir */
+.ctc-ig-input{
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.ctc-ig-input input{flex: 1;}
+.ctc-ig-open{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+  padding: 0;
+}
+.ctc-ig-open:hover:not(:disabled){
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(220,39,67,0.35);
+}
+.ctc-ig-open:disabled{
+  background: var(--bg3);
+  color: var(--text3);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.ctc-ig-open svg{width: 14px; height: 14px;}
+
+/* CTA grande no detalhe do contato */
+.ctc-ig-cta{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, rgba(240,148,51,0.08) 0%, rgba(188,24,136,0.08) 100%);
+  border: 1px solid color-mix(in srgb, #dc2743 25%, var(--gb2));
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+.ctc-ig-cta:hover{
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, #dc2743 50%, var(--gb2));
+  box-shadow: 0 8px 20px rgba(220,39,67,0.15);
+}
+
+.ctc-ig-cta-ico{
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.ctc-ig-cta-ico svg{width: 18px; height: 18px;}
+
+.ctc-ig-cta-info{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ctc-ig-cta-k{
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ctc-ig-cta-handle{
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ctc-ig-cta-arrow{
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+  transition: all 0.2s var(--ease-out);
+}
+.ctc-ig-cta:hover .ctc-ig-cta-arrow{
+  background: #dc2743;
+  color: #fff;
+  transform: translateX(2px);
+}
+.ctc-ig-cta-arrow svg{width: 15px; height: 15px;}

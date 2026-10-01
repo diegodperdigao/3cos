@@ -219,7 +219,19 @@
         </div>
         <div class="form-row">
           <div class="ff"><label>Empresa</label><input id="ctc-f-company" type="text" value="${_esc(c.company || '')}" placeholder="Nome da empresa"></div>
-          <div class="ff"><label>Instagram</label><input id="ctc-f-instagram" type="text" value="${_esc(c.social_links?.instagram || '')}" placeholder="@handle"></div>
+          <div class="ff"><label>Instagram</label>
+            <div class="ctc-ig-input">
+              <input id="ctc-f-instagram" type="text" value="${_esc(c.social_links?.instagram || '')}"
+                placeholder="@handle ou link"
+                oninput="window._ctcIgInputChanged(this)">
+              <button type="button" class="ctc-ig-open" id="ctc-ig-open-btn"
+                onclick="window._ctcOpenIgFromInput()"
+                ${!c.social_links?.instagram ? 'disabled' : ''}
+                title="Abrir perfil no Instagram">
+                <i data-lucide="external-link"></i>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="form-row">
           <div class="ff"><label>Tipo</label>
@@ -253,9 +265,26 @@
       </div>`;
   }
 
+  // Normaliza qualquer formato (@user, user, instagram.com/user, https://...)
+  // para o handle puro ("user").
+  function _normalizeIgHandle(raw) {
+    if (!raw) return '';
+    let s = String(raw).trim();
+    if (!s) return '';
+    // Tira protocol
+    s = s.replace(/^https?:\/\//i, '');
+    // Tira www.
+    s = s.replace(/^www\./i, '');
+    // Se tem instagram.com/, pega o que vem depois
+    const m = s.match(/(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9._]+)/i);
+    if (m) return m[1];
+    // Senão, trata como handle direto — tira @ e trailing slash
+    return s.replace(/^@/, '').replace(/\/.*$/, '');
+  }
+
   function _formRead() {
     const get = (id) => document.getElementById(id)?.value || '';
-    const ig = get('ctc-f-instagram').trim().replace(/^@/, '');
+    const ig = _normalizeIgHandle(get('ctc-f-instagram'));
     return {
       name: get('ctc-f-name').trim(),
       email: get('ctc-f-email').trim() || null,
@@ -268,6 +297,22 @@
       notes: get('ctc-f-notes').trim() || null,
     };
   }
+
+  // Handlers do campo Instagram no formulário
+  window._ctcIgInputChanged = (input) => {
+    const btn = document.getElementById('ctc-ig-open-btn');
+    if (!btn) return;
+    const handle = _normalizeIgHandle(input.value);
+    btn.disabled = !handle;
+  };
+
+  window._ctcOpenIgFromInput = () => {
+    const input = document.getElementById('ctc-f-instagram');
+    if (!input) return;
+    const handle = _normalizeIgHandle(input.value);
+    if (!handle) return;
+    window.open(`https://instagram.com/${handle}`, '_blank', 'noopener');
+  };
 
   // ── DETALHES DO CONTATO ──────────────────────────────────
   window._ctcOpenDetail = (id) => {
@@ -282,10 +327,17 @@
           ${c.company || '—'} · ${TYPE_LABEL[c.type] || c.type} · ${STATUS_LABEL[c.status] || c.status}
         </div>
       </div>
+      ${ig ? `<a class="ctc-ig-cta" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener">
+        <span class="ctc-ig-cta-ico"><i data-lucide="instagram"></i></span>
+        <span class="ctc-ig-cta-info">
+          <span class="ctc-ig-cta-k">Instagram</span>
+          <span class="ctc-ig-cta-handle">@${_esc(ig)}</span>
+        </span>
+        <span class="ctc-ig-cta-arrow"><i data-lucide="external-link"></i></span>
+      </a>` : ''}
       <div class="ctc-detail-grid">
         ${c.email ? `<div><span class="ctc-dt-k">Email</span><span>${_esc(c.email)}</span></div>` : ''}
         ${c.phone ? `<div><span class="ctc-dt-k">Telefone</span><span>${_esc(c.phone)}</span></div>` : ''}
-        ${ig ? `<div><span class="ctc-dt-k">Instagram</span><a href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener" style="color:var(--theme)">@${_esc(ig)}</a></div>` : ''}
         ${c.source ? `<div><span class="ctc-dt-k">Origem</span><span>${SOURCE_LABEL[c.source] || c.source}</span></div>` : ''}
         <div><span class="ctc-dt-k">Criado em</span><span>${new Date(c.created_at).toLocaleDateString('pt-BR')}</span></div>
       </div>
