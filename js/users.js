@@ -433,7 +433,10 @@ window.toggleTheme = _wrapToggleTheme;
         const fn=STATE.user.name.split(' ')[0];
         document.getElementById('hub-uname').textContent=STATE.user.name;
         document.getElementById('hub-urole').textContent=ROLES[STATE.user.role]?.label||STATE.user.role;
-        document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
+        const _h=new Date().getHours();
+        const _g=_h<12?'Bom dia':(_h<18?'Boa tarde':'Boa noite');
+        const _heroT=document.getElementById('hub-hero-title');
+        if(_heroT)_heroT.innerHTML=`${_g}, <span class="hub-hero-name">${fn}</span>.`;
         // Populate the hub avatar on session restore (showHub is not called here)
         const _avEl=document.getElementById('hub-user-avatar');
         if(_avEl && typeof window.userAvatar === 'function'){
@@ -441,7 +444,7 @@ window.toggleTheme = _wrapToggleTheme;
         }
         // Show hub first (always stable)
         const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
-        try { buildHubCards(); buildMobileHome(); if(window.buildHubWidgets)buildHubWidgets(); } catch(e){ console.error('[boot] buildHub failed:', e); }
+        try { buildHubCards(); buildMobileHome(); if(window.buildHubWidgets)buildHubWidgets(); if(window.renderHolidayPostIt)renderHolidayPostIt(); } catch(e){ console.error('[boot] buildHub failed:', e); }
         updateNotifBadge();initMosaics();lucide.createIcons();
         if (typeof applyAppTheme === 'function') applyAppTheme();
         else if (typeof applyBetaEdition === 'function') applyBetaEdition();
@@ -459,6 +462,7 @@ window.toggleTheme = _wrapToggleTheme;
   document.documentElement.removeAttribute('data-edition');
   document.getElementById('lock').style.display='flex';
   document.getElementById('lock').style.opacity='1';
+  if(typeof lucide!=='undefined')lucide.createIcons();
 })();
 
 // 2) Validate session against Supabase OR Firebase (whichever is the source)

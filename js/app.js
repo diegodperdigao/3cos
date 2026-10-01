@@ -252,6 +252,319 @@ const loadFromLocal = () => {
 };
 loadFromLocal();
 
+// ══════════════════════════════════════════════════════════
+// BRAZILIAN HOLIDAY CALENDAR + CUSTOM NOTICES — Post-it system
+// ══════════════════════════════════════════════════════════
+// Fixed holidays + moveable (Easter-based) + user-created notices.
+// Shows a subtle themed post-it in the hub corner when today/tomorrow
+// matches a holiday or custom notice date.
+
+function _getBrazilianHolidays(year) {
+  const a=year%19, b=Math.floor(year/100), c=year%100;
+  const d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const eMonth=Math.floor((h+l-7*m+114)/31)-1;
+  const eDay=((h+l-7*m+114)%31)+1;
+  const easter=new Date(year,eMonth,eDay);
+  const offset=(days)=>{const d=new Date(easter);d.setDate(d.getDate()+days);return d;};
+  const fmt=(d)=>`${year}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  return [
+    { date: `${year}-01-01`, name: 'Ano Novo', emoji: '🎆', msg: 'Feliz Ano Novo! Que este ano traga grandes resultados.', type: 'holiday' },
+    { date: fmt(offset(-47)), name: 'Carnaval', emoji: '🎭', msg: 'É Carnaval! Boa folia e bom descanso.', type: 'holiday' },
+    { date: fmt(offset(-46)), name: 'Quarta de Cinzas', emoji: '✝️', msg: 'Quarta de Cinzas — retorno gradual.', type: 'holiday' },
+    { date: fmt(offset(-2)), name: 'Sexta-feira Santa', emoji: '✝️', msg: 'Sexta-feira Santa. Feriado nacional.', type: 'holiday' },
+    { date: fmt(easter), name: 'Páscoa', emoji: '🐣', msg: 'Feliz Páscoa! Renovação e esperança.', type: 'holiday' },
+    { date: fmt(offset(60)), name: 'Corpus Christi', emoji: '⛪', msg: 'Corpus Christi. Ponto facultativo em muitas cidades.', type: 'holiday' },
+    { date: `${year}-04-21`, name: 'Tiradentes', emoji: '🇧🇷', msg: 'Dia de Tiradentes — herói nacional.', type: 'holiday' },
+    { date: `${year}-05-01`, name: 'Dia do Trabalho', emoji: '⚒️', msg: 'Dia do Trabalho. Parabéns a todos que constroem resultados!', type: 'holiday' },
+    { date: `${year}-09-07`, name: 'Independência', emoji: '🇧🇷', msg: 'Independência do Brasil!', type: 'holiday' },
+    { date: `${year}-10-12`, name: 'N. Sra. Aparecida', emoji: '🙏', msg: 'Dia de Nossa Senhora Aparecida.', type: 'holiday' },
+    { date: `${year}-11-02`, name: 'Finados', emoji: '🕯️', msg: 'Dia de Finados. Momento de reflexão.', type: 'holiday' },
+    { date: `${year}-11-15`, name: 'Proclamação da República', emoji: '🇧🇷', msg: 'Proclamação da República.', type: 'holiday' },
+    { date: `${year}-11-20`, name: 'Consciência Negra', emoji: '✊', msg: 'Dia da Consciência Negra. Respeito e igualdade.', type: 'holiday' },
+    { date: `${year}-12-25`, name: 'Natal', emoji: '🎄', msg: 'Feliz Natal! Boas festas e muito sucesso.', type: 'holiday' },
+    { date: `${year}-12-31`, name: 'Véspera de Ano Novo', emoji: '🥂', msg: 'Último dia do ano. Hora de celebrar as conquistas!', type: 'holiday' },
+  ];
+}
+
+const NOTICE_PRIORITIES = {
+  low:    { label: 'Baixa',  color: 'var(--text)' },
+  medium: { label: 'Média',  color: 'var(--amber)' },
+  high:   { label: 'Alta',   color: 'var(--red)' },
+};
+// Kept for backwards-compat with existing holiday entries (the emoji field)
+const NOTICE_TYPES = {
+  holiday: { label: 'Feriado', emoji: '📅' },
+};
+
+window.renderHolidayPostIt = () => {
+  const el = document.getElementById('holiday-postit');
+  if (!el) return;
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+
+  // Merge holidays + custom notices
+  const holidays = _getBrazilianHolidays(now.getFullYear());
+  const custom = (STATE.customNotices || []).filter(n => {
+    if (n.recurring === 'monthly') {
+      const day = parseInt(n.date.split('-')[2]);
+      return now.getDate() === day || tomorrow.getDate() === day;
+    }
+    if (n.recurring === 'yearly') {
+      const md = n.date.slice(5);
+      return today.slice(5) === md || tomorrowStr.slice(5) === md;
+    }
+    return n.date === today || n.date === tomorrowStr;
+  }).map(n => ({
+    ...n,
+    date: now.getDate() === parseInt(n.date.split('-')[2]) || today.slice(5) === n.date?.slice(5) || n.date === today ? today : tomorrowStr,
+    emoji: n.emoji || NOTICE_TYPES[n.type]?.emoji || '📌',
+  }));
+
+  const all = [...custom, ...holidays];
+  const todayMatch = all.filter(h => h.date === today);
+  const tomorrowMatch = all.filter(h => h.date === tomorrowStr && !todayMatch.find(t => t.name === h.name));
+  const matches = [...todayMatch.map(h => ({...h, when: 'Hoje'})), ...tomorrowMatch.map(h => ({...h, when: 'Amanhã'}))];
+
+  if (!matches.length) { el.style.display = 'none'; return; }
+
+  // Sort by priority: high > medium > low > holiday
+  const priOrder = { high: 0, medium: 1, low: 2 };
+  matches.sort((a, b) => (priOrder[a.priority] ?? 3) - (priOrder[b.priority] ?? 3));
+
+  el.style.display = 'flex';
+
+  if (matches.length === 1) {
+    // Single notice — clean render
+    const h = matches[0];
+    const dateLabel = new Date(h.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+    const pri = NOTICE_PRIORITIES[h.priority] || NOTICE_PRIORITIES.low;
+    const nameColor = h.type === 'holiday' ? 'var(--text)' : pri.color;
+    el.innerHTML = `
+      <button class="postit-close" onclick="this.parentElement.style.display='none'" title="Fechar">×</button>
+      <div class="postit-item">
+        <div class="postit-emoji">${h.emoji}</div>
+        <div class="postit-body">
+          <div class="postit-label">${h.when} · ${dateLabel}</div>
+          <div class="postit-name" style="color:${nameColor}">${h.name}</div>
+          ${h.msg ? `<div class="postit-msg">${h.msg}</div>` : ''}
+        </div>
+      </div>`;
+  } else {
+    // Stacked: show front card + peeking cards behind (like phone notifications)
+    const front = matches[0];
+    const dateLabel = new Date(front.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+    const pri = NOTICE_PRIORITIES[front.priority] || NOTICE_PRIORITIES.low;
+    const nameColor = front.type === 'holiday' ? 'var(--text)' : pri.color;
+    const behind = matches.length - 1;
+    el.innerHTML = `
+      <button class="postit-close" onclick="this.parentElement.style.display='none'" title="Fechar">×</button>
+      ${behind >= 2 ? '<div class="postit-stack-3"></div>' : ''}
+      ${behind >= 1 ? '<div class="postit-stack-2"></div>' : ''}
+      <div class="postit-front">
+        <div class="postit-item">
+          <div class="postit-emoji">${front.emoji}</div>
+          <div class="postit-body">
+            <div class="postit-label">${front.when} · ${dateLabel}</div>
+            <div class="postit-name" style="color:${nameColor}">${front.name}</div>
+            ${front.msg ? `<div class="postit-msg">${front.msg}</div>` : ''}
+          </div>
+        </div>
+        <button class="postit-expand" onclick="openPostItStack()">Ver todos (${matches.length})</button>
+      </div>`;
+  }
+  lucide.createIcons();
+};
+
+window.openPostItStack = () => {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+  const holidays = _getBrazilianHolidays(now.getFullYear());
+  const custom = (STATE.customNotices || []).filter(n => {
+    if (n.recurring === 'monthly') return now.getDate() === parseInt(n.date.split('-')[2]) || tomorrow.getDate() === parseInt(n.date.split('-')[2]);
+    if (n.recurring === 'yearly') return today.slice(5) === n.date?.slice(5) || tomorrowStr.slice(5) === n.date?.slice(5);
+    return n.date === today || n.date === tomorrowStr;
+  }).map(n => ({ ...n, emoji: n.emoji || '📌' }));
+  const all = [...custom, ...holidays];
+  const todayMatch = all.filter(h => h.date === today).map(h => ({...h, when: 'Hoje'}));
+  const tomorrowMatch = all.filter(h => h.date === tomorrowStr).map(h => ({...h, when: 'Amanhã'}));
+  const matches = [...todayMatch, ...tomorrowMatch];
+  const priOrder = { high: 0, medium: 1, low: 2 };
+  matches.sort((a, b) => (priOrder[a.priority] ?? 3) - (priOrder[b.priority] ?? 3));
+  const rows = matches.map(h => {
+    const dateLabel = new Date(h.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+    const pri = NOTICE_PRIORITIES[h.priority] || NOTICE_PRIORITIES.low;
+    const nameColor = h.type === 'holiday' ? 'var(--text)' : pri.color;
+    return `<div class="postit-item" style="padding:12px 0;border-bottom:1px solid var(--gb)">
+      <div class="postit-emoji">${h.emoji}</div>
+      <div class="postit-body">
+        <div class="postit-label">${h.when} · ${dateLabel}</div>
+        <div class="postit-name" style="color:${nameColor}">${h.name}</div>
+        ${h.msg ? `<div class="postit-msg">${h.msg}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  openModal('Avisos de hoje', rows, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+};
+
+// ── Notices Manager (CRUD modal) ──
+window.openNoticesManager = () => {
+  if (!STATE.customNotices) STATE.customNotices = [];
+  const rows = STATE.customNotices.length ? STATE.customNotices.map(n => {
+    const pri = NOTICE_PRIORITIES[n.priority] || NOTICE_PRIORITIES.low;
+    const recur = n.recurring === 'monthly' ? 'Todo mês' : n.recurring === 'yearly' ? 'Todo ano' : 'Única vez';
+    return `<div class="notice-row">
+      <span class="notice-row-emoji">${n.emoji || '📌'}</span>
+      <div class="notice-row-body">
+        <div class="notice-row-name" style="color:${pri.color}">${n.name}</div>
+        <div class="notice-row-meta">${n.date} · ${recur} · Prioridade ${pri.label}</div>
+        ${n.msg ? `<div class="notice-row-msg">${n.msg}</div>` : ''}
+      </div>
+      <div class="notice-row-actions">
+        <button class="btn btn-outline notice-action-btn" onclick="openEditNotice('${n.id}')" title="Editar"><i data-lucide="pencil"></i><span>Editar</span></button>
+        <button class="btn btn-outline notice-action-btn is-danger" onclick="deleteNotice('${n.id}')" title="Excluir"><i data-lucide="trash-2"></i><span>Excluir</span></button>
+      </div>
+    </div>`;
+  }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum aviso personalizado.</div>';
+
+  // Next holidays preview
+  const now = new Date();
+  const holidays = _getBrazilianHolidays(now.getFullYear());
+  const upcoming = holidays.filter(h => h.date >= `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`).slice(0, 4);
+  const holidayPreview = upcoming.map(h => {
+    const d = new Date(h.date + 'T12:00:00');
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11px">
+      <span>${h.emoji}</span>
+      <span style="color:var(--text)">${h.name}</span>
+      <span style="margin-left:auto;color:var(--text3);font-family:var(--fb)">${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span>
+    </div>`;
+  }).join('');
+
+  openModal('Gerenciar Avisos', `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+      Crie avisos personalizados que aparecem como post-it no hub. Feriados nacionais são automáticos.
+    </div>
+    <div class="sec-hdr"><div class="sec-lbl">Meus avisos</div></div>
+    <div class="notice-list">${rows}</div>
+    <div class="sec-hdr" style="margin-top:18px"><div class="sec-lbl">Próximos feriados</div></div>
+    <div style="padding:0 4px">${holidayPreview}</div>
+  `, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+      <button class="btn btn-theme" onclick="openAddNotice()"><i data-lucide="plus"></i> Novo Aviso</button>`);
+  lucide.createIcons();
+};
+
+window.openAddNotice = () => _openNoticeForm(null);
+window.openEditNotice = (id) => {
+  const n = (STATE.customNotices || []).find(x => x.id === id);
+  if (n) _openNoticeForm(n);
+};
+
+function _openNoticeForm(notice) {
+  const isEdit = !!notice;
+  const priOpts = Object.entries(NOTICE_PRIORITIES).map(([k, v]) =>
+    `<option value="${k}" ${notice?.priority === k ? 'selected' : ''}>${v.label}</option>`).join('');
+  const today = new Date().toISOString().split('T')[0];
+  openModal(isEdit ? 'Editar Aviso' : 'Novo Aviso', `<div class="fg">
+    <div class="fgp ff"><label>Título *</label><input class="fi" id="notice-name" value="${notice?.name || ''}" placeholder="Ex: Emitir NF dos salários" autofocus></div>
+    <div class="fgp ff"><label>Mensagem (opcional)</label><input class="fi" id="notice-msg" value="${notice?.msg || ''}" placeholder="Detalhes ou lembrete..."></div>
+    <div class="fgp"><label>Data *</label><input type="date" class="fi" id="notice-date" value="${notice?.date || today}"></div>
+    <div class="fgp"><label>Emoji</label><input class="fi" id="notice-emoji" value="${notice?.emoji || '📌'}" placeholder="📌" style="width:80px;font-size:16px;text-align:center"></div>
+    <div class="fgp"><label>Prioridade</label>
+      <select class="fi" id="notice-priority">${priOpts}</select>
+      <div style="font-size:9px;color:var(--text3);margin-top:4px">Define a cor do título no aviso (baixa = padrão, média = amber, alta = vermelho)</div>
+    </div>
+    <div class="fgp"><label>Recorrência</label>
+      <select class="fi" id="notice-recur">
+        <option value="once" ${notice?.recurring === 'once' ? 'selected' : ''}>Única vez</option>
+        <option value="monthly" ${notice?.recurring === 'monthly' ? 'selected' : ''}>Todo mês (mesmo dia)</option>
+        <option value="yearly" ${notice?.recurring === 'yearly' ? 'selected' : ''}>Todo ano (mesma data)</option>
+      </select>
+    </div>
+  </div>`, `<button class="btn btn-ghost" onclick="closeModal();openNoticesManager()">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveNotice('${notice?.id || ''}')"><i data-lucide="check"></i> ${isEdit ? 'Salvar' : 'Criar'}</button>`);
+}
+
+window.saveNotice = (editId) => {
+  const name = document.getElementById('notice-name')?.value?.trim();
+  const date = document.getElementById('notice-date')?.value;
+  if (!name || !date) return toast('Título e data obrigatórios', 'e');
+  if (!STATE.customNotices) STATE.customNotices = [];
+  const data = {
+    name,
+    msg: document.getElementById('notice-msg')?.value?.trim() || '',
+    date,
+    emoji: document.getElementById('notice-emoji')?.value?.trim() || '📌',
+    priority: document.getElementById('notice-priority')?.value || 'low',
+    recurring: document.getElementById('notice-recur')?.value || 'once',
+  };
+  if (editId) {
+    const idx = STATE.customNotices.findIndex(n => n.id === editId);
+    if (idx >= 0) {
+      STATE.customNotices[idx] = { ...STATE.customNotices[idx], ...data };
+      logAction('Aviso editado', name);
+    }
+  } else {
+    STATE.customNotices.push({ id: 'ntc' + Date.now(), ...data });
+    logAction('Aviso criado', name);
+  }
+  saveToLocal(); closeModal();
+  toast(editId ? 'Aviso atualizado!' : 'Aviso criado!');
+  renderHolidayPostIt();
+  setTimeout(() => openNoticesManager(), 200);
+};
+
+window.deleteNotice = (id) => {
+  if (!confirm('Excluir este aviso?')) return;
+  STATE.customNotices = (STATE.customNotices || []).filter(n => n.id !== id);
+  saveToLocal();
+  toast('Aviso removido');
+  renderHolidayPostIt();
+  openNoticesManager();
+};
+
+// ── Hub customize menu (anchored popover from the + button) ──
+// Admins see: Widgets + Avisos. Regular users see only Widgets.
+window.openHubCustomizeMenu = (anchor) => {
+  document.getElementById('hub-customize-menu')?.remove();
+  const rect = anchor.getBoundingClientRect();
+  const isAdmin = STATE.user?.role === 'admin';
+  const menu = document.createElement('div');
+  menu.id = 'hub-customize-menu';
+  menu.className = 'hub-customize-menu';
+  menu.innerHTML = `
+    <button class="hcm-item" onclick="document.getElementById('hub-customize-menu')?.remove();openHubWidgetPicker()">
+      <i data-lucide="layout-grid"></i>
+      <div><div class="hcm-name">Widgets</div><div class="hcm-desc">Adicionar ou remover do hub</div></div>
+    </button>
+    ${isAdmin ? `<button class="hcm-item" onclick="document.getElementById('hub-customize-menu')?.remove();openNoticesManager()">
+      <i data-lucide="sticky-note"></i>
+      <div><div class="hcm-name">Avisos</div><div class="hcm-desc">Feriados, fiscal, lembretes</div></div>
+    </button>` : ''}
+  `;
+  menu.style.position = 'fixed';
+  menu.style.top = `${rect.bottom + 8}px`;
+  menu.style.right = `${Math.max(12, window.innerWidth - rect.right)}px`;
+  menu.style.zIndex = '300';
+  document.body.appendChild(menu);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  setTimeout(() => {
+    const closer = (e) => {
+      if (!menu.contains(e.target) && !anchor.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', closer);
+      }
+    };
+    document.addEventListener('click', closer);
+  }, 0);
+};
+
 // ── HELPERS ──
 const fc=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0}).format(v||0);
 const pct=(a,b)=>b>0?Math.round(a/b*100):0;
@@ -302,7 +615,9 @@ window.applyAppTheme = () => {
     'meridian-dark':  { edition: 'meridian', theme: 'dark'  },
     'default':        { edition: '',         theme: 'dark'  },
     'mono':           { edition: 'mono',     theme: 'dark'  },
-    'glass':          { edition: '',         theme: 'dark'  },
+    'glass-dark':     { edition: 'glass',    theme: 'dark'  },
+    'glass-light':    { edition: 'glass',    theme: 'light' },
+    'glass':          { edition: 'glass',    theme: 'dark'  },
     'neonflow':       { edition: '',         theme: 'dark'  },
     'bento':          { edition: 'bento',    theme: 'light' },
   };
@@ -958,11 +1273,16 @@ function showHub(){
     // Avatar (foto se tiver URL, senão iniciais coloridas)
     const avEl=document.getElementById('hub-user-avatar');
     if (avEl) avEl.innerHTML=window.userAvatar?window.userAvatar(STATE.user,32):'';
-    document.getElementById('hub-greeting').innerHTML=`Bem-vindo(a), <strong>${fn}</strong> — selecione o módulo de trabalho`;
+    // Time-aware greeting: Bom dia / Boa tarde / Boa noite
+    const _h=new Date().getHours();
+    const _g=_h<12?'Bom dia':(_h<18?'Boa tarde':'Boa noite');
+    const _heroT=document.getElementById('hub-hero-title');
+    if(_heroT)_heroT.innerHTML=`${_g}, <span class="hub-hero-name">${fn}</span>.`;
     const hub=document.getElementById('hub');hub.style.display='flex';
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
     if (window.buildHubWidgets) buildHubWidgets();
+    if (window.renderHolidayPostIt) renderHolidayPostIt();
     if(window.updateLabButton)updateLabButton();
     if(window.syncBetaAttributes)syncBetaAttributes();
     if(window.updateCopilotVisibility)updateCopilotVisibility();
@@ -982,7 +1302,7 @@ const MODS=[
   {id:'payments',label:'Financeiro',icon:'banknote',sub:'Pagamentos · NFs',color:'rgba(245,158,11,0.32)',glow:'rgba(245,158,11,0.14)',bg:'rgba(245,158,11,0.1)',stroke:'#f59e0b'},
   {id:'tasks',label:'Tarefas',icon:'check-square',sub:'Workflow integrado',color:'rgba(16,185,129,0.32)',glow:'rgba(16,185,129,0.14)',bg:'rgba(16,185,129,0.1)',stroke:'#10b981'},
   {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'Kanban · Funil',color:'rgba(14,165,233,0.32)',glow:'rgba(14,165,233,0.14)',bg:'rgba(14,165,233,0.1)',stroke:'#0ea5e9'},
-  {id:'audit',label:'Auditoria',icon:'activity',sub:'Log · Registro',color:'rgba(200,255,0,0.28)',glow:'rgba(200,255,0,0.12)',bg:'rgba(200,255,0,0.08)',stroke:'#c8ff00'},
+  {id:'audit',label:'Auditoria',icon:'activity',sub:'Log · Registro',color:'rgba(140,180,0,0.35)',glow:'rgba(140,180,0,0.12)',bg:'rgba(140,180,0,0.12)',stroke:'#8cb400'},
   {id:'backup',label:'Backup',icon:'cloud',sub:'Nuvem · Exportar',color:'rgba(14,165,233,0.32)',glow:'rgba(14,165,233,0.14)',bg:'rgba(14,165,233,0.1)',stroke:'#0ea5e9'},
   {id:'users',label:'Usuários',icon:'shield',sub:'Acessos · Cargos',color:'rgba(239,68,68,0.32)',glow:'rgba(239,68,68,0.14)',bg:'rgba(239,68,68,0.1)',stroke:'#ef4444',adminOnly:true},
   {id:'settings',label:'Configurações',icon:'settings',sub:'Preferências · Conta',color:'rgba(148,163,184,0.32)',glow:'rgba(148,163,184,0.14)',bg:'rgba(148,163,184,0.1)',stroke:'#94a3b8'},
@@ -991,69 +1311,23 @@ function buildHubCards(){
   const userMods=STATE.user?.modules||[];
   const isAdmin=STATE.user?.role==='admin';
   const visible=MODS.filter(m=>!m.adminOnly||isAdmin).filter(m=>isAdmin||userMods.includes(m.id));
-  document.getElementById('hub-cards').innerHTML=visible.map(m=>`
-    <div class="hub-app" onclick="openMod('${m.id}')"
-      style="--app-border:${m.color};--app-glow:${m.glow};--app-bg:${m.bg};--app-stroke:${m.stroke}">
-      <div class="hub-app-icon"><i data-lucide="${m.icon}"></i></div>
-      <div class="hub-app-name">${m.label}</div>
-    </div>`).join('');
-  const count=visible.length;
-  document.getElementById('hub-cards').style.gridTemplateColumns=`repeat(${Math.min(count,6)},1fr)`;
+  const el=document.getElementById('hub-cards');
+  if(el){
+    el.innerHTML=visible.map(m=>`
+      <div class="hub-app" onclick="openMod('${m.id}')"
+        style="--app-border:${m.color};--app-glow:${m.glow};--app-bg:${m.bg};--app-stroke:${m.stroke}">
+        <div class="hub-app-icon"><i data-lucide="${m.icon}"></i></div>
+        <div class="hub-app-name">${m.label}</div>
+      </div>`).join('');
+  }
   lucide.createIcons();
 }
 
-// ── MOBILE HOME (tasks + notifications) ──
+// ── MOBILE HOME (legacy — mobile now reuses the desktop hub layout
+// via responsive CSS; keep this as a no-op for backwards-compat calls).
 function buildMobileHome(){
-  const el=document.getElementById('hub-mobile-home');if(!el)return;
-  const myTasks=STATE.tasks.filter(t=>t.status!=='concluída').sort((a,b)=>{
-    const pr={alta:0,média:1,baixa:2};return(pr[a.priority]||2)-(pr[b.priority]||2);
-  }).slice(0,6);
-  const notifs=STATE.notifications.filter(n=>!n.read).slice(0,4);
-  const pendPay=STATE.payments.filter(p=>p.status==='pendente'||p.status==='ajuste').slice(0,3);
-
-  el.innerHTML=`
-    ${notifs.length?`<div class="mob-home-section">
-      <div class="mob-home-title"><i data-lucide="bell"></i> Alertas</div>
-      ${notifs.map(n=>`<div class="mob-home-card" onclick="toggleActionCenter()" style="display:flex;gap:10px;align-items:flex-start">
-        <div style="width:6px;height:6px;border-radius:50%;background:var(--${n.type});margin-top:6px;flex-shrink:0"></div>
-        <div><div style="font-size:12px;font-weight:500;color:var(--text);line-height:1.4">${n.text}</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:3px">${n.time}</div></div>
-      </div>`).join('')}
-    </div>`:''}
-
-    <div class="mob-home-section">
-      <div class="mob-home-title"><i data-lucide="check-square"></i> Tarefas Pendentes (${myTasks.length})</div>
-      ${myTasks.length?myTasks.map(t=>{
-        const priCol=t.priority==='alta'?'var(--red)':t.priority==='média'?'var(--amber)':'var(--text3)';
-        return `<div class="mob-home-card" onclick="openMod('tasks')" style="border-left:3px solid ${priCol}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-            <div style="font-size:12px;font-weight:600;color:var(--text);line-height:1.3;flex:1">${t.title}</div>
-            <span class="pri pri-${t.priority[0]==='a'?'a':t.priority[0]==='m'?'m':'b'}" style="flex-shrink:0">${t.priority.toUpperCase()}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text2)">
-            <span>${t.assignee||'Sem responsável'}</span>
-            ${t.dueDate?`<span style="${new Date(t.dueDate)<new Date()?'color:var(--red)':''}">${new Date(t.dueDate).toLocaleDateString('pt-BR')}</span>`:''}
-          </div>
-        </div>`;
-      }).join(''):`<div class="mob-home-empty">Nenhuma tarefa pendente</div>`}
-    </div>
-
-    ${pendPay.length?`<div class="mob-home-section">
-      <div class="mob-home-title"><i data-lucide="banknote"></i> Pagamentos Pendentes</div>
-      ${pendPay.map(p=>`<div class="mob-home-card" onclick="openMod('payments')" style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:12px;font-weight:600;color:var(--text)">${p.affiliate}</div>
-        <div style="font-size:10px;color:var(--text2)">${p.contract}</div></div>
-        <div style="text-align:right"><div style="font-family:var(--fd);font-size:14px;font-weight:700;color:var(--theme)">${fc(p.amount)}</div>
-        <div style="font-size:9px;color:var(--text3)">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):''}</div></div>
-      </div>`).join('')}
-    </div>`:''}
-
-    <div class="mob-home-section" style="margin-top:8px">
-      <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openMobSidebar()">
-        <i data-lucide="grid"></i> Abrir Módulos
-      </button>
-    </div>`;
-  lucide.createIcons();
+  const el=document.getElementById('hub-mobile-home');
+  if(el)el.innerHTML='';
 }
 
 // ── MODULE OPEN/CLOSE ──

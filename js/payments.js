@@ -173,11 +173,11 @@ function renderPyTbl(list){
         <td style="font-size:11px;${dueOver?'color:var(--red);font-weight:700':''}">${p.dueDate?new Date(p.dueDate).toLocaleDateString('pt-BR'):'<span style="color:var(--text3)">—</span>'}</td>
         <td>${p.nfLink?`<a href="${p.nfLink}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue);text-decoration:none" onclick="event.stopPropagation()">🔗 ${p.nfName||'Ver NF'}</a>`:p.nfName?`<span style="font-size:10px;color:var(--blue)">📎 ${p.nfName}</span>`:'<span style="font-size:10px;color:var(--text3)">—</span>'}</td>
         <td><span class="pb pb-${cs}">${pl(cs)}</span></td>
-        <td class="td-acts">
-          ${(p.status==='pendente'||p.status==='ajuste')?`<button class="ibt" onclick="event.stopPropagation();approvePay('${p.id}')" data-tooltip="Aprovar pagamento"><i data-lucide="check" style="width:13px;height:13px;stroke:var(--green)"></i></button><button class="ibt amber" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')" data-tooltip="Devolver para ajuste"><i data-lucide="alert-circle" style="width:13px;height:13px"></i></button><button class="ibt danger" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')" data-tooltip="Recusar pagamento"><i data-lucide="x" style="width:13px;height:13px"></i></button>`:''}
-          ${p.status==='aprovado'?`<button class="ibt" onclick="event.stopPropagation();markPaid('${p.id}')" data-tooltip="Confirmar pagamento"><i data-lucide="banknote" style="width:13px;height:13px;stroke:var(--green)"></i></button>`:''}
-          <button class="ibt" onclick="event.stopPropagation();openEditPay('${p.id}')" data-tooltip="Editar pagamento"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
-        </td></tr>`;
+        <td><div style="display:inline-flex;gap:4px;align-items:center">
+          ${(p.status==='pendente'||p.status==='ajuste')?`<button class="py-act-btn py-act-approve" onclick="event.stopPropagation();approvePay('${p.id}')"><i data-lucide="check"></i><span>Aprovar</span></button><button class="py-act-btn py-act-adjust" onclick="event.stopPropagation();promptPayAction('${p.id}','ajuste')"><i data-lucide="undo-2"></i><span>Ajuste</span></button><button class="py-act-btn py-act-reject" onclick="event.stopPropagation();promptPayAction('${p.id}','recusado')"><i data-lucide="x"></i><span>Recusar</span></button>`:''}
+          ${p.status==='aprovado'?`<button class="py-act-btn py-act-approve" onclick="event.stopPropagation();markPaid('${p.id}')"><i data-lucide="banknote"></i><span>Pago</span></button>`:''}
+          <button class="py-act-btn" onclick="event.stopPropagation();openEditPay('${p.id}')"><i data-lucide="edit-2"></i><span>Editar</span></button>
+        </div></td></tr>`;
       }).join('')}</tbody></table>`;
     hdr.onclick=()=>{body.style.display=body.style.display==='none'?'block':'none';hdr.querySelector('.py-chev').style.transform=body.style.display==='none'?'':'rotate(180deg)';};
     div.appendChild(hdr);div.appendChild(body);el.appendChild(div);
@@ -665,10 +665,10 @@ function renderClosingTab(){
         <td class="td-money">${fc(c.commission)}</td>
         <td><span class="pb pb-${c.paymentStatus}">${pl(c.paymentStatus)}</span></td>
         <td style="font-size:10px;color:var(--text3)">${c.createdAt}</td>
-        <td class="td-acts">
-          <button class="ibt" onclick="regenerateClosingPDF('${c.id}')" data-tooltip="Gerar PDF do fechamento"><i data-lucide="file-text"></i></button>
-          <button class="ibt" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" data-tooltip="Enviar email ao financeiro"><i data-lucide="send"></i></button>
-        </td>
+        <td><div style="display:inline-flex;gap:6px;align-items:center">
+          <button class="btn btn-outline" onclick="regenerateClosingPDF('${c.id}')" style="padding:6px 10px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px"><i data-lucide="file-text" style="width:12px;height:12px"></i> Gerar Relatório</button>
+          <button class="btn btn-outline" onclick="sendClosingEmail(STATE.closings.find(x=>x.id==='${c.id}'))" style="padding:6px 10px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px"><i data-lucide="send" style="width:12px;height:12px"></i> Enviar ao Financeiro</button>
+        </div></td>
       </tr>`).join('')}
     </tbody></table></div>`:'<div class="mob-home-empty">Nenhum fechamento realizado.</div>'}`;
   lucide.createIcons();

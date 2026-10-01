@@ -14,7 +14,12 @@
 //   icon: lucide icon
 //   where: short hint of where the feature shows up in the UI
 const BETA_FEATURES = [
-  { id: 'activity_timeline', name: 'Timeline de atividades', desc: 'Registre ligações, reuniões, emails e notas estruturadas por afiliado — separado do log de auditoria.', status: 'ready', icon: 'activity', where: 'Afiliados → clique em um card → aba Timeline' },
+  { id: 'activity_timeline', name: 'Timeline de atividades', desc: 'Registre ligações, reuniões, emails e notas estruturadas por afiliado — separado do log de auditoria.', status: 'ready', icon: 'message-square', where: 'Afiliados → clique em um card → aba Timeline' },
+  { id: 'forecast', name: 'Forecast mensal', desc: 'Projeção automática de receita e QFTDs até o final do mês com base no ritmo atual dos reports.', status: 'ready', icon: 'trending-up', where: 'Dashboard → seção de KPIs (card Forecast)' },
+  { id: 'brand_hub', name: 'Brand Hub', desc: 'Centro de materiais por marca: promoções da casa, banners, links, features e assets organizados por categoria.', status: 'ready', icon: 'palette', where: 'Marcas → clique na marca → aba Materiais' },
+  { id: 'ai_insights', name: 'AI Insights', desc: 'Análises automáticas sobre performance dos afiliados, riscos de dependência, afiliados inativos e oportunidades.', status: 'ready', icon: 'sparkles', where: 'Hub → widget Insights · Dashboard → painel lateral' },
+  { id: 'automations', name: 'Automações', desc: 'Configure triggers e webhooks para integrar agentes de IA externos: notificações, follow-ups e ações automáticas.', status: 'ready', icon: 'bot', where: 'Configurações → seção Automações' },
+  { id: 'weekly_digest', name: 'Weekly Digest', desc: 'Resumo semanal automático enviado por email com HTML premium: top performers, receita, pagamentos e alertas.', status: 'ready', icon: 'newspaper', where: 'Configurações → Automações → Digest Semanal' },
 ];
 window.BETA_FEATURES = BETA_FEATURES;
 
@@ -240,11 +245,13 @@ window.lastContactHTML = (affiliate) => {
 // Types: call | email | meeting | note | whatsapp
 
 const ACTIVITY_TYPES = {
-  call:     { label: 'Ligação',  icon: 'phone',            color: 'var(--blue)' },
-  meeting:  { label: 'Reunião',  icon: 'users',            color: 'var(--purple)' },
-  email:    { label: 'Email',    icon: 'mail',             color: 'var(--amber)' },
-  whatsapp: { label: 'WhatsApp', icon: 'message-circle',   color: 'var(--green)' },
-  note:     { label: 'Nota',     icon: 'sticky-note',      color: 'var(--text2)' },
+  call:      { label: 'Ligação',   icon: 'phone',          color: 'var(--blue)' },
+  meeting:   { label: 'Reunião',   icon: 'users',          color: 'var(--purple)' },
+  email:     { label: 'Email',     icon: 'mail',           color: 'var(--amber)' },
+  whatsapp:  { label: 'WhatsApp',  icon: 'message-circle', color: 'var(--green)' },
+  negotiation: { label: 'Negociação', icon: 'handshake',   color: 'var(--theme)' },
+  followup:  { label: 'Follow-up', icon: 'repeat',         color: 'var(--pink)' },
+  note:      { label: 'Nota',      icon: 'sticky-note',    color: 'var(--text2)' },
 };
 window.ACTIVITY_TYPES = ACTIVITY_TYPES;
 

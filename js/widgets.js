@@ -7,6 +7,7 @@
 // ══════════════════════════════════════════════════════════
 
 const HUB_WIDGETS = [
+  { id: 'ai_insights', name: 'AI Insights', icon: 'sparkles', desc: 'Análises automáticas de performance e riscos' },
   { id: 'notifications', name: 'Notificações', icon: 'bell', desc: 'Últimas notificações do sistema' },
   { id: 'payments_queue', name: 'Fila de pagamentos', icon: 'banknote', desc: 'Vencidos, atrasados e a processar' },
   { id: 'tasks', name: 'Minhas tarefas', icon: 'check-square', desc: 'Pendentes e em andamento' },
@@ -190,27 +191,245 @@ function _widgetShell(id, title, icon, bodyHTML, footerHTML = '') {
   </div>`;
 }
 
-// ── MOUNTING ──────────────────────────────────────────────
+// ── MOUNTING (compact KPI strip) ──────────────────────────
+// Renders the active widgets as a row of small KPI tiles (max 3 visible)
+// with an "Add widget" dashed placeholder if the user has room for more.
 
 window.buildHubWidgets = () => {
-  const wrap = document.getElementById('hub-widgets');
+  const wrap = document.getElementById('hub-widget-strip');
   if (!wrap) return;
-  const active = _activeWidgets();
-  if (!active.length) { wrap.innerHTML = ''; return; }
+  const active = _activeWidgets().slice(0, 3);
   const renderMap = {
-    notifications: _widgetNotifications,
-    payments_queue: _widgetPaymentsQueue,
-    tasks: _widgetTasks,
-    results: _widgetResults,
-    top_affiliates: _widgetTopAffiliates,
-    pipeline_status: _widgetPipelineStatus,
-    recent_activity: _widgetRecentActivity,
+    ai_insights: _kpiAIInsights,
+    notifications: _kpiNotifications,
+    payments_queue: _kpiPaymentsQueue,
+    tasks: _kpiTasks,
+    results: _kpiResults,
+    top_affiliates: _kpiTopAffiliates,
+    pipeline_status: _kpiPipelineStatus,
+    recent_activity: _kpiRecentActivity,
   };
-  wrap.innerHTML = active.map(id => {
+  const tiles = active.map(id => {
     const fn = renderMap[id];
     return fn ? fn() : '';
-  }).join('');
+  }).filter(Boolean);
+  // Add a dashed "add widget" tile if fewer than 3 active
+  if (tiles.length < 3) {
+    tiles.push(`<button class="hw-tile hw-tile-add" onclick="openHubWidgetPicker()">
+      <i data-lucide="plus"></i><span>Adicionar widget</span>
+    </button>`);
+  }
+  wrap.innerHTML = tiles.join('');
   if (typeof lucide !== 'undefined') lucide.createIcons();
+};
+
+// Compact KPI renderers — single metric, eyebrow label, optional delta/detail rows
+function _kpiTile(icon, eyebrow, value, delta, sub, onClick, detailRows, accentColor) {
+  const click = onClick ? ` onclick="event.stopPropagation();${onClick}"` : '';
+  const accent = accentColor ? ` style="--tile-accent:${accentColor}"` : '';
+  const details = detailRows ? `<div class="hw-tile-details">${detailRows}</div>` : '';
+  return `<div class="hw-tile"${click}${accent}>
+    <div class="hw-tile-head">
+      <span class="hw-tile-icon"><i data-lucide="${icon}"></i></span>
+      <span class="hw-tile-eyebrow">${eyebrow}</span>
+    </div>
+    <div class="hw-tile-value">${value}</div>
+    ${delta ? `<div class="hw-tile-delta ${delta.positive ? 'pos' : 'neg'}">${delta.positive ? '↑' : '↓'} ${delta.text}</div>` : ''}
+    ${sub ? `<div class="hw-tile-sub">${sub}</div>` : ''}
+    ${details}
+  </div>`;
+}
+
+function _kpiResults() {
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const lastKey = now.getMonth() === 0
+    ? `${now.getFullYear()-1}-12`
+    : `${now.getFullYear()}-${String(now.getMonth()).padStart(2,'0')}`;
+  const monthReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(monthKey));
+  const lastReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(lastKey));
+  let rev = 0, lastRev = 0, qftd = 0;
+  monthReps.forEach(r => { rev += r.netRev || 0; qftd += (typeof r.qftd === 'number' ? r.qftd : 0); });
+  lastReps.forEach(r => { lastRev += r.netRev || 0; });
+  if (!rev && !qftd) STATE.affiliates.forEach(a => { rev += a.netRev || 0; qftd += a.qftds || 0; });
+  const monthLbl = now.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
+  const delta = lastRev > 0 ? { text: `${Math.round((rev - lastRev) / lastRev * 100)}% vs. mês anterior`, positive: rev >= lastRev } : null;
+  const details = `<div class="hw-tile-detail-row"><span><i data-lucide="users" class="hw-detail-ico"></i>QFTDs</span><span>${qftd}</span></div>`;
+  return _kpiTile('trending-up', `Receita · ${monthLbl}`, fc(rev), delta, null, "openMod('dashboard')", details);
+}
+
+function _kpiTasks() {
+  const all = STATE.tasks || [];
+  const done = all.filter(t => t.status === 'concluída').length;
+  const pending = all.filter(t => t.status !== 'concluída').length;
+  const urgent = all.filter(t => t.status !== 'concluída' && t.priority === 'alta').length;
+  let details = '';
+  const next = all.filter(t => t.status !== 'concluída').sort((a,b) => {
+    const pa = {alta:0,média:1,baixa:2}; return (pa[a.priority]||2) - (pa[b.priority]||2);
+  }).slice(0, 2);
+  if (next.length) {
+    details = next.map(t => {
+      const ico = t.priority === 'alta' ? 'flame' : t.priority === 'média' ? 'clock' : 'circle';
+      const color = t.priority === 'alta' ? 'var(--red)' : t.priority === 'média' ? 'var(--amber)' : 'var(--green)';
+      return `<div class="hw-tile-detail-row"><span><i data-lucide="${ico}" class="hw-detail-ico" style="stroke:${color}"></i>${t.title.length > 26 ? t.title.slice(0,26)+'…' : t.title}</span></div>`;
+    }).join('');
+  }
+  const accent = urgent > 0 ? 'var(--red)' : undefined;
+  return _kpiTile('check-square', 'Tarefas', pending, null, `${done} concluídas${urgent ? ` · <strong style="color:var(--red)">${urgent} urgentes</strong>` : ''}`, "openMod('tasks')", details, accent);
+}
+
+function _kpiPaymentsQueue() {
+  const payments = STATE.payments || [];
+  const overdue = payments.filter(p => {
+    const s = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
+    return s === 'vencido' || s === 'atrasado';
+  });
+  const pending = payments.filter(p => p.status === 'pendente');
+  const total = payments.length;
+  const overdueAmt = overdue.reduce((s, p) => s + (p.amount || 0), 0);
+  let details = '';
+  if (overdue.length) {
+    details = overdue.slice(0, 2).map(p =>
+      `<div class="hw-tile-detail-row warn"><span><i data-lucide="alert-circle" class="hw-detail-ico"></i>${(p.affiliate || '').split(' ')[0]} · ${p.brand}</span><span>${fc(p.amount || 0)}</span></div>`
+    ).join('');
+  } else if (pending.length) {
+    details = `<div class="hw-tile-detail-row"><span><i data-lucide="clock" class="hw-detail-ico"></i>${pending.length} pendentes</span><span>${fc(pending.reduce((s,p)=>s+(p.amount||0),0))}</span></div>`;
+  }
+  const delta = overdue.length ? { text: `${fc(overdueAmt)} em atraso`, positive: false } : null;
+  const accent = overdue.length ? 'var(--red)' : undefined;
+  return _kpiTile('banknote', 'Pagamentos', total, delta, overdue.length ? null : 'Nenhum em atraso', "openMod('payments')", details, accent);
+}
+
+function _kpiNotifications() {
+  const all = STATE.notifications || [];
+  const unread = all.filter(n => !n.read);
+  const count = unread.length;
+  let details = '';
+  const preview = (count > 0 ? unread : all).slice(0, 2);
+  if (preview.length) {
+    details = preview.map(n => {
+      const ico = n.type === 'red' ? 'alert-triangle' : n.type === 'amber' ? 'alert-circle' : n.type === 'green' ? 'check-circle' : 'info';
+      const color = `var(--${n.type || 'theme'})`;
+      const text = n.text.length > 34 ? n.text.slice(0, 34) + '…' : n.text;
+      return `<div class="hw-tile-detail-row"><span><i data-lucide="${ico}" class="hw-detail-ico" style="stroke:${color}"></i>${text}</span></div>`;
+    }).join('');
+  }
+  const accent = count > 0 ? 'var(--amber)' : undefined;
+  return _kpiTile('bell', 'Notificações', count, null, count ? `${count} não lidas` : 'Tudo em dia', 'toggleActionCenter()', details, accent);
+}
+
+function _kpiTopAffiliates() {
+  const sorted = [...(STATE.affiliates || [])].sort((a, b) => (b.profit || 0) - (a.profit || 0));
+  const top = sorted[0];
+  let details = '';
+  if (sorted.length > 1) {
+    const medals = ['crown', 'medal', 'award'];
+    details = sorted.slice(0, 3).map((a, i) =>
+      `<div class="hw-tile-detail-row"><span><i data-lucide="${medals[i]}" class="hw-detail-ico" style="stroke:${i===0?'var(--amber)':i===1?'var(--text2)':'var(--text3)'}"></i>${a.name.split(' ')[0]}</span><span>${fc(a.profit || 0)}</span></div>`
+    ).join('');
+  }
+  return _kpiTile('trophy', 'Top Afiliados', top ? top.name.split(' ')[0] : '—', null, top ? fc(top.profit || 0) + ' lucro' : 'Sem dados', "openMod('affiliates')", details);
+}
+
+function _kpiPipelineStatus() {
+  const cards = STATE.pipeline?.cards || [];
+  const stages = STATE.pipeline?.stages || [];
+  const total = cards.length;
+  let details = '';
+  if (stages.length && cards.length) {
+    details = stages.filter(s => cards.some(c => c.stageId === s.id)).slice(0, 3).map(s => {
+      const n = cards.filter(c => c.stageId === s.id).length;
+      return `<div class="hw-tile-detail-row"><span><i data-lucide="circle" class="hw-detail-ico" style="stroke:${s.color || 'var(--text3)'};fill:${s.color || 'var(--text3)'}"></i>${s.name}</span><span>${n}</span></div>`;
+    }).join('');
+  }
+  return _kpiTile('git-branch', 'Pipeline', total, null, `${total} negociações`, "openMod('pipeline')", details);
+}
+
+function _kpiRecentActivity() {
+  const logs = STATE.auditLog || [];
+  const count = logs.length;
+  let details = '';
+  if (logs.length) {
+    details = logs.slice(0, 2).map(l =>
+      `<div class="hw-tile-detail-row"><span><i data-lucide="zap" class="hw-detail-ico"></i>${(l.action || '').length > 28 ? l.action.slice(0,28)+'…' : l.action}</span></div>`
+    ).join('');
+  }
+  return _kpiTile('activity', 'Atividade', count, null, 'Registros recentes', "openMod('audit')", details);
+}
+
+function _kpiAIInsights() {
+  if (typeof isBetaEnabled !== 'function' || !isBetaEnabled('ai_insights')) {
+    return _kpiTile('sparkles', 'AI Insights', '—', null, 'Ative no Lab', null, null);
+  }
+  const insights = _generateInsights();
+  const count = insights.length;
+  let details = '';
+  if (insights.length) {
+    details = insights.slice(0, 3).map(i =>
+      `<div class="hw-tile-detail-row"><span><i data-lucide="${i.icon}" class="hw-detail-ico" style="stroke:${i.color}"></i>${i.text}</span></div>`
+    ).join('');
+  }
+  return _kpiTile('sparkles', 'AI Insights', count, null, count ? 'Oportunidades detectadas' : 'Sem alertas', "openAIInsightsPanel()", details, count > 2 ? 'var(--theme)' : undefined);
+}
+
+function _generateInsights() {
+  const insights = [];
+  const affs = STATE.affiliates || [];
+  // Stale contacts
+  affs.forEach(a => {
+    const days = typeof daysSinceContact === 'function' ? daysSinceContact(a) : null;
+    if (days !== null && days > 14) {
+      insights.push({ icon: 'clock', color: 'var(--amber)', text: `${a.name.split(' ')[0]} sem contato há ${days}d`, type: 'stale', affId: a.id });
+    }
+  });
+  // Revenue concentration
+  const totalRev = affs.reduce((s, a) => s + (a.netRev || 0), 0);
+  if (totalRev > 0) {
+    const top = [...affs].sort((a, b) => (b.netRev || 0) - (a.netRev || 0))[0];
+    if (top) {
+      const pct = Math.round((top.netRev || 0) / totalRev * 100);
+      if (pct > 50) {
+        insights.push({ icon: 'alert-triangle', color: 'var(--red)', text: `${top.name.split(' ')[0]} concentra ${pct}% da receita`, type: 'concentration' });
+      }
+    }
+  }
+  // Growth opportunities
+  affs.forEach(a => {
+    if ((a.qftds || 0) > 0 && (a.ftds || 0) > 0) {
+      const conv = Math.round(a.qftds / a.ftds * 100);
+      if (conv > 70) {
+        insights.push({ icon: 'rocket', color: 'var(--green)', text: `${a.name.split(' ')[0]}: ${conv}% conversão — potencial de escalar`, type: 'growth', affId: a.id });
+      }
+    }
+  });
+  // Overdue payments
+  const overdue = (STATE.payments || []).filter(p => {
+    const s = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
+    return s === 'vencido';
+  });
+  if (overdue.length) {
+    insights.push({ icon: 'alert-circle', color: 'var(--red)', text: `${overdue.length} pagamento(s) vencido(s) — ação urgente`, type: 'overdue' });
+  }
+  return insights;
+}
+
+window.openAIInsightsPanel = () => {
+  const insights = _generateInsights();
+  const rows = insights.length ? insights.map(i =>
+    `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--gb)">
+      <div style="width:28px;height:28px;border-radius:8px;background:color-mix(in srgb,${i.color} 12%,transparent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i data-lucide="${i.icon}" style="width:14px;height:14px;stroke:${i.color}"></i>
+      </div>
+      <div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">${i.text}</div>
+    </div>`).join('')
+    : '<div style="text-align:center;padding:30px;color:var(--text3)">Nenhuma insight detectada — continue operando normalmente.</div>';
+  openModal('AI Insights — Análise Automática', `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+      Análises geradas automaticamente com base nos seus dados. Insights identificam riscos, oportunidades e ações pendentes.
+    </div>
+    ${rows}
+  `, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+  lucide.createIcons();
 };
 
 // ── PICKER MODAL ──────────────────────────────────────────

@@ -22,6 +22,10 @@ window.openNewBrandModal = () => {
       <div class="fgp"><label>CPA Padrão (R$)</label>
         <input type="number" class="fi" id="nb-cpa" placeholder="0">
       </div>
+      <div class="fgp"><label>Baseline (R$)</label>
+        <input type="number" class="fi" id="nb-baseline" placeholder="0">
+        <div style="font-size:9px;color:var(--text3);margin-top:4px">Valor mínimo de depósito/movimentação para qualificar o CPA</div>
+      </div>
       <div class="fgp"><label>RevShare Padrão (%)</label>
         <input type="number" class="fi" id="nb-rs" placeholder="0">
       </div>
@@ -36,6 +40,7 @@ window.saveNewBrand = () => {
   const type = document.getElementById('nb-type').value;
   const cpa = parseFloat(document.getElementById('nb-cpa').value)||0;
   const rs = parseFloat(document.getElementById('nb-rs').value)||0;
+  const baseline = parseFloat(document.getElementById('nb-baseline').value)||0;
   const logoUrl = document.getElementById('nb-logo').value.trim();
 
   if(!name) return toast("Nome da marca é obrigatório", "e");
@@ -53,9 +58,10 @@ window.saveNewBrand = () => {
     rgb: hexToRgb(color),
     cpa: cpa,
     rs: rs,
+    baseline: baseline,
     type: type,
     logo: logoUrl || defaultLogo,
-    levels: type === 'tiered' ? [{key:'l1',name:'L1',cpa:cpa,baseline:10}] : undefined
+    levels: type === 'tiered' ? [{key:'l1',name:'L1',cpa:cpa,baseline:baseline||30}] : undefined
   };
 
   logAction('Marca Adicionada', name);
@@ -75,6 +81,9 @@ window.openEditBrand=(name)=>{
     <div class="fgp ff"><label>URL da Logo</label><input type="text" class="fi" id="eb-logo" value="${br.logo||''}"></div>
     <div class="fgp"><label>Cor (Hex)</label><input type="text" class="fi" id="eb-color" value="${br.color}"></div>
     <div class="fgp"><label>CPA Padrão (R$)</label><input type="number" class="fi" id="eb-cpa" value="${br.cpa||0}"></div>
+    <div class="fgp"><label>Baseline (R$)</label><input type="number" class="fi" id="eb-baseline" value="${br.baseline||0}">
+      <div style="font-size:9px;color:var(--text3);margin-top:4px">Valor mínimo de depósito/movimentação para qualificar o CPA</div>
+    </div>
     <div class="fgp"><label>RevShare Padrão (%)</label><input type="number" class="fi" id="eb-rs" value="${br.rs||0}"></div>
   </div>`,`<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-danger" onclick="confirmDeleteBrand('${name}')"><i data-lucide="trash-2"></i> Excluir</button>
@@ -87,6 +96,7 @@ window.saveEditBrand=name=>{
   br.color=document.getElementById('eb-color')?.value||br.color;
   br.rgb=hexToRgb(br.color);
   br.cpa=parseFloat(document.getElementById('eb-cpa')?.value)||0;
+  br.baseline=parseFloat(document.getElementById('eb-baseline')?.value)||0;
   br.rs=parseFloat(document.getElementById('eb-rs')?.value)||0;
   br.logo=document.getElementById('eb-logo')?.value.trim()||br.logo;
   logAction('Marca editada',name);saveToLocal();closeModal();
@@ -430,12 +440,17 @@ function bBrands(el){
                 <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:0.04em">${name}</div>
                 <div style="font-size:10px;color:var(--text3)">${affCount} afiliado${affCount!==1?'s':''} vinculado${affCount!==1?'s':''}</div>
               </div>
+              ${typeof isBetaEnabled === 'function' && isBetaEnabled('brand_hub') ? `<button class="btn btn-outline" onclick="event.stopPropagation();openBrandHub('${name}')" style="padding:5px 10px;font-size:9px" title="Materiais"><i data-lucide="palette" style="width:12px;height:12px"></i></button>` : ''}
               <button class="btn btn-outline" onclick="event.stopPropagation();openEditBrand('${name}')" style="padding:5px 10px;font-size:9px"><i data-lucide="edit-3" style="width:12px;height:12px"></i></button>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
               <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">CPA Base</div>
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">CPA</div>
                 <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text)">R$${br.cpa||0}</div>
+              </div>
+              <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Baseline</div>
+                <div style="font-family:var(--fd);font-size:16px;font-weight:800;color:var(--text)">R$${br.baseline||0}</div>
               </div>
               <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:700">Rev Share</div>
@@ -466,5 +481,274 @@ function bBrands(el){
     </div></div>`;
 }
 
-// Brand tab functions removed — brand results now in Dashboard
+// ══════════════════════════════════════════════════════════
+// BRAND HUB — Materials, promos, features, banners per brand
+// ══════════════════════════════════════════════════════════
+// Stored in STATE.brandMaterials = { brandName: [ { id, category, title, desc, url, imageUrl, createdAt } ] }
+
+const MATERIAL_CATEGORIES = {
+  promo: { label: 'Promoção', icon: 'tag', color: 'var(--amber)' },
+  banner: { label: 'Banner', icon: 'image', color: 'var(--blue)' },
+  feature: { label: 'Feature da Casa', icon: 'star', color: 'var(--purple)' },
+  link: { label: 'Link', icon: 'external-link', color: 'var(--green)' },
+  asset: { label: 'Asset / Material', icon: 'file', color: 'var(--text2)' },
+};
+
+window.openBrandHub = (brandName) => {
+  if (typeof isBetaEnabled !== 'function' || !isBetaEnabled('brand_hub')) {
+    return toast('Ative Brand Hub em Configurações > Lab', 'w');
+  }
+  const br = STATE.brands[brandName];
+  if (!br) return;
+  if (!STATE.brandMaterials) STATE.brandMaterials = {};
+  const materials = STATE.brandMaterials[brandName] || [];
+
+  // Store current filter state on module
+  window._bhCurrentBrand = brandName;
+  window._bhCurrentFilter = 'all';
+
+  openModal(brandName + ' — Brand Hub', _renderBrandHubBody(brandName, 'all'),
+    `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+
+  // Make modal wider for the gallery view
+  const mbd = document.getElementById('mbd');
+  if (mbd) { mbd.style.maxWidth = 'none'; }
+  const modal = document.querySelector('#modal-ov .modal');
+  if (modal) { modal.style.maxWidth = '920px'; modal.style.width = '92vw'; }
+
+  lucide.createIcons();
+};
+
+function _renderBrandHubBody(brandName, filter) {
+  const br = STATE.brands[brandName];
+  const materials = STATE.brandMaterials?.[brandName] || [];
+  const filtered = filter === 'all' ? materials : materials.filter(m => m.category === filter);
+
+  // Header: brand logo + name + quick-add row
+  const logoBlock = br.logo
+    ? `<img src="${br.logo}" class="bh-logo" alt="${brandName}">`
+    : `<div class="bh-logo bh-logo-fallback">${brandName[0]}</div>`;
+
+  const catCounts = Object.fromEntries(
+    Object.keys(MATERIAL_CATEGORIES).map(k => [k, materials.filter(m => m.category === k).length])
+  );
+
+  // Category filter chips
+  const chipsRow = `<div class="bh-chips">
+    <button class="bh-chip ${filter === 'all' ? 'on' : ''}" onclick="_filterBH('all')">
+      <i data-lucide="grid" style="width:11px;height:11px"></i> Todos
+      <span class="bh-chip-count">${materials.length}</span>
+    </button>
+    ${Object.entries(MATERIAL_CATEGORIES).map(([k, v]) => `
+      <button class="bh-chip ${filter === k ? 'on' : ''}" onclick="_filterBH('${k}')" style="--chip-c:${v.color}">
+        <i data-lucide="${v.icon}" style="width:11px;height:11px"></i> ${v.label}
+        <span class="bh-chip-count">${catCounts[k]}</span>
+      </button>
+    `).join('')}
+  </div>`;
+
+  // Quick-add: colored icons for each category
+  const quickAdd = `<div class="bh-quick-add">
+    <span class="bh-quick-add-lbl">Criar rápido:</span>
+    ${Object.entries(MATERIAL_CATEGORIES).map(([k, v]) => `
+      <button class="bh-quick-btn" onclick="openAddBrandMaterial('${brandName}','${k}')" title="Nova ${v.label}" style="--qb-c:${v.color}">
+        <i data-lucide="${v.icon}"></i>
+      </button>
+    `).join('')}
+    <button class="bh-quick-btn bh-quick-btn-primary" onclick="openAddBrandMaterial('${brandName}')">
+      <i data-lucide="plus"></i> <span>Novo Material</span>
+    </button>
+  </div>`;
+
+  // Content: gallery view if has materials, landing view if empty
+  let content;
+  if (!materials.length) {
+    content = `<div class="bh-empty">
+      <div class="bh-empty-icon"><i data-lucide="folder-open"></i></div>
+      <div class="bh-empty-title">Comece a montar o hub da ${brandName}</div>
+      <div class="bh-empty-sub">Adicione promoções, banners, features da casa, links e assets. Os afiliados encontram tudo em um só lugar.</div>
+      <div class="bh-empty-grid">
+        ${Object.entries(MATERIAL_CATEGORIES).map(([k, v]) => `
+          <button class="bh-empty-card" onclick="openAddBrandMaterial('${brandName}','${k}')" style="--ec-c:${v.color}">
+            <div class="bh-empty-card-icon"><i data-lucide="${v.icon}"></i></div>
+            <div class="bh-empty-card-lbl">${v.label}</div>
+            <div class="bh-empty-card-hint">+ Adicionar</div>
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
+  } else if (!filtered.length) {
+    const cat = MATERIAL_CATEGORIES[filter];
+    content = `<div class="bh-empty-filter">
+      <i data-lucide="${cat?.icon || 'folder'}" style="width:32px;height:32px;stroke:${cat?.color || 'var(--text3)'}"></i>
+      <div>Nenhum material na categoria <strong>${cat?.label || filter}</strong>.</div>
+      <button class="btn btn-theme" onclick="openAddBrandMaterial('${brandName}','${filter}')"><i data-lucide="plus"></i> Criar ${cat?.label || ''}</button>
+    </div>`;
+  } else {
+    content = `<div class="bh-gallery">${filtered.map(m => _renderBHCard(m)).join('')}</div>`;
+  }
+
+  return `<div class="bh-wrap">
+    <div class="bh-header">
+      ${logoBlock}
+      <div class="bh-header-body">
+        <div class="bh-header-name">${brandName}</div>
+        <div class="bh-header-meta">${materials.length} material${materials.length !== 1 ? 'is' : ''} cadastrado${materials.length !== 1 ? 's' : ''}</div>
+      </div>
+    </div>
+    ${quickAdd}
+    ${materials.length ? chipsRow : ''}
+    <div id="bh-content">${content}</div>
+  </div>`;
+}
+
+function _renderBHCard(m) {
+  const cat = MATERIAL_CATEGORIES[m.category] || MATERIAL_CATEGORIES.asset;
+  const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString('pt-BR') : '';
+  return `<div class="bh-card">
+    ${m.imageUrl
+      ? `<div class="bh-card-img" style="background-image:url('${m.imageUrl.replace(/'/g,'')}')"></div>`
+      : `<div class="bh-card-img bh-card-img-fallback" style="--c:${cat.color}"><i data-lucide="${cat.icon}"></i></div>`}
+    <div class="bh-card-body">
+      <div class="bh-card-cat" style="--c:${cat.color}"><i data-lucide="${cat.icon}" style="width:10px;height:10px"></i> ${cat.label}</div>
+      <div class="bh-card-title">${m.title}</div>
+      ${m.desc ? `<div class="bh-card-desc">${m.desc}</div>` : ''}
+      <div class="bh-card-footer">
+        ${m.url ? `<a href="${m.url}" target="_blank" class="bh-card-link" onclick="event.stopPropagation()"><i data-lucide="external-link" style="width:10px;height:10px"></i> Abrir</a>` : '<span class="bh-card-date">' + date + '</span>'}
+        <button class="ibt" onclick="event.stopPropagation();deleteBrandMaterial('${m.brandName}','${m.id}')" title="Remover"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window._filterBH = (cat) => {
+  window._bhCurrentFilter = cat;
+  const brandName = window._bhCurrentBrand;
+  if (!brandName) return;
+  const mbd = document.getElementById('mbd');
+  if (mbd) mbd.innerHTML = _renderBrandHubBody(brandName, cat);
+  lucide.createIcons();
+};
+
+window.openAddBrandMaterial = (brandName, presetCat) => {
+  const catOpts = Object.entries(MATERIAL_CATEGORIES).map(([k, v]) =>
+    `<option value="${k}" ${k === presetCat ? 'selected' : ''}>${v.label}</option>`).join('');
+  const catLabel = presetCat && MATERIAL_CATEGORIES[presetCat] ? ` · ${MATERIAL_CATEGORIES[presetCat].label}` : '';
+  openModal(`Novo Material${catLabel} — ${brandName}`, `<div class="fg">
+    <div class="fgp"><label>Categoria</label><select class="fi" id="bm-cat">${catOpts}</select></div>
+    <div class="fgp ff"><label>Título *</label><input class="fi" id="bm-title" placeholder="Ex: Promo Welcome Bonus 200%" autofocus></div>
+    <div class="fgp ff"><label>Descrição</label><textarea class="fi" id="bm-desc" rows="3" placeholder="Detalhes, regras, observações..."></textarea></div>
+    <div class="fgp ff"><label>URL / Link</label><input class="fi" id="bm-url" placeholder="https://..."></div>
+    <div class="fgp ff"><label>Imagem / Banner</label>
+      <div class="bm-img-upload" id="bm-img-upload">
+        <div class="bm-img-tabs">
+          <button type="button" class="bm-img-tab on" onclick="_switchImgTab('file',this)"><i data-lucide="upload" style="width:12px;height:12px"></i> Enviar arquivo</button>
+          <button type="button" class="bm-img-tab" onclick="_switchImgTab('url',this)"><i data-lucide="link" style="width:12px;height:12px"></i> Colar URL</button>
+        </div>
+        <div class="bm-img-panel" id="bm-img-file-panel">
+          <input type="file" id="bm-img-file" accept="image/*" style="display:none" onchange="_handleBMImgFile(event)">
+          <div class="bm-img-drop" id="bm-img-drop" onclick="document.getElementById('bm-img-file').click()">
+            <i data-lucide="image-up" style="width:22px;height:22px;stroke:var(--text3)"></i>
+            <div class="bm-img-drop-lbl">Clique para escolher uma imagem</div>
+            <div class="bm-img-drop-hint">PNG, JPG, WebP — será otimizada automaticamente</div>
+          </div>
+          <div class="bm-img-preview" id="bm-img-preview" style="display:none">
+            <img id="bm-img-preview-img" alt="preview">
+            <div class="bm-img-preview-meta">
+              <span id="bm-img-preview-size">—</span>
+              <button type="button" class="ibt danger" onclick="_clearBMImg()" title="Remover"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="bm-img-panel" id="bm-img-url-panel" style="display:none">
+          <input class="fi" id="bm-img-url-input" placeholder="https://...banner.jpg">
+        </div>
+        <input type="hidden" id="bm-img" value="">
+      </div>
+    </div>
+  </div>`, `<button class="btn btn-ghost" onclick="closeModal();openBrandHub('${brandName}')">Cancelar</button>
+    <button class="btn btn-theme" onclick="saveBrandMaterial('${brandName}')"><i data-lucide="check"></i> Adicionar</button>`);
+  lucide.createIcons();
+};
+
+window._switchImgTab = (tab, btn) => {
+  btn.parentElement.querySelectorAll('.bm-img-tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('bm-img-file-panel').style.display = tab === 'file' ? 'block' : 'none';
+  document.getElementById('bm-img-url-panel').style.display = tab === 'url' ? 'block' : 'none';
+};
+
+window._handleBMImgFile = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return toast('Arquivo deve ser uma imagem', 'e');
+  if (file.size > 8 * 1024 * 1024) return toast('Imagem muito grande (máx 8MB)', 'e');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      // Compress: resize to max 1200px width, JPEG quality 0.82
+      const maxW = 1200;
+      const scale = img.width > maxW ? maxW / img.width : 1;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      const sizeKB = Math.round(dataUrl.length * 0.75 / 1024);
+      document.getElementById('bm-img').value = dataUrl;
+      document.getElementById('bm-img-preview-img').src = dataUrl;
+      document.getElementById('bm-img-preview-size').textContent = `${canvas.width}×${canvas.height} · ~${sizeKB} KB`;
+      document.getElementById('bm-img-preview').style.display = 'flex';
+      document.getElementById('bm-img-drop').style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window._clearBMImg = () => {
+  document.getElementById('bm-img').value = '';
+  document.getElementById('bm-img-preview').style.display = 'none';
+  document.getElementById('bm-img-drop').style.display = 'flex';
+  document.getElementById('bm-img-file').value = '';
+};
+
+window.saveBrandMaterial = (brandName) => {
+  const title = document.getElementById('bm-title')?.value?.trim();
+  if (!title) return toast('Título obrigatório', 'e');
+  if (!STATE.brandMaterials) STATE.brandMaterials = {};
+  if (!STATE.brandMaterials[brandName]) STATE.brandMaterials[brandName] = [];
+  // Image: prefer uploaded file (base64), fallback to URL input
+  let imageUrl = document.getElementById('bm-img')?.value?.trim() || '';
+  if (!imageUrl) imageUrl = document.getElementById('bm-img-url-input')?.value?.trim() || '';
+  STATE.brandMaterials[brandName].unshift({
+    id: 'bm' + Date.now(),
+    brandName,
+    category: document.getElementById('bm-cat')?.value || 'asset',
+    title,
+    desc: document.getElementById('bm-desc')?.value?.trim() || '',
+    url: document.getElementById('bm-url')?.value?.trim() || '',
+    imageUrl,
+    createdAt: new Date().toISOString(),
+  });
+  logAction('Material adicionado', `${brandName}: ${title}`);
+  saveToLocal(); closeModal();
+  toast('Material adicionado!');
+  setTimeout(() => openBrandHub(brandName), 200);
+};
+
+window.deleteBrandMaterial = (brandName, matId) => {
+  if (!confirm('Remover este material?')) return;
+  const arr = STATE.brandMaterials?.[brandName];
+  if (!arr) return;
+  const idx = arr.findIndex(m => m.id === matId);
+  if (idx >= 0) arr.splice(idx, 1);
+  saveToLocal();
+  toast('Material removido');
+  openBrandHub(brandName);
+};
 
