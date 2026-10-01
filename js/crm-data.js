@@ -23,13 +23,15 @@ STATE.crm = STATE.crm || {
   loading: false,
 };
 
-// Garante que o cliente sb_crm existe
+// Retorna um cliente escopado ao schema `crm` que SEMPRE herda a sessão de
+// auth do cliente principal `sb` (o usuário logado). Essencial para que
+// RLS policies "to authenticated" sejam satisfeitas em writes.
 function _crmClient() {
-  if (!window.sb_crm) {
-    console.warn('[CRM Data] sb_crm não inicializado — Supabase não configurado');
+  if (!window.sb) {
+    console.warn('[CRM Data] sb não inicializado — Supabase não configurado');
     return null;
   }
-  return window.sb_crm;
+  return window.sb.schema('crm');
 }
 
 // ── LOADERS ────────────────────────────────────────────────

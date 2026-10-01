@@ -395,34 +395,25 @@
   // ── BULK IMPORT ────────────────────────────────────────────
   window._ctcOpenImport = () => {
     const body = `
-      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
-        Cola uma lista de contatos abaixo. Formatos aceitos:
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        Cola abaixo <strong>nome e Instagram</strong> (um contato por linha).
+        Pode colar direto de planilha ou carregar CSV.
       </div>
 
       <div class="ctc-import-formats">
         <div class="ctc-import-format">
-          <div class="ctc-import-format-k">Só nomes</div>
-          <code>João Silva<br>Maria Santos<br>Pedro Costa</code>
-        </div>
-        <div class="ctc-import-format">
-          <div class="ctc-import-format-k">Nome + Instagram</div>
-          <code>João Silva, @joaosilva<br>Maria Santos, @mariaproducao<br>Pedro, @pedrocosta</code>
-        </div>
-        <div class="ctc-import-format">
-          <div class="ctc-import-format-k">Qualquer combo</div>
-          <code>João, @joao, joao@email.com<br>Maria, Acme Inc, 11999999999</code>
+          <div class="ctc-import-format-k">Formato esperado</div>
+          <code>João Silva, @joaosilva<br>Maria Santos, @mariafit<br>Pedro Costa, @pedro.oficial</code>
         </div>
       </div>
 
       <div style="font-size:11px;color:var(--text3);margin:14px 0 8px;line-height:1.5">
-        Separador: <strong>vírgula</strong>, <strong>ponto-e-vírgula</strong> ou <strong>tab</strong> (colar de planilha).
-        Primeira coluna é sempre o <strong>nome</strong>. As demais são auto-detectadas:
-        começa com <code>@</code> → <strong>Instagram</strong>, tem <code>@email.com</code> → <strong>email</strong>,
-        só números → <strong>telefone</strong>, resto → <strong>empresa</strong>.
+        Separador: <strong>vírgula</strong>, <strong>ponto-e-vírgula</strong> ou <strong>tab</strong>.
+        Se o contato não tiver Instagram, pode colar só o nome.
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.4px">Cole ou carregue um arquivo</label>
+        <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.4px">Lista</label>
         <input type="file" id="ctc-import-file" accept=".csv,.txt,.tsv,text/csv,text/plain,text/tab-separated-values"
           style="display:none" onchange="window._ctcImportFile(event)">
         <button class="btn btn-outline" style="padding:5px 10px;font-size:11px"
@@ -431,30 +422,9 @@
         </button>
       </div>
       <textarea id="ctc-import-text" class="fi" rows="10"
-        placeholder="João Silva, joao@email.com, Acme Inc&#10;Maria Santos, @mariafit&#10;Pedro Costa"
+        placeholder="João Silva, @joaosilva&#10;Maria Santos, @mariafit&#10;Pedro Costa, @pedro.oficial"
         style="width:100%;font-family:'SF Mono',Menlo,monospace;font-size:12px"
         oninput="window._ctcImportPreview()"></textarea>
-
-      <div class="form-row" style="margin-top:14px">
-        <div class="ff"><label>Tipo padrão</label>
-          <select id="ctc-import-type" class="fi" onchange="window._ctcImportPreview()">
-            <option value="b2c" selected>B2C (influencer/pessoa física)</option>
-            <option value="b2b">B2B (empresa)</option>
-            <option value="both">Ambos</option>
-          </select>
-        </div>
-        <div class="ff"><label>Origem padrão</label>
-          <select id="ctc-import-source" class="fi" onchange="window._ctcImportPreview()">
-            <option value="">—</option>
-            <option value="inbound">Inbound</option>
-            <option value="outbound" selected>Outbound</option>
-            <option value="referral">Indicação</option>
-            <option value="event">Evento</option>
-            <option value="social">Redes sociais</option>
-            <option value="other">Outro</option>
-          </select>
-        </div>
-      </div>
 
       <div id="ctc-import-preview" class="ctc-import-preview">
         <div style="color:var(--text3);font-size:12px;text-align:center;padding:10px">Cola uma lista acima pra ver o preview.</div>
@@ -632,8 +602,6 @@
 
   window._ctcDoImport = async () => {
     const txt = document.getElementById('ctc-import-text')?.value || '';
-    const type = document.getElementById('ctc-import-type')?.value || 'b2c';
-    const source = document.getElementById('ctc-import-source')?.value || null;
     const btn = document.getElementById('ctc-import-btn');
 
     const { results } = _parseImportText(txt);
@@ -644,20 +612,16 @@
     lucide.createIcons();
 
     const existingNames = new Set((STATE.crm?.contacts || []).map(c => (c.name || '').toLowerCase()));
-    const existingEmails = new Set((STATE.crm?.contacts || []).map(c => (c.email || '').toLowerCase()).filter(Boolean));
+    const existingIgs = new Set((STATE.crm?.contacts || []).map(c => (c.social_links?.instagram || '').toLowerCase()).filter(Boolean));
     const toInsert = results.filter(r =>
-      !existingNames.has(r.name.toLowerCase()) && !(r.email && existingEmails.has(r.email.toLowerCase()))
+      !existingNames.has(r.name.toLowerCase()) && !(r.instagram && existingIgs.has(r.instagram.toLowerCase()))
     ).map(r => {
-      // Instagram vai pro jsonb social_links
       const social_links = r.instagram ? { instagram: r.instagram } : {};
       return {
         name: r.name,
-        email: r.email,
-        company: r.company,
-        phone: r.phone,
         social_links,
-        type,
-        source,
+        type: 'b2c',           // default simples — pode mudar depois no detalhe
+        source: 'outbound',
         status: 'wishlist',
       };
     });
@@ -669,13 +633,14 @@
     }
 
     try {
-      const sb = window.sb_crm;
-      // Insert em chunks de 100 pra não estourar limite
+      // Usa o cliente principal `sb` com .schema('crm') — garante que a sessão
+      // de auth do usuário logado está presente (RLS exige authenticated).
+      const client = window.sb.schema('crm');
       const chunkSize = 100;
       let inserted = 0;
       for (let i = 0; i < toInsert.length; i += chunkSize) {
         const chunk = toInsert.slice(i, i + chunkSize);
-        const { data, error } = await sb.from('contacts').insert(chunk).select();
+        const { data, error } = await client.from('contacts').insert(chunk).select();
         if (error) throw error;
         if (data) {
           STATE.crm.contacts.unshift(...data);

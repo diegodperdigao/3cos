@@ -523,7 +523,7 @@
     try {
       const stages = CRM.stagesForScope(scope);
       const newPos = stages.length ? Math.max(...stages.map(s => s.position)) + 1 : 1;
-      const sb = window.sb_crm;
+      const sb = window.sb.schema('crm');
       const { data, error } = await sb.from('pipeline_stages').insert({ scope, name, color, position: newPos }).select().single();
       if (error) throw error;
       STATE.crm.stages.push(data);
