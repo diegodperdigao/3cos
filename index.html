@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=159">
+<link rel="stylesheet" href="css/styles.css?v=160">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -167,10 +167,6 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
     </div>
     <div class="hub-bar-r">
-      <button class="hub-icon-btn" onclick="toggleBetaMode(this)" id="hub-beta-btn" title="Alternar modo Beta">
-        <i data-lucide="flask-conical"></i>
-        <span class="hub-beta-dot" aria-hidden="true"></span>
-      </button>
       <button class="hub-icon-btn" onclick="toggleActionCenter()" id="hub-notif-btn" title="Alertas">
         <i data-lucide="bell"></i>
         <div class="hub-notif-badge" id="hub-notif-count" style="display:none">0</div>
@@ -298,25 +294,23 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=159"></script>
+<script src="js/app.js?v=160"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=159"></script>
-<script src="js/data.js?v=159"></script>
-<!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=159"></script>
-<script src="js/widgets.js?v=159"></script>
+<script src="js/supabase-client.js?v=160"></script>
+<script src="js/data.js?v=160"></script>
+<script src="js/widgets.js?v=160"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=159"></script>
+<script src="js/search.js?v=160"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=159"></script>
-<script src="js/tasks.js?v=159"></script>
-<script src="js/audit.js?v=159"></script>
-<script src="js/users.js?v=159"></script>
-<script src="js/settings.js?v=159"></script>
+<script src="js/dashboard.js?v=160"></script>
+<script src="js/tasks.js?v=160"></script>
+<script src="js/audit.js?v=160"></script>
+<script src="js/users.js?v=160"></script>
+<script src="js/settings.js?v=160"></script>
 <!-- CRM (frente comercial — schema crm) -->
-<script src="js/crm-data.js?v=159"></script>
-<script src="js/contacts.js?v=159"></script>
-<script src="js/pipeline-crm.js?v=159"></script>
-<script src="js/copilot.js?v=159"></script>
+<script src="js/crm-data.js?v=160"></script>
+<script src="js/contacts.js?v=160"></script>
+<script src="js/pipeline-crm.js?v=160"></script>
+<script src="js/copilot.js?v=160"></script>
 </body>
 </html>

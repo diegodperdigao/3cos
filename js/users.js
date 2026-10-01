@@ -503,7 +503,6 @@ async function _validateSession() {
         // rendered from cache. Fresh data will show on next navigation.
         // Rebuilding here causes flickering (double render).
         updateNotifBadge();
-        if (typeof updateLabButton === 'function') updateLabButton();
         setTimeout(() => { if (typeof runPaymentWatchdog === 'function') runPaymentWatchdog(); }, 2000);
         return true; // Session is valid, do not fall through to Firebase
       }

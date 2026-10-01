@@ -16,6 +16,7 @@
 
 const HUB_WIDGETS = [
   { id: 'revenue',         name: 'Receita',           icon: 'banknote',    desc: 'Receita do mês + delta vs anterior com sparkline 8 semanas' },
+  { id: 'forecast',        name: 'Forecast mensal',   icon: 'line-chart',  desc: 'Projeção de receita dos próximos 3 meses (valor × probabilidade)' },
   { id: 'focus_today',     name: 'Foco de hoje',      icon: 'target',      desc: 'Tarefas urgentes + contatos quentes + cards parados' },
   { id: 'hot_pipeline',    name: 'Pipeline quente',   icon: 'flame',       desc: 'Top negociações por probabilidade × valor' },
   { id: 'health_check',    name: 'Saúde do pipeline', icon: 'activity',    desc: 'Distribuição de cards por etapa (B2B + B2C)' },
@@ -468,6 +469,67 @@ function _wNewProspects() {
     null, 'default', 'var(--blue)');
 }
 
+// ── 11. FORECAST MENSAL (projeção próximos 3 meses) ──────
+function _wForecast() {
+  const cards = STATE.crm?.cards || [];
+  const stages = STATE.crm?.stages || [];
+  const isOpen = (c) => {
+    const s = stages.find(x => x.id === c.stage_id);
+    const name = (s?.name || '').toLowerCase();
+    return !name.includes('ganho') && !name.includes('perd') && !name.includes('ativo') && !name.includes('descart');
+  };
+  const openCards = cards.filter(isOpen);
+
+  if (!openCards.length) {
+    return _shell('forecast', 'Forecast mensal', 'line-chart',
+      `<div class="hw2-empty"><p>Sem deals abertos para projetar.</p></div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
+      'default', 'var(--purple)');
+  }
+
+  // Agrupa expected por mês com base em expected_close_date (ou mês atual se não informado)
+  const now = new Date();
+  const months = [];
+  for (let i = 0; i < 3; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    months.push({
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase(),
+      expected: 0,
+      count: 0,
+    });
+  }
+  const firstMonthKey = months[0].key;
+  openCards.forEach(c => {
+    const exp = (Number(c.value) || 0) * (Number(c.probability) || 0) / 100;
+    const closeKey = c.expected_close_date ? c.expected_close_date.substring(0, 7) : firstMonthKey;
+    const m = months.find(x => x.key === closeKey);
+    if (m) { m.expected += exp; m.count++; }
+    // Fora dos 3 meses → joga no mês mais próximo (geralmente passado = ignora)
+  });
+
+  const total = months.reduce((s, m) => s + m.expected, 0);
+  const max = Math.max(...months.map(m => m.expected), 1);
+
+  const rows = months.map(m => {
+    const pct = (m.expected / max) * 100;
+    return `<div class="hw2-forecast-row">
+      <span class="hw2-forecast-month">${m.label}</span>
+      <span class="hw2-forecast-bar"><span class="hw2-forecast-fill" style="width:${pct}%"></span></span>
+      <span class="hw2-forecast-val">${_fmt(m.expected)}</span>
+    </div>`;
+  }).join('');
+
+  return _shell('forecast', 'Forecast mensal', 'line-chart',
+    `<div class="hw2-big-row">
+      <div class="hw2-big-val">${_fmt(total)}</div>
+      <div class="hw2-big-sub-inline">projetado 3m</div>
+    </div>
+    <div class="hw2-forecast">${rows}</div>`,
+    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
+    'default', 'var(--purple)');
+}
+
 // ── MOUNT ──────────────────────────────────────────────────
 window.buildHubWidgets = () => {
   const wrap = document.getElementById('hub-widget-strip');
@@ -475,6 +537,7 @@ window.buildHubWidgets = () => {
   const active = _activeWidgets().slice(0, 4);
   const renderMap = {
     revenue: _wRevenue,
+    forecast: _wForecast,
     focus_today: _wFocusToday,
     hot_pipeline: _wHotPipeline,
     health_check: _wHealthCheck,

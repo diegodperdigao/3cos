@@ -7270,3 +7270,54 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 .st-mcp-v .btn{padding: 4px 8px; min-width: 0;}
 .st-mcp-v .btn svg{width: 12px; height: 12px;}
+
+/* Forecast widget: linhas por mês com barra */
+.hw2-forecast{display: flex; flex-direction: column; gap: 7px; margin-top: 4px;}
+.hw2-forecast-row{display: flex; align-items: center; gap: 10px;}
+.hw2-forecast-month{
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  min-width: 36px;
+}
+.hw2-forecast-bar{
+  flex: 1;
+  height: 7px;
+  background: var(--bg3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.hw2-forecast-fill{
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple, #a855f7), #ec4899);
+  border-radius: 4px;
+  transition: width 0.4s var(--ease-out);
+}
+.hw2-forecast-val{
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 54px;
+  text-align: right;
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/* HUB — Pass 7: hero maior e mais acima                       */
+/* ══════════════════════════════════════════════════════════ */
+
+/* Hero sobe (justify-content: flex-start) com padding-top ~12vh e cresce */
+.hub-stage{
+  justify-content: flex-start !important;
+  padding-top: clamp(50px, 11vh, 110px) !important;
+}
+.hub-stage .hub-hero-title{
+  font-size: clamp(38px, 4.8vw, 56px) !important;
+}
+.hub-stage .hub-hero-sub{
+  font-size: clamp(14px, 1.2vw, 16px) !important;
+}
+.hub-stage .hub-hero{gap: 8px !important; margin-bottom: 24px !important;}
+
+/* Garante que o restante (widgets + dock) fica logo após o hero sem empurrar */
+.hub-stage .hub-widgets{align-content: start !important;}

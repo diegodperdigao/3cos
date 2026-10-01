@@ -213,52 +213,32 @@ function _renderGeneralSettings(el){
               <div class="st-theme-card ${themeName==='default-dark'?'on':''}" onclick="setAppTheme('default-dark')">
                 <div class="st-theme-preview st-theme-default-dark"></div>
                 <div class="st-theme-name">Default Dark</div>
-                <div class="st-theme-desc">Cores vibrantes da 3C sobre preto</div>
+                <div class="st-theme-desc">Padrão · gradientes rosa/roxo sobre preto profundo</div>
               </div>
               <div class="st-theme-card ${themeName==='default-light'?'on':''}" onclick="setAppTheme('default-light')">
                 <div class="st-theme-preview st-theme-default-light"></div>
                 <div class="st-theme-name">Default Light</div>
-                <div class="st-theme-desc">Versão clara do tema padrão</div>
+                <div class="st-theme-desc">Padrão em base clara</div>
               </div>
               <div class="st-theme-card ${themeName==='mono-dark'?'on':''}" onclick="setAppTheme('mono-dark')">
                 <div class="st-theme-preview st-theme-mono-dark"></div>
                 <div class="st-theme-name">Mono Dark</div>
-                <div class="st-theme-desc">Monocromático — foco máximo</div>
+                <div class="st-theme-desc">Monocromático · foco e silêncio visual</div>
               </div>
               <div class="st-theme-card ${themeName==='mono-light'?'on':''}" onclick="setAppTheme('mono-light')">
                 <div class="st-theme-preview st-theme-mono-light"></div>
                 <div class="st-theme-name">Mono Light</div>
                 <div class="st-theme-desc">Monocromático em base clara</div>
               </div>
-              <div class="st-theme-card ${themeName==='bento-light'?'on':''}" onclick="setAppTheme('bento-light')">
-                <div class="st-theme-preview st-theme-bento-light"></div>
-                <div class="st-theme-name">Bento Light</div>
-                <div class="st-theme-desc">Neo-brutalismo suave, pastéis vívidos</div>
-              </div>
-              <div class="st-theme-card ${themeName==='bento-dark'?'on':''}" onclick="setAppTheme('bento-dark')">
-                <div class="st-theme-preview st-theme-bento-dark"></div>
-                <div class="st-theme-name">Bento Dark</div>
-                <div class="st-theme-desc">Bento em charcoal profundo</div>
-              </div>
-              <div class="st-theme-card ${themeName==='meridian-light'?'on':''}" onclick="setAppTheme('meridian-light')">
-                <div class="st-theme-preview st-theme-meridian-light"></div>
-                <div class="st-theme-name">Meridian Light</div>
-                <div class="st-theme-desc">Editorial, serifa, vermelho de revista</div>
-              </div>
-              <div class="st-theme-card ${themeName==='meridian-dark'?'on':''}" onclick="setAppTheme('meridian-dark')">
-                <div class="st-theme-preview st-theme-meridian-dark"></div>
-                <div class="st-theme-name">Meridian Dark</div>
-                <div class="st-theme-desc">Editorial revista em preto</div>
-              </div>
               <div class="st-theme-card ${themeName==='glass-dark'?'on':''}" onclick="setAppTheme('glass-dark')">
                 <div class="st-theme-preview st-theme-glass-dark"></div>
                 <div class="st-theme-name">Liquid Glass</div>
-                <div class="st-theme-desc">Superfícies de vidro translúcido</div>
+                <div class="st-theme-desc">Vidro translúcido · profundidade e blur</div>
               </div>
               <div class="st-theme-card ${themeName==='glass-light'?'on':''}" onclick="setAppTheme('glass-light')">
                 <div class="st-theme-preview st-theme-glass-light"></div>
                 <div class="st-theme-name">Liquid Glass Light</div>
-                <div class="st-theme-desc">Vidro sobre lavanda suave</div>
+                <div class="st-theme-desc">Vidro sobre base clara</div>
               </div>
             </div>
           </div>
@@ -438,51 +418,8 @@ function _renderGeneralSettings(el){
         </div>
       </div>
 
-      <!-- LABORATÓRIO · BETA FEATURES -->
-      <div class="st-section">
-        <div class="st-section-hdr">
-          <div class="st-section-icon"><i data-lucide="flask-conical"></i></div>
-          <div>
-            <div class="st-section-title">Laboratório · Features em beta</div>
-            <div class="st-section-sub">Recursos experimentais que podem ser ativados individualmente</div>
-          </div>
-        </div>
-        <div class="st-card">
-          <div class="st-row">
-            <div>
-              <div class="st-label">Modo Beta</div>
-              <div class="st-hint">Libera o acesso ao laboratório abaixo e ao 3C Copilot</div>
-            </div>
-            ${switchHTML('st-beta-master', !!STATE.betaMode, 'toggleBetaMode()')}
-          </div>
-          ${STATE.betaMode ? `
-          <div class="st-divider"></div>
-          <div class="st-beta-grid">
-            ${(window.BETA_FEATURES||[]).map(f => {
-              const on = !!STATE.settings?.betaFlags?.[f.id];
-              const badge = f.status === 'ready'
-                ? '<span class="st-beta-badge st-beta-ready">Disponível</span>'
-                : f.status === 'preview'
-                  ? '<span class="st-beta-badge st-beta-preview">Prévia</span>'
-                  : '<span class="st-beta-badge st-beta-planned">Em desenvolvimento</span>';
-              const canToggle = f.status === 'ready' || f.status === 'preview';
-              return `<div class="st-beta-item ${!canToggle?'st-beta-disabled':''}">
-                <div class="st-beta-icon"><i data-lucide="${f.icon}"></i></div>
-                <div class="st-beta-info">
-                  <div class="st-beta-title">${f.name} ${badge}</div>
-                  <div class="st-beta-desc">${f.desc}</div>
-                </div>
-                ${canToggle
-                  ? switchHTML(`st-beta-${f.id}`, on, `toggleBetaFeature('${f.id}')`)
-                  : '<div style="opacity:0.4;font-size:10px;color:var(--text3);padding-right:4px">Em breve</div>'}
-              </div>`;
-            }).join('')}
-          </div>` : ''}
-        </div>
-      </div>
-
-      <!-- AUTOMATIONS + WEEKLY DIGEST (render only if Lab features are enabled) -->
-      ${typeof renderAutomationsSection === 'function' && STATE.betaMode ? `<div class="st-section"><div class="st-card">${renderAutomationsSection()}</div></div>` : ''}
+      <!-- AUTOMATIONS + WEEKLY DIGEST -->
+      ${typeof renderAutomationsSection === 'function' ? `<div class="st-section"><div class="st-card">${renderAutomationsSection()}</div></div>` : ''}
 
       <!-- ATALHOS -->
       <div class="st-section">
@@ -1138,7 +1075,6 @@ const AUTOMATION_TRIGGERS = {
 };
 
 window.renderAutomationsSection = () => {
-  if (typeof isBetaEnabled !== 'function' || !isBetaEnabled('automations')) return '';
   const autos = STATE.automations || [];
   const rows = autos.length ? autos.map(a => {
     const t = AUTOMATION_TRIGGERS[a.trigger] || AUTOMATION_TRIGGERS.manual;
@@ -1249,7 +1185,6 @@ window.fireAutomationTrigger = async (triggerType, eventData) => {
 // ══════════════════════════════════════════════════════════
 
 function _renderWeeklyDigestSection() {
-  if (typeof isBetaEnabled !== 'function' || !isBetaEnabled('weekly_digest')) return '';
   const cfg = STATE.emailjs || {};
   const hasEmail = cfg.publicKey && cfg.serviceId && cfg.financeEmail;
   return `<div class="sec-hdr" style="margin-top:22px"><div class="sec-lbl"><i data-lucide="newspaper" style="width:14px;height:14px;margin-right:6px"></i>Weekly Digest</div></div>

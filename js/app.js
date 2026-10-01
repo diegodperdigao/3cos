@@ -129,8 +129,6 @@ const DEFAULT_STATE={
     // Mês de referência atual (para controle)
     lastGenerated:''
   },
-  // ── LAB (Beta Mode) — reserved for future experimental features ──
-  betaMode:false,
   // ── USER SETTINGS (persisted in localStorage + Supabase user_settings) ──
   settings:{
     theme:'default-dark',      // 'default-dark' | 'default-light' | 'mono-dark' | 'mono-light' | 'bento-dark' | 'bento-light'
@@ -230,8 +228,6 @@ const loadFromLocal = () => {
     Object.assign(STATE, parsed);
     fixBrandLogos();
   }
-  // Ensure Lab defaults exist for existing users (backwards compat)
-  if (typeof STATE.betaMode !== 'boolean') STATE.betaMode = false;
   if (!STATE.availableTags || !STATE.availableTags.length) STATE.availableTags = [...DEFAULT_STATE.availableTags];
   // Ensure deadlines.standardPaymentDays exists (added in payment status feature)
   if (!STATE.deadlines) STATE.deadlines = {...DEFAULT_STATE.deadlines};
@@ -242,13 +238,11 @@ const loadFromLocal = () => {
     if (STATE.settings[k]===undefined) STATE.settings[k] = DEFAULT_STATE.settings[k];
   });
   if (!STATE.settings.notifications) STATE.settings.notifications = {...DEFAULT_STATE.settings.notifications};
-  // Migrate: if betaMode was previously the mono trigger, translate to theme
-  if (STATE.betaMode && STATE.settings.theme === 'default') {
-    STATE.settings.theme = 'mono';
-    STATE.betaMode = false;
-  }
   // Clean up legacy labFlags shape if present
   if (STATE.labFlags) delete STATE.labFlags;
+  // Lab system removed — strip any legacy betaMode/betaFlags
+  if ('betaMode' in STATE) delete STATE.betaMode;
+  if (STATE.settings && 'betaFlags' in STATE.settings) delete STATE.settings.betaFlags;
 };
 loadFromLocal();
 
@@ -635,7 +629,7 @@ window.applyBetaEdition = window.applyAppTheme;
 window.updateCopilotVisibility = () => {
   const btn = document.getElementById('copilot-fab');
   if (!btn) return;
-  btn.style.display = (STATE?.betaMode === true && !!STATE?.user) ? 'flex' : 'none';
+  btn.style.display = STATE?.user ? 'flex' : 'none';
 };
 
 // ══════════════════════════════════════════════════════════
@@ -1292,8 +1286,6 @@ function showHub(){
         if (window.updateHubHero) updateHubHero();
       }).catch(e => console.warn('[CRM] load falhou:', e));
     }
-    if(window.updateLabButton)updateLabButton();
-    if(window.syncBetaAttributes)syncBetaAttributes();
     if(window.updateCopilotVisibility)updateCopilotVisibility();
     if(window.applyAppTheme)applyAppTheme();
     initMosaics();lucide.createIcons();
@@ -1470,7 +1462,6 @@ function modHdr(label){
       </div>
     </div>
     <div class="mod-hdr-r">
-      <button class="hdr-icon-btn ${STATE.betaMode?'on':''}" onclick="toggleBetaMode(this)" title="Alternar modo Beta"><i data-lucide="flask-conical"></i></button>
       <span class="hdr-sync-icon" title="Sincronizado com a nuvem" style="display:none"><i data-lucide="cloud"></i></span>
       <button class="hdr-icon-btn" onclick="toggleActionCenter()" title="Alertas"><i data-lucide="bell"></i></button>
       <button class="hdr-icon-btn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="sun"></i></button>
