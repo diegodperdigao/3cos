@@ -421,8 +421,17 @@
         só números → <strong>telefone</strong>, resto → <strong>empresa</strong>.
       </div>
 
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.4px">Cole ou carregue um arquivo</label>
+        <input type="file" id="ctc-import-file" accept=".csv,.txt,.tsv,text/csv,text/plain,text/tab-separated-values"
+          style="display:none" onchange="window._ctcImportFile(event)">
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:11px"
+          onclick="document.getElementById('ctc-import-file').click()">
+          <i data-lucide="file-up" style="width:12px;height:12px"></i> Carregar CSV / TXT
+        </button>
+      </div>
       <textarea id="ctc-import-text" class="fi" rows="10"
-        placeholder="João Silva, joao@email.com, Acme Inc&#10;Maria Santos, maria@xyz.com&#10;Pedro Costa"
+        placeholder="João Silva, joao@email.com, Acme Inc&#10;Maria Santos, @mariafit&#10;Pedro Costa"
         style="width:100%;font-family:'SF Mono',Menlo,monospace;font-size:12px"
         oninput="window._ctcImportPreview()"></textarea>
 
@@ -459,6 +468,36 @@
       </button>
     `);
     lucide.createIcons();
+  };
+
+  // Carrega arquivo CSV/TXT para o textarea
+  window._ctcImportFile = (ev) => {
+    const file = ev.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      let text = String(e.target.result || '');
+      // Se tiver header (primeira linha com palavras-chave como "nome","email"),
+      // remove para não contar como contato
+      const firstLine = text.split(/\r?\n/)[0]?.toLowerCase() || '';
+      const looksLikeHeader = /^(nome|name|email|instagram|telefone|phone|empresa|company)[,;\t]/i.test(firstLine)
+        || (firstLine.includes('nome') && (firstLine.includes('email') || firstLine.includes('instagram') || firstLine.includes('telefone')));
+      if (looksLikeHeader) {
+        text = text.split(/\r?\n/).slice(1).join('\n');
+        toast('Cabeçalho detectado e removido', 's');
+      } else {
+        toast(`Arquivo "${file.name}" carregado`, 's');
+      }
+      const ta = document.getElementById('ctc-import-text');
+      if (ta) {
+        ta.value = text.trim();
+        _ctcImportPreview();
+      }
+      // Reset file input para permitir recarregar o mesmo arquivo
+      ev.target.value = '';
+    };
+    reader.onerror = () => toast('Erro ao ler o arquivo', 'e');
+    reader.readAsText(file, 'UTF-8');
   };
 
   // Auto-detecta o tipo de cada célula (email, instagram, telefone, empresa)
