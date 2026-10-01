@@ -74,11 +74,15 @@
         <div class="ctc-list" id="ctc-list"></div>
       </div></div>`;
 
-    // Precisa carregar os dados CRM se ainda não foram
-    if (!STATE.crm.loaded && window.CRM?.loadAll) {
-      _renderLoading();
+    // Sempre tenta recarregar — garante dados fresh e corrige estados
+    // onde loaded=true mas contacts ficou vazio por sessão não autenticada
+    if (window.CRM?.loadAll) {
+      if (!STATE.crm.loaded || !STATE.crm.contacts?.length) _renderLoading();
       const ok = await CRM.loadAll();
-      if (!ok) { _renderError('Não foi possível carregar os dados. Verifique se o schema `crm` está exposto na API do Supabase.'); return; }
+      if (!ok) {
+        _renderError('Não foi possível carregar os contatos. Faça logout e login novamente, ou verifique se o schema `crm` está exposto na API do Supabase.');
+        return;
+      }
     }
     _renderTagFilter();
     _renderProductFilter();

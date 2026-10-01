@@ -39,10 +39,23 @@ function _crmClient() {
 window.CRM = window.CRM || {};
 
 CRM.loadAll = async () => {
-  const sb = _crmClient();
-  if (!sb) return false;
+  if (!window.sb) {
+    console.warn('[CRM Data] sb não inicializado');
+    return false;
+  }
   if (STATE.crm.loading) return false;
   STATE.crm.loading = true;
+
+  // Log diagnóstico: estado da sessão (RLS exige authenticated)
+  try {
+    const { data: { session } } = await window.sb.auth.getSession();
+    console.log('[CRM Data] session?', !!session, 'user:', session?.user?.email || '(anonymous)');
+    if (!session) console.warn('[CRM Data] sem sessão — SELECTs vão retornar vazio por RLS');
+  } catch (e) {
+    console.warn('[CRM Data] getSession falhou:', e);
+  }
+
+  const sb = window.sb.schema('crm');
   try {
     const [contacts, products, tags, stages, cards, tasks] = await Promise.all([
       sb.from('contacts').select('*').order('created_at', { ascending: false }),
@@ -55,7 +68,6 @@ CRM.loadAll = async () => {
     const errors = [contacts, products, tags, stages, cards, tasks].filter(r => r.error);
     if (errors.length) {
       console.error('[CRM Data] erros ao carregar:', errors.map(e => e.error));
-      // Mesmo com erro, salva o que deu certo (cada um volta vazio se falhou)
     }
     STATE.crm.contacts = contacts.data || [];
     STATE.crm.products = products.data || [];

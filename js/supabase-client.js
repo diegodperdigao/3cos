@@ -31,48 +31,17 @@ if (SUPABASE_CONFIGURED && typeof window.supabase !== 'undefined') {
     },
   });
 
-  // CRM client — reads from `crm` schema (frente comercial B2B/B2C + wishlist)
-  // IMPORTANTE: para funcionar, o schema `crm` precisa estar em
-  // Dashboard → Settings → API → "Exposed schemas" (adicionar crm junto com public).
-  // SEM storageKey custom — assim usa o default do Supabase (derivado do URL do
-  // projeto) e compartilha automaticamente a sessão com o cliente `sb` default.
-  // Isso é necessário para que as RLS policies "to authenticated" sejam
-  // satisfeitas quando inserimos/alteramos linhas no schema crm.
-  window.sb_crm = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-    db: { schema: 'crm' },
-  });
-
-  // Fallback explícito: sincroniza a sessão de auth do sb principal → sb_crm
-  // em (1) página carregada com sessão existente, (2) toda mudança de auth
-  // futura. Garante que inserts/updates no schema crm respeitem RLS policies.
-  const _syncCrmSession = async () => {
-    try {
-      const { data: { session } } = await window.sb.auth.getSession();
-      if (session) {
-        await window.sb_crm.auth.setSession({
-          access_token: session.access_token,
-          refresh_token: session.refresh_token,
-        });
-      }
-    } catch (e) {
-      console.warn('[sb_crm session sync]', e);
-    }
+  // sb_crm removido: tínhamos problemas de sincronização de sessão entre
+  // duas instâncias concorrentes do cliente. Agora todas operações no
+  // schema `crm` usam window.sb.schema('crm') — mesma instância, mesma sessão.
+  // Alias defensivo caso algum código ainda chame sb_crm.
+  window.sb_crm = {
+    from: (t) => window.sb.schema('crm').from(t),
+    schema: window.sb.schema.bind(window.sb),
+    auth: window.sb.auth,
   };
-  // Imediato ao init
-  _syncCrmSession();
-  // Nos events seguintes (login/logout/refresh)
-  if (window.sb?.auth?.onAuthStateChange) {
-    window.sb.auth.onAuthStateChange((event, session) => {
-      if (session) _syncCrmSession();
-    });
-  }
 
-  console.log('[Supabase] clients initialized:', SUPABASE_URL, '(default + crm)');
+  console.log('[Supabase] client initialized:', SUPABASE_URL);
 } else {
   // Stub for graceful no-op when not yet configured
   window.sb = null;
