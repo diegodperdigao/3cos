@@ -7984,3 +7984,51 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   transform: translateX(2px);
 }
 .ctc-ig-cta-arrow svg{width: 15px; height: 15px;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* CONTATOS — Modo seleção múltipla                            */
+/* ══════════════════════════════════════════════════════════ */
+
+.ctc-grid.select-mode .ctc-tile{
+  cursor: pointer;
+}
+.ctc-grid.select-mode .ctc-tile:hover{
+  border-color: var(--theme-b);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--theme) 15%, rgba(0,0,0,0.2));
+}
+
+.ctc-tile.is-selected{
+  border-color: var(--theme) !important;
+  background: color-mix(in srgb, var(--theme) 8%, var(--bg2));
+  box-shadow:
+    0 0 0 2px var(--theme-b),
+    0 10px 24px color-mix(in srgb, var(--theme) 20%, rgba(0,0,0,0.2));
+}
+
+.ctc-tile-check{
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--bg3);
+  border: 2px solid var(--gb2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.15s var(--ease-out);
+}
+.ctc-tile-check.on{
+  background: var(--theme);
+  border-color: var(--theme);
+  color: #fff;
+}
+.ctc-tile-check svg{width: 13px; height: 13px; stroke-width: 3;}
+
+/* No modo select, botões Instagram no card não devem interferir */
+.ctc-grid.select-mode .ctc-tile-ig{pointer-events: none; opacity: 0.6;}
+
+/* btn-danger com :disabled */
+.btn-danger:disabled{opacity: 0.4; cursor: not-allowed;}

@@ -10,6 +10,10 @@
   // Filtros ativos (compartilhados pelo módulo)
   let F = { search: '', status: null, type: null, tag: null, product: null };
 
+  // Modo seleção múltipla (pra excluir em lote)
+  let _selectMode = false;
+  const _selected = new Set();
+
   const STATUS_LABEL = { wishlist: 'Wishlist', in_pipeline: 'No pipeline', customer: 'Cliente', churned: 'Perdido' };
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
   const SOURCE_LABEL = { inbound: 'Inbound', outbound: 'Outbound', referral: 'Indicação', event: 'Evento', social: 'Redes sociais', other: 'Outro' };
@@ -20,9 +24,10 @@
       ${heroHTML('contacts', 'CRM Comercial', 'Contatos', 'Wishlist, prospects e clientes do portfolio')}
       <div class="mod-main">
         <div class="sec-hdr">
-          <div class="sec-lbl">Todos os contatos</div>
-          <div class="sec-actions">
+          <div class="sec-lbl" id="ctc-sec-lbl">Todos os contatos</div>
+          <div class="sec-actions" id="ctc-sec-actions">
             <div class="srch"><i data-lucide="search"></i><input type="text" placeholder="Buscar nome, email, empresa..." oninput="window._ctcSearch(this.value)"></div>
+            <button class="btn btn-outline" onclick="window._ctcToggleSelect()"><i data-lucide="check-square"></i> Selecionar</button>
             <button class="btn btn-outline" onclick="window._ctcManageTags()"><i data-lucide="tags"></i> Tags</button>
             <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
             <button class="btn btn-theme" onclick="window._ctcOpenNew()"><i data-lucide="plus"></i> Novo contato</button>
@@ -81,19 +86,25 @@
       return;
     }
 
-    el.className = 'ctc-grid';
+    el.className = 'ctc-grid' + (_selectMode ? ' select-mode' : '');
     el.innerHTML = list.map(c => {
       const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
       let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
       const avatarBg = `hsl(${hue},65%,50%)`;
-      const avatar = c.avatar_url
-        ? `<img class="ctc-tile-av" src="${c.avatar_url}" alt="">`
-        : `<div class="ctc-tile-av" style="background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))">${initials}</div>`;
       const ig = c.social_links?.instagram;
+      // Avatar: prioridade = avatar_url manual > foto do Instagram (unavatar.io) > iniciais
+      const avatar = _avatarHTML(c, hue, initials);
       const subLine = c.company || c.email || c.phone || '';
+      const checked = _selected.has(c.id);
+      const onclickAttr = _selectMode
+        ? `onclick="window._ctcToggleSel('${c.id}', event)"`
+        : `onclick="window._ctcOpenDetail('${c.id}')"`;
 
-      return `<article class="ctc-tile" onclick="window._ctcOpenDetail('${c.id}')" style="--ctc-c:${avatarBg}">
+      return `<article class="ctc-tile ${checked ? 'is-selected' : ''}" ${onclickAttr} style="--ctc-c:${avatarBg}">
+        ${_selectMode ? `<div class="ctc-tile-check ${checked ? 'on' : ''}">
+          ${checked ? '<i data-lucide="check"></i>' : ''}
+        </div>` : ''}
         <div class="ctc-tile-head">
           ${avatar}
           <span class="ctc-tile-status status-${c.status}" title="${STATUS_LABEL[c.status] || c.status}"></span>
@@ -444,6 +455,82 @@
     }
   };
 
+  // ── BULK SELECT & DELETE ──────────────────────────────────
+  window._ctcToggleSelect = () => {
+    _selectMode = !_selectMode;
+    _selected.clear();
+    _renderActionsBar();
+    _renderList();
+  };
+
+  window._ctcToggleSel = (id, ev) => {
+    if (ev) ev.stopPropagation();
+    if (_selected.has(id)) _selected.delete(id);
+    else _selected.add(id);
+    _renderActionsBar();
+    _renderList();
+  };
+
+  window._ctcSelectAll = () => {
+    const list = _computeList();
+    if (_selected.size === list.length) _selected.clear();
+    else list.forEach(c => _selected.add(c.id));
+    _renderActionsBar();
+    _renderList();
+  };
+
+  window._ctcDeleteSelected = async () => {
+    const ids = [...(_selected)];
+    if (!ids.length) return;
+    if (!confirm(`Excluir ${ids.length} contato${ids.length === 1 ? '' : 's'}? Essa ação não pode ser desfeita.`)) return;
+    try {
+      const client = window.sb.schema('crm');
+      const { error } = await client.from('contacts').delete().in('id', ids);
+      if (error) throw error;
+      // Atualiza o STATE
+      const idSet = new Set(ids);
+      STATE.crm.contacts = (STATE.crm.contacts || []).filter(c => !idSet.has(c.id));
+      _selected.clear();
+      _selectMode = false;
+      _renderActionsBar();
+      _renderList();
+      toast(`${ids.length} contato${ids.length === 1 ? '' : 's'} excluído${ids.length === 1 ? '' : 's'}`, 's');
+    } catch (e) {
+      toast('Erro ao excluir: ' + (e.message || 'desconhecido'), 'e');
+    }
+  };
+
+  function _renderActionsBar() {
+    const lbl = document.getElementById('ctc-sec-lbl');
+    const actions = document.getElementById('ctc-sec-actions');
+    if (!lbl || !actions) return;
+    if (_selectMode) {
+      const total = _computeList().length;
+      lbl.innerHTML = `<span style="color:var(--theme)">${_selected.size}</span> selecionado${_selected.size === 1 ? '' : 's'} <span style="color:var(--text3);font-weight:400">de ${total}</span>`;
+      actions.innerHTML = `
+        <button class="btn btn-outline" onclick="window._ctcSelectAll()">
+          <i data-lucide="check-square"></i> ${_selected.size === total ? 'Nenhum' : 'Selecionar todos'}
+        </button>
+        <button class="btn btn-danger" onclick="window._ctcDeleteSelected()" ${_selected.size === 0 ? 'disabled' : ''}>
+          <i data-lucide="trash-2"></i> Excluir ${_selected.size > 0 ? '(' + _selected.size + ')' : ''}
+        </button>
+        <button class="btn btn-ghost" onclick="window._ctcToggleSelect()">
+          <i data-lucide="x"></i> Cancelar
+        </button>
+      `;
+    } else {
+      lbl.textContent = 'Todos os contatos';
+      actions.innerHTML = `
+        <div class="srch"><i data-lucide="search"></i><input type="text" placeholder="Buscar nome, email, empresa..." oninput="window._ctcSearch(this.value)"></div>
+        <button class="btn btn-outline" onclick="window._ctcToggleSelect()"><i data-lucide="check-square"></i> Selecionar</button>
+        <button class="btn btn-outline" onclick="window._ctcManageTags()"><i data-lucide="tags"></i> Tags</button>
+        <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
+        <button class="btn btn-theme" onclick="window._ctcOpenNew()"><i data-lucide="plus"></i> Novo contato</button>
+      `;
+    }
+    if (window.lucide) lucide.createIcons();
+  }
+
   // ── BULK IMPORT ────────────────────────────────────────────
   window._ctcOpenImport = () => {
     const body = `
@@ -714,5 +801,20 @@
 // ── HELPERS ───────────────────────────────────────────────
   function _esc(s) {
     return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // Monta HTML do avatar: avatar_url > foto do Instagram (unavatar.io) > iniciais em gradiente
+  function _avatarHTML(c, hue, initials) {
+    if (c.avatar_url) {
+      return `<img class="ctc-tile-av" src="${_esc(c.avatar_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ctc-tile-av',innerHTML:'${initials}',style:'background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))'}))">`;
+    }
+    const ig = c.social_links?.instagram;
+    if (ig) {
+      // unavatar.io retorna a foto do perfil IG. Em caso de erro, cai no gradiente de iniciais via onerror.
+      const url = `https://unavatar.io/instagram/${encodeURIComponent(ig)}?fallback=false`;
+      return `<img class="ctc-tile-av" src="${url}" alt="@${_esc(ig)}"
+        onerror="const d=document.createElement('div');d.className='ctc-tile-av';d.textContent='${initials}';d.style.background='linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))';this.replaceWith(d)">`;
+    }
+    return `<div class="ctc-tile-av" style="background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))">${initials}</div>`;
   }
 })();
