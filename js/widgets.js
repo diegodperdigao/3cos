@@ -1,456 +1,372 @@
 // ══════════════════════════════════════════════════════════
-// HUB WIDGETS
+// HUB WIDGETS — Nova geração (CRM Comercial)
 // ══════════════════════════════════════════════════════════
-// Customizable dashboard tiles on the Hub. Each widget reads a slice of
-// STATE and renders a compact card. User picks which ones to show via
-// "Personalizar widgets" modal.
+// Widgets reimaginados para o contexto comercial do CRM:
+//   - focus_today: tarefas + contatos quentes + cards parados em 1 card
+//   - hot_pipeline: top 3 deals por probabilidade × valor com mini barras
+//   - momentum: sparkline de deals criados por semana + delta
+//   - health_check: distribuição visual do pipeline (barras empilhadas B2B+B2C)
+//   - wishlist_pulse: contagem de contatos por temperatura com dots
+//   - recent_activity: últimas 5 atividades do CRM
+//   - notifications: alertas do sistema (mantido do anterior)
+//
+// Cada widget expõe uma visualização ou lista acionável, não apenas um
+// número solto. Clique abre o módulo correspondente com contexto.
 // ══════════════════════════════════════════════════════════
 
 const HUB_WIDGETS = [
-  { id: 'ai_insights', name: 'AI Insights', icon: 'sparkles', desc: 'Análises automáticas de performance e riscos' },
-  { id: 'notifications', name: 'Notificações', icon: 'bell', desc: 'Últimas notificações do sistema' },
-  { id: 'payments_queue', name: 'Fila de pagamentos', icon: 'banknote', desc: 'Vencidos, atrasados e a processar' },
-  { id: 'tasks', name: 'Minhas tarefas', icon: 'check-square', desc: 'Pendentes e em andamento' },
-  { id: 'results', name: 'Resultado do mês', icon: 'trending-up', desc: 'QFTDs, receita e lucro 3C no período' },
-  { id: 'top_affiliates', name: 'Top afiliados', icon: 'award', desc: '5 melhores por lucro 3C' },
-  { id: 'pipeline_status', name: 'Pipeline', icon: 'git-branch', desc: 'Kanban compacto de negociações' },
-  { id: 'recent_activity', name: 'Atividade recente', icon: 'activity', desc: 'Últimas ações no sistema' },
+  { id: 'focus_today',     name: 'Foco de hoje',      icon: 'target',      desc: 'Tarefas urgentes + contatos quentes + cards parados' },
+  { id: 'hot_pipeline',    name: 'Pipeline quente',   icon: 'flame',       desc: 'Top negociações por probabilidade × valor' },
+  { id: 'momentum',        name: 'Momentum',          icon: 'trending-up', desc: 'Velocidade de criação de deals por semana' },
+  { id: 'health_check',    name: 'Saúde do pipeline', icon: 'activity',    desc: 'Distribuição de cards por etapa (B2B + B2C)' },
+  { id: 'wishlist_pulse',  name: 'Pulso da wishlist', icon: 'users',       desc: 'Contatos agrupados por temperatura' },
+  { id: 'recent_activity', name: 'Atividade recente', icon: 'history',     desc: 'Últimas ações no CRM' },
+  { id: 'notifications',   name: 'Notificações',      icon: 'bell',        desc: 'Alertas do sistema' },
 ];
 window.HUB_WIDGETS = HUB_WIDGETS;
 
-const DEFAULT_HUB_WIDGETS = ['results', 'payments_queue', 'tasks', 'notifications'];
+const DEFAULT_HUB_WIDGETS = ['focus_today', 'hot_pipeline', 'health_check', 'momentum'];
 
 function _activeWidgets() {
   const saved = STATE.settings?.hubWidgets;
-  // Empty saved list means "user never customised" — show defaults, not blank.
-  // Only treat as intentional hide if user saved with 0 selected AND we flagged it.
   if (Array.isArray(saved) && saved.length > 0) {
     return saved.filter(id => HUB_WIDGETS.some(w => w.id === id));
   }
   return DEFAULT_HUB_WIDGETS;
 }
 
-// ── WIDGET RENDERERS ──────────────────────────────────────
+// Shell compartilhado: header + body + optional footer
+function _shell(id, title, icon, bodyHTML, footerHTML, size = 'default', accent = '') {
+  const sizeClass = size === 'wide' ? 'hw2-wide' : size === 'tall' ? 'hw2-tall' : '';
+  const style = accent ? `style="--hw2-accent:${accent}"` : '';
+  return `<article class="hw2 ${sizeClass}" data-wid="${id}" ${style}>
+    <header class="hw2-hdr">
+      <span class="hw2-icon"><i data-lucide="${icon}"></i></span>
+      <span class="hw2-title">${title}</span>
+    </header>
+    <div class="hw2-body">${bodyHTML}</div>
+    ${footerHTML ? `<footer class="hw2-ftr">${footerHTML}</footer>` : ''}
+  </article>`;
+}
 
-function _widgetNotifications() {
-  const notifs = (STATE.notifications || []).slice(0, 4);
-  if (!notifs.length) {
-    return _widgetShell('notifications', 'Notificações', 'bell',
-      '<div class="hw-empty">Nada novo por aqui.</div>');
+// ── 1. FOCUS TODAY ────────────────────────────────────────
+function _wFocusToday() {
+  const tasks = (STATE.tasks || []).filter(t => t.status !== 'concluída').slice(0, 2);
+  const hotContacts = (STATE.crm?.contacts || [])
+    .filter(c => c.temperature === 'hot' || c.temperature === 'ready')
+    .slice(0, 2);
+  // Cards parados: criados há mais de 7 dias sem movimentação (updated_at)
+  const now = Date.now();
+  const stuckCards = (STATE.crm?.cards || [])
+    .filter(c => now - new Date(c.updated_at).getTime() > 7 * 86400000)
+    .slice(0, 2);
+
+  const hasAnything = tasks.length || hotContacts.length || stuckCards.length;
+  if (!hasAnything) {
+    return _shell('focus_today', 'Foco de hoje', 'target',
+      `<div class="hw2-empty">
+        <span class="hw2-empty-emoji">✨</span>
+        <p>Tudo em dia. Hora de prospectar?</p>
+      </div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('contacts')">Abrir contatos →</button>`,
+      'default', 'var(--amber)');
   }
-  const items = notifs.map(n => `
-    <div class="hw-notif-item">
-      <div class="hw-notif-dot" style="background:var(--${n.type || 'theme'})"></div>
-      <div class="hw-notif-body">
-        <div class="hw-notif-text">${n.text || ''}</div>
-        <div class="hw-notif-time">${n.time || ''}</div>
+
+  let items = '';
+  if (hotContacts.length) {
+    items += hotContacts.map(c => `
+      <div class="hw2-item" onclick="openMod('contacts')">
+        <span class="hw2-item-dot" style="background:#ef4444"></span>
+        <span class="hw2-item-text"><strong>${_esc(c.name)}</strong> está pronto para o pipeline</span>
+      </div>`).join('');
+  }
+  if (tasks.length) {
+    items += tasks.map(t => {
+      const col = t.priority === 'alta' ? '#ef4444' : t.priority === 'média' ? '#f59e0b' : '#10b981';
+      return `<div class="hw2-item" onclick="openMod('tasks')">
+        <span class="hw2-item-dot" style="background:${col}"></span>
+        <span class="hw2-item-text">${_esc(t.title)}</span>
+      </div>`;
+    }).join('');
+  }
+  if (stuckCards.length) {
+    items += stuckCards.map(c => `
+      <div class="hw2-item" onclick="openMod('pipeline')">
+        <span class="hw2-item-dot" style="background:#94a3b8"></span>
+        <span class="hw2-item-text"><strong>${_esc(c.title)}</strong> parado há mais de 7 dias</span>
+      </div>`).join('');
+  }
+
+  const total = tasks.length + hotContacts.length + stuckCards.length;
+  return _shell('focus_today', 'Foco de hoje', 'target',
+    `<div class="hw2-count">${total} ${total === 1 ? 'ação' : 'ações'}</div>
+     <div class="hw2-list">${items}</div>`,
+    null, 'default', 'var(--amber)');
+}
+
+// ── 2. HOT PIPELINE ───────────────────────────────────────
+function _wHotPipeline() {
+  const cards = (STATE.crm?.cards || [])
+    .map(c => ({ ...c, score: (c.value || 0) * (c.probability || 0) / 100 }))
+    .filter(c => c.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  if (!cards.length) {
+    return _shell('hot_pipeline', 'Pipeline quente', 'flame',
+      `<div class="hw2-empty">
+        <p>Nenhuma negociação ativa ainda.</p>
+      </div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
+      'default', 'var(--red)');
+  }
+
+  const maxScore = Math.max(...cards.map(c => c.score));
+  const items = cards.map((c, i) => {
+    const contact = (STATE.crm?.contacts || []).find(x => x.id === c.contact_id);
+    const widthPct = (c.score / maxScore) * 100;
+    const scopeColor = c.scope === 'b2b' ? '#6366f1' : '#d946ef';
+    return `<div class="hw2-bar-item" onclick="openMod('pipeline')">
+      <div class="hw2-bar-row">
+        <span class="hw2-bar-rank">${i + 1}</span>
+        <span class="hw2-bar-label">${_esc(c.title)}</span>
+        <span class="hw2-bar-value">${_fmt(c.score)}</span>
       </div>
-    </div>`).join('');
-  return _widgetShell('notifications', 'Notificações', 'bell', items,
-    `<button class="hw-cta" onclick="event.stopPropagation();toggleActionCenter()">Ver todas</button>`);
-}
-
-function _widgetPaymentsQueue() {
-  const byStatus = {};
-  (STATE.payments || []).forEach(p => {
-    const cs = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
-    if (!byStatus[cs]) byStatus[cs] = { count: 0, total: 0 };
-    byStatus[cs].count++;
-    byStatus[cs].total += (p.amount || 0);
-  });
-  const overdue = byStatus.vencido || { count: 0, total: 0 };
-  const late = byStatus.atrasado || { count: 0, total: 0 };
-  const pending = byStatus.pendente || { count: 0, total: 0 };
-  const paid = byStatus.pago || { count: 0, total: 0 };
-
-  const body = `
-    <div class="hw-stat-row"><span class="hw-stat-lbl" style="color:var(--red)">Vencidos</span>
-      <span class="hw-stat-val">${overdue.count} · ${fc(overdue.total)}</span></div>
-    <div class="hw-stat-row"><span class="hw-stat-lbl" style="color:var(--amber)">Em atraso</span>
-      <span class="hw-stat-val">${late.count} · ${fc(late.total)}</span></div>
-    <div class="hw-stat-row"><span class="hw-stat-lbl" style="color:var(--text2)">Pendentes</span>
-      <span class="hw-stat-val">${pending.count} · ${fc(pending.total)}</span></div>
-    <div class="hw-stat-row"><span class="hw-stat-lbl" style="color:var(--green)">Pagos (mês)</span>
-      <span class="hw-stat-val">${paid.count} · ${fc(paid.total)}</span></div>`;
-  return _widgetShell('payments_queue', 'Fila de pagamentos', 'banknote', body,
-    `<button class="hw-cta" onclick="event.stopPropagation();openMod('payments')">Abrir financeiro</button>`);
-}
-
-function _widgetTasks() {
-  const open = (STATE.tasks || []).filter(t => t.status !== 'concluída').slice(0, 4);
-  if (!open.length) {
-    return _widgetShell('tasks', 'Minhas tarefas', 'check-square',
-      '<div class="hw-empty">Tudo em dia. 🎯</div>',
-      `<button class="hw-cta" onclick="event.stopPropagation();openMod('tasks')">Nova tarefa</button>`);
-  }
-  const items = open.map(t => `
-    <div class="hw-task-item">
-      <div class="hw-task-dot hw-pri-${(t.priority||'m')[0]}"></div>
-      <div class="hw-task-body">
-        <div class="hw-task-title">${t.title || ''}</div>
-        <div class="hw-task-meta">${t.assignee || 'Sem responsável'}${t.dueDate ? ' · ' + new Date(t.dueDate).toLocaleDateString('pt-BR') : ''}</div>
+      <div class="hw2-bar-track">
+        <div class="hw2-bar-fill" style="width:${widthPct}%;background:linear-gradient(90deg, ${scopeColor}, color-mix(in srgb, ${scopeColor} 50%, var(--amber)))"></div>
       </div>
-    </div>`).join('');
-  return _widgetShell('tasks', 'Minhas tarefas', 'check-square', items,
-    `<button class="hw-cta" onclick="event.stopPropagation();openMod('tasks')">Abrir todas (${open.length})</button>`);
-}
-
-function _widgetResults() {
-  const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const monthReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(monthKey));
-  let ftd = 0, qftd = 0, rev = 0;
-  monthReps.forEach(r => {
-    ftd += r.ftd || 0;
-    qftd += typeof r.qftd === 'object' ? Object.values(r.qftd).reduce((s, v) => s + (v || 0), 0) : (r.qftd || 0);
-    rev += r.netRev || 0;
-  });
-  // Fallback: if no reports this month, show all-time rollup
-  const usingFallback = monthReps.length === 0;
-  if (usingFallback) {
-    STATE.affiliates.forEach(a => {
-      ftd += a.ftds || 0; qftd += a.qftds || 0; rev += a.netRev || 0;
-    });
-  }
-  const label = usingFallback ? 'Total acumulado' : now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  const body = `
-    <div class="hw-results-big">
-      <div class="hw-big-val">${qftd}</div>
-      <div class="hw-big-lbl">QFTDs · ${label}</div>
-    </div>
-    <div class="hw-stat-row"><span class="hw-stat-lbl">FTDs</span><span class="hw-stat-val">${ftd}</span></div>
-    <div class="hw-stat-row"><span class="hw-stat-lbl">Net Revenue</span><span class="hw-stat-val">${fc(rev)}</span></div>`;
-  return _widgetShell('results', usingFallback ? 'Resultado consolidado' : 'Resultado do mês', 'trending-up', body,
-    `<button class="hw-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard</button>`);
-}
-
-function _widgetTopAffiliates() {
-  const top = [...(STATE.affiliates || [])]
-    .filter(a => (a.profit || 0) > 0)
-    .sort((a, b) => (b.profit || 0) - (a.profit || 0))
-    .slice(0, 5);
-  if (!top.length) {
-    return _widgetShell('top_affiliates', 'Top afiliados', 'award',
-      '<div class="hw-empty">Ainda não há dados de lucro.</div>');
-  }
-  const items = top.map((a, i) => `
-    <div class="hw-top-item">
-      <div class="hw-top-rank">${i + 1}</div>
-      <div class="hw-top-name">${a.name}</div>
-      <div class="hw-top-val">${fc(a.profit || 0)}</div>
-    </div>`).join('');
-  return _widgetShell('top_affiliates', 'Top afiliados · Lucro 3C', 'award', items,
-    `<button class="hw-cta" onclick="event.stopPropagation();openMod('affiliates')">Ver todos</button>`);
-}
-
-function _widgetPipelineStatus() {
-  const stages = STATE.pipeline?.stages || [];
-  const cards = STATE.pipeline?.cards || [];
-  if (!stages.length || !cards.length) {
-    return _widgetShell('pipeline_status', 'Pipeline', 'git-branch',
-      '<div class="hw-empty">Nenhuma negociação no funil.</div>',
-      `<button class="hw-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline</button>`);
-  }
-  const items = stages.map(s => {
-    const count = cards.filter(c => c.stageId === s.id).length;
-    return `<div class="hw-stat-row">
-      <span class="hw-stat-lbl"><span class="hw-stage-dot" style="background:${s.color || 'var(--text3)'}"></span>${s.name}</span>
-      <span class="hw-stat-val">${count}</span>
+      <div class="hw2-bar-meta">
+        <span>${contact?.name || '—'}</span>
+        <span>${c.probability}% × ${_fmt(c.value)}</span>
+      </div>
     </div>`;
   }).join('');
-  return _widgetShell('pipeline_status', 'Pipeline', 'git-branch', items,
-    `<button class="hw-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline</button>`);
+
+  return _shell('hot_pipeline', 'Pipeline quente', 'flame',
+    `<div class="hw2-bar-list">${items}</div>`,
+    null, 'default', 'var(--red)');
 }
 
-function _widgetRecentActivity() {
-  const logs = (STATE.auditLog || []).slice(0, 4);
-  if (!logs.length) {
-    return _widgetShell('recent_activity', 'Atividade recente', 'activity',
-      '<div class="hw-empty">Sem atividade recente.</div>');
+// ── 3. MOMENTUM (sparkline) ───────────────────────────────
+function _wMomentum() {
+  // Agrega cards criados por semana nas últimas 8 semanas
+  const now = Date.now();
+  const week = 7 * 86400000;
+  const buckets = Array(8).fill(0);
+  (STATE.crm?.cards || []).forEach(c => {
+    const diff = now - new Date(c.created_at).getTime();
+    const idx = 7 - Math.floor(diff / week);
+    if (idx >= 0 && idx < 8) buckets[idx]++;
+  });
+
+  const total = buckets.reduce((s, v) => s + v, 0);
+  if (total === 0) {
+    return _shell('momentum', 'Momentum', 'trending-up',
+      `<div class="hw2-empty">
+        <p>Sem dados de velocidade ainda. Crie negociações para começar.</p>
+      </div>`,
+      null, 'default', 'var(--green)');
   }
-  const items = logs.map(l => `
-    <div class="hw-activity-item">
-      <div class="hw-activity-body">
-        <div class="hw-activity-action">${l.action || ''}</div>
-        <div class="hw-activity-meta">${l.user || 'Sistema'} · ${l.time || ''}</div>
+
+  const lastWeek = buckets[7] || 0;
+  const prevWeek = buckets[6] || 0;
+  const delta = prevWeek > 0 ? Math.round((lastWeek - prevWeek) / prevWeek * 100) : (lastWeek > 0 ? 100 : 0);
+  const positive = delta >= 0;
+
+  // SVG sparkline
+  const max = Math.max(...buckets, 1);
+  const w = 240, h = 50;
+  const stepX = w / (buckets.length - 1);
+  const points = buckets.map((v, i) => {
+    const x = i * stepX;
+    const y = h - (v / max) * h * 0.9 - 4;
+    return `${x},${y}`;
+  }).join(' ');
+  const areaPts = `0,${h} ${points} ${w},${h}`;
+
+  return _shell('momentum', 'Momentum', 'trending-up',
+    `<div class="hw2-big-row">
+      <div class="hw2-big-val">${lastWeek}</div>
+      <div class="hw2-big-delta ${positive ? 'pos' : 'neg'}">
+        <i data-lucide="${positive ? 'arrow-up-right' : 'arrow-down-right'}"></i>
+        ${positive ? '+' : ''}${delta}%
       </div>
-    </div>`).join('');
-  return _widgetShell('recent_activity', 'Atividade recente', 'activity', items,
-    `<button class="hw-cta" onclick="event.stopPropagation();openMod('audit')">Ver auditoria</button>`);
-}
-
-// Shared visual shell — keeps widgets consistent.
-function _widgetShell(id, title, icon, bodyHTML, footerHTML = '') {
-  return `<div class="hub-widget" data-wid="${id}">
-    <div class="hw-hdr">
-      <i data-lucide="${icon}"></i>
-      <span class="hw-title">${title}</span>
     </div>
-    <div class="hw-body">${bodyHTML}</div>
-    ${footerHTML ? `<div class="hw-ftr">${footerHTML}</div>` : ''}
-  </div>`;
+    <div class="hw2-big-sub">deals esta semana · vs ${prevWeek} na anterior</div>
+    <svg class="hw2-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="spark-grad" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="var(--green)" stop-opacity="0.4"/>
+          <stop offset="1" stop-color="var(--green)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${areaPts}" fill="url(#spark-grad)"/>
+      <polyline points="${points}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+    null, 'default', 'var(--green)');
 }
 
-// ── MOUNTING (compact KPI strip) ──────────────────────────
-// Renders the active widgets as a row of small KPI tiles (max 3 visible)
-// with an "Add widget" dashed placeholder if the user has room for more.
+// ── 4. HEALTH CHECK (stacked bars) ────────────────────────
+function _wHealthCheck() {
+  const cards = STATE.crm?.cards || [];
+  if (!cards.length) {
+    return _shell('health_check', 'Saúde do pipeline', 'activity',
+      `<div class="hw2-empty">
+        <p>Pipeline vazio.</p>
+      </div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
+      'default', 'var(--purple)');
+  }
 
+  const scopes = [
+    { key: 'b2b', label: 'B2B', color: '#6366f1' },
+    { key: 'b2c', label: 'B2C', color: '#d946ef' },
+  ];
+
+  const rows = scopes.map(scope => {
+    const scopeCards = cards.filter(c => c.scope === scope.key);
+    if (!scopeCards.length) return '';
+    const stages = (STATE.crm?.stages || []).filter(s => s.scope === scope.key).sort((a, b) => a.position - b.position);
+    const segments = stages.map(s => {
+      const count = scopeCards.filter(c => c.stage_id === s.id).length;
+      const pct = (count / scopeCards.length) * 100;
+      return pct > 0
+        ? `<span class="hw2-seg" style="width:${pct}%;background:${s.color}" title="${_esc(s.name)}: ${count}"></span>`
+        : '';
+    }).join('');
+    return `<div class="hw2-health-row">
+      <div class="hw2-health-head">
+        <span class="hw2-health-scope"><span class="hw2-health-dot" style="background:${scope.color}"></span>${scope.label}</span>
+        <span class="hw2-health-count">${scopeCards.length}</span>
+      </div>
+      <div class="hw2-stack">${segments}</div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  return _shell('health_check', 'Saúde do pipeline', 'activity',
+    `<div class="hw2-health">${rows}</div>`,
+    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Ver em detalhe →</button>`,
+    'default', 'var(--purple)');
+}
+
+// ── 5. WISHLIST PULSE ─────────────────────────────────────
+function _wWishlistPulse() {
+  const contacts = STATE.crm?.contacts || [];
+  const buckets = { cold: 0, warm: 0, hot: 0, ready: 0 };
+  contacts.forEach(c => { if (buckets[c.temperature] !== undefined) buckets[c.temperature]++; });
+  const total = contacts.length;
+
+  if (!total) {
+    return _shell('wishlist_pulse', 'Pulso da wishlist', 'users',
+      `<div class="hw2-empty"><p>Sem contatos ainda.</p></div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('contacts')">Adicionar contato →</button>`,
+      'default', 'var(--blue)');
+  }
+
+  const temps = [
+    { k: 'ready', label: 'Pronto',  color: '#10b981' },
+    { k: 'hot',   label: 'Quente',  color: '#ef4444' },
+    { k: 'warm',  label: 'Morno',   color: '#f59e0b' },
+    { k: 'cold',  label: 'Frio',    color: '#3b82f6' },
+  ];
+
+  const dots = temps.map(t => {
+    const n = buckets[t.k] || 0;
+    const pct = total > 0 ? Math.round(n / total * 100) : 0;
+    return `<div class="hw2-pulse-row" onclick="openMod('contacts')">
+      <span class="hw2-pulse-dot" style="background:${t.color}"></span>
+      <span class="hw2-pulse-label">${t.label}</span>
+      <span class="hw2-pulse-bar"><span class="hw2-pulse-fill" style="width:${pct}%;background:${t.color}"></span></span>
+      <span class="hw2-pulse-count">${n}</span>
+    </div>`;
+  }).join('');
+
+  return _shell('wishlist_pulse', 'Pulso da wishlist', 'users',
+    `<div class="hw2-big-row"><div class="hw2-big-val">${total}</div><div class="hw2-big-sub-inline">contatos</div></div>
+     <div class="hw2-pulse">${dots}</div>`,
+    null, 'default', 'var(--blue)');
+}
+
+// ── 6. RECENT ACTIVITY ────────────────────────────────────
+function _wRecentActivity() {
+  // Junta últimas atividades: criações recentes de contact + cards + tasks
+  const items = [];
+  (STATE.crm?.contacts || []).forEach(c => items.push({ type: 'contact', ts: new Date(c.created_at).getTime(), text: `Contato adicionado: ${c.name}`, icon: 'user-plus' }));
+  (STATE.crm?.cards || []).forEach(c => items.push({ type: 'card', ts: new Date(c.created_at).getTime(), text: `Negociação criada: ${c.title}`, icon: 'git-branch' }));
+
+  if (!items.length) {
+    return _shell('recent_activity', 'Atividade recente', 'history',
+      `<div class="hw2-empty"><p>Sem atividade recente.</p></div>`,
+      null, 'default', 'var(--text2)');
+  }
+
+  const recent = items.sort((a, b) => b.ts - a.ts).slice(0, 5);
+  const rows = recent.map(it => `
+    <div class="hw2-item">
+      <span class="hw2-item-ico"><i data-lucide="${it.icon}"></i></span>
+      <span class="hw2-item-text">${_esc(it.text)}</span>
+      <span class="hw2-item-time">${_relTime(it.ts)}</span>
+    </div>`).join('');
+
+  return _shell('recent_activity', 'Atividade recente', 'history',
+    `<div class="hw2-list">${rows}</div>`,
+    null, 'default', 'var(--text2)');
+}
+
+// ── 7. NOTIFICATIONS (mantida simples) ────────────────────
+function _wNotifications() {
+  const notifs = (STATE.notifications || []).slice(0, 4);
+  if (!notifs.length) {
+    return _shell('notifications', 'Notificações', 'bell',
+      `<div class="hw2-empty"><p>Tudo em paz. ✨</p></div>`,
+      null, 'default', 'var(--amber)');
+  }
+  const items = notifs.map(n => `
+    <div class="hw2-item" onclick="toggleActionCenter()">
+      <span class="hw2-item-dot" style="background:var(--${n.type || 'theme'})"></span>
+      <span class="hw2-item-text">${_esc(n.text || '')}</span>
+      <span class="hw2-item-time">${_esc(n.time || '')}</span>
+    </div>`).join('');
+  return _shell('notifications', 'Notificações', 'bell',
+    `<div class="hw2-list">${items}</div>`,
+    `<button class="hw2-cta" onclick="event.stopPropagation();toggleActionCenter()">Ver todas →</button>`,
+    'default', 'var(--amber)');
+}
+
+// ── MOUNT ──────────────────────────────────────────────────
 window.buildHubWidgets = () => {
   const wrap = document.getElementById('hub-widget-strip');
   if (!wrap) return;
-  const active = _activeWidgets().slice(0, 3);
+  const active = _activeWidgets().slice(0, 4);
   const renderMap = {
-    ai_insights: _kpiAIInsights,
-    notifications: _kpiNotifications,
-    payments_queue: _kpiPaymentsQueue,
-    tasks: _kpiTasks,
-    results: _kpiResults,
-    top_affiliates: _kpiTopAffiliates,
-    pipeline_status: _kpiPipelineStatus,
-    recent_activity: _kpiRecentActivity,
+    focus_today: _wFocusToday,
+    hot_pipeline: _wHotPipeline,
+    momentum: _wMomentum,
+    health_check: _wHealthCheck,
+    wishlist_pulse: _wWishlistPulse,
+    recent_activity: _wRecentActivity,
+    notifications: _wNotifications,
   };
-  const tiles = active.map(id => {
-    const fn = renderMap[id];
-    return fn ? fn() : '';
-  }).filter(Boolean);
-  // Add a dashed "add widget" tile if fewer than 3 active
-  if (tiles.length < 3) {
-    tiles.push(`<button class="hw-tile hw-tile-add" onclick="openHubWidgetPicker()">
-      <i data-lucide="plus"></i><span>Adicionar widget</span>
-    </button>`);
-  }
-  wrap.innerHTML = tiles.join('');
+  wrap.innerHTML = active.map(id => (renderMap[id] || (() => ''))()).join('');
   if (typeof lucide !== 'undefined') lucide.createIcons();
 };
 
-// Compact KPI renderers — single metric, eyebrow label, optional delta/detail rows
-function _kpiTile(icon, eyebrow, value, delta, sub, onClick, detailRows, accentColor) {
-  const click = onClick ? ` onclick="event.stopPropagation();${onClick}"` : '';
-  const accent = accentColor ? ` style="--tile-accent:${accentColor}"` : '';
-  const details = detailRows ? `<div class="hw-tile-details">${detailRows}</div>` : '';
-  return `<div class="hw-tile"${click}${accent}>
-    <div class="hw-tile-head">
-      <span class="hw-tile-icon"><i data-lucide="${icon}"></i></span>
-      <span class="hw-tile-eyebrow">${eyebrow}</span>
-    </div>
-    <div class="hw-tile-value">${value}</div>
-    ${delta ? `<div class="hw-tile-delta ${delta.positive ? 'pos' : 'neg'}">${delta.positive ? '↑' : '↓'} ${delta.text}</div>` : ''}
-    ${sub ? `<div class="hw-tile-sub">${sub}</div>` : ''}
-    ${details}
-  </div>`;
-}
-
-function _kpiResults() {
-  const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const lastKey = now.getMonth() === 0
-    ? `${now.getFullYear()-1}-12`
-    : `${now.getFullYear()}-${String(now.getMonth()).padStart(2,'0')}`;
-  const monthReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(monthKey));
-  const lastReps = (STATE.reports || []).filter(r => (r.date || '').startsWith(lastKey));
-  let rev = 0, lastRev = 0, qftd = 0;
-  monthReps.forEach(r => { rev += r.netRev || 0; qftd += (typeof r.qftd === 'number' ? r.qftd : 0); });
-  lastReps.forEach(r => { lastRev += r.netRev || 0; });
-  if (!rev && !qftd) STATE.affiliates.forEach(a => { rev += a.netRev || 0; qftd += a.qftds || 0; });
-  const monthLbl = now.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
-  const delta = lastRev > 0 ? { text: `${Math.round((rev - lastRev) / lastRev * 100)}% vs. mês anterior`, positive: rev >= lastRev } : null;
-  const details = `<div class="hw-tile-detail-row"><span><i data-lucide="users" class="hw-detail-ico"></i>QFTDs</span><span>${qftd}</span></div>`;
-  return _kpiTile('trending-up', `Receita · ${monthLbl}`, fc(rev), delta, null, "openMod('dashboard')", details);
-}
-
-function _kpiTasks() {
-  const all = STATE.tasks || [];
-  const done = all.filter(t => t.status === 'concluída').length;
-  const pending = all.filter(t => t.status !== 'concluída').length;
-  const urgent = all.filter(t => t.status !== 'concluída' && t.priority === 'alta').length;
-  let details = '';
-  const next = all.filter(t => t.status !== 'concluída').sort((a,b) => {
-    const pa = {alta:0,média:1,baixa:2}; return (pa[a.priority]||2) - (pa[b.priority]||2);
-  }).slice(0, 2);
-  if (next.length) {
-    details = next.map(t => {
-      const ico = t.priority === 'alta' ? 'flame' : t.priority === 'média' ? 'clock' : 'circle';
-      const color = t.priority === 'alta' ? 'var(--red)' : t.priority === 'média' ? 'var(--amber)' : 'var(--green)';
-      return `<div class="hw-tile-detail-row"><span><i data-lucide="${ico}" class="hw-detail-ico" style="stroke:${color}"></i>${t.title.length > 26 ? t.title.slice(0,26)+'…' : t.title}</span></div>`;
-    }).join('');
-  }
-  const accent = urgent > 0 ? 'var(--red)' : undefined;
-  return _kpiTile('check-square', 'Tarefas', pending, null, `${done} concluídas${urgent ? ` · <strong style="color:var(--red)">${urgent} urgentes</strong>` : ''}`, "openMod('tasks')", details, accent);
-}
-
-function _kpiPaymentsQueue() {
-  const payments = STATE.payments || [];
-  const overdue = payments.filter(p => {
-    const s = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
-    return s === 'vencido' || s === 'atrasado';
-  });
-  const pending = payments.filter(p => p.status === 'pendente');
-  const total = payments.length;
-  const overdueAmt = overdue.reduce((s, p) => s + (p.amount || 0), 0);
-  let details = '';
-  if (overdue.length) {
-    details = overdue.slice(0, 2).map(p =>
-      `<div class="hw-tile-detail-row warn"><span><i data-lucide="alert-circle" class="hw-detail-ico"></i>${(p.affiliate || '').split(' ')[0]} · ${p.brand}</span><span>${fc(p.amount || 0)}</span></div>`
-    ).join('');
-  } else if (pending.length) {
-    details = `<div class="hw-tile-detail-row"><span><i data-lucide="clock" class="hw-detail-ico"></i>${pending.length} pendentes</span><span>${fc(pending.reduce((s,p)=>s+(p.amount||0),0))}</span></div>`;
-  }
-  const delta = overdue.length ? { text: `${fc(overdueAmt)} em atraso`, positive: false } : null;
-  const accent = overdue.length ? 'var(--red)' : undefined;
-  return _kpiTile('banknote', 'Pagamentos', total, delta, overdue.length ? null : 'Nenhum em atraso', "openMod('payments')", details, accent);
-}
-
-function _kpiNotifications() {
-  const all = STATE.notifications || [];
-  const unread = all.filter(n => !n.read);
-  const count = unread.length;
-  let details = '';
-  const preview = (count > 0 ? unread : all).slice(0, 2);
-  if (preview.length) {
-    details = preview.map(n => {
-      const ico = n.type === 'red' ? 'alert-triangle' : n.type === 'amber' ? 'alert-circle' : n.type === 'green' ? 'check-circle' : 'info';
-      const color = `var(--${n.type || 'theme'})`;
-      const text = n.text.length > 34 ? n.text.slice(0, 34) + '…' : n.text;
-      return `<div class="hw-tile-detail-row"><span><i data-lucide="${ico}" class="hw-detail-ico" style="stroke:${color}"></i>${text}</span></div>`;
-    }).join('');
-  }
-  const accent = count > 0 ? 'var(--amber)' : undefined;
-  return _kpiTile('bell', 'Notificações', count, null, count ? `${count} não lidas` : 'Tudo em dia', 'toggleActionCenter()', details, accent);
-}
-
-function _kpiTopAffiliates() {
-  const sorted = [...(STATE.affiliates || [])].sort((a, b) => (b.profit || 0) - (a.profit || 0));
-  const top = sorted[0];
-  let details = '';
-  if (sorted.length > 1) {
-    const medals = ['crown', 'medal', 'award'];
-    details = sorted.slice(0, 3).map((a, i) =>
-      `<div class="hw-tile-detail-row"><span><i data-lucide="${medals[i]}" class="hw-detail-ico" style="stroke:${i===0?'var(--amber)':i===1?'var(--text2)':'var(--text3)'}"></i>${a.name.split(' ')[0]}</span><span>${fc(a.profit || 0)}</span></div>`
-    ).join('');
-  }
-  return _kpiTile('trophy', 'Top Afiliados', top ? top.name.split(' ')[0] : '—', null, top ? fc(top.profit || 0) + ' lucro' : 'Sem dados', "openMod('affiliates')", details);
-}
-
-function _kpiPipelineStatus() {
-  const cards = STATE.pipeline?.cards || [];
-  const stages = STATE.pipeline?.stages || [];
-  const total = cards.length;
-  let details = '';
-  if (stages.length && cards.length) {
-    details = stages.filter(s => cards.some(c => c.stageId === s.id)).slice(0, 3).map(s => {
-      const n = cards.filter(c => c.stageId === s.id).length;
-      return `<div class="hw-tile-detail-row"><span><i data-lucide="circle" class="hw-detail-ico" style="stroke:${s.color || 'var(--text3)'};fill:${s.color || 'var(--text3)'}"></i>${s.name}</span><span>${n}</span></div>`;
-    }).join('');
-  }
-  return _kpiTile('git-branch', 'Pipeline', total, null, `${total} negociações`, "openMod('pipeline')", details);
-}
-
-function _kpiRecentActivity() {
-  const logs = STATE.auditLog || [];
-  const count = logs.length;
-  let details = '';
-  if (logs.length) {
-    details = logs.slice(0, 2).map(l =>
-      `<div class="hw-tile-detail-row"><span><i data-lucide="zap" class="hw-detail-ico"></i>${(l.action || '').length > 28 ? l.action.slice(0,28)+'…' : l.action}</span></div>`
-    ).join('');
-  }
-  return _kpiTile('activity', 'Atividade', count, null, 'Registros recentes', "openMod('audit')", details);
-}
-
-function _kpiAIInsights() {
-  if (typeof isBetaEnabled !== 'function' || !isBetaEnabled('ai_insights')) {
-    return _kpiTile('sparkles', 'AI Insights', '—', null, 'Ative no Lab', null, null);
-  }
-  const insights = _generateInsights();
-  const count = insights.length;
-  let details = '';
-  if (insights.length) {
-    details = insights.slice(0, 3).map(i =>
-      `<div class="hw-tile-detail-row"><span><i data-lucide="${i.icon}" class="hw-detail-ico" style="stroke:${i.color}"></i>${i.text}</span></div>`
-    ).join('');
-  }
-  return _kpiTile('sparkles', 'AI Insights', count, null, count ? 'Oportunidades detectadas' : 'Sem alertas', "openAIInsightsPanel()", details, count > 2 ? 'var(--theme)' : undefined);
-}
-
-function _generateInsights() {
-  const insights = [];
-  const affs = STATE.affiliates || [];
-  // Stale contacts
-  affs.forEach(a => {
-    const days = typeof daysSinceContact === 'function' ? daysSinceContact(a) : null;
-    if (days !== null && days > 14) {
-      insights.push({ icon: 'clock', color: 'var(--amber)', text: `${a.name.split(' ')[0]} sem contato há ${days}d`, type: 'stale', affId: a.id });
-    }
-  });
-  // Revenue concentration
-  const totalRev = affs.reduce((s, a) => s + (a.netRev || 0), 0);
-  if (totalRev > 0) {
-    const top = [...affs].sort((a, b) => (b.netRev || 0) - (a.netRev || 0))[0];
-    if (top) {
-      const pct = Math.round((top.netRev || 0) / totalRev * 100);
-      if (pct > 50) {
-        insights.push({ icon: 'alert-triangle', color: 'var(--red)', text: `${top.name.split(' ')[0]} concentra ${pct}% da receita`, type: 'concentration' });
-      }
-    }
-  }
-  // Growth opportunities
-  affs.forEach(a => {
-    if ((a.qftds || 0) > 0 && (a.ftds || 0) > 0) {
-      const conv = Math.round(a.qftds / a.ftds * 100);
-      if (conv > 70) {
-        insights.push({ icon: 'rocket', color: 'var(--green)', text: `${a.name.split(' ')[0]}: ${conv}% conversão — potencial de escalar`, type: 'growth', affId: a.id });
-      }
-    }
-  });
-  // Overdue payments
-  const overdue = (STATE.payments || []).filter(p => {
-    const s = typeof computePaymentStatus === 'function' ? computePaymentStatus(p) : p.status;
-    return s === 'vencido';
-  });
-  if (overdue.length) {
-    insights.push({ icon: 'alert-circle', color: 'var(--red)', text: `${overdue.length} pagamento(s) vencido(s) — ação urgente`, type: 'overdue' });
-  }
-  return insights;
-}
-
-window.openAIInsightsPanel = () => {
-  const insights = _generateInsights();
-  const rows = insights.length ? insights.map(i =>
-    `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--gb)">
-      <div style="width:28px;height:28px;border-radius:8px;background:color-mix(in srgb,${i.color} 12%,transparent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <i data-lucide="${i.icon}" style="width:14px;height:14px;stroke:${i.color}"></i>
-      </div>
-      <div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">${i.text}</div>
-    </div>`).join('')
-    : '<div style="text-align:center;padding:30px;color:var(--text3)">Nenhuma insight detectada — continue operando normalmente.</div>';
-  openModal('AI Insights — Análise Automática', `
-    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
-      Análises geradas automaticamente com base nos seus dados. Insights identificam riscos, oportunidades e ações pendentes.
-    </div>
-    ${rows}
-  `, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
-  lucide.createIcons();
-};
-
 // ── PICKER MODAL ──────────────────────────────────────────
-
 window.openHubWidgetPicker = () => {
   const active = new Set(_activeWidgets());
-  const rows = HUB_WIDGETS.map(w => {
-    const checked = active.has(w.id);
-    return `<label class="hwp-row">
-      <input type="checkbox" class="hwp-check" value="${w.id}" ${checked ? 'checked' : ''}>
+  const rows = HUB_WIDGETS.map(w => `
+    <label class="hwp-row">
+      <input type="checkbox" class="hwp-check" value="${w.id}" ${active.has(w.id) ? 'checked' : ''}>
       <div class="hwp-icon"><i data-lucide="${w.icon}"></i></div>
       <div class="hwp-body">
         <div class="hwp-name">${w.name}</div>
         <div class="hwp-desc">${w.desc}</div>
       </div>
-    </label>`;
-  }).join('');
+    </label>`).join('');
 
   openModal('Personalizar widgets do hub', `
-    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">
-      Escolha quais widgets aparecem no seu hub principal. A ordem de exibição segue a ordem marcada abaixo.
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+      Escolha até 4 widgets. A ordem segue a ordem marcada abaixo.
     </div>
     <div class="hwp-list">${rows}</div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
@@ -467,3 +383,21 @@ window._saveHubWidgets = () => {
   buildHubWidgets();
   toast('Widgets atualizados', 's');
 };
+
+// ── Helpers ────────────────────────────────────────────────
+function _esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function _fmt(v) {
+  if (!v) return 'R$ 0';
+  if (v >= 1000) return 'R$ ' + (v / 1000).toFixed(v >= 10000 ? 0 : 1) + 'k';
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
+}
+function _relTime(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'agora';
+  if (diff < 3600000) return `há ${Math.floor(diff / 60000)}m`;
+  if (diff < 86400000) return `há ${Math.floor(diff / 3600000)}h`;
+  if (diff < 7 * 86400000) return `há ${Math.floor(diff / 86400000)}d`;
+  return new Date(ts).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}

@@ -1285,8 +1285,13 @@ function showHub(){
     buildHubCards(); buildMobileHome(); updateNotifBadge();
     if (window.buildHubWidgets) buildHubWidgets();
     if (window.renderHolidayPostIt) renderHolidayPostIt();
-    // Carrega dados do CRM (schema crm) silenciosamente em background
-    if (window.CRM?.loadAll) CRM.loadAll().catch(e => console.warn('[CRM] load falhou:', e));
+    // Carrega dados do CRM (schema crm) e re-renderiza widgets + hero quando chega
+    if (window.CRM?.loadAll) {
+      CRM.loadAll().then(() => {
+        if (window.buildHubWidgets) buildHubWidgets();
+        if (window.updateHubHero) updateHubHero();
+      }).catch(e => console.warn('[CRM] load falhou:', e));
+    }
     if(window.updateLabButton)updateLabButton();
     if(window.syncBetaAttributes)syncBetaAttributes();
     if(window.updateCopilotVisibility)updateCopilotVisibility();
