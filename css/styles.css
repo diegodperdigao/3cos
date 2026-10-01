@@ -7321,3 +7321,99 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
 /* Garante que o restante (widgets + dock) fica logo após o hero sem empurrar */
 .hub-stage .hub-widgets{align-content: start !important;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* CONTATOS — Import modal                                     */
+/* ══════════════════════════════════════════════════════════ */
+
+.ctc-import-formats{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ctc-import-format{
+  background: var(--bg3);
+  border: 1px solid var(--gb);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.ctc-import-format-k{
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.ctc-import-format code{
+  display: block;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 10px;
+  color: var(--text2);
+  font-family: 'SF Mono', Menlo, monospace;
+  line-height: 1.5;
+}
+
+.ctc-import-preview{
+  background: var(--bg3);
+  border: 1px solid var(--gb);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 14px;
+}
+
+.ctc-import-stats{
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  padding: 6px 0;
+}
+.ctc-import-stat{text-align: center;}
+.ctc-import-stat-v{
+  font-family: var(--fd);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+.ctc-import-stat-k{
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+}
+
+.ctc-import-list{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.ctc-import-row{
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text2);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ctc-import-row strong{color: var(--text);}
+.ctc-import-row span{color: var(--text3);}
+.ctc-import-dup{
+  background: rgba(245,158,11,0.15);
+  color: var(--amber) !important;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-left: auto;
+}

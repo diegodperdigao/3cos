@@ -26,6 +26,7 @@
           <div class="sec-actions">
             <div class="srch"><i data-lucide="search"></i><input type="text" placeholder="Buscar nome, email, empresa..." oninput="window._ctcSearch(this.value)"></div>
             <button class="btn btn-outline" onclick="window._ctcManageTags()"><i data-lucide="tags"></i> Tags</button>
+            <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
             <button class="btn btn-theme" onclick="window._ctcOpenNew()"><i data-lucide="plus"></i> Novo contato</button>
           </div>
         </div>
@@ -434,7 +435,250 @@
     }
   };
 
-  // ── HELPERS ───────────────────────────────────────────────
+  // ── BULK IMPORT ────────────────────────────────────────────
+  window._ctcOpenImport = () => {
+    const body = `
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+        Cola uma lista de contatos abaixo. Formatos aceitos:
+      </div>
+
+      <div class="ctc-import-formats">
+        <div class="ctc-import-format">
+          <div class="ctc-import-format-k">Só nomes</div>
+          <code>João Silva<br>Maria Santos<br>Pedro Costa</code>
+        </div>
+        <div class="ctc-import-format">
+          <div class="ctc-import-format-k">Nome + email</div>
+          <code>João Silva, joao@exemplo.com<br>Maria Santos, maria@abc.com</code>
+        </div>
+        <div class="ctc-import-format">
+          <div class="ctc-import-format-k">Com empresa + telefone</div>
+          <code>João Silva, joao@exemplo.com, Acme Inc, 11999999999</code>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--text3);margin:14px 0 8px;line-height:1.5">
+        Separador: <strong>vírgula</strong>, <strong>ponto-e-vírgula</strong> ou <strong>tab</strong> (colar de planilha).
+        Colunas: <strong>nome</strong> (obrigatório) · email · empresa · telefone.
+      </div>
+
+      <textarea id="ctc-import-text" class="fi" rows="10"
+        placeholder="João Silva, joao@email.com, Acme Inc&#10;Maria Santos, maria@xyz.com&#10;Pedro Costa"
+        style="width:100%;font-family:'SF Mono',Menlo,monospace;font-size:12px"
+        oninput="window._ctcImportPreview()"></textarea>
+
+      <div class="form-row" style="margin-top:14px">
+        <div class="ff"><label>Tipo padrão</label>
+          <select id="ctc-import-type" class="fi" onchange="window._ctcImportPreview()">
+            <option value="b2c" selected>B2C (influencer/pessoa física)</option>
+            <option value="b2b">B2B (empresa)</option>
+            <option value="both">Ambos</option>
+          </select>
+        </div>
+        <div class="ff"><label>Temperatura padrão</label>
+          <select id="ctc-import-temp" class="fi" onchange="window._ctcImportPreview()">
+            <option value="cold" selected>Frio</option>
+            <option value="warm">Morno</option>
+            <option value="hot">Quente</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="ff"><label>Origem padrão</label>
+          <select id="ctc-import-source" class="fi" onchange="window._ctcImportPreview()">
+            <option value="">—</option>
+            <option value="inbound">Inbound</option>
+            <option value="outbound" selected>Outbound</option>
+            <option value="referral">Indicação</option>
+            <option value="event">Evento</option>
+            <option value="social">Redes sociais</option>
+            <option value="other">Outro</option>
+          </select>
+        </div>
+        <div class="ff"><label>Status</label>
+          <select id="ctc-import-status" class="fi" onchange="window._ctcImportPreview()">
+            <option value="wishlist" selected>Wishlist</option>
+            <option value="in_pipeline">No pipeline</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="ctc-import-preview" class="ctc-import-preview">
+        <div style="color:var(--text3);font-size:12px;text-align:center;padding:10px">Cola uma lista acima pra ver o preview.</div>
+      </div>
+    `;
+
+    openModal('Importar contatos em lote', body, `
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-theme" id="ctc-import-btn" onclick="window._ctcDoImport()" disabled>
+        <i data-lucide="upload"></i> Importar
+      </button>
+    `);
+    lucide.createIcons();
+  };
+
+  // Parse flexível: detecta separador, pula linhas vazias, extrai colunas
+  function _parseImportText(txt) {
+    const lines = txt.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    const results = [];
+    const errors = [];
+    const seen = new Set();
+
+    lines.forEach((line, idx) => {
+      // Detecta separador: tab > ponto-e-vírgula > vírgula
+      let parts;
+      if (line.includes('\t')) parts = line.split('\t').map(p => p.trim());
+      else if (line.includes(';')) parts = line.split(';').map(p => p.trim());
+      else if (line.includes(',')) parts = line.split(',').map(p => p.trim());
+      else parts = [line];
+
+      const [name, email, company, phone] = parts;
+      if (!name) { errors.push({ line: idx + 1, msg: 'nome vazio' }); return; }
+
+      // Validação simples do email se tiver
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push({ line: idx + 1, name, msg: `email inválido: ${email}` });
+        return;
+      }
+
+      // Dedupe por nome+email
+      const key = `${name.toLowerCase()}|${(email || '').toLowerCase()}`;
+      if (seen.has(key)) {
+        errors.push({ line: idx + 1, name, msg: 'duplicado nesta importação' });
+        return;
+      }
+      seen.add(key);
+
+      results.push({
+        name,
+        email: email || null,
+        company: company || null,
+        phone: phone || null,
+      });
+    });
+
+    return { results, errors };
+  }
+
+  window._ctcImportPreview = () => {
+    const txt = document.getElementById('ctc-import-text')?.value || '';
+    const previewEl = document.getElementById('ctc-import-preview');
+    const btn = document.getElementById('ctc-import-btn');
+    if (!previewEl || !btn) return;
+
+    if (!txt.trim()) {
+      previewEl.innerHTML = `<div style="color:var(--text3);font-size:12px;text-align:center;padding:10px">Cola uma lista acima pra ver o preview.</div>`;
+      btn.disabled = true;
+      return;
+    }
+
+    const { results, errors } = _parseImportText(txt);
+    btn.disabled = results.length === 0;
+
+    const existingNames = new Set((STATE.crm?.contacts || []).map(c => (c.name || '').toLowerCase()));
+    const existingEmails = new Set((STATE.crm?.contacts || []).map(c => (c.email || '').toLowerCase()).filter(Boolean));
+    const duplicates = results.filter(r =>
+      existingNames.has(r.name.toLowerCase()) || (r.email && existingEmails.has(r.email.toLowerCase()))
+    );
+
+    previewEl.innerHTML = `
+      <div class="ctc-import-stats">
+        <div class="ctc-import-stat">
+          <div class="ctc-import-stat-v" style="color:var(--green)">${results.length - duplicates.length}</div>
+          <div class="ctc-import-stat-k">Novos</div>
+        </div>
+        <div class="ctc-import-stat">
+          <div class="ctc-import-stat-v" style="color:var(--amber)">${duplicates.length}</div>
+          <div class="ctc-import-stat-k">Já existem</div>
+        </div>
+        <div class="ctc-import-stat">
+          <div class="ctc-import-stat-v" style="color:var(--red)">${errors.length}</div>
+          <div class="ctc-import-stat-k">Erros</div>
+        </div>
+      </div>
+      ${results.length > 0 ? `
+        <div style="font-size:11px;color:var(--text3);margin:12px 0 4px">Preview dos 5 primeiros:</div>
+        <div class="ctc-import-list">
+          ${results.slice(0, 5).map(r => `
+            <div class="ctc-import-row">
+              <strong>${_esc(r.name)}</strong>
+              ${r.email ? `<span>· ${_esc(r.email)}</span>` : ''}
+              ${r.company ? `<span>· ${_esc(r.company)}</span>` : ''}
+              ${existingNames.has(r.name.toLowerCase()) ? `<span class="ctc-import-dup">já existe</span>` : ''}
+            </div>
+          `).join('')}
+          ${results.length > 5 ? `<div style="color:var(--text3);font-size:11px;text-align:center;padding:4px">+ ${results.length - 5} outros</div>` : ''}
+        </div>
+      ` : ''}
+      ${errors.length > 0 ? `
+        <div style="font-size:11px;color:var(--text3);margin:12px 0 4px">Problemas:</div>
+        <div class="ctc-import-list">
+          ${errors.slice(0, 4).map(e => `
+            <div class="ctc-import-row" style="color:var(--red)">
+              Linha ${e.line}: ${e.msg}
+            </div>
+          `).join('')}
+          ${errors.length > 4 ? `<div style="color:var(--text3);font-size:11px;text-align:center;padding:4px">+ ${errors.length - 4} outros</div>` : ''}
+        </div>
+      ` : ''}
+    `;
+  };
+
+  window._ctcDoImport = async () => {
+    const txt = document.getElementById('ctc-import-text')?.value || '';
+    const type = document.getElementById('ctc-import-type')?.value || 'b2c';
+    const temperature = document.getElementById('ctc-import-temp')?.value || 'cold';
+    const source = document.getElementById('ctc-import-source')?.value || null;
+    const status = document.getElementById('ctc-import-status')?.value || 'wishlist';
+    const btn = document.getElementById('ctc-import-btn');
+
+    const { results } = _parseImportText(txt);
+    if (!results.length) { toast('Nada para importar', 'w'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader"></i> Importando...';
+    lucide.createIcons();
+
+    const existingNames = new Set((STATE.crm?.contacts || []).map(c => (c.name || '').toLowerCase()));
+    const existingEmails = new Set((STATE.crm?.contacts || []).map(c => (c.email || '').toLowerCase()).filter(Boolean));
+    const toInsert = results.filter(r =>
+      !existingNames.has(r.name.toLowerCase()) && !(r.email && existingEmails.has(r.email.toLowerCase()))
+    ).map(r => ({ ...r, type, temperature, source, status }));
+
+    if (!toInsert.length) {
+      closeModal();
+      toast('Todos já existem — nada foi importado', 'w');
+      return;
+    }
+
+    try {
+      const sb = window.sb_crm;
+      // Insert em chunks de 100 pra não estourar limite
+      const chunkSize = 100;
+      let inserted = 0;
+      for (let i = 0; i < toInsert.length; i += chunkSize) {
+        const chunk = toInsert.slice(i, i + chunkSize);
+        const { data, error } = await sb.from('contacts').insert(chunk).select();
+        if (error) throw error;
+        if (data) {
+          STATE.crm.contacts.unshift(...data);
+          inserted += data.length;
+        }
+      }
+      closeModal();
+      _renderList();
+      toast(`${inserted} contato${inserted === 1 ? '' : 's'} importado${inserted === 1 ? '' : 's'} com sucesso`, 's');
+    } catch (e) {
+      console.error('[import]', e);
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="upload"></i> Importar';
+      lucide.createIcons();
+      toast('Erro na importação: ' + (e.message || 'desconhecido'), 'e');
+    }
+  };
+
+// ── HELPERS ───────────────────────────────────────────────
   function _esc(s) {
     return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
