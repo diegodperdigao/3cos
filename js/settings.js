@@ -10,6 +10,7 @@ window._settingsTab = window._settingsTab || 'general';
 function bSettings(el){
   const tabs = [
     { id: 'general',      label: 'Geral',       icon: 'sliders-horizontal' },
+    { id: 'products',     label: 'Produtos',    icon: 'package' },
     { id: 'team',         label: 'Equipe',      icon: 'users',     adminOnly: true },
     { id: 'audit',        label: 'Auditoria',   icon: 'activity',  adminOnly: true },
     { id: 'backup',       label: 'Backup',      icon: 'cloud' },
@@ -44,18 +45,176 @@ window._switchSettingsTab = (id) => {
   _renderSettingsTabContent(id);
 };
 function _settingsTabLabel(id) {
-  return { general: 'Geral', team: 'Equipe', audit: 'Auditoria', backup: 'Backup', integrations: 'Integrações' }[id];
+  return { general: 'Geral', products: 'Produtos', team: 'Equipe', audit: 'Auditoria', backup: 'Backup', integrations: 'Integrações' }[id];
 }
 
 function _renderSettingsTabContent(id) {
   const el = document.getElementById('st-tab-content');
   if (!el) return;
   el.classList.add('st-embedded');
+  if (id === 'products') return _renderProductsTab(el);
   if (id === 'team' && typeof bUsers === 'function') return bUsers(el);
   if (id === 'audit' && typeof bAudit === 'function') return bAudit(el);
   if (id === 'backup' && typeof bBackup === 'function') return bBackup(el);
   if (id === 'integrations') return _renderIntegrationsTab(el);
   _renderGeneralSettings(el);
+}
+
+// ══════════════════════════════════════════════════════════
+// PRODUCTS TAB — portfolio da empresa (categorização de deals)
+// ══════════════════════════════════════════════════════════
+async function _renderProductsTab(el) {
+  // Carrega CRM se ainda não carregou
+  if (!STATE.crm?.loaded && window.CRM?.loadAll) {
+    el.innerHTML = `<div class="st-section"><div class="st-card" style="text-align:center;padding:30px;color:var(--text3)">Carregando produtos...</div></div>`;
+    await CRM.loadAll();
+  }
+  const products = STATE.crm?.products || [];
+
+  el.innerHTML = `
+    <div class="st-section">
+      <div class="st-section-hdr">
+        <div class="st-section-icon"><i data-lucide="package"></i></div>
+        <div>
+          <div class="st-section-title">Produtos</div>
+          <div class="st-section-sub">Portfolio da empresa — usado pra categorizar contatos e negociações</div>
+        </div>
+        <button class="btn btn-theme" style="margin-left:auto" onclick="window._prodOpenNew()">
+          <i data-lucide="plus"></i> Novo produto
+        </button>
+      </div>
+
+      <div class="st-card">
+        <div id="st-products-grid" class="st-products-grid">
+          ${products.length ? '' : '<div style="text-align:center;padding:30px;color:var(--text3);font-size:12px;grid-column:1/-1">Nenhum produto cadastrado ainda.</div>'}
+        </div>
+      </div>
+    </div>
+  `;
+  _renderProductsGrid();
+  lucide.createIcons();
+}
+
+function _renderProductsGrid() {
+  const grid = document.getElementById('st-products-grid');
+  if (!grid) return;
+  const products = STATE.crm?.products || [];
+  if (!products.length) {
+    grid.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);font-size:12px;grid-column:1/-1">Nenhum produto cadastrado ainda.</div>';
+    return;
+  }
+  grid.innerHTML = products.map(p => `
+    <div class="st-product-card" style="--prod-c:${p.color || '#94a3b8'}">
+      <div class="st-product-head">
+        <div class="st-product-dot" style="background:${p.color || '#94a3b8'}"></div>
+        <div class="st-product-info">
+          <div class="st-product-name">${_escapeHTML(p.name)}</div>
+          ${p.category ? `<div class="st-product-cat">${_escapeHTML(p.category)}</div>` : ''}
+        </div>
+        <div class="st-product-status ${p.status}">${p.status === 'active' ? 'Ativo' : p.status === 'inactive' ? 'Inativo' : 'Planejamento'}</div>
+      </div>
+      ${p.description ? `<div class="st-product-desc">${_escapeHTML(p.description)}</div>` : ''}
+      <div class="st-product-actions">
+        <button class="btn btn-ghost" onclick="window._prodOpenEdit('${p.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i> Editar</button>
+        <button class="btn btn-ghost" style="color:var(--red)" onclick="window._prodDelete('${p.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i> Excluir</button>
+      </div>
+    </div>
+  `).join('');
+  lucide.createIcons();
+}
+
+function _prodForm(p = {}) {
+  return `
+    <div class="form-grid">
+      <div class="ff"><label>Nome *</label><input id="prod-f-name" class="fi" type="text" value="${_escapeHTML(p.name || '')}" placeholder="Ex: Chute, CAP, Fortuna"></div>
+      <div class="form-row">
+        <div class="ff"><label>Categoria</label><input id="prod-f-category" class="fi" type="text" value="${_escapeHTML(p.category || '')}" placeholder="Casino, Apostas, Poker..."></div>
+        <div class="ff"><label>Status</label>
+          <select id="prod-f-status" class="fi">
+            <option value="active" ${(!p.status || p.status === 'active') ? 'selected' : ''}>Ativo</option>
+            <option value="inactive" ${p.status === 'inactive' ? 'selected' : ''}>Inativo</option>
+            <option value="planning" ${p.status === 'planning' ? 'selected' : ''}>Planejamento</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="ff"><label>Cor</label><input id="prod-f-color" class="fi" type="color" value="${p.color || '#6366f1'}" style="width:80px;height:38px;padding:4px"></div>
+        <div class="ff" style="flex:1"><label>Descrição</label><input id="prod-f-description" class="fi" type="text" value="${_escapeHTML(p.description || '')}" placeholder="Descrição curta"></div>
+      </div>
+    </div>
+  `;
+}
+
+function _prodRead() {
+  const get = (id) => document.getElementById(id)?.value || '';
+  return {
+    name: get('prod-f-name').trim(),
+    category: get('prod-f-category').trim() || null,
+    status: get('prod-f-status'),
+    color: get('prod-f-color') || '#6366f1',
+    description: get('prod-f-description').trim() || null,
+  };
+}
+
+window._prodOpenNew = () => {
+  openModal('Novo produto', _prodForm(), `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="window._prodSaveNew()"><i data-lucide="check"></i> Criar</button>
+  `);
+  lucide.createIcons();
+};
+
+window._prodSaveNew = async () => {
+  const payload = _prodRead();
+  if (!payload.name) { toast('Nome é obrigatório', 'e'); return; }
+  try {
+    await CRM.products.create(payload);
+    closeModal();
+    _renderProductsGrid();
+    toast(`Produto "${payload.name}" criado`, 's');
+  } catch (e) {
+    toast('Erro: ' + (e.message || 'desconhecido'), 'e');
+  }
+};
+
+window._prodOpenEdit = (id) => {
+  const p = (STATE.crm?.products || []).find(x => x.id === id);
+  if (!p) return;
+  openModal('Editar ' + p.name, _prodForm(p), `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="window._prodSaveEdit('${id}')"><i data-lucide="check"></i> Salvar</button>
+  `);
+  lucide.createIcons();
+};
+
+window._prodSaveEdit = async (id) => {
+  const payload = _prodRead();
+  if (!payload.name) { toast('Nome é obrigatório', 'e'); return; }
+  try {
+    await CRM.products.update(id, payload);
+    closeModal();
+    _renderProductsGrid();
+    toast('Produto atualizado', 's');
+  } catch (e) {
+    toast('Erro: ' + (e.message || 'desconhecido'), 'e');
+  }
+};
+
+window._prodDelete = async (id) => {
+  const p = (STATE.crm?.products || []).find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`Excluir produto "${p.name}"? Negociações vinculadas vão perder a referência.`)) return;
+  try {
+    await CRM.products.remove(id);
+    _renderProductsGrid();
+    toast('Produto excluído', 's');
+  } catch (e) {
+    toast('Erro: ' + (e.message || 'desconhecido'), 'e');
+  }
+};
+
+function _escapeHTML(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function _renderIntegrationsTab(el) {
