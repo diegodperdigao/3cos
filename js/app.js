@@ -131,7 +131,7 @@ const DEFAULT_STATE={
   },
   // ── USER SETTINGS (persisted in localStorage + Supabase user_settings) ──
   settings:{
-    theme:'default-dark',      // 'default-dark' | 'default-light' | 'mono-dark' | 'mono-light' | 'bento-dark' | 'bento-light'
+    theme:'default-light',      // 'default-dark' | 'default-light' | 'mono-dark' | 'mono-light' | 'bento-dark' | 'bento-light'
     density:'comfortable',     // 'comfortable' | 'compact'
     showIntroVideo:true,
     reducedMotion:false,
@@ -616,7 +616,7 @@ window.applyAppTheme = () => {
     'bento':          { edition: 'bento',    theme: 'light' },
   };
   const themeKey = STATE.settings?.theme || 'default-dark';
-  const pair = MAP[themeKey] || MAP['default-dark'];
+  const pair = MAP[themeKey] || MAP['default-light'];
   root.setAttribute('data-theme', pair.theme);
   if (pair.edition && STATE.user) root.setAttribute('data-edition', pair.edition);
   else root.removeAttribute('data-edition');
@@ -776,7 +776,7 @@ function _applyLockThemeKey(themeKey) {
 }
 window.previewLockTheme = (themeKey) => _applyLockThemeKey(themeKey);
 window.endPreviewLockTheme = () => {
-  const committed = localStorage.getItem('3cos_lock_theme') || 'default-dark';
+  const committed = localStorage.getItem('3cos_lock_theme') || 'default-light';
   _applyLockThemeKey(committed);
 };
 (function(){

@@ -43,35 +43,54 @@
           </div>
         </div>
 
-        <div class="ctc-filters" id="ctc-filters-wrap">
-          <div class="ctc-filter-group">
-            <span class="ctc-filter-lbl">Perfil</span>
-            <button class="pill on" data-f="profile" data-v="" onclick="window._ctcFilter(this)">Todos</button>
-            ${PROFILES.map(p => `<button class="pill" data-f="profile" data-v="${p.id}" onclick="window._ctcFilter(this)" style="--pill-c:${p.color}">
-              <i data-lucide="${p.icon}" style="width:11px;height:11px;vertical-align:-1px"></i> ${p.label}
+        <div class="ctc-filterbar">
+          <div class="ctc-fb-chip ctc-fb-count" id="ctc-counts">0 contatos</div>
+
+          <div class="ctc-fb-seg" data-f="profile">
+            <button class="ctc-fb-chip on" data-v="" onclick="window._ctcFilter(this)">
+              <i data-lucide="layers" style="width:11px;height:11px"></i> Perfil: todos
+            </button>
+            ${PROFILES.map(p => `<button class="ctc-fb-chip" data-v="${p.id}" onclick="window._ctcFilter(this)" style="--chip-c:${p.color}">
+              <i data-lucide="${p.icon}" style="width:11px;height:11px"></i>${p.label}
             </button>`).join('')}
-            <button class="pill" data-f="profile" data-v="__none__" onclick="window._ctcFilter(this)">Sem perfil</button>
           </div>
-          <div class="ctc-filter-group">
-            <span class="ctc-filter-lbl">Status</span>
-            <button class="pill on" data-f="status" data-v="" onclick="window._ctcFilter(this)">Todos</button>
-            <button class="pill" data-f="status" data-v="wishlist" onclick="window._ctcFilter(this)">Wishlist</button>
-            <button class="pill" data-f="status" data-v="in_pipeline" onclick="window._ctcFilter(this)">No pipeline</button>
-            <button class="pill" data-f="status" data-v="customer" onclick="window._ctcFilter(this)">Clientes</button>
-            <button class="pill" data-f="status" data-v="churned" onclick="window._ctcFilter(this)">Perdidos</button>
+
+          <div class="ctc-fb-divider"></div>
+
+          <div class="ctc-fb-seg" data-f="status">
+            <button class="ctc-fb-chip on" data-v="" onclick="window._ctcFilter(this)">
+              <i data-lucide="circle" style="width:9px;height:9px"></i>Status: todos
+            </button>
+            <button class="ctc-fb-chip" data-v="wishlist" onclick="window._ctcFilter(this)" style="--chip-c:#94a3b8">
+              <span class="ctc-fb-dot" style="background:#94a3b8"></span>Wishlist
+            </button>
+            <button class="ctc-fb-chip" data-v="in_pipeline" onclick="window._ctcFilter(this)" style="--chip-c:#f59e0b">
+              <span class="ctc-fb-dot" style="background:#f59e0b"></span>No pipeline
+            </button>
+            <button class="ctc-fb-chip" data-v="customer" onclick="window._ctcFilter(this)" style="--chip-c:#10b981">
+              <span class="ctc-fb-dot" style="background:#10b981"></span>Clientes
+            </button>
+            <button class="ctc-fb-chip" data-v="churned" onclick="window._ctcFilter(this)" style="--chip-c:#ef4444">
+              <span class="ctc-fb-dot" style="background:#ef4444"></span>Perdidos
+            </button>
           </div>
-          <div class="ctc-filter-group">
-            <span class="ctc-filter-lbl">Tipo</span>
-            <button class="pill on" data-f="type" data-v="" onclick="window._ctcFilter(this)">Todos</button>
-            <button class="pill" data-f="type" data-v="b2b" onclick="window._ctcFilter(this)">B2B</button>
-            <button class="pill" data-f="type" data-v="b2c" onclick="window._ctcFilter(this)">B2C</button>
-            <button class="pill" data-f="type" data-v="both" onclick="window._ctcFilter(this)">Ambos</button>
+
+          <div class="ctc-fb-divider"></div>
+
+          <div class="ctc-fb-seg" data-f="type">
+            <button class="ctc-fb-chip on" data-v="" onclick="window._ctcFilter(this)">
+              <i data-lucide="users" style="width:11px;height:11px"></i>Tipo: todos
+            </button>
+            <button class="ctc-fb-chip" data-v="b2b" onclick="window._ctcFilter(this)" style="--chip-c:#6366f1">B2B</button>
+            <button class="ctc-fb-chip" data-v="b2c" onclick="window._ctcFilter(this)" style="--chip-c:#d946ef">B2C</button>
+            <button class="ctc-fb-chip" data-v="both" onclick="window._ctcFilter(this)" style="--chip-c:#14b8a6">Ambos</button>
           </div>
-          <div class="ctc-filter-group" id="ctc-tag-filter-group" style="display:none"></div>
-          <div class="ctc-filter-group" id="ctc-product-filter-group" style="display:none"></div>
+
+          <button class="ctc-fb-clear" id="ctc-fb-clear" onclick="window._ctcClearFilters()" style="display:none">
+            <i data-lucide="x" style="width:11px;height:11px"></i> Limpar
+          </button>
         </div>
 
-        <div class="ctc-counts" id="ctc-counts"></div>
         <div class="ctc-list" id="ctc-list"></div>
       </div></div>`;
 
@@ -98,7 +117,13 @@
     const el = document.getElementById('ctc-list');
     const countsEl = document.getElementById('ctc-counts');
     if (!el) return;
-    if (countsEl) countsEl.textContent = `${list.length} de ${STATE.crm.contacts.length} contato${STATE.crm.contacts.length === 1 ? '' : 's'}`;
+    if (countsEl) {
+      const total = STATE.crm.contacts.length;
+      const filtered = list.length !== total;
+      countsEl.innerHTML = filtered
+        ? `<strong>${list.length}</strong> <span style="opacity:0.6">de ${total}</span>`
+        : `<strong>${total}</strong> ${total === 1 ? 'contato' : 'contatos'}`;
+    }
 
     if (!list.length) {
       el.innerHTML = `<div class="empty"><i data-lucide="user-plus"></i><p>Nenhum contato com esses filtros</p>
@@ -190,14 +215,33 @@
   };
 
   window._ctcFilter = (btn) => {
-    const key = btn.dataset.f;
+    const seg = btn.closest('.ctc-fb-seg');
+    const key = seg?.dataset.f;
     const val = btn.dataset.v || null;
     F[key] = val;
-    // Toggle UI state
-    btn.closest('.ctc-filter-group').querySelectorAll('.pill').forEach(b => b.classList.remove('on'));
+    seg.querySelectorAll('.ctc-fb-chip').forEach(b => b.classList.remove('on'));
     btn.classList.add('on');
     _renderList();
+    _updateClearBtn();
   };
+
+  window._ctcClearFilters = () => {
+    F.status = null; F.type = null; F.profile = null; F.tag = null; F.product = null;
+    document.querySelectorAll('.ctc-fb-seg').forEach(seg => {
+      const chips = seg.querySelectorAll('.ctc-fb-chip');
+      chips.forEach(c => c.classList.remove('on'));
+      chips[0]?.classList.add('on');
+    });
+    _renderList();
+    _updateClearBtn();
+  };
+
+  function _updateClearBtn() {
+    const btn = document.getElementById('ctc-fb-clear');
+    if (!btn) return;
+    const anyActive = F.status || F.type || F.profile || F.tag || F.product;
+    btn.style.display = anyActive ? 'inline-flex' : 'none';
+  }
 
   function _computeList() {
     const term = F.search;
