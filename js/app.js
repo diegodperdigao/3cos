@@ -893,6 +893,41 @@ window.doLogin=async()=>{
   err.style.display='block';
   btn.disabled=false;btn.textContent='ACESSAR O SISTEMA';
 };
+// ── FORGOT PASSWORD (Supabase Auth) ──
+// Dispara o fluxo de recuperação do Supabase. O email usado é o que estiver
+// no input de login; se vazio, pede ao usuário. O Supabase envia um link
+// para redefinir senha. Rate-limited pelo próprio Supabase (1 req / 60s / email).
+window.doForgotPassword = async () => {
+  const emailInput = document.getElementById('le');
+  let email = (emailInput?.value || '').trim();
+  if (!email) {
+    email = (prompt('Digite seu email para receber o link de redefinição:') || '').trim();
+    if (!email) return;
+    if (emailInput) emailInput.value = email;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    toast('Email inválido.', 'e');
+    return;
+  }
+  if (!window.SUPABASE_CONFIGURED || !window.sb) {
+    toast('Sistema não configurado. Contate o administrador.', 'e');
+    return;
+  }
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/?reset=1',
+    });
+    if (error) throw error;
+    toast('Se o email existir, você receberá um link em instantes. Verifique sua caixa de entrada e spam.', 's');
+  } catch (e) {
+    console.error('[forgot password]', e);
+    const msg = e?.message?.includes('rate') || e?.message?.includes('seconds')
+      ? 'Aguarde 60 segundos antes de pedir outro link.'
+      : (e?.message || 'Não foi possível enviar o email. Tente novamente.');
+    toast(msg, 'e');
+  }
+};
+
 window.doLogout=async ()=>{
   if (window.sb) {
     try { await sb.auth.signOut(); } catch (e) { console.warn('signOut:', e); }
