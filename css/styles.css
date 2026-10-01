@@ -6992,3 +6992,24 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   margin-top: 10px !important;
   align-self: center !important;
 }
+
+/* ══════════════════════════════════════════════════════════ */
+/* HUB — Pass 6: centraliza grupo todo vertical (sem vazio)    */
+/* ══════════════════════════════════════════════════════════ */
+
+/* Volta pra min-height viewport + centralização vertical do grupo,
+   mas SEM align-content: center nos widgets (que era o erro antes).
+   Como widgets não ocupam 1fr sozinho, não há void entre hero e widgets. */
+.hub-stage{
+  min-height: calc(100vh - 70px) !important;
+  justify-content: center !important;  /* ← centraliza todo o conjunto */
+  padding-top: clamp(16px, 2vh, 28px) !important;
+  padding-bottom: clamp(16px, 2vh, 28px) !important;
+  gap: 24px !important;
+}
+
+/* Widgets ficam onde estão, apenas no fluxo natural */
+.hub-stage .hub-widgets{align-content: start !important;}
+
+/* Dock mantém posição imediatamente após widgets (gap do stage) */
+.hub-stage .hub-dock{margin-top: 0 !important;}
