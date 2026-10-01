@@ -192,17 +192,44 @@
   function _cardHTML(card) {
     const contact = CRM.contactById(card.contact_id);
     const product = CRM.productById(card.product_id);
+    const prob = Number(card.probability) || 0;
+    const probColor = prob >= 70 ? '#10b981' : prob >= 40 ? '#f59e0b' : '#94a3b8';
+
+    // Avatar do contato
+    let avatarHTML = '';
+    if (contact) {
+      let h = 0; for (let i = 0; i < (contact.name || '').length; i++) h = (h * 31 + contact.name.charCodeAt(i)) | 0;
+      const hue = Math.abs(h) % 360;
+      const initials = (contact.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+      avatarHTML = contact.avatar_url
+        ? `<img class="kan-card-av" src="${contact.avatar_url}" alt="">`
+        : `<div class="kan-card-av" style="background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))">${initials}</div>`;
+    }
+
     return `<div class="kan-card"
         draggable="true"
         ondragstart="event.dataTransfer.setData('text/plain', '${card.id}'); this.classList.add('kan-card-drag')"
         ondragend="this.classList.remove('kan-card-drag')"
         onclick="window._pcrmOpenCard('${card.id}')">
+      ${product ? `<div class="kan-card-tag" style="background:${product.color || '#94a3b8'}22;color:${product.color || '#94a3b8'};border:1px solid ${product.color || '#94a3b8'}44">
+        <i data-lucide="package" style="width:9px;height:9px"></i> ${_esc(product.name)}
+      </div>` : ''}
       <div class="kan-card-title">${_esc(card.title)}</div>
-      ${contact ? `<div class="kan-card-sub"><i data-lucide="user" style="width:11px;height:11px"></i> ${_esc(contact.name)}${contact.company ? ' · ' + _esc(contact.company) : ''}</div>` : ''}
-      ${product ? `<div class="kan-card-sub"><i data-lucide="package" style="width:11px;height:11px"></i> ${_esc(product.name)}</div>` : ''}
-      <div class="kan-card-foot">
-        <span class="kan-card-value">${_fmt(card.value)}</span>
-        <span class="kan-card-prob">${card.probability}%</span>
+      ${contact ? `<div class="kan-card-contact">
+        ${avatarHTML}
+        <span class="kan-card-contact-name">${_esc(contact.name)}</span>
+      </div>` : ''}
+      <div class="kan-card-value-row">
+        <div class="kan-card-value">${_fmt(card.value)}</div>
+        <div class="kan-card-prob" style="color:${probColor}">
+          <svg viewBox="0 0 36 36" style="width:28px;height:28px">
+            <circle cx="18" cy="18" r="14" fill="none" stroke="var(--bg)" stroke-width="3"/>
+            <circle cx="18" cy="18" r="14" fill="none" stroke="${probColor}" stroke-width="3"
+              stroke-dasharray="${(prob/100)*87.96} 87.96" stroke-linecap="round"
+              transform="rotate(-90 18 18)"/>
+            <text x="18" y="22" text-anchor="middle" fill="${probColor}" font-size="9" font-weight="700">${prob}</text>
+          </svg>
+        </div>
       </div>
     </div>`;
   }

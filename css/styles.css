@@ -7595,3 +7595,283 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 .st-product-actions .btn{padding: 4px 10px; font-size: 11px;}
 .st-product-actions .btn svg{margin-right: 3px;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* CONTATOS v2 — Grid de tiles visuais                         */
+/* ══════════════════════════════════════════════════════════ */
+
+.ctc-grid{
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  gap: 14px !important;
+  flex-direction: initial !important;
+  padding-bottom: 20px;
+}
+
+.ctc-tile{
+  --ctc-c: var(--text2);
+  position: relative;
+  background: var(--bg2);
+  border: 1px solid var(--gb);
+  border-radius: 16px;
+  padding: 16px 16px 12px;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.3s var(--ease-out);
+  backdrop-filter: blur(14px);
+}
+.ctc-tile::before{
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ctc-c) 20%, transparent) 0%, transparent 100%);
+  pointer-events: none;
+}
+.ctc-tile:hover{
+  transform: translateY(-4px) scale(1.015);
+  border-color: color-mix(in srgb, var(--ctc-c) 40%, var(--gb2));
+  box-shadow:
+    0 16px 36px color-mix(in srgb, var(--ctc-c) 18%, rgba(0,0,0,0.2)),
+    0 1px 0 rgba(255,255,255,0.08) inset;
+}
+
+.ctc-tile-head{
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  z-index: 1;
+}
+
+.ctc-tile-av{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--ctc-c) 40%, transparent),
+    0 0 0 3px var(--bg2);
+}
+
+.ctc-tile-status{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  box-shadow: 0 0 10px currentColor;
+}
+.ctc-tile-status.status-wishlist{background: #94a3b8;}
+.ctc-tile-status.status-in_pipeline{background: #f59e0b;}
+.ctc-tile-status.status-customer{background: #10b981;}
+.ctc-tile-status.status-churned{background: #ef4444;}
+
+.ctc-tile-body{flex: 1; min-width: 0;}
+
+.ctc-tile-name{
+  font-family: var(--fd);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+
+.ctc-tile-ig{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-bottom: 3px;
+}
+.ctc-tile-ig svg{
+  width: 12px;
+  height: 12px;
+  stroke: url(#igGradient);
+  color: #e6683c;
+  -webkit-text-fill-color: initial;
+}
+.ctc-tile-ig:hover{opacity: 0.85;}
+
+.ctc-tile-sub{
+  font-size: 11px;
+  color: var(--text3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ctc-tile-foot{
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--gb);
+}
+
+.ctc-tile-badge{
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--gb2);
+  background: var(--bg3);
+  color: var(--text2);
+}
+.ctc-tile-badge.type-b2b{background: rgba(99,102,241,0.12); color: #6366f1; border-color: rgba(99,102,241,0.3);}
+.ctc-tile-badge.type-b2c{background: rgba(217,70,239,0.12); color: #d946ef; border-color: rgba(217,70,239,0.3);}
+.ctc-tile-badge.type-both{background: rgba(20,184,166,0.12); color: #14b8a6; border-color: rgba(20,184,166,0.3);}
+.ctc-tile-badge.status-wishlist{color: #94a3b8;}
+.ctc-tile-badge.status-in_pipeline{background: rgba(245,158,11,0.12); color: #f59e0b; border-color: rgba(245,158,11,0.3);}
+.ctc-tile-badge.status-customer{background: rgba(16,185,129,0.12); color: #10b981; border-color: rgba(16,185,129,0.3);}
+.ctc-tile-badge.status-churned{background: rgba(239,68,68,0.12); color: #ef4444; border-color: rgba(239,68,68,0.3);}
+
+
+/* ══════════════════════════════════════════════════════════ */
+/* KANBAN v2 — Cards com avatar + probabilidade visual         */
+/* ══════════════════════════════════════════════════════════ */
+
+.kan-card{
+  background: var(--bg2);
+  border: 1px solid var(--gb);
+  border-radius: 12px;
+  padding: 12px 14px 10px;
+  cursor: pointer;
+  transition: all 0.25s var(--ease-out);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kan-card:hover{
+  transform: translateY(-2px) scale(1.015);
+  border-color: var(--gb3);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+
+.kan-card-tag{
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  width: fit-content;
+}
+
+.kan-card-title{
+  font-family: var(--fd);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.005em;
+  line-height: 1.25;
+}
+
+.kan-card-contact{
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.kan-card-av{
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 10px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.kan-card-contact-name{
+  font-size: 11.5px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.kan-card-value-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--gb);
+  gap: 8px;
+}
+
+.kan-card-value{
+  font-family: var(--fd);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--green);
+  letter-spacing: -0.01em;
+}
+
+.kan-card-prob{
+  flex-shrink: 0;
+}
+
+/* Kanban columns — refino visual */
+.kan-col{
+  background: color-mix(in srgb, var(--bg2) 60%, transparent) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--gb) !important;
+  border-radius: 14px !important;
+  padding: 14px !important;
+  gap: 10px;
+}
+
+.kan-col-hdr{font-size: 12.5px !important; gap: 10px !important;}
+.kan-stage-dot{box-shadow: 0 0 12px currentColor;}
+.kan-stage-count{
+  background: color-mix(in srgb, var(--text) 10%, transparent) !important;
+  padding: 2px 9px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+}
+.kan-col-total{
+  font-family: var(--fd);
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+  letter-spacing: -0.01em !important;
+  margin: 0 !important;
+  opacity: 0.8;
+}
+
+.kan-cards{gap: 10px !important;}

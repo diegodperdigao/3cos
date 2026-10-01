@@ -81,35 +81,35 @@
       return;
     }
 
+    el.className = 'ctc-grid';
     el.innerHTML = list.map(c => {
       const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
-      // Hash → cor determinística do avatar
       let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
+      const avatarBg = `hsl(${hue},65%,50%)`;
       const avatar = c.avatar_url
-        ? `<img class="ctc-av" src="${c.avatar_url}" alt="">`
-        : `<span class="ctc-av" style="background:hsl(${hue},60%,45%);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${initials}</span>`;
+        ? `<img class="ctc-tile-av" src="${c.avatar_url}" alt="">`
+        : `<div class="ctc-tile-av" style="background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))">${initials}</div>`;
       const ig = c.social_links?.instagram;
+      const subLine = c.company || c.email || c.phone || '';
 
-      return `<div class="ctc-card" onclick="window._ctcOpenDetail('${c.id}')">
-        <div class="ctc-card-left">
+      return `<article class="ctc-tile" onclick="window._ctcOpenDetail('${c.id}')" style="--ctc-c:${avatarBg}">
+        <div class="ctc-tile-head">
           ${avatar}
-          <div class="ctc-card-info">
-            <div class="ctc-card-name">${_esc(c.name)}</div>
-            <div class="ctc-card-meta">
-              ${c.company ? `<span><i data-lucide="building-2"></i>${_esc(c.company)}</span>` : ''}
-              ${ig ? `<span><i data-lucide="instagram"></i>@${_esc(ig)}</span>` : ''}
-              ${c.email ? `<span><i data-lucide="mail"></i>${_esc(c.email)}</span>` : ''}
-              ${c.phone ? `<span><i data-lucide="phone"></i>${_esc(c.phone)}</span>` : ''}
-            </div>
-          </div>
+          <span class="ctc-tile-status status-${c.status}" title="${STATUS_LABEL[c.status] || c.status}"></span>
         </div>
-        <div class="ctc-card-right">
-          <span class="ctc-badge type-${c.type}">${TYPE_LABEL[c.type] || c.type}</span>
-          <span class="ctc-badge status-${c.status}">${STATUS_LABEL[c.status] || c.status}</span>
-          <i data-lucide="chevron-right" style="width:14px;height:14px;opacity:0.4"></i>
+        <div class="ctc-tile-body">
+          <div class="ctc-tile-name">${_esc(c.name)}</div>
+          ${ig ? `<a class="ctc-tile-ig" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+            <i data-lucide="instagram"></i>@${_esc(ig)}
+          </a>` : ''}
+          ${subLine ? `<div class="ctc-tile-sub">${_esc(subLine)}</div>` : '<div class="ctc-tile-sub" style="opacity:0.4">—</div>'}
         </div>
-      </div>`;
+        <div class="ctc-tile-foot">
+          <span class="ctc-tile-badge type-${c.type}">${TYPE_LABEL[c.type] || c.type}</span>
+          <span class="ctc-tile-badge status-${c.status}">${STATUS_LABEL[c.status] || c.status}</span>
+        </div>
+      </article>`;
     }).join('');
     lucide.createIcons();
   }
