@@ -52,11 +52,159 @@ window.deleteUser=(id)=>{
   if(idx<0)return;
   const name=STATE.users[idx].name;
   STATE.users.splice(idx,1);
-  logAction('Usuário excluído',name);
+  if (typeof logAction === 'function') logAction('Usuário excluído',name);
   saveToLocal();closeModal();
-  const el=document.getElementById('mod-users');if(el)bUsers(el);
-  toast('Usuário removido');
+  _rerenderUsersAnywhere();
+  toast('Usuário removido','s');
 };
+
+// Re-renderiza o módulo Usuários onde quer que esteja montado:
+// - Como aba dentro de Configurações (#st-tab-content)
+// - Como módulo standalone (#mod-users) — legado
+function _rerenderUsersAnywhere() {
+  const stTab = document.getElementById('st-tab-content');
+  if (stTab && stTab.classList.contains('st-embedded') && window._settingsTab === 'team') {
+    bUsers(stTab);
+    return;
+  }
+  const modEl = document.getElementById('mod-users');
+  if (modEl) bUsers(modEl);
+}
+
+// ══════════════════════════════════════════════════════════
+// NOVO USUÁRIO / EDITAR USUÁRIO
+// ══════════════════════════════════════════════════════════
+
+const _ALL_MODULE_IDS = ['dashboard','contacts','pipeline','tasks','settings'];
+const _MODULE_LABELS = { dashboard:'Dashboard', contacts:'Contatos', pipeline:'Pipeline', tasks:'Tarefas', settings:'Configurações' };
+
+function _userForm(u = {}) {
+  const roles = Object.entries(ROLES || {}).map(([id, r]) =>
+    `<option value="${id}" ${u.role === id ? 'selected' : ''}>${r.label} — ${r.desc}</option>`
+  ).join('');
+  const mods = _ALL_MODULE_IDS.map(mid => {
+    const checked = (u.modules || _ALL_MODULE_IDS).includes(mid);
+    return `<label class="st-switch-row" style="padding:7px 10px;margin:0;gap:10px">
+      <input type="checkbox" value="${mid}" ${checked ? 'checked' : ''} class="user-mod-check">
+      <span style="font-size:12.5px;color:var(--text);font-weight:500">${_MODULE_LABELS[mid] || mid}</span>
+    </label>`;
+  }).join('');
+
+  return `
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="ff"><label>Nome *</label><input id="user-f-name" class="fi" type="text" value="${_escH(u.name || '')}" placeholder="Nome completo"></div>
+        <div class="ff"><label>Email *</label><input id="user-f-email" class="fi" type="email" value="${_escH(u.email || '')}" placeholder="email@3c.gg" ${u.id ? 'readonly' : ''}></div>
+      </div>
+      <div class="form-row">
+        <div class="ff"><label>Cargo</label><input id="user-f-title" class="fi" type="text" value="${_escH(u.title || '')}" placeholder="Ex: Head de BD, Analista"></div>
+        <div class="ff"><label>Role (permissão)</label>
+          <select id="user-f-role" class="fi" onchange="window._userRoleChanged(this.value)">${roles}</select>
+        </div>
+      </div>
+      <div class="ff"><label>Avatar URL (opcional)</label>
+        <input id="user-f-avatar" class="fi" type="url" value="${_escH(u.avatar || '')}" placeholder="https://...">
+      </div>
+      <div class="ff"><label>Status</label>
+        <select id="user-f-status" class="fi">
+          <option value="ativo" ${(!u.status || u.status === 'ativo') ? 'selected' : ''}>Ativo</option>
+          <option value="inativo" ${u.status === 'inativo' ? 'selected' : ''}>Inativo</option>
+        </select>
+      </div>
+      <div class="ff"><label>Módulos permitidos</label>
+        <div class="user-mod-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:4px">
+          ${mods}
+        </div>
+        <div style="font-size:10.5px;color:var(--text3);margin-top:6px">
+          Admin ignora essa seleção e tem acesso total. Para outras roles, só os marcados aparecem no hub.
+        </div>
+      </div>
+    </div>`;
+}
+
+function _userFormRead(existingId = null) {
+  const get = (id) => document.getElementById(id)?.value || '';
+  const checked = [...document.querySelectorAll('.user-mod-check:checked')].map(c => c.value);
+  return {
+    id: existingId || ('u_' + Date.now().toString(36)),
+    name: get('user-f-name').trim(),
+    email: get('user-f-email').trim().toLowerCase(),
+    title: get('user-f-title').trim() || null,
+    role: get('user-f-role'),
+    status: get('user-f-status'),
+    avatar: get('user-f-avatar').trim() || '',
+    modules: checked.length ? checked : _ALL_MODULE_IDS,
+    createdAt: new Date().toISOString().split('T')[0],
+  };
+}
+
+// Admin ignora seleção; marca tudo ao escolher admin
+window._userRoleChanged = (role) => {
+  if (role === 'admin') {
+    document.querySelectorAll('.user-mod-check').forEach(c => c.checked = true);
+  }
+};
+
+window.openNewUser = () => {
+  openModal('Novo usuário', _userForm(), `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="window._userSaveNew()"><i data-lucide="user-plus"></i> Criar usuário</button>
+  `);
+  lucide.createIcons();
+};
+
+let _userSaving = false;
+window._userSaveNew = async () => {
+  if (_userSaving) return;
+  const payload = _userFormRead();
+  if (!payload.name) { toast('Nome é obrigatório','e'); return; }
+  if (!payload.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) { toast('Email inválido','e'); return; }
+  if ((STATE.users || []).some(u => u.email === payload.email)) { toast('Já existe um usuário com esse email','e'); return; }
+  _userSaving = true;
+  try {
+    STATE.users = STATE.users || [];
+    STATE.users.push(payload);
+    if (typeof logAction === 'function') logAction('Usuário criado', payload.name);
+    saveToLocal();
+    closeModal();
+    _rerenderUsersAnywhere();
+    toast(`Usuário "${payload.name}" criado`,'s');
+  } catch (e) {
+    toast('Erro ao criar: ' + (e.message || 'desconhecido'),'e');
+  } finally {
+    _userSaving = false;
+  }
+};
+
+window.openEditUser = (id) => {
+  const u = (STATE.users || []).find(x => x.id === id);
+  if (!u) return;
+  openModal('Editar ' + u.name, _userForm(u), `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-theme" onclick="window._userSaveEdit('${id}')"><i data-lucide="check"></i> Salvar</button>
+  `);
+  lucide.createIcons();
+};
+
+window._userSaveEdit = (id) => {
+  const idx = (STATE.users || []).findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const updated = _userFormRead(id);
+  // Mantém email original (readonly no edit) + createdAt
+  updated.email = STATE.users[idx].email;
+  updated.createdAt = STATE.users[idx].createdAt;
+  if (!updated.name) { toast('Nome é obrigatório','e'); return; }
+  STATE.users[idx] = updated;
+  if (typeof logAction === 'function') logAction('Usuário atualizado', updated.name);
+  saveToLocal();
+  closeModal();
+  _rerenderUsersAnywhere();
+  toast('Usuário atualizado','s');
+};
+
+function _escH(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 // ══════════════════════════════════════════════════════════
 // BACKUP & NUVEM (módulo separado)
