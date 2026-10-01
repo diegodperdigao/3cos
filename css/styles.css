@@ -8032,3 +8032,27 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
 /* btn-danger com :disabled */
 .btn-danger:disabled{opacity: 0.4; cursor: not-allowed;}
+
+/* Profile badge (influencer/tipster/streamer) */
+.ctc-tile-badge.profile-badge{
+  --prof-c: var(--text2);
+  background: color-mix(in srgb, var(--prof-c) 14%, var(--bg3));
+  color: var(--prof-c);
+  border-color: color-mix(in srgb, var(--prof-c) 35%, transparent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Pills coloridas no filtro de perfil */
+.pill[data-f="profile"]{--pill-c: var(--text2);}
+.pill[data-f="profile"]:not(.on):hover{
+  color: var(--pill-c);
+  border-color: color-mix(in srgb, var(--pill-c) 40%, var(--gb2));
+}
+.pill[data-f="profile"].on{
+  background: color-mix(in srgb, var(--pill-c) 15%, var(--bg3));
+  color: var(--pill-c);
+  border-color: color-mix(in srgb, var(--pill-c) 40%, var(--gb2));
+}
+.pill[data-f="profile"] svg{margin-right: 2px;}

@@ -8,13 +8,21 @@
 
 (function () {
   // Filtros ativos (compartilhados pelo módulo)
-  let F = { search: '', status: null, type: null, tag: null, product: null };
+  let F = { search: '', status: null, type: null, profile: null, tag: null, product: null };
 
   // Modo seleção múltipla (pra excluir em lote)
   let _selectMode = false;
   const _selected = new Set();
 
   const STATUS_LABEL = { wishlist: 'Wishlist', in_pipeline: 'No pipeline', customer: 'Cliente', churned: 'Perdido' };
+
+  // Perfis padrão (user pode expandir no futuro)
+  const PROFILES = [
+    { id: 'influencer', label: 'Influencer', icon: 'star',       color: '#ec4899' },
+    { id: 'tipster',    label: 'Tipster',    icon: 'trending-up', color: '#10b981' },
+    { id: 'streamer',   label: 'Streamer',   icon: 'video',      color: '#a855f7' },
+  ];
+  const PROFILE_BY_ID = Object.fromEntries(PROFILES.map(p => [p.id, p]));
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
   const SOURCE_LABEL = { inbound: 'Inbound', outbound: 'Outbound', referral: 'Indicação', event: 'Evento', social: 'Redes sociais', other: 'Outro' };
 
@@ -35,6 +43,14 @@
         </div>
 
         <div class="ctc-filters" id="ctc-filters-wrap">
+          <div class="ctc-filter-group">
+            <span class="ctc-filter-lbl">Perfil</span>
+            <button class="pill on" data-f="profile" data-v="" onclick="window._ctcFilter(this)">Todos</button>
+            ${PROFILES.map(p => `<button class="pill" data-f="profile" data-v="${p.id}" onclick="window._ctcFilter(this)" style="--pill-c:${p.color}">
+              <i data-lucide="${p.icon}" style="width:11px;height:11px;vertical-align:-1px"></i> ${p.label}
+            </button>`).join('')}
+            <button class="pill" data-f="profile" data-v="__none__" onclick="window._ctcFilter(this)">Sem perfil</button>
+          </div>
           <div class="ctc-filter-group">
             <span class="ctc-filter-lbl">Status</span>
             <button class="pill on" data-f="status" data-v="" onclick="window._ctcFilter(this)">Todos</button>
@@ -92,9 +108,10 @@
       let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
       const avatarBg = `hsl(${hue},65%,50%)`;
-      const ig = c.social_links?.instagram;
+      const ig = _normalizeIgHandle(c.social_links?.instagram);
       // Avatar: prioridade = avatar_url manual > foto do Instagram (unavatar.io) > iniciais
-      const avatar = _avatarHTML(c, hue, initials);
+      const avatar = _avatarHTML(c, hue, initials, ig);
+      const prof = PROFILE_BY_ID[c.profile];
       const subLine = c.company || c.email || c.phone || '';
       const checked = _selected.has(c.id);
       const onclickAttr = _selectMode
@@ -117,7 +134,9 @@
           ${subLine ? `<div class="ctc-tile-sub">${_esc(subLine)}</div>` : '<div class="ctc-tile-sub" style="opacity:0.4">—</div>'}
         </div>
         <div class="ctc-tile-foot">
-          <span class="ctc-tile-badge type-${c.type}">${TYPE_LABEL[c.type] || c.type}</span>
+          ${prof ? `<span class="ctc-tile-badge profile-badge" style="--prof-c:${prof.color}">
+            <i data-lucide="${prof.icon}" style="width:9px;height:9px"></i>${prof.label}
+          </span>` : ''}
           <span class="ctc-tile-badge status-${c.status}">${STATUS_LABEL[c.status] || c.status}</span>
         </div>
       </article>`;
@@ -180,6 +199,8 @@
     let list = STATE.crm.contacts || [];
     if (F.status) list = list.filter(c => c.status === F.status);
     if (F.type) list = list.filter(c => c.type === F.type);
+    if (F.profile === '__none__') list = list.filter(c => !c.profile);
+    else if (F.profile) list = list.filter(c => c.profile === F.profile);
     if (F.tag) {
       // TODO: filtrar por tag via contact_tags (precisa query extra ou join)
       // Por ora, mostra todos — tag filter é visual até implementar o join
@@ -245,6 +266,12 @@
           </div>
         </div>
         <div class="form-row">
+          <div class="ff"><label>Perfil</label>
+            <select id="ctc-f-profile" class="fi">
+              <option value="">—</option>
+              ${PROFILES.map(p => `<option value="${p.id}" ${c.profile === p.id ? 'selected' : ''}>${p.label}</option>`).join('')}
+            </select>
+          </div>
           <div class="ff"><label>Tipo</label>
             <select id="ctc-f-type" class="fi">
               <option value="b2c" ${c.type === 'b2c' ? 'selected' : ''}>B2C (Pessoa física/Influencer)</option>
@@ -252,14 +279,14 @@
               <option value="both" ${c.type === 'both' ? 'selected' : ''}>Ambos</option>
             </select>
           </div>
-          <div class="ff"><label>Status</label>
-            <select id="ctc-f-status" class="fi">
-              <option value="wishlist" ${(!c.status || c.status === 'wishlist') ? 'selected' : ''}>Wishlist</option>
-              <option value="in_pipeline" ${c.status === 'in_pipeline' ? 'selected' : ''}>No pipeline</option>
-              <option value="customer" ${c.status === 'customer' ? 'selected' : ''}>Cliente</option>
-              <option value="churned" ${c.status === 'churned' ? 'selected' : ''}>Perdido</option>
-            </select>
-          </div>
+        </div>
+        <div class="ff"><label>Status</label>
+          <select id="ctc-f-status" class="fi">
+            <option value="wishlist" ${(!c.status || c.status === 'wishlist') ? 'selected' : ''}>Wishlist</option>
+            <option value="in_pipeline" ${c.status === 'in_pipeline' ? 'selected' : ''}>No pipeline</option>
+            <option value="customer" ${c.status === 'customer' ? 'selected' : ''}>Cliente</option>
+            <option value="churned" ${c.status === 'churned' ? 'selected' : ''}>Perdido</option>
+          </select>
         </div>
         <div class="ff"><label>Origem</label>
           <select id="ctc-f-source" class="fi">
@@ -303,6 +330,7 @@
       company: get('ctc-f-company').trim() || null,
       social_links: ig ? { instagram: ig } : {},
       type: get('ctc-f-type'),
+      profile: get('ctc-f-profile') || null,
       status: get('ctc-f-status'),
       source: get('ctc-f-source') || null,
       notes: get('ctc-f-notes').trim() || null,
@@ -329,11 +357,17 @@
   window._ctcOpenDetail = (id) => {
     const c = CRM.contactById(id);
     if (!c) return;
-    const ig = c.social_links?.instagram;
+    const ig = _normalizeIgHandle(c.social_links?.instagram);
+    const prof = PROFILE_BY_ID[c.profile];
 
     const body = `
       <div class="ctc-detail-head">
-        <div><strong style="font-size:18px">${_esc(c.name)}</strong></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <strong style="font-size:18px">${_esc(c.name)}</strong>
+          ${prof ? `<span class="ctc-tile-badge profile-badge" style="--prof-c:${prof.color}">
+            <i data-lucide="${prof.icon}" style="width:10px;height:10px"></i>${prof.label}
+          </span>` : ''}
+        </div>
         <div style="color:var(--text2);font-size:12px;margin-top:4px">
           ${c.company || '—'} · ${TYPE_LABEL[c.type] || c.type} · ${STATUS_LABEL[c.status] || c.status}
         </div>
@@ -804,13 +838,13 @@
   }
 
   // Monta HTML do avatar: avatar_url > foto do Instagram (unavatar.io) > iniciais em gradiente
-  function _avatarHTML(c, hue, initials) {
+  // Aceita ig já normalizado (handle puro) como 4º arg; se não vier, extrai de c.
+  function _avatarHTML(c, hue, initials, igArg) {
     if (c.avatar_url) {
       return `<img class="ctc-tile-av" src="${_esc(c.avatar_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ctc-tile-av',innerHTML:'${initials}',style:'background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))'}))">`;
     }
-    const ig = c.social_links?.instagram;
+    const ig = igArg !== undefined ? igArg : _normalizeIgHandle(c.social_links?.instagram);
     if (ig) {
-      // unavatar.io retorna a foto do perfil IG. Em caso de erro, cai no gradiente de iniciais via onerror.
       const url = `https://unavatar.io/instagram/${encodeURIComponent(ig)}?fallback=false`;
       return `<img class="ctc-tile-av" src="${url}" alt="@${_esc(ig)}"
         onerror="const d=document.createElement('div');d.className='ctc-tile-av';d.textContent='${initials}';d.style.background='linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))';this.replaceWith(d)">`;
