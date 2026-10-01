@@ -18,9 +18,10 @@
 
   // Perfis padrão (user pode expandir no futuro)
   const PROFILES = [
-    { id: 'influencer', label: 'Influencer', icon: 'star',       color: '#ec4899' },
+    { id: 'influencer', label: 'Influencer', icon: 'star',        color: '#ec4899' },
     { id: 'tipster',    label: 'Tipster',    icon: 'trending-up', color: '#10b981' },
-    { id: 'streamer',   label: 'Streamer',   icon: 'video',      color: '#a855f7' },
+    { id: 'streamer',   label: 'Streamer',   icon: 'video',       color: '#a855f7' },
+    { id: 'agencia',    label: 'Agência',    icon: 'building-2',  color: '#6366f1' },
   ];
   const PROFILE_BY_ID = Object.fromEntries(PROFILES.map(p => [p.id, p]));
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
