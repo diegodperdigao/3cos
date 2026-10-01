@@ -884,7 +884,7 @@
     return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
-  // Monta HTML do avatar: avatar_url > foto do Instagram (unavatar.io) > iniciais em gradiente
+  // Monta HTML do avatar: avatar_url > foto IG (nosso endpoint /api/ig-avatar) > iniciais
   // Aceita ig já normalizado (handle puro) como 4º arg; se não vier, extrai de c.
   function _avatarHTML(c, hue, initials, igArg) {
     if (c.avatar_url) {
@@ -892,8 +892,10 @@
     }
     const ig = igArg !== undefined ? igArg : _normalizeIgHandle(c.social_links?.instagram);
     if (ig) {
-      const url = `https://unavatar.io/instagram/${encodeURIComponent(ig)}?fallback=false`;
-      return `<img class="ctc-tile-av" src="${url}" alt="@${_esc(ig)}"
+      // Usa nosso endpoint /api/ig-avatar que scrapeia a página do IG server-side
+      // e cacheia por 12h. Em caso de falha, cai nas iniciais via onerror.
+      const url = `/api/ig-avatar?handle=${encodeURIComponent(ig)}`;
+      return `<img class="ctc-tile-av" src="${url}" alt="@${_esc(ig)}" loading="lazy"
         onerror="const d=document.createElement('div');d.className='ctc-tile-av';d.textContent='${initials}';d.style.background='linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))';this.replaceWith(d)">`;
     }
     return `<div class="ctc-tile-av" style="background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))">${initials}</div>`;

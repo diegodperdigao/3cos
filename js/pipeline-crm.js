@@ -207,8 +207,8 @@
         avatarHTML = `<img class="kan-card-av" src="${contact.avatar_url}" alt=""
           onerror="const d=document.createElement('div');d.className='kan-card-av';d.textContent='${initials}';d.style.background='${fallback}';this.replaceWith(d)">`;
       } else if (ig) {
-        const url = `https://unavatar.io/instagram/${encodeURIComponent(ig)}?fallback=false`;
-        avatarHTML = `<img class="kan-card-av" src="${url}" alt=""
+        const url = `/api/ig-avatar?handle=${encodeURIComponent(ig)}`;
+        avatarHTML = `<img class="kan-card-av" src="${url}" alt="" loading="lazy"
           onerror="const d=document.createElement('div');d.className='kan-card-av';d.textContent='${initials}';d.style.background='${fallback}';this.replaceWith(d)">`;
       } else {
         avatarHTML = `<div class="kan-card-av" style="background:${fallback}">${initials}</div>`;
