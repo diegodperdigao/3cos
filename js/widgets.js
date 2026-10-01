@@ -15,17 +15,20 @@
 // ══════════════════════════════════════════════════════════
 
 const HUB_WIDGETS = [
+  { id: 'revenue',         name: 'Receita',           icon: 'banknote',    desc: 'Receita do mês + delta vs anterior com sparkline 8 semanas' },
   { id: 'focus_today',     name: 'Foco de hoje',      icon: 'target',      desc: 'Tarefas urgentes + contatos quentes + cards parados' },
   { id: 'hot_pipeline',    name: 'Pipeline quente',   icon: 'flame',       desc: 'Top negociações por probabilidade × valor' },
-  { id: 'momentum',        name: 'Momentum',          icon: 'trending-up', desc: 'Velocidade de criação de deals por semana' },
   { id: 'health_check',    name: 'Saúde do pipeline', icon: 'activity',    desc: 'Distribuição de cards por etapa (B2B + B2C)' },
+  { id: 'conversion',      name: 'Taxa de conversão', icon: 'percent',     desc: 'Prospects → clientes (90 dias)' },
+  { id: 'new_prospects',   name: 'Novos prospects',   icon: 'user-plus',   desc: 'Contatos adicionados nos últimos 7 dias por origem' },
+  { id: 'momentum',        name: 'Momentum',          icon: 'trending-up', desc: 'Velocidade de criação de deals por semana' },
   { id: 'wishlist_pulse',  name: 'Pulso da wishlist', icon: 'users',       desc: 'Contatos agrupados por temperatura' },
   { id: 'recent_activity', name: 'Atividade recente', icon: 'history',     desc: 'Últimas ações no CRM' },
   { id: 'notifications',   name: 'Notificações',      icon: 'bell',        desc: 'Alertas do sistema' },
 ];
 window.HUB_WIDGETS = HUB_WIDGETS;
 
-const DEFAULT_HUB_WIDGETS = ['focus_today', 'hot_pipeline', 'health_check', 'momentum'];
+const DEFAULT_HUB_WIDGETS = ['revenue', 'focus_today', 'hot_pipeline', 'health_check'];
 
 function _activeWidgets() {
   const saved = STATE.settings?.hubWidgets;
@@ -336,16 +339,148 @@ function _wNotifications() {
     'default', 'var(--amber)');
 }
 
+// ── 8. REVENUE (big number + delta + sparkline semanal) ──
+function _wRevenue() {
+  const cards = STATE.crm?.cards || [];
+  const wonCards = cards.filter(c => {
+    const s = (STATE.crm?.stages || []).find(x => x.id === c.stage_id);
+    const name = (s?.name || '').toLowerCase();
+    return name.includes('ganho') || name === 'ativo' || (name.includes('fechado') && !name.includes('perd'));
+  });
+
+  // Receita do mês vs mês anterior
+  const now = new Date();
+  const curMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+  const curRev = wonCards.filter(c => (c.updated_at || '').startsWith(curMonthKey)).reduce((s, c) => s + (Number(c.value) || 0), 0);
+  const prevRev = wonCards.filter(c => (c.updated_at || '').startsWith(prevMonthKey)).reduce((s, c) => s + (Number(c.value) || 0), 0);
+  const delta = prevRev > 0 ? Math.round((curRev - prevRev) / prevRev * 100) : (curRev > 0 ? 100 : 0);
+  const positive = delta >= 0;
+
+  if (!wonCards.length) {
+    return _shell('revenue', 'Receita', 'banknote',
+      `<div class="hw2-empty"><p>Sem deals fechados ainda.</p></div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
+      'default', 'var(--green)');
+  }
+
+  // Sparkline das últimas 8 semanas (receita por semana)
+  const week = 7 * 86400000;
+  const buckets = Array(8).fill(0);
+  wonCards.forEach(c => {
+    const diff = Date.now() - new Date(c.updated_at).getTime();
+    const idx = 7 - Math.floor(diff / week);
+    if (idx >= 0 && idx < 8) buckets[idx] += (Number(c.value) || 0);
+  });
+  const max = Math.max(...buckets, 1);
+  const w = 240, h = 42;
+  const stepX = w / (buckets.length - 1);
+  const points = buckets.map((v, i) => `${i * stepX},${h - (v / max) * h * 0.9 - 3}`).join(' ');
+  const area = `0,${h} ${points} ${w},${h}`;
+
+  return _shell('revenue', 'Receita', 'banknote',
+    `<div class="hw2-big-row">
+      <div class="hw2-big-val">${_fmt(curRev)}</div>
+      <div class="hw2-big-delta ${positive ? 'pos' : 'neg'}">
+        <i data-lucide="${positive ? 'arrow-up-right' : 'arrow-down-right'}"></i>
+        ${positive ? '+' : ''}${delta}%
+      </div>
+    </div>
+    <div class="hw2-big-sub">neste mês · vs ${_fmt(prevRev)} anterior</div>
+    <svg class="hw2-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="rev-grad" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#10b981" stop-opacity="0.4"/>
+          <stop offset="1" stop-color="#10b981" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${area}" fill="url(#rev-grad)"/>
+      <polyline points="${points}" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
+    'default', 'var(--green)');
+}
+
+// ── 9. CONVERSION RATE ────────────────────────────────────
+function _wConversion() {
+  const contacts = STATE.crm?.contacts || [];
+  const total = contacts.filter(c => c.status !== 'churned').length;
+  const customers = contacts.filter(c => c.status === 'customer').length;
+  const pct = total > 0 ? Math.round(customers / total * 100) : 0;
+
+  if (!total) {
+    return _shell('conversion', 'Taxa de conversão', 'percent',
+      `<div class="hw2-empty"><p>Sem contatos ainda.</p></div>`,
+      null, 'default', 'var(--amber)');
+  }
+
+  const circumference = 2 * Math.PI * 36;
+  const strokeDasharray = `${(pct / 100) * circumference} ${circumference}`;
+
+  return _shell('conversion', 'Taxa de conversão', 'percent',
+    `<div style="display:flex;align-items:center;gap:14px">
+      <svg viewBox="0 0 96 96" style="width:84px;height:84px;flex-shrink:0;transform:rotate(-90deg)">
+        <circle cx="48" cy="48" r="36" fill="none" stroke="var(--bg3)" stroke-width="8"/>
+        <circle cx="48" cy="48" r="36" fill="none" stroke="var(--amber)" stroke-width="8"
+                stroke-dasharray="${strokeDasharray}" stroke-linecap="round"/>
+      </svg>
+      <div style="flex:1">
+        <div class="hw2-big-val">${pct}%</div>
+        <div class="hw2-big-sub">${customers} de ${total} contatos</div>
+      </div>
+    </div>`,
+    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('contacts')">Abrir contatos →</button>`,
+    'default', 'var(--amber)');
+}
+
+// ── 10. NEW PROSPECTS (últimos 7 dias por fonte) ─────────
+function _wNewProspects() {
+  const contacts = STATE.crm?.contacts || [];
+  const now = Date.now();
+  const recent = contacts.filter(c => (now - new Date(c.created_at).getTime()) < 7 * 86400000);
+
+  if (!recent.length) {
+    return _shell('new_prospects', 'Novos prospects', 'user-plus',
+      `<div class="hw2-empty"><p>Nenhum contato novo esta semana.</p></div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('contacts')">Adicionar →</button>`,
+      'default', 'var(--blue)');
+  }
+
+  const sources = {};
+  recent.forEach(c => { const s = c.source || 'other'; sources[s] = (sources[s] || 0) + 1; });
+  const labels = { inbound: 'Inbound', outbound: 'Outbound', referral: 'Indicação', event: 'Evento', social: 'Redes', other: 'Outro' };
+  const sorted = Object.entries(sources).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const max = Math.max(...sorted.map(([, v]) => v), 1);
+
+  const items = sorted.map(([k, n]) => {
+    const pct = (n / max) * 100;
+    return `<div class="hw2-pulse-row">
+      <span class="hw2-pulse-label">${labels[k] || k}</span>
+      <span class="hw2-pulse-bar"><span class="hw2-pulse-fill" style="width:${pct}%;background:var(--blue)"></span></span>
+      <span class="hw2-pulse-count">${n}</span>
+    </div>`;
+  }).join('');
+
+  return _shell('new_prospects', 'Novos prospects', 'user-plus',
+    `<div class="hw2-big-row"><div class="hw2-big-val">${recent.length}</div><div class="hw2-big-sub-inline">últimos 7 dias</div></div>
+     <div class="hw2-pulse">${items}</div>`,
+    null, 'default', 'var(--blue)');
+}
+
 // ── MOUNT ──────────────────────────────────────────────────
 window.buildHubWidgets = () => {
   const wrap = document.getElementById('hub-widget-strip');
   if (!wrap) return;
   const active = _activeWidgets().slice(0, 4);
   const renderMap = {
+    revenue: _wRevenue,
     focus_today: _wFocusToday,
     hot_pipeline: _wHotPipeline,
-    momentum: _wMomentum,
     health_check: _wHealthCheck,
+    conversion: _wConversion,
+    new_prospects: _wNewProspects,
+    momentum: _wMomentum,
     wishlist_pulse: _wWishlistPulse,
     recent_activity: _wRecentActivity,
     notifications: _wNotifications,
