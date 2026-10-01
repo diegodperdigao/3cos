@@ -195,20 +195,15 @@
     const prob = Number(card.probability) || 0;
     const probColor = prob >= 70 ? '#10b981' : prob >= 40 ? '#f59e0b' : '#94a3b8';
 
-    // Avatar do contato: avatar_url > foto do Instagram (unavatar.io) > iniciais
+    // Avatar do contato: avatar_url manual > iniciais em gradiente
     let avatarHTML = '';
     if (contact) {
       let h = 0; for (let i = 0; i < (contact.name || '').length; i++) h = (h * 31 + contact.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
       const initials = (contact.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
-      const ig = contact.social_links?.instagram;
       const fallback = `linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))`;
       if (contact.avatar_url) {
         avatarHTML = `<img class="kan-card-av" src="${contact.avatar_url}" alt=""
-          onerror="const d=document.createElement('div');d.className='kan-card-av';d.textContent='${initials}';d.style.background='${fallback}';this.replaceWith(d)">`;
-      } else if (ig) {
-        const url = `/api/ig-avatar?handle=${encodeURIComponent(ig)}`;
-        avatarHTML = `<img class="kan-card-av" src="${url}" alt="" loading="lazy"
           onerror="const d=document.createElement('div');d.className='kan-card-av';d.textContent='${initials}';d.style.background='${fallback}';this.replaceWith(d)">`;
       } else {
         avatarHTML = `<div class="kan-card-av" style="background:${fallback}">${initials}</div>`;
