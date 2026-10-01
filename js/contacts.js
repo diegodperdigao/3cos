@@ -8,7 +8,7 @@
 
 (function () {
   // Filtros ativos (compartilhados pelo módulo)
-  let F = { search: '', status: null, type: null, profile: null, tag: null, product: null };
+  let F = { search: '', status: null, type: null, profile: null, tier: null, tag: null, product: null };
 
   // Modo seleção múltipla (pra excluir em lote)
   let _selectMode = false;
@@ -24,6 +24,14 @@
     { id: 'agencia',    label: 'Agência',    icon: 'building-2',  color: '#6366f1' },
   ];
   const PROFILE_BY_ID = Object.fromEntries(PROFILES.map(p => [p.id, p]));
+
+  // Tiers de prioridade (1 = top, 3 = base)
+  const TIERS = [
+    { id: 1, label: 'Tier 1', color: '#ec4899', desc: 'Top prioridade' },
+    { id: 2, label: 'Tier 2', color: '#f59e0b', desc: 'Média prioridade' },
+    { id: 3, label: 'Tier 3', color: '#64748b', desc: 'Base' },
+  ];
+  const TIER_BY_ID = Object.fromEntries(TIERS.map(t => [t.id, t]));
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
   const SOURCE_LABEL = { inbound: 'Inbound', outbound: 'Outbound', referral: 'Indicação', event: 'Evento', social: 'Redes sociais', other: 'Outro' };
 
@@ -52,6 +60,17 @@
             </button>
             ${PROFILES.map(p => `<button class="ctc-fb-chip" data-v="${p.id}" onclick="window._ctcFilter(this)" style="--chip-c:${p.color}">
               <i data-lucide="${p.icon}" style="width:11px;height:11px"></i>${p.label}
+            </button>`).join('')}
+          </div>
+
+          <div class="ctc-fb-divider"></div>
+
+          <div class="ctc-fb-seg" data-f="tier">
+            <button class="ctc-fb-chip on" data-v="" onclick="window._ctcFilter(this)">
+              <i data-lucide="award" style="width:11px;height:11px"></i> Tier: todos
+            </button>
+            ${TIERS.map(t => `<button class="ctc-fb-chip" data-v="${t.id}" onclick="window._ctcFilter(this)" style="--chip-c:${t.color}">
+              T${t.id}
             </button>`).join('')}
           </div>
 
@@ -139,9 +158,10 @@
       const hue = Math.abs(h) % 360;
       const avatarBg = `hsl(${hue},65%,50%)`;
       const ig = _normalizeIgHandle(c.social_links?.instagram);
-      // Avatar: prioridade = avatar_url manual > foto do Instagram (unavatar.io) > iniciais
-      const avatar = _avatarHTML(c, hue, initials, ig);
+      // Avatar: prioridade = avatar_url manual > iniciais
+      const avatar = _avatarHTML(c, hue, initials);
       const prof = PROFILE_BY_ID[c.profile];
+      const tier = TIER_BY_ID[c.tier];
       const subLine = c.company || c.email || c.phone || '';
       const checked = _selected.has(c.id);
       const onclickAttr = _selectMode
@@ -152,6 +172,7 @@
         ${_selectMode ? `<div class="ctc-tile-check ${checked ? 'on' : ''}">
           ${checked ? '<i data-lucide="check"></i>' : ''}
         </div>` : ''}
+        ${tier ? `<span class="ctc-tile-tier" style="--tier-c:${tier.color}" title="${tier.label} — ${tier.desc}">T${tier.id}</span>` : ''}
         <div class="ctc-tile-head">
           ${avatar}
           <span class="ctc-tile-status status-${c.status}" title="${STATUS_LABEL[c.status] || c.status}"></span>
@@ -226,7 +247,7 @@
   };
 
   window._ctcClearFilters = () => {
-    F.status = null; F.type = null; F.profile = null; F.tag = null; F.product = null;
+    F.status = null; F.type = null; F.profile = null; F.tier = null; F.tag = null; F.product = null;
     document.querySelectorAll('.ctc-fb-seg').forEach(seg => {
       const chips = seg.querySelectorAll('.ctc-fb-chip');
       chips.forEach(c => c.classList.remove('on'));
@@ -239,7 +260,7 @@
   function _updateClearBtn() {
     const btn = document.getElementById('ctc-fb-clear');
     if (!btn) return;
-    const anyActive = F.status || F.type || F.profile || F.tag || F.product;
+    const anyActive = F.status || F.type || F.profile || F.tier || F.tag || F.product;
     btn.style.display = anyActive ? 'inline-flex' : 'none';
   }
 
@@ -250,6 +271,7 @@
     if (F.type) list = list.filter(c => c.type === F.type);
     if (F.profile === '__none__') list = list.filter(c => !c.profile);
     else if (F.profile) list = list.filter(c => c.profile === F.profile);
+    if (F.tier) list = list.filter(c => c.tier === Number(F.tier));
     if (F.tag) {
       // TODO: filtrar por tag via contact_tags (precisa query extra ou join)
       // Por ora, mostra todos — tag filter é visual até implementar o join
@@ -340,13 +362,19 @@
               ${PROFILES.map(p => `<option value="${p.id}" ${c.profile === p.id ? 'selected' : ''}>${p.label}</option>`).join('')}
             </select>
           </div>
-          <div class="ff"><label>Tipo</label>
-            <select id="ctc-f-type" class="fi">
-              <option value="b2c" ${c.type === 'b2c' ? 'selected' : ''}>B2C (Pessoa física/Influencer)</option>
-              <option value="b2b" ${c.type === 'b2b' ? 'selected' : ''}>B2B (Empresa)</option>
-              <option value="both" ${c.type === 'both' ? 'selected' : ''}>Ambos</option>
+          <div class="ff"><label>Tier</label>
+            <select id="ctc-f-tier" class="fi">
+              <option value="">—</option>
+              ${TIERS.map(t => `<option value="${t.id}" ${Number(c.tier) === t.id ? 'selected' : ''}>${t.label} — ${t.desc}</option>`).join('')}
             </select>
           </div>
+        </div>
+        <div class="ff"><label>Tipo</label>
+          <select id="ctc-f-type" class="fi">
+            <option value="b2c" ${c.type === 'b2c' ? 'selected' : ''}>B2C (Pessoa física/Influencer)</option>
+            <option value="b2b" ${c.type === 'b2b' ? 'selected' : ''}>B2B (Empresa)</option>
+            <option value="both" ${c.type === 'both' ? 'selected' : ''}>Ambos</option>
+          </select>
         </div>
         <div class="ff"><label>Status</label>
           <select id="ctc-f-status" class="fi">
@@ -400,6 +428,7 @@
       social_links: ig ? { instagram: ig } : {},
       type: get('ctc-f-type'),
       profile: get('ctc-f-profile') || null,
+      tier: get('ctc-f-tier') ? Number(get('ctc-f-tier')) : null,
       status: get('ctc-f-status'),
       source: get('ctc-f-source') || null,
       notes: get('ctc-f-notes').trim() || null,
@@ -666,14 +695,23 @@
 
       <div class="ctc-import-formats">
         <div class="ctc-import-format">
-          <div class="ctc-import-format-k">Formato esperado</div>
-          <code>João Silva, @joaosilva<br>Maria Santos, @mariafit<br>Pedro Costa, @pedro.oficial</code>
+          <div class="ctc-import-format-k">Simples (nome + insta)</div>
+          <code>João Silva, @joaosilva<br>Maria Santos, @mariafit</code>
+        </div>
+        <div class="ctc-import-format">
+          <div class="ctc-import-format-k">Com Tier</div>
+          <code>João Silva, @joaosilva, 1<br>Maria, @maria, 2<br>Pedro, @pedro, 3</code>
+        </div>
+        <div class="ctc-import-format">
+          <div class="ctc-import-format-k">CSV com cabeçalho</div>
+          <code>Nome, Instagram, Tier<br>João, @joao, 1<br>Maria, @maria, 2</code>
         </div>
       </div>
 
       <div style="font-size:11px;color:var(--text3);margin:14px 0 8px;line-height:1.5">
         Separador: <strong>vírgula</strong>, <strong>ponto-e-vírgula</strong> ou <strong>tab</strong>.
-        Se o contato não tiver Instagram, pode colar só o nome.
+        Colunas aceitas no cabeçalho: <strong>nome, instagram, tier, email, telefone, empresa, perfil, obs</strong>.
+        Tier aceita 1-5. Links <code>https://instagram.com/user?stkn=...</code> são automaticamente normalizados.
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -755,47 +793,114 @@
     return { type: 'company', value: v };
   }
 
-  // Parse flexível: detecta separador E auto-mapeia colunas pelo conteúdo
+  // Detecta separador na linha
+  function _detectSep(line) {
+    if (line.includes('\t')) return '\t';
+    if (line.includes(';')) return ';';
+    if (line.includes(',')) return ',';
+    return null;
+  }
+
+  // Mapeia nomes de coluna comuns → campos do nosso modelo
+  function _mapHeader(header) {
+    const h = header.toLowerCase().trim();
+    if (/^(nome|name|tipster|contato|contact)\b/i.test(h) || h.includes(' nome')) return 'name';
+    if (/instagram|insta|@|ig|handle/i.test(h)) return 'instagram';
+    if (/^(e[\s-]?mail)$/i.test(h) || h === 'email') return 'email';
+    if (/telefone|celular|phone|whatsapp|wpp|tel/i.test(h)) return 'phone';
+    if (/empresa|company|org/i.test(h)) return 'company';
+    if (/tier|nivel|level|prioridade/i.test(h)) return 'tier';
+    if (/perfil|profile|categoria|category/i.test(h)) return 'profile';
+    if (/rede|network/i.test(h)) return '_skip';         // ignorar
+    if (/status|situa/i.test(h)) return '_skip';
+    if (/deal|contrato|acordo/i.test(h)) return '_skip';
+    if (/obs|observa|notes|notas/i.test(h)) return 'notes';
+    return null;  // não reconhecido → fallback pra auto-detect
+  }
+
+  // Detecta se a linha é cabeçalho (contém palavras-chave e nenhum @)
+  function _isHeaderLine(line) {
+    const l = line.toLowerCase();
+    const hasKeyword = /\b(nome|name|instagram|insta|tipster|email|tier|perfil|telefone)\b/i.test(l);
+    const hasAt = l.includes('@');
+    const hasHttp = l.includes('http');
+    return hasKeyword && !hasAt && !hasHttp;
+  }
+
+  // Parse: detecta separador, header, e normaliza colunas
   function _parseImportText(txt) {
-    const lines = txt.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    const rawLines = txt.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
     const results = [];
     const errors = [];
     const seen = new Set();
 
-    lines.forEach((line, idx) => {
-      // Detecta separador: tab > ponto-e-vírgula > vírgula
-      let parts;
-      if (line.includes('\t')) parts = line.split('\t').map(p => p.trim());
-      else if (line.includes(';')) parts = line.split(';').map(p => p.trim());
-      else if (line.includes(',')) parts = line.split(',').map(p => p.trim());
-      else parts = [line];
+    if (!rawLines.length) return { results, errors };
 
-      const name = (parts[0] || '').trim();
-      if (!name) { errors.push({ line: idx + 1, msg: 'nome vazio' }); return; }
+    // Detecta se tem header
+    const firstLine = rawLines[0];
+    const sep = _detectSep(firstLine) || ',';
+    const hasHeader = _isHeaderLine(firstLine);
+    let headerMap = null;
 
-      // Auto-detecta o tipo de cada coluna extra
-      const row = { name, email: null, company: null, phone: null, instagram: null };
-      for (let i = 1; i < parts.length; i++) {
-        const det = _detectCellType(parts[i]);
-        if (det.type === 'empty') continue;
-        if (det.type === 'instagram' && !row.instagram) row.instagram = det.value;
-        else if (det.type === 'email' && !row.email) row.email = det.value;
-        else if (det.type === 'phone' && !row.phone) row.phone = det.value;
-        else if (det.type === 'company' && !row.company) row.company = det.value;
+    if (hasHeader) {
+      const cols = firstLine.split(sep).map(c => c.trim());
+      headerMap = cols.map(_mapHeader);
+    }
+    const dataLines = hasHeader ? rawLines.slice(1) : rawLines;
+
+    dataLines.forEach((line, idx) => {
+      const parts = line.split(sep).map(p => p.trim());
+      const row = { name: '', email: null, company: null, phone: null, instagram: null, tier: null, profile: null, notes: null };
+
+      if (headerMap) {
+        // Mapeamento por posição do header
+        parts.forEach((val, i) => {
+          const field = headerMap[i];
+          if (!field || field === '_skip' || !val) return;
+          if (field === 'instagram') row.instagram = _normalizeIgHandle(val);
+          else if (field === 'tier') {
+            const n = parseInt(val, 10);
+            if (n >= 1 && n <= 5) row.tier = n;
+          }
+          else if (field === 'profile') {
+            // tenta casar com perfis conhecidos
+            const match = PROFILES.find(p => val.toLowerCase().includes(p.id) || val.toLowerCase().includes(p.label.toLowerCase()));
+            if (match) row.profile = match.id;
+          }
+          else row[field] = val;
+        });
+        // Se name não veio mapeado, usa a 1ª célula não vazia
+        if (!row.name && parts[0]) row.name = parts[0];
+      } else {
+        // Fallback: 1ª coluna = nome, resto auto-detectado
+        row.name = (parts[0] || '').trim();
+        for (let i = 1; i < parts.length; i++) {
+          const val = parts[i];
+          if (!val) continue;
+          // Tier isolado: dígito único 1-5
+          if (/^[1-5]$/.test(val) && !row.tier) { row.tier = Number(val); continue; }
+          const det = _detectCellType(val);
+          if (det.type === 'empty') continue;
+          if (det.type === 'instagram' && !row.instagram) row.instagram = det.value;
+          else if (det.type === 'email' && !row.email) row.email = det.value;
+          else if (det.type === 'phone' && !row.phone) row.phone = det.value;
+          else if (det.type === 'company' && !row.company) row.company = det.value;
+        }
       }
 
-      // Dedupe por nome+email+instagram
-      const key = `${name.toLowerCase()}|${(row.email || '').toLowerCase()}|${(row.instagram || '').toLowerCase()}`;
+      if (!row.name) { errors.push({ line: idx + 1 + (hasHeader ? 1 : 0), msg: 'nome vazio' }); return; }
+
+      // Dedupe por nome + instagram
+      const key = `${row.name.toLowerCase()}|${(row.instagram || '').toLowerCase()}`;
       if (seen.has(key)) {
-        errors.push({ line: idx + 1, name, msg: 'duplicado nesta importação' });
+        errors.push({ line: idx + 1 + (hasHeader ? 1 : 0), name: row.name, msg: 'duplicado nesta importação' });
         return;
       }
       seen.add(key);
-
       results.push(row);
     });
 
-    return { results, errors };
+    return { results, errors, hasHeader };
   }
 
   window._ctcImportPreview = () => {
@@ -840,6 +945,7 @@
           ${results.slice(0, 5).map(r => `
             <div class="ctc-import-row">
               <strong>${_esc(r.name)}</strong>
+              ${r.tier ? `<span class="ctc-tile-tier" style="--tier-c:${TIER_BY_ID[r.tier]?.color || '#64748b'};position:relative;top:0;right:0;margin:0 2px 0 4px">T${r.tier}</span>` : ''}
               ${r.instagram ? `<span class="ctc-import-ig">@${_esc(r.instagram)}</span>` : ''}
               ${r.email ? `<span>· ${_esc(r.email)}</span>` : ''}
               ${r.company ? `<span>· ${_esc(r.company)}</span>` : ''}
@@ -881,13 +987,20 @@
       !existingNames.has(r.name.toLowerCase()) && !(r.instagram && existingIgs.has(r.instagram.toLowerCase()))
     ).map(r => {
       const social_links = r.instagram ? { instagram: r.instagram } : {};
-      return {
+      const payload = {
         name: r.name,
         social_links,
-        type: 'b2c',           // default simples — pode mudar depois no detalhe
+        type: 'b2c',
         source: 'outbound',
         status: 'wishlist',
       };
+      if (r.email) payload.email = r.email;
+      if (r.phone) payload.phone = r.phone;
+      if (r.company) payload.company = r.company;
+      if (r.tier) payload.tier = r.tier;
+      if (r.profile) payload.profile = r.profile;
+      if (r.notes) payload.notes = r.notes;
+      return payload;
     });
 
     if (!toInsert.length) {
