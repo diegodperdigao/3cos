@@ -8056,3 +8056,21 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   border-color: color-mix(in srgb, var(--pill-c) 40%, var(--gb2));
 }
 .pill[data-f="profile"] svg{margin-right: 2px;}
+
+/* Avatar preview no form */
+.ctc-avatar-preview{
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--gb);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ctc-avatar-preview img{
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}

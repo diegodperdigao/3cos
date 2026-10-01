@@ -233,9 +233,14 @@
     lucide.createIcons();
   };
 
+  let _savingNew = false;
   window._ctcSaveNew = async () => {
+    if (_savingNew) return;  // guarda contra double-click
     const payload = _formRead();
     if (!payload.name) { toast('Nome é obrigatório', 'e'); return; }
+    _savingNew = true;
+    const btn = document.querySelector('.modal-ft .btn-theme');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader"></i> Criando...'; lucide.createIcons(); }
     try {
       const created = await CRM.contacts.create(payload);
       closeModal();
@@ -243,6 +248,9 @@
       toast(`"${created.name}" adicionado à wishlist`, 's');
     } catch (e) {
       toast('Erro ao criar: ' + (e.message || 'desconhecido'), 'e');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check"></i> Criar contato'; lucide.createIcons(); }
+    } finally {
+      _savingNew = false;
     }
   };
 
@@ -268,6 +276,17 @@
                 <i data-lucide="external-link"></i>
               </button>
             </div>
+          </div>
+        </div>
+        <div class="ff"><label>Foto do perfil (opcional)
+          <span style="font-weight:400;font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0;margin-left:6px">
+            cola URL da imagem — se vazio, tentamos puxar do Instagram automaticamente
+          </span>
+        </label>
+          <input id="ctc-f-avatar" type="url" value="${_esc(c.avatar_url || '')}" placeholder="https://..."
+            oninput="window._ctcAvatarPreview(this.value)">
+          <div class="ctc-avatar-preview" id="ctc-avatar-preview" style="display:${c.avatar_url ? 'flex' : 'none'}">
+            <img src="${_esc(c.avatar_url || '')}" alt="" onerror="this.style.display='none'">
           </div>
         </div>
         <div class="form-row">
@@ -333,6 +352,7 @@
       email: get('ctc-f-email').trim() || null,
       phone: get('ctc-f-phone').trim() || null,
       company: get('ctc-f-company').trim() || null,
+      avatar_url: get('ctc-f-avatar').trim() || null,
       social_links: ig ? { instagram: ig } : {},
       type: get('ctc-f-type'),
       profile: get('ctc-f-profile') || null,
@@ -341,6 +361,20 @@
       notes: get('ctc-f-notes').trim() || null,
     };
   }
+
+  // Preview da imagem conforme o user digita URL
+  window._ctcAvatarPreview = (url) => {
+    const prev = document.getElementById('ctc-avatar-preview');
+    if (!prev) return;
+    const img = prev.querySelector('img');
+    if (!url || !url.trim()) {
+      prev.style.display = 'none';
+      return;
+    }
+    prev.style.display = 'flex';
+    img.src = url;
+    img.style.display = '';
+  };
 
   // Handlers do campo Instagram no formulário
   window._ctcIgInputChanged = (input) => {
@@ -414,9 +448,14 @@
     lucide.createIcons();
   };
 
+  let _savingEdit = false;
   window._ctcSaveEdit = async (id) => {
+    if (_savingEdit) return;
     const payload = _formRead();
     if (!payload.name) { toast('Nome é obrigatório', 'e'); return; }
+    _savingEdit = true;
+    const btn = document.querySelector('.modal-ft .btn-theme');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader"></i> Salvando...'; lucide.createIcons(); }
     try {
       await CRM.contacts.update(id, payload);
       closeModal();
@@ -424,6 +463,9 @@
       toast('Contato atualizado', 's');
     } catch (e) {
       toast('Erro ao salvar: ' + (e.message || 'desconhecido'), 'e');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check"></i> Salvar'; lucide.createIcons(); }
+    } finally {
+      _savingEdit = false;
     }
   };
 
