@@ -6363,3 +6363,182 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   .hw2{padding: 14px 16px 14px;}
   .hw2-big-val{font-size: 26px;}
 }
+
+/* ══════════════════════════════════════════════════════════ */
+/* DESIGN POLISH — Orbs, depth, micro-animations               */
+/* ══════════════════════════════════════════════════════════ */
+
+/* Orbs sutis atrás do hub para dar profundidade colorida sem distrair.
+   Usamos pseudo-element no .hub-bg que já existe. */
+.hub-bg::before,
+.hub-bg::after{
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.35;
+  will-change: transform;
+}
+.hub-bg::before{
+  top: -10%;
+  left: -5%;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, var(--theme) 0%, transparent 70%);
+  animation: orb-drift-1 24s ease-in-out infinite alternate;
+}
+.hub-bg::after{
+  bottom: -10%;
+  right: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--purple, #a855f7) 0%, transparent 70%);
+  animation: orb-drift-2 32s ease-in-out infinite alternate;
+}
+@keyframes orb-drift-1{
+  from{transform: translate(0, 0) scale(1);}
+  to{transform: translate(80px, 60px) scale(1.1);}
+}
+@keyframes orb-drift-2{
+  from{transform: translate(0, 0) scale(1);}
+  to{transform: translate(-100px, -40px) scale(1.15);}
+}
+[data-theme="light"] .hub-bg::before,
+[data-theme="light"] .hub-bg::after{opacity: 0.18;}
+
+/* Modal + botões: micro-polish */
+.modal{
+  animation: modal-in 0.3s var(--spring);
+  box-shadow:
+    0 24px 70px rgba(0,0,0,0.5),
+    0 0 0 1px color-mix(in srgb, var(--theme) 10%, var(--gb));
+}
+@keyframes modal-in{
+  from{opacity: 0; transform: translateY(16px) scale(0.97);}
+  to{opacity: 1; transform: translateY(0) scale(1);}
+}
+
+/* Buttons — spring hover para btn-theme e btn-outline */
+.btn{transition: all 0.22s var(--ease-out);}
+.btn-theme{
+  background: linear-gradient(135deg, var(--theme) 0%, color-mix(in srgb, var(--theme) 85%, var(--purple, #a855f7)) 100%);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--theme) 25%, transparent);
+}
+.btn-theme:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--theme) 35%, transparent);
+}
+.btn-theme:active{transform: translateY(0);}
+
+/* Scrollbar refinement */
+::-webkit-scrollbar{width: 10px; height: 10px;}
+::-webkit-scrollbar-thumb{
+  background: color-mix(in srgb, var(--theme) 40%, transparent);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover{
+  background: color-mix(in srgb, var(--theme) 60%, transparent);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* Hub bar — polish sutil */
+.hub-bar{
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 85%, transparent) 0%, transparent 100%);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+}
+
+/* Hub user chip — hover polish */
+.hub-user-chip{transition: all 0.2s var(--ease-out);}
+.hub-user-chip:hover{
+  background: var(--bg2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Search pill — polish */
+.search-pill{
+  transition: all 0.22s var(--ease-out);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.search-pill:focus-within{
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1), 0 0 0 2px color-mix(in srgb, var(--theme) 30%, transparent);
+}
+
+/* Dock item — focus ring para teclado */
+.dock-item:focus-visible{
+  outline: none;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--app-stroke) 35%, transparent),
+    0 12px 32px color-mix(in srgb, var(--app-stroke) 18%, transparent);
+}
+
+/* Contacts list item polish */
+.ctc-card{transition: all 0.22s var(--ease-out);}
+.ctc-card:hover{
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  border-color: var(--gb3);
+}
+
+/* Kanban card polish */
+.kan-card{transition: all 0.22s var(--ease-out);}
+.kan-card:hover{
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  border-color: var(--gb3);
+}
+
+/* Pipeline tab polish */
+.pcrm-tab{transition: all 0.2s var(--ease-out);}
+.pcrm-tab.on{
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+/* Light mode: tema mais quente, menos cinza */
+[data-theme="light"]{
+  --bg: #fafafa;
+  --bg2: rgba(255,255,255,0.7);
+  --bg3: rgba(0,0,0,0.025);
+}
+[data-theme="light"] .hub-bg{
+  background: radial-gradient(ellipse at top, #fef3f8 0%, #fafafa 60%);
+}
+[data-theme="light"] .modal{
+  box-shadow:
+    0 24px 70px rgba(0,0,0,0.12),
+    0 0 0 1px color-mix(in srgb, var(--theme) 10%, var(--gb));
+}
+
+/* Light mode: hub bar com glassmorfismo mais suave */
+[data-theme="light"] .hub-bar{
+  background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.4) 100%);
+}
+
+/* Light mode: botão primário mais vibrante */
+[data-theme="light"] .btn-theme{
+  box-shadow: 0 4px 14px rgba(236,72,153,0.3);
+}
+
+/* Modals: dividers com gradiente horizontal em vez de borda reta */
+.modal-hdr{border-bottom: none; position: relative;}
+.modal-hdr::after{
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gb2), transparent);
+}
+.modal-ft{border-top: none; position: relative;}
+.modal-ft::before{
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gb2), transparent);
+}
