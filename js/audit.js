@@ -70,9 +70,11 @@ function bAudit(el){
   const lastLoginTxt = stats.lastLogin
     ? `${stats.lastLogin.user || 'Sistema'} · ${stats.lastLogin.t.toLocaleDateString('pt-BR')}`
     : '—';
+  const embedded = el.classList.contains('st-embedded');
 
-  el.innerHTML=modHdr('Auditoria — Log de Atividades')+`<div class="mod-body">
-    ${heroHTML('audit','Segurança','Auditoria','Registro imutável de ações')}
+  const wrapperOpen = embedded ? '<div>' : modHdr('Auditoria — Log de Atividades')+`<div class="mod-body">
+    ${heroHTML('audit','Segurança','Auditoria','Registro imutável de ações')}`;
+  el.innerHTML = wrapperOpen + `
     <div class="mod-main">
 
       <!-- STATS -->

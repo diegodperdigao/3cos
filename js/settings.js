@@ -5,16 +5,92 @@
 // Data & Privacy · Shortcuts · Labs (beta opt-in)
 // ══════════════════════════════════════════════════════════
 
+// Wrapper com abas: Geral · Equipe · Auditoria · Backup · Integrações
+window._settingsTab = window._settingsTab || 'general';
 function bSettings(el){
+  const tabs = [
+    { id: 'general',      label: 'Geral',       icon: 'sliders-horizontal' },
+    { id: 'team',         label: 'Equipe',      icon: 'users',     adminOnly: true },
+    { id: 'audit',        label: 'Auditoria',   icon: 'activity',  adminOnly: true },
+    { id: 'backup',       label: 'Backup',      icon: 'cloud' },
+    { id: 'integrations', label: 'Integrações', icon: 'plug-zap' },
+  ];
+  const isAdmin = STATE.user?.role === 'admin';
+  const visible = tabs.filter(t => !t.adminOnly || isAdmin);
+  if (!visible.find(t => t.id === window._settingsTab)) window._settingsTab = 'general';
+
+  el.innerHTML = modHdr('Configurações') + `<div class="mod-body">
+    ${heroHTML('settings','','Configurações','Equipe · Auditoria · Backup · Integrações')}
+    <div class="mod-main">
+      <div class="st-tabs">
+        ${visible.map(t => `
+          <button class="st-tab ${window._settingsTab === t.id ? 'on' : ''}" onclick="window._switchSettingsTab('${t.id}')">
+            <i data-lucide="${t.icon}"></i>
+            <span>${t.label}</span>
+          </button>`).join('')}
+      </div>
+      <div id="st-tab-content" class="st-embedded"></div>
+    </div>
+  </div>`;
+  lucide.createIcons();
+  _renderSettingsTabContent(window._settingsTab);
+}
+
+window._switchSettingsTab = (id) => {
+  window._settingsTab = id;
+  document.querySelectorAll('.st-tab').forEach(t => {
+    t.classList.toggle('on', t.querySelector('span')?.textContent?.trim() === _settingsTabLabel(id));
+  });
+  _renderSettingsTabContent(id);
+};
+function _settingsTabLabel(id) {
+  return { general: 'Geral', team: 'Equipe', audit: 'Auditoria', backup: 'Backup', integrations: 'Integrações' }[id];
+}
+
+function _renderSettingsTabContent(id) {
+  const el = document.getElementById('st-tab-content');
+  if (!el) return;
+  el.classList.add('st-embedded');
+  if (id === 'team' && typeof bUsers === 'function') return bUsers(el);
+  if (id === 'audit' && typeof bAudit === 'function') return bAudit(el);
+  if (id === 'backup' && typeof bBackup === 'function') return bBackup(el);
+  if (id === 'integrations') return _renderIntegrationsTab(el);
+  _renderGeneralSettings(el);
+}
+
+function _renderIntegrationsTab(el) {
+  el.innerHTML = `
+    <div class="st-section">
+      <div class="st-section-hdr">
+        <div class="st-section-icon"><i data-lucide="plug-zap"></i></div>
+        <div>
+          <div class="st-section-title">Integrações</div>
+          <div class="st-section-sub">Conecte o 3cos a outras ferramentas</div>
+        </div>
+      </div>
+      <div class="st-card">
+        <div class="st-row">
+          <div><strong style="color:var(--text);display:block;margin-bottom:4px">MCP (Model Context Protocol)</strong>
+            <div style="color:var(--text2);font-size:12px;line-height:1.5">
+              Conecte Claude, ChatGPT, Cursor ou qualquer cliente MCP ao seu CRM.
+              Permite consultar contatos, pipeline e criar negociações via IA.
+            </div>
+          </div>
+          <span class="st-badge" style="background:rgba(245,158,11,0.14);color:var(--amber)">Em breve</span>
+        </div>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+
+function _renderGeneralSettings(el){
   const s = STATE.settings || {};
   const notif = s.notifications || {};
   const user = STATE.user || {};
   const themeName = s.theme || 'default';
   const dark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
 
-  el.innerHTML = modHdr('Configurações')+`<div class="mod-body">
-    ${heroHTML('settings','','Configurações','Preferências e personalização')}
-    <div class="mod-main">
+  el.innerHTML = `
 
       <!-- APARÊNCIA -->
       <div class="st-section">
@@ -321,8 +397,7 @@ function bSettings(el){
           </div>
         </div>
       </div>
-
-    </div></div>`;
+`;
   lucide.createIcons();
 }
 

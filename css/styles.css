@@ -7013,3 +7013,58 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
 /* Dock mantém posição imediatamente após widgets (gap do stage) */
 .hub-stage .hub-dock{margin-top: 0 !important;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* SETTINGS — Abas de Geral/Equipe/Auditoria/Backup/Integrações */
+/* ══════════════════════════════════════════════════════════ */
+
+.st-tabs{
+  display: flex;
+  gap: 4px;
+  background: var(--bg3);
+  border: 1px solid var(--gb);
+  border-radius: 14px;
+  padding: 5px;
+  margin-bottom: 20px;
+  width: fit-content;
+  flex-wrap: wrap;
+}
+.st-tab{
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s var(--ease-out);
+  font-family: var(--fb);
+}
+.st-tab:hover{color: var(--text);}
+.st-tab.on{
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.st-tab svg{width: 14px; height: 14px;}
+
+/* Quando um módulo é embedded dentro de Settings, remove hero/modHdr */
+.st-embedded > div > .hero,
+.st-embedded > div > div > .hero{display: none;}
+.st-embedded > div > .mod-hdr,
+.st-embedded > div > div > .mod-hdr{display: none;}
+
+/* Badge genérica para integrações etc */
+.st-badge{
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

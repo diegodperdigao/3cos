@@ -1351,14 +1351,11 @@ window.updateHubHero = () => {
 
 // ── HUB CARDS ──
 const MODS=[
-  {id:'dashboard',label:'Dashboard',icon:'bar-chart-2',sub:'KPIs · Intel · Ranking',color:'rgba(236,72,153,0.32)',glow:'rgba(236,72,153,0.14)',bg:'rgba(236,72,153,0.1)',stroke:'#ec4899'},
+  {id:'dashboard',label:'Dashboard',icon:'bar-chart-2',sub:'Receita · Deals · Conversão',color:'rgba(236,72,153,0.32)',glow:'rgba(236,72,153,0.14)',bg:'rgba(236,72,153,0.1)',stroke:'#ec4899'},
   {id:'contacts',label:'Contatos',icon:'contact-round',sub:'Wishlist · Prospects · Clientes',color:'rgba(20,184,166,0.32)',glow:'rgba(20,184,166,0.14)',bg:'rgba(20,184,166,0.1)',stroke:'#14b8a6'},
   {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'B2B · B2C · Kanban',color:'rgba(99,102,241,0.32)',glow:'rgba(99,102,241,0.14)',bg:'rgba(99,102,241,0.1)',stroke:'#6366f1'},
   {id:'tasks',label:'Tarefas',icon:'check-square',sub:'Workflow integrado',color:'rgba(16,185,129,0.32)',glow:'rgba(16,185,129,0.14)',bg:'rgba(16,185,129,0.1)',stroke:'#10b981'},
-  {id:'audit',label:'Auditoria',icon:'activity',sub:'Log · Registro',color:'rgba(140,180,0,0.35)',glow:'rgba(140,180,0,0.12)',bg:'rgba(140,180,0,0.12)',stroke:'#8cb400'},
-  {id:'backup',label:'Backup',icon:'cloud',sub:'Nuvem · Exportar',color:'rgba(14,165,233,0.32)',glow:'rgba(14,165,233,0.14)',bg:'rgba(14,165,233,0.1)',stroke:'#0ea5e9'},
-  {id:'users',label:'Usuários',icon:'shield',sub:'Acessos · Cargos',color:'rgba(239,68,68,0.32)',glow:'rgba(239,68,68,0.14)',bg:'rgba(239,68,68,0.1)',stroke:'#ef4444',adminOnly:true},
-  {id:'settings',label:'Configurações',icon:'settings',sub:'Preferências · Conta',color:'rgba(148,163,184,0.32)',glow:'rgba(148,163,184,0.14)',bg:'rgba(148,163,184,0.1)',stroke:'#94a3b8'},
+  {id:'settings',label:'Configurações',icon:'settings',sub:'Equipe · Auditoria · Backup · MCP',color:'rgba(148,163,184,0.32)',glow:'rgba(148,163,184,0.14)',bg:'rgba(148,163,184,0.1)',stroke:'#94a3b8'},
 ];
 function buildHubCards(){
   const userMods=STATE.user?.modules||[];

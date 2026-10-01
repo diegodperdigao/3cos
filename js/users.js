@@ -23,8 +23,10 @@ function _renderUserGrid(filter){
   }).join('')||'<div class="empty" style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Nenhum usuário encontrado.</div>';
 }
 function bUsers(el){
-  el.innerHTML=modHdr('Usuários — Controle de Acesso')+`<div class="mod-body">
-    ${heroHTML('users','Admin','Usuários','Permissões e acessos')}
+  const embedded = el.classList.contains('st-embedded');
+  const wrapperOpen = embedded ? '<div>' : modHdr('Usuários — Controle de Acesso')+`<div class="mod-body">
+    ${heroHTML('users','Admin','Usuários','Permissões e acessos')}`;
+  el.innerHTML = wrapperOpen + `
     <div class="mod-main">
       <div class="sec-hdr"><div class="sec-lbl">Usuários ativos</div>
         <div class="sec-actions">
@@ -66,8 +68,10 @@ function bBackup(el){
   const dataSizeKB = Math.round(dataSize / 1024);
   const supaOK = !!window.SUPABASE_CONFIGURED;
 
-  el.innerHTML=modHdr('Backup & Nuvem')+`<div class="mod-body">
-    ${heroHTML('backup','','Backup & nuvem','Exportar, importar e sincronizar')}
+  const embedded = el.classList.contains('st-embedded');
+  const wrapperOpen = embedded ? '<div>' : modHdr('Backup & Nuvem')+`<div class="mod-body">
+    ${heroHTML('backup','','Backup & nuvem','Exportar, importar e sincronizar')}`;
+  el.innerHTML = wrapperOpen + `
     <div class="mod-main">
 
       <div class="sec-hdr"><div class="sec-lbl">Status</div></div>
