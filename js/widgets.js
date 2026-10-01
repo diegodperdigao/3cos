@@ -30,7 +30,10 @@ const DEFAULT_HUB_WIDGETS = ['focus_today', 'hot_pipeline', 'health_check', 'mom
 function _activeWidgets() {
   const saved = STATE.settings?.hubWidgets;
   if (Array.isArray(saved) && saved.length > 0) {
-    return saved.filter(id => HUB_WIDGETS.some(w => w.id === id));
+    const filtered = saved.filter(id => HUB_WIDGETS.some(w => w.id === id));
+    // Se o filtered perdeu quase tudo (preferências antigas de widgets que
+    // não existem mais), caímos nos defaults em vez de mostrar só 1 widget.
+    if (filtered.length >= 2) return filtered;
   }
   return DEFAULT_HUB_WIDGETS;
 }
