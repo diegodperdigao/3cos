@@ -6542,3 +6542,172 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--gb2), transparent);
 }
+
+/* ══════════════════════════════════════════════════════════ */
+/* HUB — Compact density override (reduz vazios, cabe sem scroll) */
+/* ══════════════════════════════════════════════════════════ */
+
+/* Tokens apertados */
+:root{
+  --hub-space-xl: clamp(16px, 2vw, 24px);
+  --hub-space-l:  clamp(14px, 1.8vw, 20px);
+  --hub-space-m:  clamp(10px, 1.3vw, 14px);
+  --hub-space-s:  clamp(8px, 1vw, 12px);
+}
+
+/* Stage: menos padding, gap vertical menor */
+.hub-stage{
+  padding: var(--hub-space-m) var(--hub-space-l);
+  gap: var(--hub-space-l);
+  justify-content: center;
+}
+
+/* Hero mais compacto */
+.hub-stage .hub-hero{
+  gap: 4px;
+}
+.hub-stage .hub-hero-eyebrow{
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  margin-bottom: 0;
+}
+.hub-stage .hub-hero-title{
+  font-size: clamp(26px, 3.2vw, 38px);
+  letter-spacing: -0.025em;
+}
+.hub-stage .hub-hero-sub{
+  font-size: 13px;
+  margin-top: 0;
+  max-width: 520px;
+}
+.hub-stage .hub-hero-cta{
+  margin-top: 8px;
+  min-height: 0;
+}
+.hub-cta-btn{
+  padding: 8px 16px;
+  font-size: 12px;
+}
+.hub-cta-btn svg{width: 13px; height: 13px;}
+
+/* Widgets: grade mais densa (4 colunas em 1024px+, 3 em 820px, 2 em menor) */
+.hub-stage .hub-widgets{
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--hub-space-s);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+@media (min-width: 1200px){
+  .hub-stage .hub-widgets{grid-template-columns: repeat(4, 1fr);}
+}
+
+/* Widget cards mais compactos */
+.hw2{
+  padding: 14px 16px 12px;
+  gap: 10px;
+  border-radius: 16px;
+  min-height: 160px;
+}
+.hw2-hdr{gap: 8px;}
+.hw2-icon{
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+}
+.hw2-icon svg{width: 13px; height: 13px;}
+.hw2-title{font-size: 12px;}
+.hw2-body{gap: 8px;}
+.hw2-big-val{font-size: 24px;}
+.hw2-big-sub{font-size: 10px;}
+.hw2-count{font-size: 9px;}
+.hw2-item{padding: 5px 2px; font-size: 11.5px;}
+.hw2-item-text{font-size: 11.5px;}
+.hw2-item-time{font-size: 9.5px;}
+.hw2-bar-list{gap: 9px;}
+.hw2-bar-label{font-size: 11.5px;}
+.hw2-bar-value{font-size: 10.5px;}
+.hw2-bar-meta{font-size: 9.5px;}
+.hw2-spark{height: 42px;}
+.hw2-ftr{padding-top: 8px;}
+.hw2-cta{font-size: 10.5px;}
+
+/* Dock: força 1 linha em telas desktop, sem wrap */
+.hub-stage .hub-dock{
+  gap: var(--hub-space-s);
+  padding: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  justify-content: center;
+}
+.hub-stage .hub-dock::-webkit-scrollbar{display: none;}
+
+/* Dock items compactos: ícone esquerda, label direita (quando sobra espaço) */
+.dock-item{
+  padding: 12px 14px;
+  min-width: 128px;
+  max-width: 170px;
+  gap: 10px;
+  border-radius: 14px;
+  flex-direction: row;
+  text-align: left;
+  align-items: center;
+  flex: 1 1 0;
+}
+.dock-item-icon{
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  flex-shrink: 0;
+}
+.dock-item-icon svg{width: 20px; height: 20px;}
+.dock-item-label{
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  line-height: 1.2;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dock-item-sub{display: none !important;}  /* sub removido no modo denso */
+
+/* Hover: menos deslocamento (mais sutil, igual pros alinhados em linha) */
+.dock-item:hover{
+  transform: translateY(-2px) scale(1.015);
+}
+
+/* Mobile: volta pro grid 4 colunas, mas compacto */
+@media (max-width: 720px){
+  .hub-stage{
+    padding: 10px 12px;
+    gap: 12px;
+  }
+  .hub-stage .hub-hero-title{font-size: 24px;}
+  .hub-stage .hub-widgets{grid-template-columns: repeat(2, 1fr); gap: 8px;}
+  .hub-stage .hub-dock{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    overflow: visible;
+    gap: 8px;
+  }
+  .dock-item{
+    flex-direction: column;
+    min-width: 0;
+    max-width: none;
+    padding: 10px 6px;
+    gap: 4px;
+    border-radius: 12px;
+  }
+  .dock-item-icon{width: 32px; height: 32px; border-radius: 9px;}
+  .dock-item-icon svg{width: 16px; height: 16px;}
+  .dock-item-label{font-size: 10px; text-align: center;}
+}
+
+/* Entre 720 e 1200: dock em 2 linhas de 4, mas ainda horizontal */
+@media (min-width: 720px) and (max-width: 1200px){
+  .hub-stage .hub-dock{flex-wrap: wrap;}
+  .dock-item{flex: 0 1 calc(25% - 10px);}
+}
