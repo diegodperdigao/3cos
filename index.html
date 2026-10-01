@@ -11,7 +11,7 @@
 <link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=146">
+<link rel="stylesheet" href="css/styles.css?v=147">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -192,25 +192,28 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
   
   <div class="hub-main">
-    <!-- Holiday post-it (positioned absolutely in the hub corner) -->
+    <!-- Holiday post-it (positioned absolutely) -->
     <div class="holiday-postit" id="holiday-postit" style="display:none"></div>
-    <!-- Hub customization (+) button — subtle top-right -->
+    <!-- Hub customization (+) button -->
     <button class="hub-customize-btn" onclick="openHubCustomizeMenu(this)" title="Personalizar hub">
       <i data-lucide="plus" style="width:14px;height:14px"></i>
     </button>
-    <!-- Hero greeting block -->
-    <div class="hub-hero">
-      <img src="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg" class="hub-hero-logo">
-      <div class="hub-hero-eyebrow">CRM & Gestão</div>
-      <h1 class="hub-hero-title" id="hub-hero-title">Bem-vindo, <span class="hub-hero-name">Diego</span>.</h1>
-      <div class="hub-hero-sub">O que você quer fazer hoje?</div>
-    </div>
-    <!-- Compact widget strip (small KPI tiles) -->
-    <div class="hub-widget-strip" id="hub-widget-strip"></div>
-    <!-- Modules section -->
-    <div class="hub-modules-section">
-      <div class="hub-modules-label">Módulos</div>
-      <div class="hub-apps" id="hub-cards"></div>
+
+    <!-- Container centralizado -->
+    <div class="hub-stage">
+      <!-- Hero -->
+      <section class="hub-hero">
+        <div class="hub-hero-eyebrow">3cos · CRM Comercial</div>
+        <h1 class="hub-hero-title" id="hub-hero-title">Bem-vindo, <span class="hub-hero-name">Diego</span>.</h1>
+        <div class="hub-hero-sub" id="hub-hero-sub">O que você quer fazer hoje?</div>
+        <div class="hub-hero-cta" id="hub-hero-cta"></div>
+      </section>
+
+      <!-- Widget stage (preenchido por buildHubWidgets) -->
+      <section class="hub-widgets" id="hub-widget-strip"></section>
+
+      <!-- Dock de módulos (horizontal centralizado) -->
+      <nav class="hub-dock" id="hub-cards"></nav>
     </div>
   </div>
 </div>
@@ -298,25 +301,25 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=146"></script>
+<script src="js/app.js?v=147"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=146"></script>
-<script src="js/data.js?v=146"></script>
+<script src="js/supabase-client.js?v=147"></script>
+<script src="js/data.js?v=147"></script>
 <!-- Lab (feature flag system) -->
-<script src="js/lab.js?v=146"></script>
-<script src="js/widgets.js?v=146"></script>
+<script src="js/lab.js?v=147"></script>
+<script src="js/widgets.js?v=147"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=146"></script>
+<script src="js/search.js?v=147"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=146"></script>
-<script src="js/tasks.js?v=146"></script>
-<script src="js/audit.js?v=146"></script>
-<script src="js/users.js?v=146"></script>
-<script src="js/settings.js?v=146"></script>
+<script src="js/dashboard.js?v=147"></script>
+<script src="js/tasks.js?v=147"></script>
+<script src="js/audit.js?v=147"></script>
+<script src="js/users.js?v=147"></script>
+<script src="js/settings.js?v=147"></script>
 <!-- CRM (frente comercial — schema crm) -->
-<script src="js/crm-data.js?v=146"></script>
-<script src="js/contacts.js?v=146"></script>
-<script src="js/pipeline-crm.js?v=146"></script>
-<script src="js/copilot.js?v=146"></script>
+<script src="js/crm-data.js?v=147"></script>
+<script src="js/contacts.js?v=147"></script>
+<script src="js/pipeline-crm.js?v=147"></script>
+<script src="js/copilot.js?v=147"></script>
 </body>
 </html>

@@ -5743,3 +5743,266 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .pcrm-tab svg{width:14px;height:14px;}
 .pcrm-tab-count{background:var(--bg3);color:var(--text2);padding:1px 8px;border-radius:9px;font-size:10px;font-weight:700;min-width:20px;text-align:center;}
 .pcrm-tab.on .pcrm-tab-count{background:var(--theme-dim);color:var(--theme);}
+
+/* ══════════════════════════════════════════════════════════ */
+/* HUB — Novo layout (dock central + hero + widget stage)      */
+/* ══════════════════════════════════════════════════════════ */
+
+/* Design tokens fluidos */
+:root{
+  --hub-space-xl: clamp(32px, 4vw, 56px);
+  --hub-space-l:  clamp(20px, 2.5vw, 32px);
+  --hub-space-m:  clamp(14px, 1.8vw, 20px);
+  --hub-space-s:  clamp(10px, 1.2vw, 14px);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Stage central do hub */
+.hub-stage{
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--hub-space-xl) var(--hub-space-l);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hub-space-xl);
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+
+/* Hero redesenhado */
+.hub-stage .hub-hero{
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: hero-in 0.7s var(--ease-out);
+}
+@keyframes hero-in{
+  from{opacity:0; transform: translateY(16px);}
+  to{opacity:1; transform: translateY(0);}
+}
+
+.hub-stage .hub-hero-eyebrow{
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-family: var(--fb);
+  margin-bottom: 2px;
+}
+
+.hub-stage .hub-hero-title{
+  font-family: var(--fd);
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0;
+  background: linear-gradient(135deg, var(--text) 0%, var(--text) 65%, var(--theme) 150%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hub-stage .hub-hero-name{
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--theme) 0%, var(--purple, #a855f7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hub-stage .hub-hero-sub{
+  font-size: clamp(14px, 1.3vw, 16px);
+  color: var(--text2);
+  margin-top: 2px;
+  max-width: 580px;
+  line-height: 1.5;
+}
+.hub-stage .hub-hero-sub strong{color: var(--text); font-weight: 700;}
+
+.hub-stage .hub-hero-cta{
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  min-height: 44px;
+}
+.hub-cta-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: 999px;
+  background: var(--bg2);
+  border: 1px solid var(--gb2);
+  color: var(--text);
+  font-family: var(--fb);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s var(--ease-out);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.hub-cta-btn:hover{
+  background: var(--bg3);
+  border-color: var(--gb3);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+.hub-cta-btn.primary{
+  background: linear-gradient(135deg, var(--theme) 0%, color-mix(in srgb, var(--theme) 80%, var(--purple, #a855f7)) 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 14px var(--theme-glow);
+}
+.hub-cta-btn.primary:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--theme-glow);
+}
+.hub-cta-btn svg{width: 15px; height: 15px;}
+
+/* Widget stage (preenchido depois) */
+.hub-stage .hub-widgets{
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--hub-space-s);
+  min-height: 0;
+  animation: fade-in 0.6s 0.1s var(--ease-out) both;
+}
+@keyframes fade-in{
+  from{opacity: 0; transform: translateY(10px);}
+  to{opacity: 1; transform: translateY(0);}
+}
+
+/* Dock de módulos — horizontal, centralizado, scrolável se overflow */
+.hub-stage .hub-dock{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--hub-space-s);
+  width: 100%;
+  padding: var(--hub-space-m) var(--hub-space-s);
+  animation: fade-in 0.6s 0.2s var(--ease-out) both;
+}
+
+.dock-item{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 14px 16px;
+  min-width: 112px;
+  max-width: 140px;
+  border-radius: 20px;
+  background: var(--bg2);
+  border: 1px solid var(--gb);
+  cursor: pointer;
+  transition:
+    transform 0.3s var(--spring),
+    background 0.2s var(--ease-out),
+    border-color 0.2s var(--ease-out),
+    box-shadow 0.3s var(--ease-out);
+  text-align: center;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: inherit;
+  font-family: inherit;
+}
+.dock-item::before{
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--app-glow), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-out);
+  pointer-events: none;
+}
+.dock-item:hover{
+  transform: translateY(-4px) scale(1.03);
+  border-color: color-mix(in srgb, var(--app-stroke) 40%, var(--gb2));
+  box-shadow:
+    0 12px 32px color-mix(in srgb, var(--app-stroke) 18%, transparent),
+    0 1px 0 rgba(255,255,255,0.08) inset;
+}
+.dock-item:hover::before{opacity: 1;}
+.dock-item:active{transform: translateY(-2px) scale(1.01);}
+
+.dock-item-icon{
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--app-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s var(--spring);
+  border: 1px solid color-mix(in srgb, var(--app-stroke) 25%, transparent);
+}
+.dock-item-icon svg{
+  width: 24px;
+  height: 24px;
+  stroke: var(--app-stroke);
+  stroke-width: 1.8;
+}
+.dock-item:hover .dock-item-icon{
+  transform: scale(1.08);
+}
+
+.dock-item-label{
+  font-family: var(--fd);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.01em;
+  position: relative;
+  z-index: 1;
+  line-height: 1.3;
+}
+.dock-item-sub{
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.03em;
+  position: relative;
+  z-index: 1;
+  line-height: 1.4;
+  display: none;  /* escondido por padrão, aparece em telas largas */
+}
+@media (min-width: 1080px){
+  .dock-item-sub{display: block;}
+  .dock-item{min-width: 128px; max-width: 160px;}
+}
+
+/* Mobile: dock compacto, 4 colunas */
+@media (max-width: 720px){
+  .hub-stage{padding: var(--hub-space-l) var(--hub-space-m);}
+  .hub-stage .hub-dock{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 0;
+  }
+  .dock-item{
+    min-width: 0;
+    max-width: none;
+    padding: 14px 8px 12px;
+    border-radius: 16px;
+  }
+  .dock-item-icon{width: 44px; height: 44px; border-radius: 12px;}
+  .dock-item-icon svg{width: 20px; height: 20px;}
+  .dock-item-label{font-size: 10.5px;}
+}

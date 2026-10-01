@@ -1278,6 +1278,8 @@ function showHub(){
     const _g=_h<12?'Bom dia':(_h<18?'Boa tarde':'Boa noite');
     const _heroT=document.getElementById('hub-hero-title');
     if(_heroT)_heroT.innerHTML=`${_g}, <span class="hub-hero-name">${fn}</span>.`;
+    // Hero sub + CTA contextual
+    if (window.updateHubHero) updateHubHero();
     const hub=document.getElementById('hub');hub.style.display='flex';
     setTimeout(()=>hub.style.opacity='1',50);
     buildHubCards(); buildMobileHome(); updateNotifBadge();
@@ -1292,6 +1294,55 @@ function showHub(){
     initMosaics();lucide.createIcons();
   },650);
 }
+
+// ── HERO CONTEXT (sub + CTA) ──
+// Olha pro estado do CRM pra sugerir uma próxima ação relevante.
+// Rodado tanto no login quanto quando volta ao hub.
+window.updateHubHero = () => {
+  const sub = document.getElementById('hub-hero-sub');
+  const cta = document.getElementById('hub-hero-cta');
+  if (!sub || !cta) return;
+
+  const crm = STATE.crm || {};
+  const contactsCount = (crm.contacts || []).length;
+  const hotContacts = (crm.contacts || []).filter(c => c.temperature === 'hot' || c.temperature === 'ready').length;
+  const cardsCount = (crm.cards || []).length;
+  const pendingTasks = (STATE.tasks || []).filter(t => t.status !== 'concluída').length;
+
+  let subText = 'O que você quer fazer hoje?';
+  let ctaHtml = '';
+
+  // Priorização simples: estado vazio > tarefas pendentes > contatos quentes > default
+  if (contactsCount === 0) {
+    subText = 'Comece adicionando seus primeiros contatos à wishlist.';
+    ctaHtml = `<button class="hub-cta-btn primary" onclick="openMod('contacts')">
+      <i data-lucide="user-plus"></i>
+      <span>Adicionar primeiro contato</span>
+    </button>`;
+  } else if (hotContacts > 0 && cardsCount === 0) {
+    subText = `Você tem <strong>${hotContacts} contato${hotContacts > 1 ? 's' : ''} quente${hotContacts > 1 ? 's' : ''}</strong> pronto${hotContacts > 1 ? 's' : ''} para o pipeline.`;
+    ctaHtml = `<button class="hub-cta-btn primary" onclick="openMod('contacts')">
+      <i data-lucide="flame"></i>
+      <span>Revisar contatos quentes</span>
+    </button>`;
+  } else if (pendingTasks > 3) {
+    subText = `<strong>${pendingTasks} tarefa${pendingTasks > 1 ? 's' : ''}</strong> esperando sua atenção.`;
+    ctaHtml = `<button class="hub-cta-btn primary" onclick="openMod('tasks')">
+      <i data-lucide="check-square"></i>
+      <span>Ver tarefas</span>
+    </button>`;
+  } else if (cardsCount > 0) {
+    subText = `${cardsCount} negociação${cardsCount > 1 ? 'ões' : ''} ativa${cardsCount > 1 ? 's' : ''} no pipeline.`;
+    ctaHtml = `<button class="hub-cta-btn" onclick="openMod('pipeline')">
+      <i data-lucide="git-branch"></i>
+      <span>Ver pipeline</span>
+    </button>`;
+  }
+
+  sub.innerHTML = subText;
+  cta.innerHTML = ctaHtml;
+  if (window.lucide) lucide.createIcons();
+};
 
 // ── HUB CARDS ──
 const MODS=[
@@ -1311,11 +1362,12 @@ function buildHubCards(){
   const el=document.getElementById('hub-cards');
   if(el){
     el.innerHTML=visible.map(m=>`
-      <div class="hub-app" onclick="openMod('${m.id}')"
-        style="--app-border:${m.color};--app-glow:${m.glow};--app-bg:${m.bg};--app-stroke:${m.stroke}">
-        <div class="hub-app-icon"><i data-lucide="${m.icon}"></i></div>
-        <div class="hub-app-name">${m.label}</div>
-      </div>`).join('');
+      <button class="dock-item" onclick="openMod('${m.id}')" title="${m.label}"
+        style="--app-stroke:${m.stroke};--app-glow:${m.glow};--app-bg:${m.bg}">
+        <span class="dock-item-icon"><i data-lucide="${m.icon}"></i></span>
+        <span class="dock-item-label">${m.label}</span>
+        ${m.sub?`<span class="dock-item-sub">${m.sub}</span>`:''}
+      </button>`).join('');
   }
   lucide.createIcons();
 }
