@@ -23,7 +23,6 @@ const HUB_WIDGETS = [
   { id: 'conversion',      name: 'Taxa de conversão', icon: 'percent',     desc: 'Prospects → clientes (90 dias)' },
   { id: 'new_prospects',   name: 'Novos prospects',   icon: 'user-plus',   desc: 'Contatos adicionados nos últimos 7 dias por origem' },
   { id: 'momentum',        name: 'Momentum',          icon: 'trending-up', desc: 'Velocidade de criação de deals por semana' },
-  { id: 'wishlist_pulse',  name: 'Pulso da wishlist', icon: 'users',       desc: 'Contatos agrupados por temperatura' },
   { id: 'recent_activity', name: 'Atividade recente', icon: 'history',     desc: 'Últimas ações no CRM' },
   { id: 'notifications',   name: 'Notificações',      icon: 'bell',        desc: 'Alertas do sistema' },
 ];

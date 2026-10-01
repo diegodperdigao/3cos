@@ -54,7 +54,6 @@
           <div class="sec-lbl" id="pcrm-sec-label">Kanban ${SCOPE_META[_scope].label}</div>
           <div class="sec-actions">
             <button class="btn btn-outline" onclick="window._pcrmManageStages(window._pcrmGetScope())"><i data-lucide="list"></i> Etapas</button>
-            <button class="btn btn-outline" onclick="window._pcrmFromContact(window._pcrmGetScope())"><i data-lucide="user-plus"></i> Da wishlist</button>
             <button class="btn btn-theme" onclick="window._pcrmOpenNewCard(window._pcrmGetScope())"><i data-lucide="plus"></i> Nova negociação</button>
           </div>
         </div>
@@ -239,10 +238,16 @@
     const body = `
       <div class="form-grid">
         <div class="ff"><label>Contato *</label>
-          <select id="pcrm-f-contact" class="fi">
-            <option value="">Selecione...</option>
-            ${contacts.map(c => `<option value="${c.id}">${_esc(c.name)}${c.company ? ' · ' + _esc(c.company) : ''}</option>`).join('')}
-          </select>
+          <div class="pcrm-contact-picker">
+            <input id="pcrm-f-contact-search" class="fi" type="text" autocomplete="off"
+              placeholder="Digite o nome, empresa ou @instagram..."
+              oninput="window._pcrmContactSearch(this.value)"
+              onfocus="window._pcrmContactSearch(this.value)"
+              onblur="setTimeout(()=>{const r=document.getElementById('pcrm-contact-results');if(r)r.style.display='none'},200)">
+            <input id="pcrm-f-contact" type="hidden" value="">
+            <div id="pcrm-f-contact-selected" class="pcrm-contact-selected" style="display:none"></div>
+            <div id="pcrm-contact-results" class="pcrm-contact-results" style="display:none"></div>
+          </div>
         </div>
         <div class="ff"><label>Título da negociação *</label>
           <input id="pcrm-f-title" class="fi" type="text" placeholder="Ex: Parceria Q1 2027">
@@ -278,6 +283,83 @@
       <button class="btn btn-theme" onclick="window._pcrmSaveNewCard('${scope}')"><i data-lucide="check"></i> Criar</button>
     `);
     lucide.createIcons();
+  };
+
+  // Autocomplete do contato no form de nova negociação
+  window._pcrmContactSearch = (q) => {
+    const results = document.getElementById('pcrm-contact-results');
+    if (!results) return;
+    const term = q.trim().toLowerCase();
+    let list = STATE.crm?.contacts || [];
+    if (term) {
+      list = list.filter(c =>
+        (c.name || '').toLowerCase().includes(term)
+        || (c.company || '').toLowerCase().includes(term)
+        || (c.email || '').toLowerCase().includes(term)
+        || (c.social_links?.instagram || '').toLowerCase().includes(term)
+      );
+    }
+    list = list.slice(0, 8);
+    if (!list.length) {
+      results.innerHTML = `<div class="pcrm-contact-empty">Nenhum contato encontrado.
+        <br><a onclick="closeModal();openMod('contacts')" style="color:var(--theme);cursor:pointer;font-size:11px">Ir para Contatos →</a></div>`;
+      results.style.display = 'block';
+      return;
+    }
+    results.innerHTML = list.map(c => {
+      const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+      let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
+      const hue = Math.abs(h) % 360;
+      const ig = c.social_links?.instagram;
+      return `<div class="pcrm-contact-opt" onclick="window._pcrmPickContact('${c.id}')">
+        <span class="pcrm-contact-opt-av" style="background:hsl(${hue},60%,45%)">${initials}</span>
+        <div class="pcrm-contact-opt-info">
+          <div class="pcrm-contact-opt-name">${_esc(c.name)}</div>
+          <div class="pcrm-contact-opt-sub">${c.company ? _esc(c.company) : ig ? '@' + _esc(ig) : c.email ? _esc(c.email) : '—'}</div>
+        </div>
+      </div>`;
+    }).join('');
+    results.style.display = 'block';
+  };
+
+  window._pcrmPickContact = (id) => {
+    const c = (STATE.crm?.contacts || []).find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('pcrm-f-contact').value = id;
+    document.getElementById('pcrm-f-contact-search').style.display = 'none';
+    document.getElementById('pcrm-contact-results').style.display = 'none';
+
+    const selected = document.getElementById('pcrm-f-contact-selected');
+    const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+    let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
+    const hue = Math.abs(h) % 360;
+    selected.innerHTML = `
+      <span class="pcrm-contact-opt-av" style="background:hsl(${hue},60%,45%)">${initials}</span>
+      <div class="pcrm-contact-opt-info">
+        <div class="pcrm-contact-opt-name">${_esc(c.name)}</div>
+        <div class="pcrm-contact-opt-sub">${c.company ? _esc(c.company) : (c.email || '—')}</div>
+      </div>
+      <button class="pcrm-contact-clear" onclick="window._pcrmClearContact()" type="button">
+        <i data-lucide="x" style="width:14px;height:14px"></i>
+      </button>
+    `;
+    selected.style.display = 'flex';
+
+    // Auto-sugere o título com nome do contato (user pode editar)
+    const titleInput = document.getElementById('pcrm-f-title');
+    if (titleInput && !titleInput.value) {
+      titleInput.value = c.name + (c.company ? ' · ' + c.company : '');
+    }
+    if (window.lucide) lucide.createIcons();
+  };
+
+  window._pcrmClearContact = () => {
+    document.getElementById('pcrm-f-contact').value = '';
+    document.getElementById('pcrm-f-contact-selected').style.display = 'none';
+    const search = document.getElementById('pcrm-f-contact-search');
+    search.value = '';
+    search.style.display = '';
+    search.focus();
   };
 
   window._pcrmSaveNewCard = async (scope) => {

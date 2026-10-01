@@ -8,10 +8,8 @@
 
 (function () {
   // Filtros ativos (compartilhados pelo módulo)
-  let F = { search: '', status: null, type: null, temp: null, tag: null, product: null };
+  let F = { search: '', status: null, type: null, tag: null, product: null };
 
-  const TEMP_LABEL = { cold: 'Frio', warm: 'Morno', hot: 'Quente', ready: 'Pronto' };
-  const TEMP_COLOR = { cold: '#3b82f6', warm: '#f59e0b', hot: '#ef4444', ready: '#10b981' };
   const STATUS_LABEL = { wishlist: 'Wishlist', in_pipeline: 'No pipeline', customer: 'Cliente', churned: 'Perdido' };
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
   const SOURCE_LABEL = { inbound: 'Inbound', outbound: 'Outbound', referral: 'Indicação', event: 'Evento', social: 'Redes sociais', other: 'Outro' };
@@ -46,14 +44,6 @@
             <button class="pill" data-f="type" data-v="b2b" onclick="window._ctcFilter(this)">B2B</button>
             <button class="pill" data-f="type" data-v="b2c" onclick="window._ctcFilter(this)">B2C</button>
             <button class="pill" data-f="type" data-v="both" onclick="window._ctcFilter(this)">Ambos</button>
-          </div>
-          <div class="ctc-filter-group">
-            <span class="ctc-filter-lbl">Temperatura</span>
-            <button class="pill on" data-f="temp" data-v="" onclick="window._ctcFilter(this)">Todas</button>
-            <button class="pill" data-f="temp" data-v="cold" onclick="window._ctcFilter(this)"><span style="width:8px;height:8px;background:#3b82f6;border-radius:50%;display:inline-block;margin-right:4px"></span>Frio</button>
-            <button class="pill" data-f="temp" data-v="warm" onclick="window._ctcFilter(this)"><span style="width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block;margin-right:4px"></span>Morno</button>
-            <button class="pill" data-f="temp" data-v="hot" onclick="window._ctcFilter(this)"><span style="width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block;margin-right:4px"></span>Quente</button>
-            <button class="pill" data-f="temp" data-v="ready" onclick="window._ctcFilter(this)"><span style="width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;margin-right:4px"></span>Pronto</button>
           </div>
           <div class="ctc-filter-group" id="ctc-tag-filter-group" style="display:none"></div>
           <div class="ctc-filter-group" id="ctc-product-filter-group" style="display:none"></div>
@@ -92,7 +82,6 @@
     }
 
     el.innerHTML = list.map(c => {
-      const tempCol = TEMP_COLOR[c.temperature] || '#94a3b8';
       const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
       // Hash → cor determinística do avatar
       let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
@@ -100,18 +89,16 @@
       const avatar = c.avatar_url
         ? `<img class="ctc-av" src="${c.avatar_url}" alt="">`
         : `<span class="ctc-av" style="background:hsl(${hue},60%,45%);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${initials}</span>`;
+      const ig = c.social_links?.instagram;
 
       return `<div class="ctc-card" onclick="window._ctcOpenDetail('${c.id}')">
         <div class="ctc-card-left">
           ${avatar}
           <div class="ctc-card-info">
-            <div class="ctc-card-name">${_esc(c.name)}
-              <span class="ctc-temp" style="background:${tempCol}1a;color:${tempCol};border:1px solid ${tempCol}40">
-                ${TEMP_LABEL[c.temperature] || c.temperature}
-              </span>
-            </div>
+            <div class="ctc-card-name">${_esc(c.name)}</div>
             <div class="ctc-card-meta">
               ${c.company ? `<span><i data-lucide="building-2"></i>${_esc(c.company)}</span>` : ''}
+              ${ig ? `<span><i data-lucide="instagram"></i>@${_esc(ig)}</span>` : ''}
               ${c.email ? `<span><i data-lucide="mail"></i>${_esc(c.email)}</span>` : ''}
               ${c.phone ? `<span><i data-lucide="phone"></i>${_esc(c.phone)}</span>` : ''}
             </div>
@@ -182,7 +169,6 @@
     let list = STATE.crm.contacts || [];
     if (F.status) list = list.filter(c => c.status === F.status);
     if (F.type) list = list.filter(c => c.type === F.type);
-    if (F.temp) list = list.filter(c => c.temperature === F.temp);
     if (F.tag) {
       // TODO: filtrar por tag via contact_tags (precisa query extra ou join)
       // Por ora, mostra todos — tag filter é visual até implementar o join
@@ -231,7 +217,10 @@
           <div class="ff"><label>Email</label><input id="ctc-f-email" type="email" value="${_esc(c.email || '')}" placeholder="email@exemplo.com"></div>
           <div class="ff"><label>Telefone</label><input id="ctc-f-phone" type="text" value="${_esc(c.phone || '')}" placeholder="+55 11 99999-9999"></div>
         </div>
-        <div class="ff"><label>Empresa</label><input id="ctc-f-company" type="text" value="${_esc(c.company || '')}" placeholder="Nome da empresa"></div>
+        <div class="form-row">
+          <div class="ff"><label>Empresa</label><input id="ctc-f-company" type="text" value="${_esc(c.company || '')}" placeholder="Nome da empresa"></div>
+          <div class="ff"><label>Instagram</label><input id="ctc-f-instagram" type="text" value="${_esc(c.social_links?.instagram || '')}" placeholder="@handle"></div>
+        </div>
         <div class="form-row">
           <div class="ff"><label>Tipo</label>
             <select id="ctc-f-type" class="fi">
@@ -240,16 +229,6 @@
               <option value="both" ${c.type === 'both' ? 'selected' : ''}>Ambos</option>
             </select>
           </div>
-          <div class="ff"><label>Temperatura</label>
-            <select id="ctc-f-temp" class="fi">
-              <option value="cold" ${(!c.temperature || c.temperature === 'cold') ? 'selected' : ''}>Frio</option>
-              <option value="warm" ${c.temperature === 'warm' ? 'selected' : ''}>Morno</option>
-              <option value="hot" ${c.temperature === 'hot' ? 'selected' : ''}>Quente</option>
-              <option value="ready" ${c.temperature === 'ready' ? 'selected' : ''}>Pronto pro pipeline</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
           <div class="ff"><label>Status</label>
             <select id="ctc-f-status" class="fi">
               <option value="wishlist" ${(!c.status || c.status === 'wishlist') ? 'selected' : ''}>Wishlist</option>
@@ -258,17 +237,17 @@
               <option value="churned" ${c.status === 'churned' ? 'selected' : ''}>Perdido</option>
             </select>
           </div>
-          <div class="ff"><label>Origem</label>
-            <select id="ctc-f-source" class="fi">
-              <option value="">—</option>
-              <option value="inbound" ${c.source === 'inbound' ? 'selected' : ''}>Inbound</option>
-              <option value="outbound" ${c.source === 'outbound' ? 'selected' : ''}>Outbound</option>
-              <option value="referral" ${c.source === 'referral' ? 'selected' : ''}>Indicação</option>
-              <option value="event" ${c.source === 'event' ? 'selected' : ''}>Evento</option>
-              <option value="social" ${c.source === 'social' ? 'selected' : ''}>Redes sociais</option>
-              <option value="other" ${c.source === 'other' ? 'selected' : ''}>Outro</option>
-            </select>
-          </div>
+        </div>
+        <div class="ff"><label>Origem</label>
+          <select id="ctc-f-source" class="fi">
+            <option value="">—</option>
+            <option value="inbound" ${c.source === 'inbound' ? 'selected' : ''}>Inbound</option>
+            <option value="outbound" ${c.source === 'outbound' ? 'selected' : ''}>Outbound</option>
+            <option value="referral" ${c.source === 'referral' ? 'selected' : ''}>Indicação</option>
+            <option value="event" ${c.source === 'event' ? 'selected' : ''}>Evento</option>
+            <option value="social" ${c.source === 'social' ? 'selected' : ''}>Redes sociais</option>
+            <option value="other" ${c.source === 'other' ? 'selected' : ''}>Outro</option>
+          </select>
         </div>
         <div class="ff"><label>Notas</label><textarea id="ctc-f-notes" rows="3" placeholder="Contexto, histórico, observações...">${_esc(c.notes || '')}</textarea></div>
       </div>`;
@@ -276,13 +255,14 @@
 
   function _formRead() {
     const get = (id) => document.getElementById(id)?.value || '';
+    const ig = get('ctc-f-instagram').trim().replace(/^@/, '');
     return {
       name: get('ctc-f-name').trim(),
       email: get('ctc-f-email').trim() || null,
       phone: get('ctc-f-phone').trim() || null,
       company: get('ctc-f-company').trim() || null,
+      social_links: ig ? { instagram: ig } : {},
       type: get('ctc-f-type'),
-      temperature: get('ctc-f-temp'),
       status: get('ctc-f-status'),
       source: get('ctc-f-source') || null,
       notes: get('ctc-f-notes').trim() || null,
@@ -293,13 +273,11 @@
   window._ctcOpenDetail = (id) => {
     const c = CRM.contactById(id);
     if (!c) return;
-    const tempCol = TEMP_COLOR[c.temperature] || '#94a3b8';
+    const ig = c.social_links?.instagram;
 
     const body = `
       <div class="ctc-detail-head">
-        <div><strong style="font-size:18px">${_esc(c.name)}</strong>
-          <span class="ctc-temp" style="background:${tempCol}1a;color:${tempCol};border:1px solid ${tempCol}40;margin-left:8px">${TEMP_LABEL[c.temperature] || c.temperature}</span>
-        </div>
+        <div><strong style="font-size:18px">${_esc(c.name)}</strong></div>
         <div style="color:var(--text2);font-size:12px;margin-top:4px">
           ${c.company || '—'} · ${TYPE_LABEL[c.type] || c.type} · ${STATUS_LABEL[c.status] || c.status}
         </div>
@@ -307,6 +285,7 @@
       <div class="ctc-detail-grid">
         ${c.email ? `<div><span class="ctc-dt-k">Email</span><span>${_esc(c.email)}</span></div>` : ''}
         ${c.phone ? `<div><span class="ctc-dt-k">Telefone</span><span>${_esc(c.phone)}</span></div>` : ''}
+        ${ig ? `<div><span class="ctc-dt-k">Instagram</span><a href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener" style="color:var(--theme)">@${_esc(ig)}</a></div>` : ''}
         ${c.source ? `<div><span class="ctc-dt-k">Origem</span><span>${SOURCE_LABEL[c.source] || c.source}</span></div>` : ''}
         <div><span class="ctc-dt-k">Criado em</span><span>${new Date(c.created_at).toLocaleDateString('pt-BR')}</span></div>
       </div>
@@ -316,9 +295,7 @@
     const footer = `
       <button class="btn btn-danger" onclick="window._ctcDelete('${c.id}')"><i data-lucide="trash-2"></i> Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
-      <button class="btn btn-outline" onclick="window._ctcOpenEdit('${c.id}')"><i data-lucide="edit-2"></i> Editar</button>
-      <button class="btn btn-outline" onclick="window._ctcPromote('${c.id}','b2c')" style="color:#d946ef;border-color:#d946ef66"><i data-lucide="megaphone"></i> → B2C</button>
-      <button class="btn btn-theme" onclick="window._ctcPromote('${c.id}','b2b')"><i data-lucide="briefcase"></i> → B2B</button>
+      <button class="btn btn-theme" onclick="window._ctcOpenEdit('${c.id}')"><i data-lucide="edit-2"></i> Editar</button>
     `;
 
     openModal(c.name, body, footer);
@@ -359,26 +336,6 @@
       toast('Contato excluído', 's');
     } catch (e) {
       toast('Erro ao excluir: ' + (e.message || 'desconhecido'), 'e');
-    }
-  };
-
-  window._ctcPromote = async (id, scope) => {
-    const c = CRM.contactById(id);
-    if (!c) return;
-    try {
-      await CRM.cards.promoteContact(id, scope);
-      closeModal();
-      _renderList();
-      toast(`"${c.name}" promovido para Pipeline ${scope.toUpperCase()}`, 's');
-      // Opcional: abrir o pipeline no scope promovido
-      setTimeout(() => {
-        if (confirm(`Abrir Pipeline ${scope.toUpperCase()} para ver o card?`)) {
-          sessionStorage.setItem('pcrm_scope', scope);
-          openMod('pipeline');
-        }
-      }, 400);
-    } catch (e) {
-      toast('Erro ao promover: ' + (e.message || 'desconhecido'), 'e');
     }
   };
 
@@ -448,18 +405,20 @@
           <code>João Silva<br>Maria Santos<br>Pedro Costa</code>
         </div>
         <div class="ctc-import-format">
-          <div class="ctc-import-format-k">Nome + email</div>
-          <code>João Silva, joao@exemplo.com<br>Maria Santos, maria@abc.com</code>
+          <div class="ctc-import-format-k">Nome + Instagram</div>
+          <code>João Silva, @joaosilva<br>Maria Santos, @mariaproducao<br>Pedro, @pedrocosta</code>
         </div>
         <div class="ctc-import-format">
-          <div class="ctc-import-format-k">Com empresa + telefone</div>
-          <code>João Silva, joao@exemplo.com, Acme Inc, 11999999999</code>
+          <div class="ctc-import-format-k">Qualquer combo</div>
+          <code>João, @joao, joao@email.com<br>Maria, Acme Inc, 11999999999</code>
         </div>
       </div>
 
       <div style="font-size:11px;color:var(--text3);margin:14px 0 8px;line-height:1.5">
         Separador: <strong>vírgula</strong>, <strong>ponto-e-vírgula</strong> ou <strong>tab</strong> (colar de planilha).
-        Colunas: <strong>nome</strong> (obrigatório) · email · empresa · telefone.
+        Primeira coluna é sempre o <strong>nome</strong>. As demais são auto-detectadas:
+        começa com <code>@</code> → <strong>Instagram</strong>, tem <code>@email.com</code> → <strong>email</strong>,
+        só números → <strong>telefone</strong>, resto → <strong>empresa</strong>.
       </div>
 
       <textarea id="ctc-import-text" class="fi" rows="10"
@@ -475,16 +434,6 @@
             <option value="both">Ambos</option>
           </select>
         </div>
-        <div class="ff"><label>Temperatura padrão</label>
-          <select id="ctc-import-temp" class="fi" onchange="window._ctcImportPreview()">
-            <option value="cold" selected>Frio</option>
-            <option value="warm">Morno</option>
-            <option value="hot">Quente</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-row">
         <div class="ff"><label>Origem padrão</label>
           <select id="ctc-import-source" class="fi" onchange="window._ctcImportPreview()">
             <option value="">—</option>
@@ -494,12 +443,6 @@
             <option value="event">Evento</option>
             <option value="social">Redes sociais</option>
             <option value="other">Outro</option>
-          </select>
-        </div>
-        <div class="ff"><label>Status</label>
-          <select id="ctc-import-status" class="fi" onchange="window._ctcImportPreview()">
-            <option value="wishlist" selected>Wishlist</option>
-            <option value="in_pipeline">No pipeline</option>
           </select>
         </div>
       </div>
@@ -518,7 +461,28 @@
     lucide.createIcons();
   };
 
-  // Parse flexível: detecta separador, pula linhas vazias, extrai colunas
+  // Auto-detecta o tipo de cada célula (email, instagram, telefone, empresa)
+  function _detectCellType(val) {
+    const v = (val || '').trim();
+    if (!v) return { type: 'empty' };
+
+    // Instagram: @handle, instagram.com/handle, ig/handle
+    const igMatch = v.match(/(?:^@|instagram\.com\/|ig\/)([a-zA-Z0-9._]+)/i);
+    if (igMatch) return { type: 'instagram', value: igMatch[1].replace(/^@/, '') };
+    if (/^@[a-zA-Z0-9._]+$/.test(v)) return { type: 'instagram', value: v.replace(/^@/, '') };
+
+    // Email
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return { type: 'email', value: v.toLowerCase() };
+
+    // Telefone: só dígitos, espaços, parênteses, hífens, +. Pelo menos 8 dígitos.
+    const digits = v.replace(/\D/g, '');
+    if (/^[\d\s()+\-.]+$/.test(v) && digits.length >= 8) return { type: 'phone', value: v };
+
+    // Qualquer outra coisa → empresa (ou extra)
+    return { type: 'company', value: v };
+  }
+
+  // Parse flexível: detecta separador E auto-mapeia colunas pelo conteúdo
   function _parseImportText(txt) {
     const lines = txt.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
     const results = [];
@@ -533,29 +497,29 @@
       else if (line.includes(',')) parts = line.split(',').map(p => p.trim());
       else parts = [line];
 
-      const [name, email, company, phone] = parts;
+      const name = (parts[0] || '').trim();
       if (!name) { errors.push({ line: idx + 1, msg: 'nome vazio' }); return; }
 
-      // Validação simples do email se tiver
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        errors.push({ line: idx + 1, name, msg: `email inválido: ${email}` });
-        return;
+      // Auto-detecta o tipo de cada coluna extra
+      const row = { name, email: null, company: null, phone: null, instagram: null };
+      for (let i = 1; i < parts.length; i++) {
+        const det = _detectCellType(parts[i]);
+        if (det.type === 'empty') continue;
+        if (det.type === 'instagram' && !row.instagram) row.instagram = det.value;
+        else if (det.type === 'email' && !row.email) row.email = det.value;
+        else if (det.type === 'phone' && !row.phone) row.phone = det.value;
+        else if (det.type === 'company' && !row.company) row.company = det.value;
       }
 
-      // Dedupe por nome+email
-      const key = `${name.toLowerCase()}|${(email || '').toLowerCase()}`;
+      // Dedupe por nome+email+instagram
+      const key = `${name.toLowerCase()}|${(row.email || '').toLowerCase()}|${(row.instagram || '').toLowerCase()}`;
       if (seen.has(key)) {
         errors.push({ line: idx + 1, name, msg: 'duplicado nesta importação' });
         return;
       }
       seen.add(key);
 
-      results.push({
-        name,
-        email: email || null,
-        company: company || null,
-        phone: phone || null,
-      });
+      results.push(row);
     });
 
     return { results, errors };
@@ -603,8 +567,10 @@
           ${results.slice(0, 5).map(r => `
             <div class="ctc-import-row">
               <strong>${_esc(r.name)}</strong>
+              ${r.instagram ? `<span class="ctc-import-ig">@${_esc(r.instagram)}</span>` : ''}
               ${r.email ? `<span>· ${_esc(r.email)}</span>` : ''}
               ${r.company ? `<span>· ${_esc(r.company)}</span>` : ''}
+              ${r.phone ? `<span>· ${_esc(r.phone)}</span>` : ''}
               ${existingNames.has(r.name.toLowerCase()) ? `<span class="ctc-import-dup">já existe</span>` : ''}
             </div>
           `).join('')}
@@ -628,9 +594,7 @@
   window._ctcDoImport = async () => {
     const txt = document.getElementById('ctc-import-text')?.value || '';
     const type = document.getElementById('ctc-import-type')?.value || 'b2c';
-    const temperature = document.getElementById('ctc-import-temp')?.value || 'cold';
     const source = document.getElementById('ctc-import-source')?.value || null;
-    const status = document.getElementById('ctc-import-status')?.value || 'wishlist';
     const btn = document.getElementById('ctc-import-btn');
 
     const { results } = _parseImportText(txt);
@@ -644,7 +608,20 @@
     const existingEmails = new Set((STATE.crm?.contacts || []).map(c => (c.email || '').toLowerCase()).filter(Boolean));
     const toInsert = results.filter(r =>
       !existingNames.has(r.name.toLowerCase()) && !(r.email && existingEmails.has(r.email.toLowerCase()))
-    ).map(r => ({ ...r, type, temperature, source, status }));
+    ).map(r => {
+      // Instagram vai pro jsonb social_links
+      const social_links = r.instagram ? { instagram: r.instagram } : {};
+      return {
+        name: r.name,
+        email: r.email,
+        company: r.company,
+        phone: r.phone,
+        social_links,
+        type,
+        source,
+        status: 'wishlist',
+      };
+    });
 
     if (!toInsert.length) {
       closeModal();
