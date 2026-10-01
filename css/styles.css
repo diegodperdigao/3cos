@@ -6795,3 +6795,92 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   flex: 0 !important;
 }
 .dock-item:hover{transform: translateY(-3px) scale(1.03);}
+
+/* ══════════════════════════════════════════════════════════ */
+/* HUB — Pass 3: grid-based layout (fills viewport, no voids)  */
+/* ══════════════════════════════════════════════════════════ */
+
+/* Converte stage em grid vertical com 3 linhas: hero / widgets / dock.
+   Widgets ocupam todo espaço livre (fr) e ficam centrados verticalmente.
+   Hero fica no topo e dock no bottom — sem voids. */
+.hub-stage{
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: clamp(16px, 2.5vh, 32px);
+  padding-top: clamp(20px, 3vh, 36px);
+  padding-bottom: clamp(16px, 2.5vh, 28px);
+  justify-content: stretch;
+  min-height: calc(100vh - 60px);
+  /* 60px é a altura da hub-bar */
+}
+
+/* Hero: ainda no topo, mais presença */
+.hub-stage .hub-hero{
+  align-self: start;
+  gap: 7px;
+}
+.hub-stage .hub-hero-title{
+  font-size: clamp(32px, 4vw, 48px);
+}
+.hub-stage .hub-hero-sub{font-size: 14.5px;}
+
+/* Widgets: ocupam o espaço vertical disponível, centralizados */
+.hub-stage .hub-widgets{
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  align-content: center;
+}
+@media (min-width: 1200px){
+  .hub-stage .hub-widgets{
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Widget cards: um pouco MAIORES para preencher o espaço generoso */
+.hw2{
+  min-height: 180px;
+  padding: 16px 18px 14px;
+  gap: 12px;
+}
+.hw2-title{font-size: 13px;}
+.hw2-icon{width: 30px; height: 30px; border-radius: 10px;}
+.hw2-icon svg{width: 14px; height: 14px;}
+.hw2-big-val{font-size: 28px;}
+.hw2-spark{height: 48px;}
+.hw2-item{padding: 6px 2px; font-size: 12px;}
+.hw2-item-text{font-size: 12px;}
+
+/* Dock: fixo no bottom via grid, não precisa de wrap */
+.hub-stage .hub-dock{
+  align-self: end;
+  gap: var(--hub-space-s);
+  padding: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  justify-content: center;
+  scrollbar-width: none;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Dock items: ligeiramente mais compactos pra sobrar espaço aos widgets */
+.dock-item{
+  padding: 12px 10px 11px !important;
+  min-width: 108px !important;
+  max-width: 150px !important;
+  gap: 6px !important;
+  border-radius: 15px !important;
+}
+.dock-item-icon{
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+}
+.dock-item-icon svg{width: 20px !important; height: 20px !important;}
+.dock-item-label{font-size: 11px !important;}
