@@ -8245,3 +8245,76 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
 /* Tier dentro do select mode: puxa pro lado */
 .ctc-grid.select-mode .ctc-tile-tier{right: 44px;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* CONTATOS — Modal de Lançamentos                             */
+/* ══════════════════════════════════════════════════════════ */
+
+.ctc-imports-list{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.ctc-import-batch{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--gb);
+  border-radius: 12px;
+  transition: all 0.15s var(--ease-out);
+}
+.ctc-import-batch:hover{
+  border-color: var(--gb2);
+  background: color-mix(in srgb, var(--theme) 4%, var(--bg3));
+}
+
+.ctc-import-batch-info{
+  flex: 1;
+  min-width: 0;
+}
+
+.ctc-import-batch-head{
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.ctc-import-batch-head strong{
+  font-family: var(--fd);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+}
+.ctc-import-batch-count{
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--theme);
+  background: color-mix(in srgb, var(--theme) 12%, transparent);
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+
+.ctc-import-batch-meta{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+.ctc-import-batch-names{
+  font-size: 11.5px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.ctc-import-batch .btn{flex-shrink: 0;}

@@ -45,6 +45,7 @@
           <div class="sec-actions" id="ctc-sec-actions">
             <div class="srch"><i data-lucide="search"></i><input type="text" placeholder="Buscar nome, email, empresa..." oninput="window._ctcSearch(this.value)"></div>
             <button class="btn btn-outline" onclick="window._ctcToggleSelect()"><i data-lucide="check-square"></i> Selecionar</button>
+            <button class="btn btn-outline" onclick="window._ctcOpenImports()"><i data-lucide="list"></i> Lançamentos</button>
             <button class="btn btn-outline" onclick="window._ctcManageTags()"><i data-lucide="tags"></i> Tags</button>
             <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
             <button class="btn btn-theme" onclick="window._ctcOpenNew()"><i data-lucide="plus"></i> Novo contato</button>
@@ -677,6 +678,7 @@
       actions.innerHTML = `
         <div class="srch"><i data-lucide="search"></i><input type="text" placeholder="Buscar nome, email, empresa..." oninput="window._ctcSearch(this.value)"></div>
         <button class="btn btn-outline" onclick="window._ctcToggleSelect()"><i data-lucide="check-square"></i> Selecionar</button>
+        <button class="btn btn-outline" onclick="window._ctcOpenImports()"><i data-lucide="list"></i> Lançamentos</button>
         <button class="btn btn-outline" onclick="window._ctcManageTags()"><i data-lucide="tags"></i> Tags</button>
         <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
         <button class="btn btn-theme" onclick="window._ctcOpenNew()"><i data-lucide="plus"></i> Novo contato</button>
@@ -684,6 +686,92 @@
     }
     if (window.lucide) lucide.createIcons();
   }
+
+  // ── LANÇAMENTOS (histórico de imports em batch) ──────────
+  // Agrupa contatos pelo created_at exato (precisão de microssegundo).
+  // Inserts em lote dão todos o mesmo timestamp — adições manuais não.
+  // Threshold: grupos com >= 2 contatos no mesmo instante = import.
+  function _detectImports() {
+    const contacts = STATE.crm?.contacts || [];
+    const groups = {};
+    contacts.forEach(c => {
+      const key = c.created_at;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(c);
+    });
+    return Object.entries(groups)
+      .filter(([, arr]) => arr.length >= 2)
+      .map(([createdAt, arr]) => ({
+        createdAt,
+        count: arr.length,
+        contacts: arr,
+        sampleNames: arr.slice(0, 4).map(c => c.name),
+      }))
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  }
+
+  window._ctcOpenImports = () => {
+    const imports = _detectImports();
+    const body = `
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        Cada linha abaixo é um lançamento em lote (contatos adicionados juntos na mesma importação).
+        Contatos cadastrados individualmente não aparecem aqui.
+      </div>
+      ${imports.length === 0 ? `
+        <div style="text-align:center;padding:40px 20px;color:var(--text3)">
+          <i data-lucide="inbox" style="width:36px;height:36px;opacity:0.3;margin-bottom:8px"></i>
+          <div style="font-size:13px">Nenhum lançamento em lote detectado.</div>
+          <div style="font-size:11px;margin-top:6px;opacity:0.7">Os contatos atuais foram adicionados individualmente.</div>
+        </div>
+      ` : `
+        <div class="ctc-imports-list">
+          ${imports.map((imp, idx) => {
+            const date = new Date(imp.createdAt);
+            const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+            const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            return `<div class="ctc-import-batch">
+              <div class="ctc-import-batch-info">
+                <div class="ctc-import-batch-head">
+                  <strong>Lançamento ${imports.length - idx}</strong>
+                  <span class="ctc-import-batch-count">${imp.count} contato${imp.count === 1 ? '' : 's'}</span>
+                </div>
+                <div class="ctc-import-batch-meta">
+                  <i data-lucide="clock" style="width:11px;height:11px"></i> ${dateStr} às ${timeStr}
+                </div>
+                <div class="ctc-import-batch-names">
+                  ${imp.sampleNames.map(n => _esc(n)).join(' · ')}${imp.count > 4 ? ` · +${imp.count - 4}` : ''}
+                </div>
+              </div>
+              <button class="btn btn-danger" onclick="window._ctcDeleteImport('${imp.createdAt}')">
+                <i data-lucide="trash-2"></i> Excluir
+              </button>
+            </div>`;
+          }).join('')}
+        </div>
+      `}
+    `;
+    openModal('Lançamentos de contatos', body, `<button class="btn btn-ghost" onclick="closeModal()">Fechar</button>`);
+    lucide.createIcons();
+  };
+
+  window._ctcDeleteImport = async (createdAt) => {
+    const imports = _detectImports();
+    const batch = imports.find(i => i.createdAt === createdAt);
+    if (!batch) return;
+    if (!confirm(`Excluir este lançamento?\n\n${batch.count} contato${batch.count === 1 ? '' : 's'} (${batch.sampleNames.slice(0,3).join(', ')}${batch.count > 3 ? ' e mais ' + (batch.count - 3) : ''}) serão removidos. Essa ação não pode ser desfeita.`)) return;
+    try {
+      const client = window.sb.schema('crm');
+      const { error } = await client.from('contacts').delete().eq('created_at', createdAt);
+      if (error) throw error;
+      // Atualiza STATE local
+      STATE.crm.contacts = (STATE.crm.contacts || []).filter(c => c.created_at !== createdAt);
+      closeModal();
+      _renderList();
+      toast(`${batch.count} contato${batch.count === 1 ? '' : 's'} excluído${batch.count === 1 ? '' : 's'} do lançamento`, 's');
+    } catch (e) {
+      toast('Erro ao excluir lançamento: ' + (e.message || 'desconhecido'), 'e');
+    }
+  };
 
   // ── BULK IMPORT ────────────────────────────────────────────
   window._ctcOpenImport = () => {
