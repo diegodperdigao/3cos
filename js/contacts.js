@@ -372,7 +372,8 @@
       // Opcional: abrir o pipeline no scope promovido
       setTimeout(() => {
         if (confirm(`Abrir Pipeline ${scope.toUpperCase()} para ver o card?`)) {
-          openMod('pipeline_' + scope);
+          sessionStorage.setItem('pcrm_scope', scope);
+          openMod('pipeline');
         }
       }, 400);
     } catch (e) {

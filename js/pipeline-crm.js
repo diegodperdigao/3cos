@@ -1,82 +1,132 @@
 // ══════════════════════════════════════════════════════════
-// CRM — PIPELINE (B2B + B2C compartilhando a UI)
+// CRM — PIPELINE (B2B + B2C em 1 módulo com abas)
 // ══════════════════════════════════════════════════════════
-// Renderiza um Kanban que lê de crm.pipeline_cards + crm.pipeline_stages
-// filtrado por scope ('b2b' ou 'b2c'). Chamado por buildMod com o scope
-// como segundo argumento: bPipelineCRM(el, 'b2b') ou (el, 'b2c').
+// Renderiza um Kanban que lê de crm.pipeline_cards + crm.pipeline_stages.
+// Duas abas no topo (B2B / B2C) alternam o scope ativo. Filtros, métricas
+// e stages são independentes por scope. Persistência de scope ativo em
+// sessionStorage para manter contexto ao navegar.
 // ══════════════════════════════════════════════════════════
 
 (function () {
-  // Estado por scope (filtros independentes)
+  // Scope ativo (persistido na sessão)
+  let _scope = sessionStorage.getItem('pcrm_scope') || 'b2b';
+
+  // Filtros independentes por scope
   const F = {
     b2b: { search: '', owner: 'all' },
     b2c: { search: '', owner: 'all' },
   };
 
   const SCOPE_META = {
-    b2b: { label: 'B2B', title: 'Pipeline B2B', sub: 'Negociações com marcas e empresas', icon: 'briefcase', color: '#6366f1' },
-    b2c: { label: 'B2C', title: 'Pipeline B2C', sub: 'Negociações com influencers e afiliados', icon: 'megaphone', color: '#d946ef' },
+    b2b: { label: 'B2B', title: 'B2B — Marcas', sub: 'Negociações com marcas e empresas', icon: 'briefcase', color: '#6366f1' },
+    b2c: { label: 'B2C', title: 'B2C — Influencers', sub: 'Negociações com influencers e afiliados', icon: 'megaphone', color: '#d946ef' },
   };
 
+  function _setScope(scope) {
+    _scope = scope;
+    sessionStorage.setItem('pcrm_scope', scope);
+  }
+
   // ── MOUNT ─────────────────────────────────────────────────
-  async function bPipelineCRM(el, scope) {
-    const meta = SCOPE_META[scope] || SCOPE_META.b2b;
+  async function bPipelineCRM(el) {
     const ownerOpts = (STATE.users || []).map(u =>
       `<option value="${u.id}">${_esc(u.name)}</option>`
     ).join('');
 
-    el.innerHTML = modHdr(meta.title) + `<div class="mod-body">
-      ${heroHTML('pipeline-crm-' + scope, 'CRM Comercial', meta.title, meta.sub)}
+    el.innerHTML = modHdr('Pipeline — B2B & B2C') + `<div class="mod-body">
+      ${heroHTML('pipeline-crm', 'CRM Comercial', 'Pipeline', 'Funil de negociações B2B e B2C')}
       <div class="mod-main">
-        <div class="sec-hdr">
-          <div class="sec-lbl">Kanban ${meta.label}</div>
+        <!-- Abas de scope -->
+        <div class="pcrm-tabs">
+          <button class="pcrm-tab ${_scope === 'b2b' ? 'on' : ''}" data-scope="b2b" onclick="window._pcrmSwitchTab('b2b')">
+            <i data-lucide="briefcase"></i>
+            <span>B2B — Marcas</span>
+            <span class="pcrm-tab-count" id="pcrm-count-b2b"></span>
+          </button>
+          <button class="pcrm-tab ${_scope === 'b2c' ? 'on' : ''}" data-scope="b2c" onclick="window._pcrmSwitchTab('b2c')">
+            <i data-lucide="megaphone"></i>
+            <span>B2C — Influencers</span>
+            <span class="pcrm-tab-count" id="pcrm-count-b2c"></span>
+          </button>
+        </div>
+
+        <div class="sec-hdr" style="margin-top:16px">
+          <div class="sec-lbl" id="pcrm-sec-label">Kanban ${SCOPE_META[_scope].label}</div>
           <div class="sec-actions">
-            <button class="btn btn-outline" onclick="window._pcrmManageStages('${scope}')"><i data-lucide="list"></i> Etapas</button>
-            <button class="btn btn-outline" onclick="window._pcrmFromContact('${scope}')"><i data-lucide="user-plus"></i> Da wishlist</button>
-            <button class="btn btn-theme" onclick="window._pcrmOpenNewCard('${scope}')"><i data-lucide="plus"></i> Nova negociação</button>
+            <button class="btn btn-outline" onclick="window._pcrmManageStages(window._pcrmGetScope())"><i data-lucide="list"></i> Etapas</button>
+            <button class="btn btn-outline" onclick="window._pcrmFromContact(window._pcrmGetScope())"><i data-lucide="user-plus"></i> Da wishlist</button>
+            <button class="btn btn-theme" onclick="window._pcrmOpenNewCard(window._pcrmGetScope())"><i data-lucide="plus"></i> Nova negociação</button>
           </div>
         </div>
 
         <div class="pipe-filters">
           <div class="pipe-filter-group">
             <label>Busca</label>
-            <input class="fi pipe-filter-select" placeholder="Título, empresa, contato..." oninput="window._pcrmSearch('${scope}', this.value)">
+            <input class="fi pipe-filter-select" id="pcrm-search" placeholder="Título, empresa, contato..." oninput="window._pcrmSearch(window._pcrmGetScope(), this.value)">
           </div>
           <div class="pipe-filter-group">
             <label>Responsável</label>
-            <select class="fi pipe-filter-select" onchange="window._pcrmOwner('${scope}', this.value)">
+            <select class="fi pipe-filter-select" id="pcrm-owner" onchange="window._pcrmOwner(window._pcrmGetScope(), this.value)">
               <option value="all">Todos</option>
               <option value="mine">Meus negócios</option>
               ${ownerOpts}
             </select>
           </div>
-          <div class="pipe-filter-group pipe-metrics" id="pcrm-metrics-${scope}"></div>
+          <div class="pipe-filter-group pipe-metrics" id="pcrm-metrics"></div>
         </div>
 
-        <div class="kanban" id="pcrm-board-${scope}"></div>
+        <div class="kanban" id="pcrm-board"></div>
       </div></div>`;
 
     // Carrega CRM se necessário
     if (!STATE.crm.loaded && window.CRM?.loadAll) {
-      document.getElementById('pcrm-board-' + scope).innerHTML =
+      document.getElementById('pcrm-board').innerHTML =
         '<div class="empty" style="grid-column:1/-1"><i data-lucide="loader"></i><p>Carregando...</p></div>';
       lucide.createIcons();
       const ok = await CRM.loadAll();
       if (!ok) {
-        document.getElementById('pcrm-board-' + scope).innerHTML =
+        document.getElementById('pcrm-board').innerHTML =
           '<div class="empty" style="grid-column:1/-1"><i data-lucide="alert-triangle" style="color:var(--amber)"></i><p>Erro ao carregar. Verifique se o schema `crm` está exposto na API do Supabase.</p></div>';
         lucide.createIcons();
         return;
       }
     }
-    _renderBoard(scope);
+    _renderBoard(_scope);
+    _renderTabCounts();
     lucide.createIcons();
   }
   window.bPipelineCRM = bPipelineCRM;
+  window._pcrmGetScope = () => _scope;
+
+  // Troca de aba B2B ⇄ B2C
+  window._pcrmSwitchTab = (scope) => {
+    _setScope(scope);
+    // Atualiza aba visual
+    document.querySelectorAll('.pcrm-tab').forEach(t => {
+      t.classList.toggle('on', t.dataset.scope === scope);
+    });
+    // Atualiza label e inputs ao filtro ativo do scope
+    const sec = document.getElementById('pcrm-sec-label');
+    if (sec) sec.textContent = `Kanban ${SCOPE_META[scope].label}`;
+    const srch = document.getElementById('pcrm-search');
+    if (srch) srch.value = F[scope].search;
+    const ow = document.getElementById('pcrm-owner');
+    if (ow) ow.value = F[scope].owner;
+    _renderBoard(scope);
+  };
+
+  function _renderTabCounts() {
+    const b2b = (STATE.crm.cards || []).filter(c => c.scope === 'b2b').length;
+    const b2c = (STATE.crm.cards || []).filter(c => c.scope === 'b2c').length;
+    const el1 = document.getElementById('pcrm-count-b2b');
+    const el2 = document.getElementById('pcrm-count-b2c');
+    if (el1) el1.textContent = b2b;
+    if (el2) el2.textContent = b2c;
+  }
 
   // ── RENDER ────────────────────────────────────────────────
   function _renderBoard(scope) {
-    const board = document.getElementById('pcrm-board-' + scope);
+    const board = document.getElementById('pcrm-board');
     if (!board) return;
     const stages = CRM.stagesForScope(scope);
     let cards = CRM.cardsForScope(scope);
@@ -98,7 +148,7 @@
     // Métricas
     const totalValue = cards.reduce((s, c) => s + (Number(c.value) || 0), 0);
     const weighted = cards.reduce((s, c) => s + (Number(c.value) || 0) * (Number(c.probability) || 0) / 100, 0);
-    const metricsEl = document.getElementById('pcrm-metrics-' + scope);
+    const metricsEl = document.getElementById('pcrm-metrics');
     if (metricsEl) {
       metricsEl.innerHTML = `
         <div class="pipe-metric"><span class="pipe-metric-k">Negociações</span><span class="pipe-metric-v">${cards.length}</span></div>
@@ -117,6 +167,7 @@
       return;
     }
 
+    _renderTabCounts();
     board.style.gridTemplateColumns = `repeat(${stages.length}, minmax(240px, 1fr))`;
     board.innerHTML = stages.map(stage => {
       const stageCards = cards.filter(c => c.stage_id === stage.id);

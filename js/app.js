@@ -1290,25 +1290,15 @@ function showHub(){
     if(window.updateCopilotVisibility)updateCopilotVisibility();
     if(window.applyAppTheme)applyAppTheme();
     initMosaics();lucide.createIcons();
-    // Run payment watchdog silently after hub is fully visible.
-    // No toasts — alerts go to the notification center (bell badge).
-    setTimeout(()=>{if(typeof runPaymentWatchdog==='function')runPaymentWatchdog();},3000);
   },650);
 }
 
 // ── HUB CARDS ──
 const MODS=[
   {id:'dashboard',label:'Dashboard',icon:'bar-chart-2',sub:'KPIs · Intel · Ranking',color:'rgba(236,72,153,0.32)',glow:'rgba(236,72,153,0.14)',bg:'rgba(236,72,153,0.1)',stroke:'#ec4899'},
-  // ── Frente comercial (CRM B2B/B2C — schema crm) ──
   {id:'contacts',label:'Contatos',icon:'contact-round',sub:'Wishlist · Prospects · Clientes',color:'rgba(20,184,166,0.32)',glow:'rgba(20,184,166,0.14)',bg:'rgba(20,184,166,0.1)',stroke:'#14b8a6'},
-  {id:'pipeline_b2b',label:'Pipeline B2B',icon:'briefcase',sub:'Marcas · Parceiros · Deals',color:'rgba(99,102,241,0.32)',glow:'rgba(99,102,241,0.14)',bg:'rgba(99,102,241,0.1)',stroke:'#6366f1'},
-  {id:'pipeline_b2c',label:'Pipeline B2C',icon:'megaphone',sub:'Influencers · Afiliados · Deals',color:'rgba(217,70,239,0.32)',glow:'rgba(217,70,239,0.14)',bg:'rgba(217,70,239,0.1)',stroke:'#d946ef'},
-  // ── Operacional (3C OS Pro — schema public, em descontinuação) ──
-  {id:'affiliates',label:'Afiliados',icon:'users',sub:'CRM · Contratos · Deals',color:'rgba(96,165,250,0.32)',glow:'rgba(96,165,250,0.14)',bg:'rgba(96,165,250,0.1)',stroke:'#3b82f6'},
-  {id:'brands',label:'Marcas',icon:'tag',sub:'Casas Parceiras · Deals',color:'rgba(168,85,247,0.32)',glow:'rgba(168,85,247,0.14)',bg:'rgba(168,85,247,0.1)',stroke:'#a855f7'},
-  {id:'payments',label:'Financeiro',icon:'banknote',sub:'Pagamentos · NFs',color:'rgba(245,158,11,0.32)',glow:'rgba(245,158,11,0.14)',bg:'rgba(245,158,11,0.1)',stroke:'#f59e0b'},
+  {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'B2B · B2C · Kanban',color:'rgba(99,102,241,0.32)',glow:'rgba(99,102,241,0.14)',bg:'rgba(99,102,241,0.1)',stroke:'#6366f1'},
   {id:'tasks',label:'Tarefas',icon:'check-square',sub:'Workflow integrado',color:'rgba(16,185,129,0.32)',glow:'rgba(16,185,129,0.14)',bg:'rgba(16,185,129,0.1)',stroke:'#10b981'},
-  {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'Kanban · Funil',color:'rgba(14,165,233,0.32)',glow:'rgba(14,165,233,0.14)',bg:'rgba(14,165,233,0.1)',stroke:'#0ea5e9'},
   {id:'audit',label:'Auditoria',icon:'activity',sub:'Log · Registro',color:'rgba(140,180,0,0.35)',glow:'rgba(140,180,0,0.12)',bg:'rgba(140,180,0,0.12)',stroke:'#8cb400'},
   {id:'backup',label:'Backup',icon:'cloud',sub:'Nuvem · Exportar',color:'rgba(14,165,233,0.32)',glow:'rgba(14,165,233,0.14)',bg:'rgba(14,165,233,0.1)',stroke:'#0ea5e9'},
   {id:'users',label:'Usuários',icon:'shield',sub:'Acessos · Cargos',color:'rgba(239,68,68,0.32)',glow:'rgba(239,68,68,0.14)',bg:'rgba(239,68,68,0.1)',stroke:'#ef4444',adminOnly:true},
@@ -1462,19 +1452,14 @@ function heroHTML(mosId,eyebrow,title,sub){
 function buildMod(id,el){
   const map = {
     dashboard: bDash,
-    affiliates: bAffs,
-    brands: bBrands,
-    payments: bPayments,
     tasks: bTasks,
-    pipeline: bPipeline,
     audit: bAudit,
     backup: bBackup,
     users: bUsers,
     settings: bSettings,
-    // CRM (frente comercial)
+    // CRM (frente comercial — schema crm)
     contacts: typeof bContacts === 'function' ? bContacts : null,
-    pipeline_b2b: typeof bPipelineCRM === 'function' ? (e) => bPipelineCRM(e, 'b2b') : null,
-    pipeline_b2c: typeof bPipelineCRM === 'function' ? (e) => bPipelineCRM(e, 'b2c') : null,
+    pipeline: typeof bPipelineCRM === 'function' ? bPipelineCRM : null,
   };
   map[id]?.(el);
 }

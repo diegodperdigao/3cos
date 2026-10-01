@@ -22,7 +22,6 @@ function bDash(el){
         <div class="sec-lbl">Painel de Controle</div>
         <div class="sec-actions">
           <button class="btn btn-outline" onclick="openReportsHistory()"><i data-lucide="list"></i> Lançamentos</button>
-          <button class="btn btn-outline" onclick="openImportModal()"><i data-lucide="upload"></i> Importar CSV</button>
           <button class="btn btn-theme" onclick="openDailyDataModal()"><i data-lucide="database"></i> Lançar Dados</button>
         </div>
       </div>
@@ -560,8 +559,7 @@ window.saveDailyData = () => {
   closeModal();
   toast('Dados lançados com sucesso!');
 
-  if(document.getElementById('mod-dashboard').classList.contains('active')) bDash(document.getElementById('mod-dashboard'));
-  if(document.getElementById('mod-brands').classList.contains('active')) bBrands(document.getElementById('mod-brands'));
+  if(document.getElementById('mod-dashboard')?.classList.contains('active')) bDash(document.getElementById('mod-dashboard'));
 };
 
 // ══════════════════════════════════════════════════════════
