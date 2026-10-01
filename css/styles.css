@@ -5653,3 +5653,84 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .auto-row-trigger{font-size:10px;color:var(--text2);margin-top:1px;}
 .auto-row-url{font-size:9px;color:var(--text3);font-family:var(--fb);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .auto-row-actions{display:flex;gap:4px;flex-shrink:0;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* CRM — Contatos (Wishlist) + Pipeline B2B/B2C               */
+/* ══════════════════════════════════════════════════════════ */
+
+/* Filtros da lista de contatos */
+.ctc-filters{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
+.ctc-filter-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ctc-filter-lbl{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;min-width:88px;}
+.ctc-counts{font-size:11px;color:var(--text3);margin:4px 0 14px;}
+
+/* Lista de contatos */
+.ctc-list{display:flex;flex-direction:column;gap:8px;}
+.ctc-card{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--gb);border-radius:12px;padding:14px 18px;cursor:pointer;transition:all 0.15s;gap:12px;}
+.ctc-card:hover{border-color:var(--gb2);background:var(--bg3);transform:translateX(2px);}
+.ctc-card-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0;}
+.ctc-av{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.ctc-card-info{flex:1;min-width:0;}
+.ctc-card-name{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.ctc-card-meta{display:flex;gap:14px;color:var(--text2);font-size:11px;margin-top:3px;flex-wrap:wrap;}
+.ctc-card-meta span{display:inline-flex;align-items:center;gap:4px;}
+.ctc-card-meta svg{width:11px;height:11px;}
+.ctc-card-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+
+/* Badges de temp / type / status */
+.ctc-temp{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;}
+.ctc-badge{padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;border:1px solid var(--gb2);background:var(--bg3);color:var(--text2);}
+.ctc-badge.type-b2b{background:rgba(99,102,241,0.1);color:#6366f1;border-color:rgba(99,102,241,0.3);}
+.ctc-badge.type-b2c{background:rgba(217,70,239,0.1);color:#d946ef;border-color:rgba(217,70,239,0.3);}
+.ctc-badge.type-both{background:rgba(20,184,166,0.1);color:#14b8a6;border-color:rgba(20,184,166,0.3);}
+.ctc-badge.status-wishlist{background:rgba(148,163,184,0.1);color:#94a3b8;}
+.ctc-badge.status-in_pipeline{background:rgba(245,158,11,0.1);color:#f59e0b;border-color:rgba(245,158,11,0.3);}
+.ctc-badge.status-customer{background:rgba(16,185,129,0.1);color:#10b981;border-color:rgba(16,185,129,0.3);}
+.ctc-badge.status-churned{background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);}
+
+/* Detalhes do contato (modal) */
+.ctc-detail-head{padding-bottom:12px;border-bottom:1px solid var(--gb);margin-bottom:14px;}
+.ctc-detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;}
+.ctc-detail-grid > div{display:flex;flex-direction:column;gap:3px;}
+.ctc-dt-k{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;}
+
+/* Gerenciar tags (modal) */
+.ctc-tag-list{display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;}
+.ctc-tag-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--text);}
+
+/* Form grid comum */
+.form-grid{display:flex;flex-direction:column;gap:12px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ff label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px;}
+.ff input, .ff select, .ff textarea{width:100%;background:var(--bg3);border:1px solid var(--gb);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--fb);outline:none;transition:border-color 0.15s;}
+.ff input:focus, .ff select:focus, .ff textarea:focus{border-color:var(--theme);}
+.ff textarea{resize:vertical;min-height:68px;}
+
+/* Kanban CRM — board base */
+.kanban{display:grid;gap:12px;margin-top:14px;overflow-x:auto;padding-bottom:8px;}
+.kan-col{background:var(--bg2);border:1px solid var(--gb);border-radius:12px;padding:12px;min-height:300px;display:flex;flex-direction:column;transition:background 0.15s;}
+.kan-col-drop{background:var(--theme-dim);border-color:var(--theme-b);}
+.kan-col-hdr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text);}
+.kan-stage-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.kan-stage-name{flex:1;}
+.kan-stage-count{background:var(--bg3);color:var(--text2);font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;}
+.kan-col-total{font-size:11px;color:var(--text3);margin:4px 0 10px;font-weight:600;}
+.kan-cards{display:flex;flex-direction:column;gap:8px;}
+.kan-card{background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all 0.15s;}
+.kan-card:hover{border-color:var(--gb2);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+.kan-card-drag{opacity:0.4;}
+.kan-card-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.kan-card-sub{font-size:10px;color:var(--text2);margin-top:3px;display:flex;align-items:center;gap:4px;}
+.kan-card-foot{display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px solid var(--gb);}
+.kan-card-value{font-size:11px;font-weight:700;color:var(--green);}
+.kan-card-prob{font-size:10px;color:var(--text2);}
+
+/* Métricas no topo do pipeline */
+.pipe-metrics{display:flex;gap:16px;margin-left:auto;}
+.pipe-metric{display:flex;flex-direction:column;align-items:flex-end;}
+.pipe-metric-k{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;}
+.pipe-metric-v{font-size:14px;font-weight:700;color:var(--text);line-height:1.2;}
+
+/* Lista de stages (modal) */
+.pcrm-stage-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+.pcrm-stage-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--text);}
