@@ -59,28 +59,133 @@ function _renderSettingsTabContent(id) {
 }
 
 function _renderIntegrationsTab(el) {
+  const origin = window.location.origin;
+  const mcpUrl = `${origin}/api/mcp`;
   el.innerHTML = `
     <div class="st-section">
       <div class="st-section-hdr">
         <div class="st-section-icon"><i data-lucide="plug-zap"></i></div>
         <div>
-          <div class="st-section-title">Integrações</div>
-          <div class="st-section-sub">Conecte o 3cos a outras ferramentas</div>
+          <div class="st-section-title">MCP — Model Context Protocol</div>
+          <div class="st-section-sub">Conecte Claude Desktop, Cursor, Zed ou qualquer cliente MCP ao CRM</div>
         </div>
       </div>
+
       <div class="st-card">
-        <div class="st-row">
-          <div><strong style="color:var(--text);display:block;margin-bottom:4px">MCP (Model Context Protocol)</strong>
-            <div style="color:var(--text2);font-size:12px;line-height:1.5">
-              Conecte Claude, ChatGPT, Cursor ou qualquer cliente MCP ao seu CRM.
-              Permite consultar contatos, pipeline e criar negociações via IA.
-            </div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text2);margin-bottom:14px">
+          O servidor MCP do 3cos permite que assistentes IA consultem seus dados do CRM
+          (contatos, pipeline, tarefas, produtos) via linguagem natural. Útil para gerar
+          relatórios, buscar oportunidades e tirar dúvidas sobre o funil sem precisar
+          abrir a plataforma.
+        </div>
+
+        <div class="st-mcp-row">
+          <div class="st-mcp-k">URL do servidor</div>
+          <div class="st-mcp-v">
+            <code>${mcpUrl}</code>
+            <button class="btn btn-ghost" onclick="window._copyMCP('${mcpUrl}')"><i data-lucide="copy"></i></button>
           </div>
-          <span class="st-badge" style="background:rgba(245,158,11,0.14);color:var(--amber)">Em breve</span>
+        </div>
+
+        <div class="st-mcp-row">
+          <div class="st-mcp-k">Transport</div>
+          <div class="st-mcp-v"><code>HTTP (JSON-RPC 2.0)</code></div>
+        </div>
+
+        <div class="st-mcp-row">
+          <div class="st-mcp-k">Autenticação</div>
+          <div class="st-mcp-v"><code>Authorization: Bearer &lt;MCP_API_KEY&gt;</code></div>
+        </div>
+
+        <div class="st-mcp-row">
+          <div class="st-mcp-k">Status</div>
+          <div class="st-mcp-v">
+            <span id="st-mcp-status" class="st-badge" style="background:var(--bg3);color:var(--text2)">Verificando...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-card" style="margin-top:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Como conectar no Claude Desktop</div>
+        <div style="font-size:11.5px;color:var(--text2);margin-bottom:8px;line-height:1.5">
+          Edite <code>~/.config/Claude/claude_desktop_config.json</code> (ou <code>%APPDATA%\\Claude\\...</code> no Windows) e adicione:
+        </div>
+        <pre style="background:var(--bg);border:1px solid var(--gb);border-radius:10px;padding:14px;overflow-x:auto;font-size:11px;color:var(--text);font-family:'SF Mono',Menlo,monospace;line-height:1.5">${_esc(JSON.stringify({
+  mcpServers: {
+    "3cos": {
+      transport: "http",
+      url: mcpUrl,
+      headers: { Authorization: "Bearer SUA_MCP_API_KEY_AQUI" }
+    }
+  }
+}, null, 2))}</pre>
+        <div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5">
+          <strong>Setup backend (admin)</strong>: configurar <code>MCP_API_KEY</code> e <code>SUPABASE_SERVICE_KEY</code> nas env vars do Vercel.
+          Reinicie o Claude Desktop após salvar o config.
+        </div>
+      </div>
+
+      <div class="st-card" style="margin-top:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Ferramentas disponíveis</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${[
+            { n: 'list_contacts', d: 'Lista contatos com filtros (status/tipo/temperatura)' },
+            { n: 'search_contacts', d: 'Busca full-text em nome/email/empresa/telefone' },
+            { n: 'get_contact', d: 'Detalhes completos de 1 contato + tags + produtos' },
+            { n: 'list_pipeline', d: 'Cards do pipeline por scope (b2b/b2c)' },
+            { n: 'list_tasks', d: 'Tarefas abertas, filtradas por responsável/prioridade' },
+            { n: 'list_products', d: 'Portfolio de produtos' },
+            { n: 'get_summary', d: 'Resumo executivo (contagens, valor pipeline, deals)' },
+          ].map(t => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gb)">
+            <code style="background:var(--bg3);padding:2px 7px;border-radius:4px;font-size:11px;color:var(--theme);min-width:120px">${t.n}</code>
+            <span style="font-size:11.5px;color:var(--text2)">${t.d}</span>
+          </div>`).join('')}
         </div>
       </div>
     </div>`;
   lucide.createIcons();
+  _checkMCPStatus(mcpUrl);
+}
+
+async function _checkMCPStatus(url) {
+  const badge = document.getElementById('st-mcp-status');
+  if (!badge) return;
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }),
+    });
+    if (r.status === 401) {
+      badge.textContent = 'Online (sem auth)';
+      badge.style.background = 'rgba(245,158,11,0.14)';
+      badge.style.color = 'var(--amber)';
+    } else if (r.status === 500) {
+      badge.textContent = 'Não configurado';
+      badge.style.background = 'rgba(239,68,68,0.14)';
+      badge.style.color = 'var(--red)';
+    } else if (r.ok) {
+      badge.textContent = 'Ativo';
+      badge.style.background = 'rgba(16,185,129,0.14)';
+      badge.style.color = 'var(--green)';
+    } else {
+      badge.textContent = `HTTP ${r.status}`;
+      badge.style.background = 'rgba(239,68,68,0.14)';
+      badge.style.color = 'var(--red)';
+    }
+  } catch (e) {
+    badge.textContent = 'Offline';
+    badge.style.background = 'rgba(239,68,68,0.14)';
+    badge.style.color = 'var(--red)';
+  }
+}
+
+window._copyMCP = (url) => {
+  navigator.clipboard.writeText(url).then(() => toast('URL copiada', 's'));
+};
+
+function _esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function _renderGeneralSettings(el){

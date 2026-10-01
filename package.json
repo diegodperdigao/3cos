@@ -1,0 +1,9 @@
+{
+  "name": "3cos",
+  "version": "1.0.0",
+  "description": "3cos — CRM Comercial. Static frontend + Vercel serverless APIs (AI copilot + MCP server).",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}
