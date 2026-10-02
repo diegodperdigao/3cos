@@ -1509,7 +1509,7 @@ function buildHubCards(){
   const el=document.getElementById('hub-cards');
   if(el){
     el.innerHTML=visible.map(m=>`
-      <button class="dock-item" onclick="openMod('${m.id}')" title="${m.label}"
+      <button class="dock-item" onclick="openMod('${m.id}')" aria-label="${m.label}"
         style="--app-stroke:${m.stroke};--app-glow:${m.glow};--app-bg:${m.bg}">
         <span class="dock-item-icon"><i data-lucide="${m.icon}"></i></span>
         <span class="dock-item-label">${m.label}</span>
