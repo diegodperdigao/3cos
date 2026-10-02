@@ -1218,22 +1218,27 @@ window.doForgotPassword = async () => {
     toast('Email inválido.', 'e');
     return;
   }
-  if (!window.SUPABASE_CONFIGURED || !window.sb) {
-    toast('Sistema não configurado. Contate o administrador.', 'e');
-    return;
-  }
   try {
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/?reset=1',
+    const resp = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
     });
-    if (error) throw error;
+    let body = {};
+    try { body = await resp.json(); } catch (_) {}
+    if (!resp.ok) {
+      const msg = body.error || `Erro HTTP ${resp.status}`;
+      toast(msg, 'e');
+      return;
+    }
+    if (body.throttled) {
+      toast('Aguarde 60 segundos antes de pedir outro link.', 'i');
+      return;
+    }
     toast('Se o email existir, você receberá um link em instantes. Verifique sua caixa de entrada e spam.', 's');
   } catch (e) {
     console.error('[forgot password]', e);
-    const msg = e?.message?.includes('rate') || e?.message?.includes('seconds')
-      ? 'Aguarde 60 segundos antes de pedir outro link.'
-      : (e?.message || 'Não foi possível enviar o email. Tente novamente.');
-    toast(msg, 'e');
+    toast(e?.message || 'Não foi possível enviar o email. Tente novamente.', 'e');
   }
 };
 
@@ -1270,6 +1275,14 @@ function hideResetScreen() {
   setTimeout(() => { rs.style.display = 'none'; }, 400);
 }
 
+function _getResetTokenFromURL() {
+  try {
+    const qs = new URLSearchParams(window.location.search);
+    const t = qs.get('reset_token');
+    return t && t.length >= 32 ? t : '';
+  } catch (_) { return ''; }
+}
+
 window.doResetPassword = async () => {
   const np = document.getElementById('rp-new')?.value || '';
   const cf = document.getElementById('rp-confirm')?.value || '';
@@ -1284,17 +1297,31 @@ window.doResetPassword = async () => {
     if (err) { err.textContent = 'As senhas não coincidem.'; err.style.display = 'block'; }
     return;
   }
-  if (!window.SUPABASE_CONFIGURED || !window.sb) {
-    if (err) { err.textContent = 'Sistema não configurado.'; err.style.display = 'block'; }
-    return;
-  }
+
+  const internalToken = window._resetFlow?.token || _getResetTokenFromURL();
   if (btn) { btn.disabled = true; btn.textContent = 'SALVANDO...'; }
+
   try {
-    const { error } = await sb.auth.updateUser({ password: np });
-    if (error) throw error;
-    // Clear recovery session so the next login is a real credential check
-    try { await sb.auth.signOut(); } catch (_) {}
-    // Clean the URL (remove the recovery hash + ?reset=1)
+    if (internalToken) {
+      // Internal flow (Resend-emailed token hitting /api/auth/complete-reset)
+      const resp = await fetch('/api/auth/complete-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: internalToken, password: np }),
+      });
+      let body = {};
+      try { body = await resp.json(); } catch (_) {}
+      if (!resp.ok || !body.ok) throw new Error(body.error || `HTTP ${resp.status}`);
+    } else {
+      // Supabase recovery session (legacy path, still works if Supabase SMTP delivers)
+      if (!window.SUPABASE_CONFIGURED || !window.sb) {
+        throw new Error('Sistema não configurado.');
+      }
+      const { error } = await sb.auth.updateUser({ password: np });
+      if (error) throw error;
+      try { await sb.auth.signOut(); } catch (_) {}
+    }
+
     try { history.replaceState(null, '', window.location.pathname); } catch (_) {}
     toast('Senha redefinida. Faça login com a nova senha.', 's');
     hideResetScreen();
@@ -1303,8 +1330,9 @@ window.doResetPassword = async () => {
   } catch (e) {
     console.error('[reset password]', e);
     if (err) {
-      err.textContent = e?.message?.includes('expired') || e?.message?.includes('invalid')
-        ? 'Link expirado. Peça um novo "esqueci minha senha".'
+      const m = (e?.message || '').toLowerCase();
+      err.textContent = (m.includes('expired') || m.includes('invalid') || m.includes('já utilizado') || m.includes('410'))
+        ? 'Link expirado ou inválido. Peça um novo "esqueci minha senha".'
         : (e?.message || 'Erro ao salvar nova senha.');
       err.style.display = 'block';
     }
@@ -1327,7 +1355,15 @@ window.doCancelReset = async () => {
 window._isRecoveryBoot = (() => {
   const hash = (window.location.hash || '').toLowerCase();
   const qs = (window.location.search || '').toLowerCase();
-  return hash.includes('type=recovery') || qs.includes('reset=1');
+  return hash.includes('type=recovery') || qs.includes('reset=1') || qs.includes('reset_token=');
+})();
+// Capture our internal token (if present) so the reset form can POST it
+window._resetFlow = window._resetFlow || { active: false };
+(() => {
+  try {
+    const t = new URLSearchParams(window.location.search).get('reset_token');
+    if (t && t.length >= 32) window._resetFlow.token = t;
+  } catch (_) {}
 })();
 
 function _attachRecoveryListener() {

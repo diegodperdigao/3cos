@@ -740,7 +740,7 @@ window.toggleTheme = _wrapToggleTheme;
   // session or boot the hub — app.js will show the reset screen instead.
   const _rh = (window.location.hash || '').toLowerCase();
   const _rq = (window.location.search || '').toLowerCase();
-  if (_rh.includes('type=recovery') || _rq.includes('reset=1')) {
+  if (_rh.includes('type=recovery') || _rq.includes('reset=1') || _rq.includes('reset_token=')) {
     document.documentElement.removeAttribute('data-edition');
     const lk = document.getElementById('lock');
     if (lk) { lk.style.display = 'none'; lk.style.opacity = '0'; }
@@ -802,7 +802,7 @@ async function _validateSession() {
     // recovery session as a normal login — app.js will show the reset UI.
     const _h = (window.location.hash || '').toLowerCase();
     const _q = (window.location.search || '').toLowerCase();
-    if (_h.includes('type=recovery') || _q.includes('reset=1')) return false;
+    if (_h.includes('type=recovery') || _q.includes('reset=1') || _q.includes('reset_token=')) return false;
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (session?.user) {
