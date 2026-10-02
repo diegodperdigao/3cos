@@ -682,6 +682,7 @@
         <button class="btn btn-outline" onclick="window._ctcOpenImports()"><i data-lucide="list"></i> Lançamentos</button>
         <button class="btn btn-outline" onclick="window._ctcManageTags()"><i data-lucide="tags"></i> Tags</button>
         <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
+        <button class="btn btn-outline" onclick="window._ctcExportPDF()" title="Exporta a lista atual (respeita filtros ativos) em um PDF interativo"><i data-lucide="file-text"></i> PDF</button>
         <button class="btn btn-theme" onclick="window._ctcOpenNew()"><i data-lucide="plus"></i> Novo contato</button>
       `;
     }
