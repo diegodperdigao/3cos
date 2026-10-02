@@ -1548,33 +1548,57 @@
   .doc-header {
     background: var(--n-950); color: #fafafa;
     position: relative;
-    padding: 30px var(--pad-x) 28px;
-    display: flex; align-items: flex-start; justify-content: space-between;
-    gap: 18px; flex-wrap: wrap;
+    padding: 34px var(--pad-x) 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap;
   }
   .doc-header::after {
     content: ""; position: absolute; left: 0; right: 0; bottom: 0;
     height: 3px; background: var(--holo);
   }
-  .doc-header__left { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+  .doc-header__left { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+  .doc-brand {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .doc-brand-mark {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: var(--holo);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 900; font-size: 20px;
+    color: var(--n-950); letter-spacing: -1px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset;
+  }
   .doc-wordmark {
     font-family: var(--font-display); font-weight: 900;
-    font-size: 36px; letter-spacing: -1.4px;
+    font-size: 30px; letter-spacing: -1.2px;
     color: #fff; line-height: 1;
   }
   .doc-wordmark em {
-    font-style: normal; font-weight: 300; opacity: .72;
+    font-style: normal; font-weight: 300; opacity: .68;
   }
   .eyebrow-cyan {
-    font-family: var(--font-mono); font-size: 11px; font-weight: 700;
-    letter-spacing: .16em; text-transform: uppercase; color: var(--cyan);
+    font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--cyan);
   }
   .doc-meta {
     text-align: right;
     font-family: var(--font-mono); font-size: 10.5px; line-height: 1.9;
-    letter-spacing: .08em; color: var(--n-400); text-transform: uppercase;
+    letter-spacing: .1em; color: var(--n-400); text-transform: uppercase;
+    display: grid; gap: 3px;
   }
   .doc-meta b { color: #fafafa; font-weight: 700; }
+  .doc-meta .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.14);
+    font-size: 9.5px; letter-spacing: .18em;
+    color: #fafafa;
+  }
+  .doc-meta .pill::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34,197,94,.18);
+  }
 
   /* INTRO */
   .doc-body { padding: clamp(26px,5vw,44px) var(--pad-x) 10px; }
@@ -1624,9 +1648,10 @@
   .cr-photo .cr-initials {
     width: 100%; height: 100%;
     display: flex; align-items: center; justify-content: center;
-    background: var(--n-900); color: #fff;
+    color: #fff;
     font-family: var(--font-display); font-weight: 800; font-size: 26px;
     letter-spacing: -.5px;
+    text-shadow: 0 1px 2px rgba(0,0,0,.15);
   }
 
   .idx {
@@ -1691,7 +1716,7 @@
   .doc-footer {
     background: var(--n-950); color: var(--n-400);
     position: relative;
-    padding: 22px var(--pad-x);
+    padding: 24px var(--pad-x);
     display: flex; align-items: center; justify-content: space-between;
     gap: 16px;
     font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em;
@@ -1701,7 +1726,22 @@
     content: ""; position: absolute; left: 0; right: 0; top: 0;
     height: 3px; background: var(--holo);
   }
-  .doc-footer b { color: #fafafa; font-weight: 700; }
+  .doc-footer b { color: #fafafa; font-weight: 700; letter-spacing: .14em; }
+  .doc-footer-left {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .doc-footer-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(0,182,212,.18);
+  }
+  .doc-footer-tag {
+    color: var(--n-500);
+    font-size: 10px; letter-spacing: .14em;
+  }
+  .doc-footer-right {
+    font-size: 10px; color: var(--n-500); letter-spacing: .14em;
+  }
 
   /* Print tuning: paper edges flush, backgrounds preserved, no page split
      inside a contact entry, hide the "shadow of a floating sheet" look */
@@ -1749,13 +1789,16 @@
   <article class="sheet">
     <header class="doc-header">
       <div class="doc-header__left">
-        <div class="doc-wordmark">3C<em>OS</em></div>
-        <span class="eyebrow-cyan">CRM Comercial · Diretório</span>
+        <div class="doc-brand">
+          <div class="doc-brand-mark">3C</div>
+          <div class="doc-wordmark">3C<em>OS</em></div>
+        </div>
+        <span class="eyebrow-cyan">CRM Comercial · Diretório Interno</span>
       </div>
       <div class="doc-meta">
-        <div><b>Documento</b> · ${_esc(docCode)}</div>
-        <div>Data · ${_esc(dateStr)}</div>
-        <div>Confidencial</div>
+        <div><span class="pill">Documento ativo</span></div>
+        <div><b>${_esc(docCode)}</b> · ${_esc(dateStr)}</div>
+        <div>Confidencial · Uso interno</div>
       </div>
     </header>
 
@@ -1771,8 +1814,12 @@
     </div>
 
     <footer class="doc-footer">
-      <span><b>3cos</b> · CRM Comercial</span>
-      <span>Organizado por <b>${_esc(userName)}</b></span>
+      <div class="doc-footer-left">
+        <span class="doc-footer-dot"></span>
+        <b>3cos</b>
+        <span class="doc-footer-tag">CRM Comercial · Diretório</span>
+      </div>
+      <div class="doc-footer-right">${_esc(docCode)} · ${_esc(dateStr)}</div>
     </footer>
   </article>
 
@@ -1808,9 +1855,13 @@
       if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     })();
+    // Deterministic hue → same gradient as the app's contact tiles,
+    // so the printed sheet feels like the live UI.
+    const hue = _hueFor(c.name || '');
+    const grad = `linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue + 40) % 360},70%,45%))`;
     const avatarInner = c.avatar_url
-      ? `<img src="${_esc(c.avatar_url)}" alt="${name}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cr-initials',textContent:'${initials}'}))">`
-      : `<div class="cr-initials">${initials}</div>`;
+      ? `<img src="${_esc(c.avatar_url)}" alt="${name}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cr-initials',textContent:'${initials}',style:'background:${grad}'}))">`
+      : `<div class="cr-initials" style="background:${grad}">${initials}</div>`;
 
     // Socials
     const ig = _plainIg(c);
