@@ -111,6 +111,17 @@ function _userForm(u = {}) {
           <option value="inativo" ${u.status === 'inativo' ? 'selected' : ''}>Inativo</option>
         </select>
       </div>
+      ${u.id ? '' : `
+      <div class="ff"><label>Senha inicial (opcional)</label>
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <input id="user-f-password" class="fi" type="text" value="" placeholder="Deixe em branco para gerar automaticamente" style="flex:1;font-family:monospace">
+          <button type="button" class="btn btn-outline" onclick="window._userGenPwd()" style="white-space:nowrap"><i data-lucide="dices" style="width:14px;height:14px"></i> Gerar</button>
+        </div>
+        <div style="font-size:10.5px;color:var(--text3);margin-top:6px">
+          Você verá a senha depois de criar o usuário — anote e envie manualmente (WhatsApp, DM etc). O usuário pode trocar em Configurações no primeiro login.
+        </div>
+      </div>
+      `}
       <div class="ff"><label>Módulos permitidos</label>
         <div class="user-mod-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;background:var(--bg3);border:1px solid var(--gb);border-radius:10px;padding:4px">
           ${mods}
@@ -153,26 +164,178 @@ window.openNewUser = () => {
   lucide.createIcons();
 };
 
+// Client-side mirror of api/admin/create-user generatePassword — same
+// alphabet so what the admin pre-fills in the UI matches server policy.
+function _generatePasswordClient() {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghijkmnopqrstuvwxyz';
+  const digit = '23456789';
+  const sym = '!@#$%&*';
+  const all = upper + lower + digit + sym;
+  const pick = (s) => s[Math.floor(Math.random() * s.length)];
+  const chars = [pick(upper), pick(upper), pick(lower), pick(lower), pick(digit), pick(digit), pick(sym)];
+  while (chars.length < 14) chars.push(pick(all));
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
+}
+
+window._userGenPwd = () => {
+  const el = document.getElementById('user-f-password');
+  if (!el) return;
+  el.value = _generatePasswordClient();
+  el.focus();
+  el.select();
+};
+
+function _showCredentialsModal({ name, email, password }) {
+  const safeName = _escH(name);
+  const safeEmail = _escH(email);
+  const safePwd = _escH(password);
+  openModal(
+    `Credenciais de ${safeName}`,
+    `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="padding:12px 14px;background:color-mix(in srgb, var(--amber) 12%, transparent);border:1px solid color-mix(in srgb, var(--amber) 35%, transparent);border-radius:10px;font-size:12.5px;color:var(--text2);line-height:1.5">
+        <strong style="color:var(--text)">Esta senha só aparece agora.</strong> Copie e envie para a pessoa (WhatsApp, DM, etc). Depois ela pode trocar em <em>Configurações → Alterar senha</em>.
+      </div>
+      <div class="ff">
+        <label>Email</label>
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <input id="cred-email" class="fi" type="text" value="${safeEmail}" readonly style="flex:1;font-family:monospace">
+          <button class="btn btn-outline" onclick="window._copyCred('cred-email', this)" style="white-space:nowrap"><i data-lucide="copy" style="width:14px;height:14px"></i> Copiar</button>
+        </div>
+      </div>
+      <div class="ff">
+        <label>Senha inicial</label>
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <input id="cred-pwd" class="fi" type="text" value="${safePwd}" readonly style="flex:1;font-family:monospace;letter-spacing:0.5px">
+          <button class="btn btn-outline" onclick="window._copyCred('cred-pwd', this)" style="white-space:nowrap"><i data-lucide="copy" style="width:14px;height:14px"></i> Copiar</button>
+        </div>
+      </div>
+      <div class="ff">
+        <label>Mensagem pronta (copie e envie)</label>
+        <textarea id="cred-msg" class="fi" readonly rows="4" style="resize:none;font-family:monospace;font-size:12px">Oi ${name}! Seu acesso ao 3cos está pronto.
+
+Email: ${email}
+Senha: ${password}
+
+Entre em ${window.location.origin} e troque a senha em Configurações no primeiro login.</textarea>
+        <button class="btn btn-outline" onclick="window._copyCred('cred-msg', this)" style="margin-top:6px;width:100%"><i data-lucide="copy" style="width:14px;height:14px"></i> Copiar mensagem completa</button>
+      </div>
+    </div>
+    `,
+    `<button class="btn btn-theme" onclick="closeModal()"><i data-lucide="check"></i> Fechar</button>`
+  );
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+window._copyCred = async (elId, btn) => {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  try {
+    await navigator.clipboard.writeText(el.value);
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i data-lucide="check" style="width:14px;height:14px"></i> Copiado';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    setTimeout(() => { btn.innerHTML = orig; if (typeof lucide !== 'undefined') lucide.createIcons(); }, 1500);
+  } catch (e) {
+    el.select();
+    document.execCommand('copy');
+  }
+};
+
 let _userSaving = false;
 window._userSaveNew = async () => {
   if (_userSaving) return;
   const payload = _userFormRead();
+  const pwdField = document.getElementById('user-f-password');
+  const pwd = (pwdField?.value || '').trim();
   if (!payload.name) { toast('Nome é obrigatório','e'); return; }
   if (!payload.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) { toast('Email inválido','e'); return; }
   if ((STATE.users || []).some(u => u.email === payload.email)) { toast('Já existe um usuário com esse email','e'); return; }
+  if (pwd && pwd.length < 8) { toast('Senha mínima: 8 caracteres','e'); return; }
+
   _userSaving = true;
+  // Lock the save button to prevent double-create
+  const saveBtn = document.querySelector('.modal-ftr .btn-theme');
+  const origBtnHTML = saveBtn?.innerHTML;
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width:14px;height:14px"></i> Criando...'; if (typeof lucide !== 'undefined') lucide.createIcons(); }
+
   try {
+    if (!window.SUPABASE_CONFIGURED || !window.sb) {
+      // Fallback: local-only (dev/offline). Mantém o antigo comportamento.
+      STATE.users = STATE.users || [];
+      STATE.users.push(payload);
+      if (typeof logAction === 'function') logAction('Usuário criado (local)', payload.name);
+      saveToLocal();
+      closeModal();
+      _rerenderUsersAnywhere();
+      toast(`Usuário "${payload.name}" criado localmente (Supabase off)`,'s');
+      return;
+    }
+
+    // Grab the current session JWT to authenticate the admin call
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { toast('Sessão expirada. Faça login novamente.','e'); return; }
+
+    const resp = await fetch('/api/admin/create-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        email: payload.email,
+        name: payload.name,
+        role: payload.role,
+        status: payload.status,
+        modules: payload.modules,
+        password: pwd || undefined,
+      }),
+    });
+
+    let body = {};
+    try { body = await resp.json(); } catch (_) {}
+    if (!resp.ok || !body.ok) {
+      const msg = body.error || `Falha HTTP ${resp.status}`;
+      toast('Erro: ' + msg, 'e');
+      return;
+    }
+
+    // Merge the new user into local STATE (keeps the admin UI consistent
+    // with what's in profiles — a full reload would also work)
+    const newUser = {
+      id: body.user.id,
+      name: body.user.name,
+      email: body.user.email,
+      role: body.user.role,
+      status: body.user.status,
+      modules: body.user.modules,
+      title: payload.title || null,
+      avatar: payload.avatar || '',
+      createdAt: new Date().toISOString().split('T')[0],
+    };
     STATE.users = STATE.users || [];
-    STATE.users.push(payload);
-    if (typeof logAction === 'function') logAction('Usuário criado', payload.name);
+    STATE.users.push(newUser);
+    if (typeof logAction === 'function') logAction('Usuário criado', newUser.name);
     saveToLocal();
     closeModal();
     _rerenderUsersAnywhere();
-    toast(`Usuário "${payload.name}" criado`,'s');
+
+    // Show the credential sheet (next modal) so the admin can forward it
+    setTimeout(() => _showCredentialsModal({
+      name: newUser.name, email: newUser.email, password: body.password,
+    }), 150);
+    toast(`Usuário "${newUser.name}" criado — copie a senha`, 's');
   } catch (e) {
     toast('Erro ao criar: ' + (e.message || 'desconhecido'),'e');
   } finally {
     _userSaving = false;
+    if (saveBtn) { saveBtn.disabled = false; if (origBtnHTML) saveBtn.innerHTML = origBtnHTML; if (typeof lucide !== 'undefined') lucide.createIcons(); }
   }
 };
 
