@@ -11,17 +11,7 @@
 // the system from locking out).
 // ══════════════════════════════════════════════════════════
 
-const { createClient } = require('@supabase/supabase-js');
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-
-function admin() {
-  if (!SUPABASE_URL || !SERVICE_KEY) throw new Error('Supabase env vars missing');
-  return createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+const { admin } = require('../_lib/supabase-admin');
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;

@@ -1245,139 +1245,95 @@
     return counts;
   }
 
-  // Colors tuned for both light reading and nice contrast with white bg
+  // Editorial palette — paper-like whites, strong ink, one quiet accent.
+  // Nothing flashy; the typography does the work.
   const C = {
-    ink:   '#0f172a', // slate-900
-    muted: '#64748b', // slate-500
-    soft:  '#94a3b8', // slate-400
-    line:  '#e2e8f0', // slate-200
-    bg:    '#f8fafc', // slate-50
-    brand: '#111827',
-    accent:'#ec4899',
+    ink:    '#111827', // body copy / headings
+    mute:   '#6b7280', // metadata, labels
+    soft:   '#9ca3af', // page chrome
+    hair:   '#e5e7eb', // hairline rules
+    accent: '#111827', // kept monochrome; links use their own blue
+    link:   '#1d4ed8',
+    paper:  '#ffffff',
   };
-  const TIER_COLOR = { 1: '#ec4899', 2: '#f59e0b', 3: '#64748b', 0: '#94a3b8' };
-  const STATUS_COLOR = { wishlist: '#64748b', in_pipeline: '#3b82f6', customer: '#10b981', churned: '#ef4444' };
-  const TYPE_COLOR = { b2b: '#6366f1', b2c: '#ec4899', both: '#8b5cf6' };
 
-  function _badge(text, fill) {
+  // Editorial directory layout — generous whitespace, no filled badges,
+  // large name as the hero of each entry. Metadata is just text separated
+  // by middle dots; status/tier/type each get a tiny colored square dot.
+  function _dot(color) {
     return {
-      table: { body: [[{ text, color: '#ffffff', fontSize: 8, bold: true, alignment: 'center' }]] },
-      layout: {
-        hLineWidth: () => 0, vLineWidth: () => 0,
-        paddingTop: () => 2, paddingBottom: () => 2,
-        paddingLeft: () => 6, paddingRight: () => 6,
-        fillColor: () => fill,
-      },
+      canvas: [{ type: 'rect', x: 0, y: 2, w: 6, h: 6, color }],
+      width: 10,
     };
   }
 
-  function _buildContactBlock(c, { avatarPng }) {
+  const DOT_COLORS = {
+    tier:   { 1: '#dc2626', 2: '#d97706', 3: '#6b7280' },
+    status: { wishlist: '#9ca3af', in_pipeline: '#2563eb', customer: '#059669', churned: '#dc2626' },
+    type:   { b2b: '#4338ca', b2c: '#be185d', both: '#7c3aed' },
+  };
+
+  function _metaLine(c) {
+    // Returns a `text` run (array of inline segments) with middle-dot separators
+    // and small colored dots preceding categorical metadata.
+    const parts = [];
+    const pushPart = (prefix, label) => {
+      if (!label) return;
+      if (parts.length) parts.push({ text: '  ·  ', color: C.soft });
+      if (prefix) parts.push(prefix);
+      parts.push({ text: label, color: C.mute, fontSize: 10 });
+    };
     const tierId = [1, 2, 3].includes(Number(c.tier)) ? Number(c.tier) : 0;
-    const ig = _plainIg(c);
-    const headerBadges = [];
-    if (c.type && TYPE_LABEL[c.type]) headerBadges.push(_badge(TYPE_LABEL[c.type], TYPE_COLOR[c.type] || '#6b7280'));
-    if (tierId > 0) headerBadges.push(_badge('T' + tierId, TIER_COLOR[tierId]));
-    if (c.status && STATUS_LABEL[c.status]) headerBadges.push(_badge(STATUS_LABEL[c.status], STATUS_COLOR[c.status] || '#6b7280'));
-
-    const infoRows = [];
-    const push = (label, value) => { if (value) infoRows.push([{ text: label, color: C.muted, fontSize: 9 }, value]); };
-
-    if (c.company) push('Empresa', { text: c.company, color: C.ink, fontSize: 10 });
-    if (c.email) push('Email', { text: c.email, color: '#1d4ed8', fontSize: 10, link: `mailto:${c.email}`, decoration: 'underline' });
-    if (c.phone) {
-      const digits = String(c.phone).replace(/[^\d+]/g, '');
-      push('Telefone', { text: c.phone, color: '#1d4ed8', fontSize: 10, link: `tel:${digits}`, decoration: 'underline' });
+    if (c.type && TYPE_LABEL[c.type]) {
+      pushPart({ text: '■ ', color: DOT_COLORS.type[c.type] || C.mute, fontSize: 7 }, TYPE_LABEL[c.type]);
     }
-    if (ig) push('Instagram', { text: '@' + ig, color: '#1d4ed8', fontSize: 10, link: `https://instagram.com/${ig}`, decoration: 'underline' });
-    if (c.website) {
-      const url = _normalizeURL(c.website);
-      push('Website', { text: c.website, color: '#1d4ed8', fontSize: 10, link: url, decoration: 'underline' });
+    if (tierId > 0) {
+      pushPart({ text: '■ ', color: DOT_COLORS.tier[tierId], fontSize: 7 }, 'Tier ' + tierId);
+    }
+    if (c.status && STATUS_LABEL[c.status]) {
+      pushPart({ text: '■ ', color: DOT_COLORS.status[c.status] || C.mute, fontSize: 7 }, STATUS_LABEL[c.status]);
     }
     const profileLabel = c.profile ? (PROFILE_BY_ID[c.profile]?.label || c.profile) : null;
-    if (profileLabel) push('Perfil', { text: profileLabel, color: C.ink, fontSize: 10 });
-    if (c.source && SOURCE_LABEL[c.source]) push('Origem', { text: SOURCE_LABEL[c.source], color: C.ink, fontSize: 10 });
-
-    const infoTable = infoRows.length ? {
-      table: { widths: [55, '*'], body: infoRows },
-      layout: {
-        hLineWidth: () => 0, vLineWidth: () => 0,
-        paddingTop: () => 2, paddingBottom: () => 2, paddingLeft: () => 0, paddingRight: () => 0,
-      },
-      margin: [0, 4, 0, 0],
-    } : null;
-
-    const notes = c.notes ? {
-      text: c.notes, italics: true, color: C.muted, fontSize: 9,
-      margin: [0, 6, 0, 0],
-    } : null;
-
-    const leftCol = avatarPng
-      ? { image: avatarPng, width: 44, height: 44, margin: [0, 2, 0, 0] }
-      : { text: _initialsFor(c.name), fontSize: 16, bold: true, color: C.ink, alignment: 'center', margin: [0, 10, 0, 0] };
-
-    const rightChildren = [
-      { text: c.name || '(sem nome)', fontSize: 13, bold: true, color: C.ink },
-    ];
-    if (headerBadges.length) {
-      rightChildren.push({ columns: headerBadges.map(b => ({ width: 'auto', ...b })), columnGap: 4, margin: [0, 3, 0, 0] });
-    }
-    if (infoTable) rightChildren.push(infoTable);
-    if (notes) rightChildren.push(notes);
-
-    return {
-      // Card: thin separator + columns [avatar | details]
-      stack: [
-        {
-          columns: [
-            { width: 48, stack: [leftCol] },
-            { width: '*', stack: rightChildren, margin: [10, 0, 0, 0] },
-          ],
-        },
-        { canvas: [{ type: 'line', x1: 0, y1: 2, x2: 515, y2: 2, lineWidth: 0.4, lineColor: C.line }], margin: [0, 10, 0, 10] },
-      ],
-      unbreakable: true,
-    };
+    if (profileLabel) pushPart(null, profileLabel);
+    if (c.company) pushPart(null, c.company);
+    return parts.length ? { text: parts, margin: [0, 4, 0, 0] } : null;
   }
 
-  function _summaryBlock(counts, total) {
-    const row = (label, items) => ({
-      stack: [
-        { text: label.toUpperCase(), fontSize: 9, color: C.muted, bold: true, characterSpacing: 1.2, margin: [0, 10, 0, 4] },
-        {
-          columns: items.map(([lbl, n, color]) => ({
-            width: '*',
-            stack: [
-              { text: String(n), fontSize: 20, bold: true, color: color || C.ink },
-              { text: lbl, fontSize: 9, color: C.muted, margin: [0, -2, 0, 0] },
-            ],
-          })),
-          columnGap: 10,
-        },
-      ],
-      margin: [0, 0, 0, 6],
-    });
+  function _contactEntry(c) {
+    const ig = _plainIg(c);
+    const contactBits = [];
+
+    if (c.email) {
+      contactBits.push({ text: c.email, color: C.link, fontSize: 10, link: `mailto:${c.email}` });
+    }
+    if (c.phone) {
+      if (contactBits.length) contactBits.push({ text: '   ·   ', color: C.soft, fontSize: 10 });
+      const digits = String(c.phone).replace(/[^\d+]/g, '');
+      contactBits.push({ text: c.phone, color: C.link, fontSize: 10, link: `tel:${digits}` });
+    }
+    if (ig) {
+      if (contactBits.length) contactBits.push({ text: '   ·   ', color: C.soft, fontSize: 10 });
+      contactBits.push({ text: '@' + ig, color: C.link, fontSize: 10, link: `https://instagram.com/${ig}` });
+    }
+    if (c.website) {
+      if (contactBits.length) contactBits.push({ text: '   ·   ', color: C.soft, fontSize: 10 });
+      contactBits.push({ text: c.website, color: C.link, fontSize: 10, link: _normalizeURL(c.website) });
+    }
+
+    const stack = [
+      { text: c.name || '(sem nome)', fontSize: 15, bold: true, color: C.ink, characterSpacing: -0.2 },
+    ];
+    const meta = _metaLine(c);
+    if (meta) stack.push(meta);
+    if (contactBits.length) stack.push({ text: contactBits, margin: [0, 6, 0, 0], lineHeight: 1.3 });
+    if (c.notes) stack.push({ text: c.notes, italics: true, color: C.mute, fontSize: 9.5, lineHeight: 1.4, margin: [0, 6, 0, 0] });
 
     return {
+      // Keep each contact together on the page; separate with a hairline below.
+      unbreakable: true,
       stack: [
-        row('Por tipo', [
-          ['B2B', counts.type.b2b, TYPE_COLOR.b2b],
-          ['B2C', counts.type.b2c, TYPE_COLOR.b2c],
-          ['B2B + B2C', counts.type.both, TYPE_COLOR.both],
-        ]),
-        row('Por tier', [
-          ['Tier 1', counts.tier[1], TIER_COLOR[1]],
-          ['Tier 2', counts.tier[2], TIER_COLOR[2]],
-          ['Tier 3', counts.tier[3], TIER_COLOR[3]],
-          ['Sem tier', counts.tier[0], TIER_COLOR[0]],
-        ]),
-        row('Por status', [
-          ['Wishlist', counts.status.wishlist, STATUS_COLOR.wishlist],
-          ['No pipeline', counts.status.in_pipeline, STATUS_COLOR.in_pipeline],
-          ['Clientes', counts.status.customer, STATUS_COLOR.customer],
-          ['Perdidos', counts.status.churned, STATUS_COLOR.churned],
-        ]),
-        row('Por perfil', PROFILES.map(p => [p.label, counts.profile[p.id] || 0, p.color])
-          .concat([['Sem perfil', counts.profile.none || 0, C.soft]])),
+        { stack, margin: [0, 2, 0, 0] },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.4, lineColor: C.hair }], margin: [0, 14, 0, 14] },
       ],
     };
   }
@@ -1385,31 +1341,108 @@
   function _coverPage(total, filtersSummary, userName) {
     const now = new Date();
     const dateStr = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-    return {
-      stack: [
-        { text: ' ', margin: [0, 60, 0, 0] },
-        { text: '3cos', fontSize: 32, bold: true, color: C.ink, characterSpacing: -1 },
-        { text: 'CRM Comercial', fontSize: 11, color: C.muted, margin: [0, -4, 0, 40] },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 80, y2: 0, lineWidth: 2, lineColor: C.accent }], margin: [0, 0, 0, 20] },
-        { text: 'Lista de contatos', fontSize: 28, bold: true, color: C.ink, characterSpacing: -0.5 },
-        { text: filtersSummary || 'Todos os contatos da base', fontSize: 12, color: C.muted, margin: [0, 6, 0, 30] },
-        {
-          columns: [
-            { stack: [
-              { text: 'TOTAL', fontSize: 9, color: C.muted, characterSpacing: 1.2, bold: true },
-              { text: String(total), fontSize: 48, bold: true, color: C.accent, margin: [0, -4, 0, 0] },
-              { text: total === 1 ? 'contato' : 'contatos', fontSize: 10, color: C.muted, margin: [0, -8, 0, 0] },
-            ], width: '*' },
-            { stack: [
-              { text: 'GERADO EM', fontSize: 9, color: C.muted, characterSpacing: 1.2, bold: true, alignment: 'right' },
-              { text: dateStr, fontSize: 14, color: C.ink, margin: [0, 4, 0, 0], alignment: 'right' },
-              userName ? { text: 'por ' + userName, fontSize: 10, color: C.muted, margin: [0, 2, 0, 0], alignment: 'right' } : {},
-            ], width: '*' },
-          ],
-        },
-        { text: ' ', pageBreak: 'after' },
-      ],
-    };
+    return [
+      { text: ' ', margin: [0, 110, 0, 0] },
+      // Eyebrow
+      { text: '3cos — crm comercial', fontSize: 10, color: C.mute, characterSpacing: 1.2 },
+      // Title
+      { text: 'Diretório', fontSize: 56, bold: true, color: C.ink, characterSpacing: -2, margin: [0, 24, 0, -4] },
+      { text: 'de contatos', fontSize: 56, bold: false, color: C.ink, characterSpacing: -2, margin: [0, 0, 0, 0] },
+      // Hairline rule
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 60, y2: 0, lineWidth: 1.4, lineColor: C.ink }], margin: [0, 36, 0, 24] },
+      // Metadata grid
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: 'ESCOPO', fontSize: 8, color: C.mute, characterSpacing: 1.4, bold: true },
+              { text: filtersSummary || 'Todos os contatos', fontSize: 11, color: C.ink, margin: [0, 4, 0, 0], lineHeight: 1.3 },
+            ],
+          },
+          {
+            width: 'auto',
+            stack: [
+              { text: 'TOTAL', fontSize: 8, color: C.mute, characterSpacing: 1.4, bold: true, alignment: 'right' },
+              { text: String(total), fontSize: 11, color: C.ink, margin: [0, 4, 0, 0], alignment: 'right' },
+            ],
+          },
+        ],
+        columnGap: 24,
+        margin: [0, 0, 0, 14],
+      },
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: 'PUBLICADO EM', fontSize: 8, color: C.mute, characterSpacing: 1.4, bold: true },
+              { text: dateStr, fontSize: 11, color: C.ink, margin: [0, 4, 0, 0] },
+            ],
+          },
+          {
+            width: 'auto',
+            stack: [
+              { text: 'ORGANIZADO POR', fontSize: 8, color: C.mute, characterSpacing: 1.4, bold: true, alignment: 'right' },
+              { text: userName || '3cos', fontSize: 11, color: C.ink, margin: [0, 4, 0, 0], alignment: 'right' },
+            ],
+          },
+        ],
+        columnGap: 24,
+      },
+      // Bottom mark
+      { text: ' ', margin: [0, 140, 0, 0] },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.4, lineColor: C.hair }] },
+      { text: 'Links de email, telefone e Instagram são clicáveis no leitor de PDF.', fontSize: 8.5, color: C.soft, italics: true, margin: [0, 10, 0, 0] },
+      { text: '', pageBreak: 'after' },
+    ];
+  }
+
+  function _panoramaPage(counts, total) {
+    // Editorial "Panorama" — a single page with four quiet rows, each
+    // a label and an inline run "A 12  ·  B 34  ·  C 56". No bar charts
+    // or filled cells; the number-first typography does the hierarchy.
+    function row(label, items) {
+      const inline = [];
+      items.forEach(([lbl, n], i) => {
+        if (i > 0) inline.push({ text: '    ·    ', color: C.soft, fontSize: 11 });
+        inline.push({ text: String(n), bold: true, fontSize: 14, color: C.ink });
+        inline.push({ text: ' ' + lbl, fontSize: 11, color: C.mute });
+      });
+      return {
+        margin: [0, 0, 0, 22],
+        stack: [
+          { text: label, fontSize: 8.5, color: C.mute, characterSpacing: 1.4, bold: true },
+          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.4, lineColor: C.hair }], margin: [0, 6, 0, 10] },
+          { text: inline, lineHeight: 1.4 },
+        ],
+      };
+    }
+
+    return [
+      { text: 'Panorama', fontSize: 36, bold: true, color: C.ink, characterSpacing: -1, margin: [0, 10, 0, 4] },
+      { text: `${total} ${total === 1 ? 'contato catalogado' : 'contatos catalogados'}`, fontSize: 11, color: C.mute, margin: [0, 0, 0, 36] },
+      row('POR TIPO', [
+        ['B2B', counts.type.b2b],
+        ['B2C', counts.type.b2c],
+        ['B2B + B2C', counts.type.both],
+      ]),
+      row('POR TIER', [
+        ['Tier 1', counts.tier[1]],
+        ['Tier 2', counts.tier[2]],
+        ['Tier 3', counts.tier[3]],
+        ['sem tier', counts.tier[0]],
+      ]),
+      row('POR STATUS', [
+        ['Wishlist', counts.status.wishlist],
+        ['No pipeline', counts.status.in_pipeline],
+        ['Clientes', counts.status.customer],
+        ['Perdidos', counts.status.churned],
+      ]),
+      row('POR PERFIL', PROFILES.map(p => [p.label, counts.profile[p.id] || 0])
+        .concat([['sem perfil', counts.profile.none || 0]])),
+      { text: '', pageBreak: 'after' },
+    ];
   }
 
   window._ctcExportPDF = async () => {
@@ -1431,90 +1464,72 @@
       if (F.tier) bits.push('Tier: T' + F.tier);
       if (F.status) bits.push('Status: ' + (STATUS_LABEL[F.status] || F.status));
       if (F.search) bits.push(`Busca: "${F.search}"`);
-      const filtersSummary = bits.length ? bits.join(' · ') : 'Todos os contatos da base';
+      const filtersSummary = bits.length ? bits.join(' · ') : 'Todos os contatos';
 
       const counts = _summaryCounts(list);
       const grouped = _groupByTier(list);
       const userName = STATE?.user?.name || '';
 
-      // Pre-render avatars once per contact (canvas → data URL)
-      const avatarCache = new Map();
-      list.forEach(c => {
-        const key = c.id || c.email || c.name;
-        if (avatarCache.has(key)) return;
-        if (c.avatar_url) { avatarCache.set(key, null); return; } // keep it simple — remote images need async load; use initials instead
-        const png = _makeAvatarPng(_initialsFor(c.name), _hueFor(c.name || ''), 96);
-        avatarCache.set(key, png);
-      });
-
-      // Build content
       const content = [];
-      content.push(_coverPage(list.length, filtersSummary, userName));
+      content.push(..._coverPage(list.length, filtersSummary, userName));
+      content.push(..._panoramaPage(counts, list.length));
 
-      // Summary page
-      content.push({ text: 'Resumo da base', fontSize: 20, bold: true, color: C.ink, margin: [0, 10, 0, 0] });
-      content.push({ text: 'Panorama dos contatos exportados', fontSize: 11, color: C.muted, margin: [0, 2, 0, 16] });
-      content.push(_summaryBlock(counts, list.length));
-      content.push({ text: ' ', pageBreak: 'after' });
-
-      // Table of contents (groups → clickable TOC)
-      content.push({ text: 'Sumário', fontSize: 20, bold: true, color: C.ink, margin: [0, 10, 0, 16] });
-      content.push({
-        toc: {
-          numberStyle: { color: C.muted, fontSize: 10 },
-          textStyle: { color: C.ink, fontSize: 11 },
-        },
-      });
-      content.push({ text: ' ', pageBreak: 'after' });
-
-      // Sections per tier
+      // Per-tier sections — each starts with a bold editorial header + rule.
       const tierOrder = [1, 2, 3, 0];
-      tierOrder.forEach((tid, idx) => {
+      let firstSection = true;
+      tierOrder.forEach(tid => {
         const bucket = grouped[tid];
         if (!bucket.length) return;
         const title = tid === 0 ? 'Sem tier definido' : `Tier ${tid}`;
         const sub = tid === 0 ? 'Contatos sem prioridade atribuída' : (TIERS.find(t => t.id === tid)?.desc || '');
-        const color = TIER_COLOR[tid];
+
+        if (!firstSection) content.push({ text: '', pageBreak: 'before' });
+        firstSection = false;
 
         content.push({
-          stack: [
-            { canvas: [{ type: 'rect', x: 0, y: 0, w: 4, h: 24, color }], relativePosition: { x: 0, y: 0 } },
-            { text: title, fontSize: 20, bold: true, color: C.ink, margin: [12, 0, 0, 0] },
-            { text: `${bucket.length} ${bucket.length === 1 ? 'contato' : 'contatos'} · ${sub}`, fontSize: 10, color: C.muted, margin: [12, 2, 0, 14] },
+          text: title,
+          fontSize: 36, bold: true, color: C.ink, characterSpacing: -1,
+          margin: [0, 10, 0, 2],
+        });
+        content.push({
+          columns: [
+            { text: `${bucket.length} ${bucket.length === 1 ? 'contato' : 'contatos'}`, fontSize: 10, color: C.mute, width: 'auto' },
+            { text: sub, fontSize: 10, color: C.mute, alignment: 'right', width: '*' },
           ],
-          tocItem: true, tocStyle: { bold: true },
-          margin: [0, idx === 0 ? 0 : 6, 0, 0],
+          margin: [0, 0, 0, 10],
         });
+        content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.2, lineColor: C.ink }], margin: [0, 0, 0, 20] });
 
-        bucket.forEach(c => {
-          const key = c.id || c.email || c.name;
-          const avatarPng = avatarCache.get(key);
-          content.push(_buildContactBlock(c, { avatarPng }));
-        });
-
-        content.push({ text: ' ', pageBreak: 'after' });
+        bucket.forEach(c => content.push(_contactEntry(c)));
       });
 
       const docDefinition = {
         info: {
-          title: 'Lista de contatos — 3cos',
+          title: 'Diretório de contatos — 3cos',
           author: userName || '3cos',
           subject: filtersSummary,
           creator: '3cos CRM',
         },
         pageSize: 'A4',
-        pageMargins: [40, 50, 40, 50],
-        defaultStyle: { font: 'Roboto', color: C.ink },
+        // Wide outer margins give the page editorial breathing room
+        pageMargins: [60, 70, 60, 70],
+        defaultStyle: { font: 'Roboto', color: C.ink, lineHeight: 1.25, fontSize: 10 },
         content,
-        footer: (currentPage, pageCount) => currentPage > 1 ? {
+        header: (currentPage) => currentPage === 1 ? null : {
           columns: [
-            { text: '3cos · Lista de contatos', fontSize: 8, color: C.soft, margin: [40, 0, 0, 0] },
-            { text: `${currentPage} / ${pageCount}`, fontSize: 8, color: C.soft, alignment: 'right', margin: [0, 0, 40, 0] },
+            { text: 'Diretório de contatos', fontSize: 8.5, color: C.soft, margin: [60, 32, 0, 0] },
+            { text: '3cos', fontSize: 8.5, color: C.soft, alignment: 'right', margin: [0, 32, 60, 0] },
           ],
-        } : null,
+        },
+        footer: (currentPage, pageCount) => currentPage === 1 ? null : {
+          columns: [
+            { text: new Date().getFullYear().toString(), fontSize: 8.5, color: C.soft, margin: [60, 0, 0, 0] },
+            { text: `${currentPage - 1} / ${pageCount - 1}`, fontSize: 8.5, color: C.soft, alignment: 'right', margin: [0, 0, 60, 0] },
+          ],
+        },
       };
 
-      const fname = `3cos-contatos-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const fname = `3cos-diretorio-${new Date().toISOString().slice(0, 10)}.pdf`;
       pdfMake.createPdf(docDefinition).download(fname);
       toast(`PDF gerado (${list.length} contatos)`, 's');
     } catch (e) {

@@ -22,10 +22,8 @@
 // ══════════════════════════════════════════════════════════
 
 const crypto = require('crypto');
-const { createClient } = require('@supabase/supabase-js');
+const { admin } = require('../_lib/supabase-admin');
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM = process.env.RESEND_FROM || 'onboarding@resend.dev';
 const APP_URL = process.env.APP_URL || '';
@@ -35,13 +33,6 @@ const RATE_LIMIT_SECONDS = 60;
 
 function sha256(s) { return crypto.createHash('sha256').update(s).digest('hex'); }
 function newToken() { return crypto.randomBytes(32).toString('hex'); }
-
-function admin() {
-  if (!SUPABASE_URL || !SERVICE_KEY) throw new Error('Supabase env vars missing');
-  return createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;

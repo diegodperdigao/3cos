@@ -10,19 +10,9 @@
 // ══════════════════════════════════════════════════════════
 
 const crypto = require('crypto');
-const { createClient } = require('@supabase/supabase-js');
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const { admin } = require('../_lib/supabase-admin');
 
 function sha256(s) { return crypto.createHash('sha256').update(s).digest('hex'); }
-
-function admin() {
-  if (!SUPABASE_URL || !SERVICE_KEY) throw new Error('Supabase env vars missing');
-  return createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;

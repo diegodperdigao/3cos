@@ -15,19 +15,7 @@
 //                           exposed to the browser)
 // ══════════════════════════════════════════════════════════
 
-const { createClient } = require('@supabase/supabase-js');
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-
-function admin() {
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY env vars');
-  }
-  return createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+const { admin } = require('../_lib/supabase-admin');
 
 function generatePassword() {
   // 14 chars, mix of upper/lower/digits + 2 symbols. Avoids ambiguous 0/O/1/l.
