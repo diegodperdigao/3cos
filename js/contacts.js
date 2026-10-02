@@ -1481,17 +1481,405 @@
     ];
   }
 
+  // ── PDF via browser-print of a rendered HTML page ──────────
+  // We stopped fighting PDFMake and now hand the browser the real HTML
+  // of the Casino Domination document system. Inter + JetBrains Mono
+  // from Google Fonts, actual CSS gradients for the holographic bar,
+  // real rounded avatars, real pill chips. The user picks "Save as PDF"
+  // from the print dialog.
+  const _esc = (s) => String(s || '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]);
+
+  const _ICONS = {
+    instagram: '<svg class="cr-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16zm0 1.62c-3.15 0-3.52.01-4.76.07-.97.04-1.5.21-1.85.34-.46.18-.8.4-1.15.74-.34.35-.56.69-.74 1.15-.13.35-.3.88-.34 1.85-.06 1.24-.07 1.61-.07 4.76s.01 3.52.07 4.76c.04.97.21 1.5.34 1.85.18.46.4.8.74 1.15.35.34.69.56 1.15.74.35.13.88.3 1.85.34 1.24.06 1.61.07 4.76.07s3.52-.01 4.76-.07c.97-.04 1.5-.21 1.85-.34.46-.18.8-.4 1.15-.74.34-.35.56-.69.74-1.15.13-.35.3-.88.34-1.85.06-1.24.07-1.61.07-4.76s-.01-3.52-.07-4.76c-.04-.97-.21-1.5-.34-1.85a3.1 3.1 0 0 0-.74-1.15 3.1 3.1 0 0 0-1.15-.74c-.35-.13-.88-.3-1.85-.34-1.24-.06-1.61-.07-4.76-.07zm0 2.76a5.3 5.3 0 1 1 0 10.6 5.3 5.3 0 0 1 0-10.6zm0 1.62a3.68 3.68 0 1 0 0 7.36 3.68 3.68 0 0 0 0-7.36zm5.5-2.9a1.24 1.24 0 1 1 0 2.48 1.24 1.24 0 0 1 0-2.48z"/></svg>',
+    mail: '<svg class="cr-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm0 2v.5l9 6 9-6V7H3zm0 2.9V17h18V9.9l-9 6-9-6z"/></svg>',
+    phone: '<svg class="cr-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.5a16 16 0 0 1-5-.8 1.4 1.4 0 0 0-1.4.3L11.3 17a16 16 0 0 1-7-7l2-2.3a1.4 1.4 0 0 0 .3-1.4 16 16 0 0 1-.8-5A1.4 1.4 0 0 0 4.4 0H2A1.4 1.4 0 0 0 .6 1.4 20 20 0 0 0 20.6 21.4 1.4 1.4 0 0 0 22 20v-2.4a1.4 1.4 0 0 0-2-1.1z"/></svg>',
+    globe: '<svg class="cr-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2c1.4 0 2.9 1.9 3.6 5H8.4C9.1 5.9 10.6 4 12 4zM4.3 10h3a19 19 0 0 0 0 4h-3a8 8 0 0 1 0-4zm1.2-2a8 8 0 0 1 4-3.3A11 11 0 0 0 8 8H5.5zm2.9 8h7.2c-.7 3.1-2.2 5-3.6 5s-2.9-1.9-3.6-5zm7.3-2H8.3a17 17 0 0 1 0-4h7.4a17 17 0 0 1 0 4zm2.3 2h-3a11 11 0 0 1-1.5 3.3A8 8 0 0 0 18.5 16zm1.2-2h-3a19 19 0 0 0 0-4h3a8 8 0 0 1 0 4zm-1.2-6h-2.5a11 11 0 0 0-1.5-3.3A8 8 0 0 1 18.5 8z"/></svg>',
+  };
+
+  function _printableHTML(contacts, { filtersSummary, userName, dateStr, docCode }) {
+    const rows = contacts.map((c, i) => _creatorSectionHTML(c, i + 1)).join('');
+
+    return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diretório de contatos — 3cos</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+  :root {
+    --n-950:#0a0a0a; --n-900:#141414; --n-800:#262626; --n-700:#404040;
+    --n-600:#525252; --n-500:#737373; --n-400:#a3a3a3; --n-300:#d4d4d4;
+    --n-200:#e8e8ea; --n-100:#f5f5f6;
+    --cyan:#00b6d4;
+    --holo:linear-gradient(90deg,#00e0ff,#7c5cff,#ff5cae,#ffd75c);
+    --paper:#ffffff; --desk:#e7e7ea;
+    --font-display:"Inter",system-ui,-apple-system,sans-serif;
+    --font-body:"Inter",system-ui,-apple-system,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+    --pad-x:clamp(22px,6%,54px);
+    color-scheme:light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--desk); color: var(--n-950);
+    font-family: var(--font-body);
+    font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(16px,4vw,44px) 16px;
+    display: flex; justify-content: center;
+  }
+  img { max-width: 100%; }
+  .sheet {
+    width: 100%; max-width: 840px;
+    background: var(--paper); color: var(--n-950);
+    border-radius: 4px; overflow: hidden;
+    box-shadow: 0 18px 60px rgba(0,0,0,.28);
+  }
+  .lbl {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--n-500);
+    display: block;
+  }
+
+  /* HEADER */
+  .doc-header {
+    background: var(--n-950); color: #fafafa;
+    position: relative;
+    padding: 30px var(--pad-x) 28px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap;
+  }
+  .doc-header::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+    height: 3px; background: var(--holo);
+  }
+  .doc-header__left { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+  .doc-wordmark {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: 36px; letter-spacing: -1.4px;
+    color: #fff; line-height: 1;
+  }
+  .doc-wordmark em {
+    font-style: normal; font-weight: 300; opacity: .72;
+  }
+  .eyebrow-cyan {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--cyan);
+  }
+  .doc-meta {
+    text-align: right;
+    font-family: var(--font-mono); font-size: 10.5px; line-height: 1.9;
+    letter-spacing: .08em; color: var(--n-400); text-transform: uppercase;
+  }
+  .doc-meta b { color: #fafafa; font-weight: 700; }
+
+  /* INTRO */
+  .doc-body { padding: clamp(26px,5vw,44px) var(--pad-x) 10px; }
+  .doc-title {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: clamp(30px,6.4vw,46px);
+    line-height: .98; letter-spacing: -.025em; text-transform: uppercase;
+    margin: 10px 0 0; text-wrap: balance;
+  }
+  .doc-lead {
+    font-size: 15px; line-height: 1.55; color: var(--n-600);
+    max-width: 60ch; margin: 12px 0 0;
+  }
+  .doc-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 24px; margin: 24px 0 0;
+  }
+  .doc-stat .n {
+    font-family: var(--font-display); font-weight: 800; font-size: 28px;
+    letter-spacing: -.02em; color: var(--n-950);
+    font-variant-numeric: tabular-nums;
+    display: block; margin-top: 6px;
+  }
+  .doc-rule {
+    height: 1.5px; background: var(--n-200); border: 0; margin: 30px 0 0;
+  }
+
+  /* CREATORS / CONTATOS */
+  .creators { padding: 0 var(--pad-x) 10px; }
+  .creator {
+    display: grid; grid-template-columns: 200px 1fr;
+    gap: 34px; align-items: start;
+    padding: 28px 0; border-bottom: 1px solid var(--n-200);
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .creator:last-child { border-bottom: 0; }
+
+  .cr-id { display: flex; flex-direction: column; align-items: flex-start; }
+  .cr-photo {
+    width: 80px; height: 80px; border-radius: 50%; overflow: hidden;
+    background: var(--n-100); border: 1px solid var(--n-200);
+    box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--n-200);
+    margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cr-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cr-photo .cr-initials {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--n-900); color: #fff;
+    font-family: var(--font-display); font-weight: 800; font-size: 26px;
+    letter-spacing: -.5px;
+  }
+
+  .idx {
+    font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--n-400);
+  }
+  .cr-id h2 {
+    font-family: var(--font-display); font-weight: 800; font-size: 20px;
+    letter-spacing: -.01em; margin: 4px 0 0;
+    text-wrap: balance;
+  }
+
+  .cr-socials {
+    display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px;
+  }
+  .cr-social {
+    display: inline-flex; align-items: center; gap: 7px;
+    text-decoration: none;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: .03em;
+    color: var(--n-600);
+    border: 1px solid var(--n-200); border-radius: 999px;
+    padding: 4px 11px;
+    max-width: 100%;
+  }
+  .cr-social .cr-ico {
+    width: 13px; height: 13px; fill: var(--n-950); flex: none;
+  }
+  .cr-social span {
+    color: var(--n-950); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 160px;
+  }
+
+  .cr-deal {
+    display: flex; flex-direction: column; gap: 26px; padding-top: 2px;
+  }
+  .cr-price .lbl { margin-bottom: 6px; }
+  .amount {
+    display: block;
+    font-family: var(--font-display); font-weight: 800;
+    font-size: 27px; line-height: 1; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+    text-transform: uppercase;
+  }
+  .amount-desc {
+    display: block; margin-top: 7px;
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--n-500);
+  }
+  .cr-scope .lbl { margin-bottom: 9px; }
+  .cr-scope ul { list-style: none; margin: 0; padding: 0; }
+  .cr-scope li {
+    position: relative; padding-left: 18px; margin-bottom: 7px;
+    font-size: 14px; line-height: 1.45; color: var(--n-800);
+  }
+  .cr-scope li::before {
+    content: ""; position: absolute; left: 0; top: .5em;
+    width: 6px; height: 6px; background: var(--n-950);
+  }
+
+  /* FOOTER */
+  .doc-footer {
+    background: var(--n-950); color: var(--n-400);
+    position: relative;
+    padding: 22px var(--pad-x);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .doc-footer::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0;
+    height: 3px; background: var(--holo);
+  }
+  .doc-footer b { color: #fafafa; font-weight: 700; }
+
+  /* Print tuning: paper edges flush, backgrounds preserved, no page split
+     inside a contact entry, hide the "shadow of a floating sheet" look */
+  @page { size: A4; margin: 0; }
+  @media print {
+    html, body { background: #fff !important; }
+    body { padding: 0 !important; display: block !important; }
+    .sheet {
+      width: 100% !important; max-width: none !important;
+      box-shadow: none !important; border-radius: 0 !important;
+    }
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .creator { break-inside: avoid; page-break-inside: avoid; }
+    a { text-decoration: none; color: inherit; }
+    .no-print { display: none !important; }
+  }
+
+  /* Floating "print now" bar — only on screen, hidden when printing */
+  .toolbar {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--n-950); color: #fff;
+    padding: 10px 14px 10px 18px;
+    border-radius: 999px;
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase;
+    box-shadow: 0 10px 40px rgba(0,0,0,.3);
+    z-index: 10;
+  }
+  .toolbar button {
+    appearance: none; border: 0;
+    background: var(--cyan); color: var(--n-950);
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    padding: 8px 14px; border-radius: 999px;
+    cursor: pointer;
+  }
+  .toolbar button:hover { filter: brightness(1.05); }
+</style>
+</head>
+<body>
+  <article class="sheet">
+    <header class="doc-header">
+      <div class="doc-header__left">
+        <div class="doc-wordmark">3C<em>OS</em></div>
+        <span class="eyebrow-cyan">CRM Comercial · Diretório</span>
+      </div>
+      <div class="doc-meta">
+        <div><b>Documento</b> · ${_esc(docCode)}</div>
+        <div>Data · ${_esc(dateStr)}</div>
+        <div>Confidencial</div>
+      </div>
+    </header>
+
+    <main class="doc-body">
+      <span class="lbl">Resumo da base</span>
+      <h1 class="doc-title">Diretório de contatos</h1>
+      <p class="doc-lead">${_esc(filtersSummary)}</p>
+      <hr class="doc-rule">
+    </main>
+
+    <div class="creators">
+      ${rows}
+    </div>
+
+    <footer class="doc-footer">
+      <span><b>3cos</b> · CRM Comercial</span>
+      <span>Organizado por <b>${_esc(userName)}</b></span>
+    </footer>
+  </article>
+
+  <div class="toolbar no-print">
+    <span>pronto pra salvar como PDF</span>
+    <button onclick="window.print()">Imprimir / salvar PDF</button>
+  </div>
+
+  <script>
+    // Auto-trigger the print dialog once fonts have loaded, so the first
+    // paint already shows Inter + JetBrains Mono instead of system fallback.
+    (function () {
+      function go() {
+        try { window.focus(); } catch (_) {}
+        setTimeout(function () { window.print(); }, 150);
+      }
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(go).catch(go);
+      } else {
+        window.addEventListener('load', go);
+      }
+    })();
+  <\/script>
+</body>
+</html>`;
+  }
+
+  function _creatorSectionHTML(c, idx) {
+    const name = _esc(c.name || '(sem nome)');
+    const initials = (function () {
+      const parts = String(c.name || '').trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return '?';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    })();
+    const avatarInner = c.avatar_url
+      ? `<img src="${_esc(c.avatar_url)}" alt="${name}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cr-initials',textContent:'${initials}'}))">`
+      : `<div class="cr-initials">${initials}</div>`;
+
+    // Socials
+    const ig = _plainIg(c);
+    const socials = [];
+    if (ig) socials.push({ icon: _ICONS.instagram, label: '@' + ig, href: `https://instagram.com/${ig}` });
+    if (c.email) socials.push({ icon: _ICONS.mail, label: c.email, href: `mailto:${c.email}` });
+    if (c.phone) {
+      const digits = String(c.phone).replace(/[^\d+]/g, '');
+      socials.push({ icon: _ICONS.phone, label: c.phone, href: `tel:${digits}` });
+    }
+    if (c.website) socials.push({ icon: _ICONS.globe, label: c.website.replace(/^https?:\/\//, ''), href: _normalizeURL(c.website) });
+
+    const socialsHTML = socials.length ? `<div class="cr-socials">
+      ${socials.map(s => `<a class="cr-social" href="${_esc(s.href)}" target="_blank" rel="noopener">${s.icon}<span>${_esc(s.label)}</span></a>`).join('')}
+    </div>` : '';
+
+    // Classification: TYPE_LABEL is the amount-like hero; tier · status · profile is the amount-desc
+    const typeDisplay = c.type && TYPE_LABEL[c.type] ? TYPE_LABEL[c.type] : '—';
+    const tierId = [1, 2, 3].includes(Number(c.tier)) ? Number(c.tier) : 0;
+    const descBits = [];
+    if (tierId > 0) descBits.push('Tier ' + tierId);
+    if (c.status && STATUS_LABEL[c.status]) descBits.push(STATUS_LABEL[c.status]);
+    const profileLabel = c.profile ? (PROFILE_BY_ID[c.profile]?.label || c.profile) : null;
+    if (profileLabel) descBits.push(profileLabel);
+    const descLine = descBits.length ? descBits.join(' · ') : 'Sem classificação';
+
+    // Scope bullets: company, source, notes
+    const scope = [];
+    if (c.company) scope.push(c.company);
+    if (c.source && SOURCE_LABEL[c.source]) scope.push('Origem: ' + SOURCE_LABEL[c.source]);
+    if (c.notes) scope.push(c.notes);
+    const scopeHTML = scope.length
+      ? `<ul>${scope.map(s => `<li>${_esc(s)}</li>`).join('')}</ul>`
+      : `<ul><li style="opacity:.5">Sem informações adicionais</li></ul>`;
+
+    return `
+      <section class="creator">
+        <div class="cr-id">
+          <div class="cr-photo">${avatarInner}</div>
+          <span class="idx">Contato ${String(idx).padStart(2, '0')}</span>
+          <h2>${name}</h2>
+          ${socialsHTML}
+        </div>
+        <div class="cr-deal">
+          <div class="cr-price">
+            <span class="lbl">Classificação</span>
+            <span class="amount">${_esc(typeDisplay)}</span>
+            <span class="amount-desc">${_esc(descLine)}</span>
+          </div>
+          <div class="cr-scope">
+            <span class="lbl">Escopo</span>
+            ${scopeHTML}
+          </div>
+        </div>
+      </section>`;
+  }
+
   window._ctcExportPDF = async () => {
     const list = _computeList();
     if (!list.length) { toast('Nenhum contato pra exportar com os filtros atuais', 'i'); return; }
 
     const btn = document.querySelector('button[onclick="window._ctcExportPDF()"]');
     const origHTML = btn?.innerHTML;
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Gerando...'; if (window.lucide) lucide.createIcons(); }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Preparando...'; if (window.lucide) lucide.createIcons(); }
 
     try {
-      await _loadPdfMake();
-
+      // Filter summary → the subtitle under the cover title
       const bits = [];
       if (F.type) bits.push('Tipo: ' + (TYPE_LABEL[F.type] || F.type));
       if (F.profile === '__none__') bits.push('Perfil: sem perfil');
@@ -1499,12 +1887,16 @@
       if (F.tier) bits.push('Tier: T' + F.tier);
       if (F.status) bits.push('Status: ' + (STATUS_LABEL[F.status] || F.status));
       if (F.search) bits.push(`Busca: "${F.search}"`);
-      const filtersSummary = bits.length ? bits.join(' · ') : 'Relação de contatos da base — perfis, canais e escopo de atuação de cada um.';
+      const filtersSummary = bits.length
+        ? `${list.length} contatos — ${bits.join(' · ')}`
+        : `${list.length} contatos da base — perfis, canais e escopo de atuação de cada um.`;
 
       const userName = STATE?.user?.name || '3cos';
       const now = new Date();
       const dateStr = now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      // Order the list for the directory: by tier (1→3→sem), then by name
+      const docCode = `DC-${String(list.length).padStart(3, '0')}`;
+
+      // Order: tier (1→3→sem), then name
       const ordered = [...list].sort((a, b) => {
         const ta = [1, 2, 3].includes(Number(a.tier)) ? Number(a.tier) : 99;
         const tb = [1, 2, 3].includes(Number(b.tier)) ? Number(b.tier) : 99;
@@ -1512,73 +1904,20 @@
         return (a.name || '').localeCompare(b.name || '', 'pt-BR');
       });
 
-      const content = [];
-      content.push(..._coverContent(list.length, filtersSummary));
-      ordered.forEach((c, i) => content.push(_contactEntry(c, i + 1)));
+      const html = _printableHTML(ordered, { filtersSummary, userName, dateStr, docCode });
 
-      // A4 in points: 595.28 × 841.89
-      const PAGE_W = 595.28, PAGE_H = 841.89;
-      const HEADER_H = 110, FOOTER_H = 60, HOLO_H = 3;
+      // Open a new window. Some browsers block window.open without a user
+      // gesture — but this handler IS a user gesture (click), so it's fine.
+      const win = window.open('', '_blank');
+      if (!win) {
+        toast('Permita popups desse site pra exportar o PDF.', 'e');
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
 
-      const docDefinition = {
-        info: {
-          title: 'Diretório de contatos — 3cos',
-          author: userName,
-          subject: filtersSummary,
-          creator: '3cos CRM',
-        },
-        pageSize: 'A4',
-        pageMargins: [54, HEADER_H + 32, 54, FOOTER_H + 24],
-        defaultStyle: { font: 'Roboto', color: C.n900, lineHeight: 1.3, fontSize: 10 },
-
-        // Dark header + holo bar + dark footer + holo bar on every page
-        background: () => ({
-          canvas: [
-            { type: 'rect', x: 0, y: 0, w: PAGE_W, h: HEADER_H, color: C.n950 },
-            ..._holoRects(HEADER_H, HOLO_H, PAGE_W),
-            { type: 'rect', x: 0, y: PAGE_H - FOOTER_H, w: PAGE_W, h: FOOTER_H, color: C.n950 },
-            ..._holoRects(PAGE_H - FOOTER_H - HOLO_H, HOLO_H, PAGE_W),
-          ],
-        }),
-
-        // Text overlays on the dark header
-        header: (currentPage) => ({
-          margin: [54, 32, 54, 0],
-          columns: [
-            {
-              width: '*',
-              stack: [
-                { text: '3COS', fontSize: 20, color: C.paper, bold: true, characterSpacing: 2 },
-                { text: 'CASINO DOMINATION · CRM', fontSize: 9, color: C.cyan, bold: true, characterSpacing: 1.6, margin: [0, 6, 0, 0] },
-              ],
-            },
-            {
-              width: 'auto',
-              alignment: 'right',
-              stack: [
-                { text: ['DOCUMENTO · ', { text: `CD-${String(currentPage).padStart(3, '0')}`, color: C.paper, bold: true }], fontSize: 9, characterSpacing: 1.2, color: C.n400 },
-                { text: ['DATA · ', { text: dateStr, color: C.paper, bold: true }], fontSize: 9, characterSpacing: 1.2, color: C.n400, margin: [0, 4, 0, 0] },
-                { text: 'CONFIDENCIAL', fontSize: 9, characterSpacing: 1.2, color: C.n400, margin: [0, 4, 0, 0] },
-              ],
-            },
-          ],
-        }),
-
-        footer: (currentPage, pageCount) => ({
-          margin: [54, 24, 54, 0],
-          columns: [
-            { text: '3COS', fontSize: 10, color: C.paper, bold: true, characterSpacing: 1.8, width: '*' },
-            { text: userName.toUpperCase(), fontSize: 9, color: C.n400, characterSpacing: 1.2, alignment: 'center', width: '*' },
-            { text: `${String(currentPage).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}`, fontSize: 9, color: C.n400, characterSpacing: 1.2, alignment: 'right', width: '*' },
-          ],
-        }),
-
-        content,
-      };
-
-      const fname = `3cos-diretorio-${new Date().toISOString().slice(0, 10)}.pdf`;
-      pdfMake.createPdf(docDefinition).download(fname);
-      toast(`PDF gerado (${list.length} contatos)`, 's');
+      toast(`PDF pronto. Escolha "Salvar como PDF" no diálogo (${list.length} contatos)`, 's');
     } catch (e) {
       console.error('[ctc export pdf]', e);
       toast('Erro ao gerar PDF: ' + (e.message || 'desconhecido'), 'e');
