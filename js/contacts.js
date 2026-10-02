@@ -48,6 +48,7 @@
             <button class="btn btn-outline" onclick="window._ctcOpenImports()"><i data-lucide="list"></i> Lançamentos</button>
             <button class="btn btn-outline" onclick="window._ctcManageTags()"><i data-lucide="tags"></i> Tags</button>
             <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
+            <button class="btn btn-outline" onclick="window._ctcExportPDF()" title="Exporta a lista atual (respeita filtros ativos) em um PDF interativo"><i data-lucide="file-text"></i> PDF</button>
             <button class="btn btn-theme" onclick="window._ctcOpenNew()"><i data-lucide="plus"></i> Novo contato</button>
           </div>
         </div>
@@ -1138,4 +1139,388 @@
     }
     return `<div class="ctc-tile-av" style="background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))">${initials}</div>`;
   }
+
+  // ── PDF EXPORT ─────────────────────────────────────────────
+  // Builds an interactive, nicely-typeset PDF of the current filtered list.
+  // Clickable email / tel / Instagram / website links, per-tier sections,
+  // and a one-click table of contents. PDFMake is lazy-loaded on first use
+  // so it doesn't bloat the initial page load.
+  const PDFMAKE_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js';
+  const PDFMAKE_FONTS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.js';
+  let _pdfmakePromise = null;
+  function _loadPdfMake() {
+    if (window.pdfMake) return Promise.resolve(window.pdfMake);
+    if (_pdfmakePromise) return _pdfmakePromise;
+    const load = (src) => new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src; s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Falha ao carregar ' + src));
+      document.head.appendChild(s);
+    });
+    _pdfmakePromise = load(PDFMAKE_CDN).then(() => load(PDFMAKE_FONTS_CDN)).then(() => window.pdfMake);
+    return _pdfmakePromise;
+  }
+
+  function _initialsFor(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  function _hueFor(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xffffff;
+    return Math.abs(h) % 360;
+  }
+  function _hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))))).toString(16).padStart(2, '0');
+    return `#${f(0)}${f(8)}${f(4)}`;
+  }
+  function _makeAvatarPng(initials, hue, size = 96) {
+    try {
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      // Linear gradient similar to the UI tile avatars
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, _hslToHex(hue, 65, 55));
+      grad.addColorStop(1, _hslToHex((hue + 40) % 360, 70, 45));
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `600 ${Math.round(size * 0.38)}px -apple-system, Helvetica, Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(initials, size / 2, size / 2 + 2);
+      return c.toDataURL('image/png');
+    } catch (_) { return null; }
+  }
+
+  function _normalizeURL(u) {
+    if (!u) return '';
+    const s = String(u).trim();
+    if (!s) return '';
+    return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+  }
+
+  function _plainIg(c) {
+    const raw = c.social_links?.instagram || '';
+    return _normalizeIgHandle(raw) || '';
+  }
+
+  function _groupByTier(list) {
+    const buckets = { 1: [], 2: [], 3: [], 0: [] };
+    list.forEach(c => {
+      const t = Number(c.tier);
+      if (t === 1 || t === 2 || t === 3) buckets[t].push(c);
+      else buckets[0].push(c);
+    });
+    Object.values(buckets).forEach(arr => arr.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR')));
+    return buckets;
+  }
+
+  function _summaryCounts(list) {
+    const by = (k, vals) => Object.fromEntries(vals.map(v => [v, 0]));
+    const counts = {
+      type: by('type', ['b2b', 'b2c', 'both']),
+      status: by('status', ['wishlist', 'in_pipeline', 'customer', 'churned']),
+      tier: by('tier', [1, 2, 3, 0]),
+      profile: by('profile', PROFILES.map(p => p.id).concat(['none'])),
+    };
+    list.forEach(c => {
+      if (counts.type[c.type] !== undefined) counts.type[c.type]++;
+      if (counts.status[c.status] !== undefined) counts.status[c.status]++;
+      const t = Number(c.tier);
+      if ([1, 2, 3].includes(t)) counts.tier[t]++; else counts.tier[0]++;
+      if (c.profile && counts.profile[c.profile] !== undefined) counts.profile[c.profile]++;
+      else if (!c.profile) counts.profile.none++;
+    });
+    return counts;
+  }
+
+  // Colors tuned for both light reading and nice contrast with white bg
+  const C = {
+    ink:   '#0f172a', // slate-900
+    muted: '#64748b', // slate-500
+    soft:  '#94a3b8', // slate-400
+    line:  '#e2e8f0', // slate-200
+    bg:    '#f8fafc', // slate-50
+    brand: '#111827',
+    accent:'#ec4899',
+  };
+  const TIER_COLOR = { 1: '#ec4899', 2: '#f59e0b', 3: '#64748b', 0: '#94a3b8' };
+  const STATUS_COLOR = { wishlist: '#64748b', in_pipeline: '#3b82f6', customer: '#10b981', churned: '#ef4444' };
+  const TYPE_COLOR = { b2b: '#6366f1', b2c: '#ec4899', both: '#8b5cf6' };
+
+  function _badge(text, fill) {
+    return {
+      table: { body: [[{ text, color: '#ffffff', fontSize: 8, bold: true, alignment: 'center' }]] },
+      layout: {
+        hLineWidth: () => 0, vLineWidth: () => 0,
+        paddingTop: () => 2, paddingBottom: () => 2,
+        paddingLeft: () => 6, paddingRight: () => 6,
+        fillColor: () => fill,
+      },
+    };
+  }
+
+  function _buildContactBlock(c, { avatarPng }) {
+    const tierId = [1, 2, 3].includes(Number(c.tier)) ? Number(c.tier) : 0;
+    const ig = _plainIg(c);
+    const headerBadges = [];
+    if (c.type && TYPE_LABEL[c.type]) headerBadges.push(_badge(TYPE_LABEL[c.type], TYPE_COLOR[c.type] || '#6b7280'));
+    if (tierId > 0) headerBadges.push(_badge('T' + tierId, TIER_COLOR[tierId]));
+    if (c.status && STATUS_LABEL[c.status]) headerBadges.push(_badge(STATUS_LABEL[c.status], STATUS_COLOR[c.status] || '#6b7280'));
+
+    const infoRows = [];
+    const push = (label, value) => { if (value) infoRows.push([{ text: label, color: C.muted, fontSize: 9 }, value]); };
+
+    if (c.company) push('Empresa', { text: c.company, color: C.ink, fontSize: 10 });
+    if (c.email) push('Email', { text: c.email, color: '#1d4ed8', fontSize: 10, link: `mailto:${c.email}`, decoration: 'underline' });
+    if (c.phone) {
+      const digits = String(c.phone).replace(/[^\d+]/g, '');
+      push('Telefone', { text: c.phone, color: '#1d4ed8', fontSize: 10, link: `tel:${digits}`, decoration: 'underline' });
+    }
+    if (ig) push('Instagram', { text: '@' + ig, color: '#1d4ed8', fontSize: 10, link: `https://instagram.com/${ig}`, decoration: 'underline' });
+    if (c.website) {
+      const url = _normalizeURL(c.website);
+      push('Website', { text: c.website, color: '#1d4ed8', fontSize: 10, link: url, decoration: 'underline' });
+    }
+    const profileLabel = c.profile ? (PROFILE_BY_ID[c.profile]?.label || c.profile) : null;
+    if (profileLabel) push('Perfil', { text: profileLabel, color: C.ink, fontSize: 10 });
+    if (c.source && SOURCE_LABEL[c.source]) push('Origem', { text: SOURCE_LABEL[c.source], color: C.ink, fontSize: 10 });
+
+    const infoTable = infoRows.length ? {
+      table: { widths: [55, '*'], body: infoRows },
+      layout: {
+        hLineWidth: () => 0, vLineWidth: () => 0,
+        paddingTop: () => 2, paddingBottom: () => 2, paddingLeft: () => 0, paddingRight: () => 0,
+      },
+      margin: [0, 4, 0, 0],
+    } : null;
+
+    const notes = c.notes ? {
+      text: c.notes, italics: true, color: C.muted, fontSize: 9,
+      margin: [0, 6, 0, 0],
+    } : null;
+
+    const leftCol = avatarPng
+      ? { image: avatarPng, width: 44, height: 44, margin: [0, 2, 0, 0] }
+      : { text: _initialsFor(c.name), fontSize: 16, bold: true, color: C.ink, alignment: 'center', margin: [0, 10, 0, 0] };
+
+    const rightChildren = [
+      { text: c.name || '(sem nome)', fontSize: 13, bold: true, color: C.ink },
+    ];
+    if (headerBadges.length) {
+      rightChildren.push({ columns: headerBadges.map(b => ({ width: 'auto', ...b })), columnGap: 4, margin: [0, 3, 0, 0] });
+    }
+    if (infoTable) rightChildren.push(infoTable);
+    if (notes) rightChildren.push(notes);
+
+    return {
+      // Card: thin separator + columns [avatar | details]
+      stack: [
+        {
+          columns: [
+            { width: 48, stack: [leftCol] },
+            { width: '*', stack: rightChildren, margin: [10, 0, 0, 0] },
+          ],
+        },
+        { canvas: [{ type: 'line', x1: 0, y1: 2, x2: 515, y2: 2, lineWidth: 0.4, lineColor: C.line }], margin: [0, 10, 0, 10] },
+      ],
+      unbreakable: true,
+    };
+  }
+
+  function _summaryBlock(counts, total) {
+    const row = (label, items) => ({
+      stack: [
+        { text: label.toUpperCase(), fontSize: 9, color: C.muted, bold: true, characterSpacing: 1.2, margin: [0, 10, 0, 4] },
+        {
+          columns: items.map(([lbl, n, color]) => ({
+            width: '*',
+            stack: [
+              { text: String(n), fontSize: 20, bold: true, color: color || C.ink },
+              { text: lbl, fontSize: 9, color: C.muted, margin: [0, -2, 0, 0] },
+            ],
+          })),
+          columnGap: 10,
+        },
+      ],
+      margin: [0, 0, 0, 6],
+    });
+
+    return {
+      stack: [
+        row('Por tipo', [
+          ['B2B', counts.type.b2b, TYPE_COLOR.b2b],
+          ['B2C', counts.type.b2c, TYPE_COLOR.b2c],
+          ['B2B + B2C', counts.type.both, TYPE_COLOR.both],
+        ]),
+        row('Por tier', [
+          ['Tier 1', counts.tier[1], TIER_COLOR[1]],
+          ['Tier 2', counts.tier[2], TIER_COLOR[2]],
+          ['Tier 3', counts.tier[3], TIER_COLOR[3]],
+          ['Sem tier', counts.tier[0], TIER_COLOR[0]],
+        ]),
+        row('Por status', [
+          ['Wishlist', counts.status.wishlist, STATUS_COLOR.wishlist],
+          ['No pipeline', counts.status.in_pipeline, STATUS_COLOR.in_pipeline],
+          ['Clientes', counts.status.customer, STATUS_COLOR.customer],
+          ['Perdidos', counts.status.churned, STATUS_COLOR.churned],
+        ]),
+        row('Por perfil', PROFILES.map(p => [p.label, counts.profile[p.id] || 0, p.color])
+          .concat([['Sem perfil', counts.profile.none || 0, C.soft]])),
+      ],
+    };
+  }
+
+  function _coverPage(total, filtersSummary, userName) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    return {
+      stack: [
+        { text: ' ', margin: [0, 60, 0, 0] },
+        { text: '3cos', fontSize: 32, bold: true, color: C.ink, characterSpacing: -1 },
+        { text: 'CRM Comercial', fontSize: 11, color: C.muted, margin: [0, -4, 0, 40] },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 80, y2: 0, lineWidth: 2, lineColor: C.accent }], margin: [0, 0, 0, 20] },
+        { text: 'Lista de contatos', fontSize: 28, bold: true, color: C.ink, characterSpacing: -0.5 },
+        { text: filtersSummary || 'Todos os contatos da base', fontSize: 12, color: C.muted, margin: [0, 6, 0, 30] },
+        {
+          columns: [
+            { stack: [
+              { text: 'TOTAL', fontSize: 9, color: C.muted, characterSpacing: 1.2, bold: true },
+              { text: String(total), fontSize: 48, bold: true, color: C.accent, margin: [0, -4, 0, 0] },
+              { text: total === 1 ? 'contato' : 'contatos', fontSize: 10, color: C.muted, margin: [0, -8, 0, 0] },
+            ], width: '*' },
+            { stack: [
+              { text: 'GERADO EM', fontSize: 9, color: C.muted, characterSpacing: 1.2, bold: true, alignment: 'right' },
+              { text: dateStr, fontSize: 14, color: C.ink, margin: [0, 4, 0, 0], alignment: 'right' },
+              userName ? { text: 'por ' + userName, fontSize: 10, color: C.muted, margin: [0, 2, 0, 0], alignment: 'right' } : {},
+            ], width: '*' },
+          ],
+        },
+        { text: ' ', pageBreak: 'after' },
+      ],
+    };
+  }
+
+  window._ctcExportPDF = async () => {
+    const list = _computeList();
+    if (!list.length) { toast('Nenhum contato pra exportar com os filtros atuais', 'i'); return; }
+
+    const btn = document.querySelector('button[onclick="window._ctcExportPDF()"]');
+    const origHTML = btn?.innerHTML;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Gerando...'; if (window.lucide) lucide.createIcons(); }
+
+    try {
+      await _loadPdfMake();
+
+      // Summary of active filters, for the cover subtitle
+      const bits = [];
+      if (F.type) bits.push('Tipo: ' + (TYPE_LABEL[F.type] || F.type));
+      if (F.profile === '__none__') bits.push('Perfil: sem perfil');
+      else if (F.profile) bits.push('Perfil: ' + (PROFILE_BY_ID[F.profile]?.label || F.profile));
+      if (F.tier) bits.push('Tier: T' + F.tier);
+      if (F.status) bits.push('Status: ' + (STATUS_LABEL[F.status] || F.status));
+      if (F.search) bits.push(`Busca: "${F.search}"`);
+      const filtersSummary = bits.length ? bits.join(' · ') : 'Todos os contatos da base';
+
+      const counts = _summaryCounts(list);
+      const grouped = _groupByTier(list);
+      const userName = STATE?.user?.name || '';
+
+      // Pre-render avatars once per contact (canvas → data URL)
+      const avatarCache = new Map();
+      list.forEach(c => {
+        const key = c.id || c.email || c.name;
+        if (avatarCache.has(key)) return;
+        if (c.avatar_url) { avatarCache.set(key, null); return; } // keep it simple — remote images need async load; use initials instead
+        const png = _makeAvatarPng(_initialsFor(c.name), _hueFor(c.name || ''), 96);
+        avatarCache.set(key, png);
+      });
+
+      // Build content
+      const content = [];
+      content.push(_coverPage(list.length, filtersSummary, userName));
+
+      // Summary page
+      content.push({ text: 'Resumo da base', fontSize: 20, bold: true, color: C.ink, margin: [0, 10, 0, 0] });
+      content.push({ text: 'Panorama dos contatos exportados', fontSize: 11, color: C.muted, margin: [0, 2, 0, 16] });
+      content.push(_summaryBlock(counts, list.length));
+      content.push({ text: ' ', pageBreak: 'after' });
+
+      // Table of contents (groups → clickable TOC)
+      content.push({ text: 'Sumário', fontSize: 20, bold: true, color: C.ink, margin: [0, 10, 0, 16] });
+      content.push({
+        toc: {
+          numberStyle: { color: C.muted, fontSize: 10 },
+          textStyle: { color: C.ink, fontSize: 11 },
+        },
+      });
+      content.push({ text: ' ', pageBreak: 'after' });
+
+      // Sections per tier
+      const tierOrder = [1, 2, 3, 0];
+      tierOrder.forEach((tid, idx) => {
+        const bucket = grouped[tid];
+        if (!bucket.length) return;
+        const title = tid === 0 ? 'Sem tier definido' : `Tier ${tid}`;
+        const sub = tid === 0 ? 'Contatos sem prioridade atribuída' : (TIERS.find(t => t.id === tid)?.desc || '');
+        const color = TIER_COLOR[tid];
+
+        content.push({
+          stack: [
+            { canvas: [{ type: 'rect', x: 0, y: 0, w: 4, h: 24, color }], relativePosition: { x: 0, y: 0 } },
+            { text: title, fontSize: 20, bold: true, color: C.ink, margin: [12, 0, 0, 0] },
+            { text: `${bucket.length} ${bucket.length === 1 ? 'contato' : 'contatos'} · ${sub}`, fontSize: 10, color: C.muted, margin: [12, 2, 0, 14] },
+          ],
+          tocItem: true, tocStyle: { bold: true },
+          margin: [0, idx === 0 ? 0 : 6, 0, 0],
+        });
+
+        bucket.forEach(c => {
+          const key = c.id || c.email || c.name;
+          const avatarPng = avatarCache.get(key);
+          content.push(_buildContactBlock(c, { avatarPng }));
+        });
+
+        content.push({ text: ' ', pageBreak: 'after' });
+      });
+
+      const docDefinition = {
+        info: {
+          title: 'Lista de contatos — 3cos',
+          author: userName || '3cos',
+          subject: filtersSummary,
+          creator: '3cos CRM',
+        },
+        pageSize: 'A4',
+        pageMargins: [40, 50, 40, 50],
+        defaultStyle: { font: 'Roboto', color: C.ink },
+        content,
+        footer: (currentPage, pageCount) => currentPage > 1 ? {
+          columns: [
+            { text: '3cos · Lista de contatos', fontSize: 8, color: C.soft, margin: [40, 0, 0, 0] },
+            { text: `${currentPage} / ${pageCount}`, fontSize: 8, color: C.soft, alignment: 'right', margin: [0, 0, 40, 0] },
+          ],
+        } : null,
+      };
+
+      const fname = `3cos-contatos-${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdfMake.createPdf(docDefinition).download(fname);
+      toast(`PDF gerado (${list.length} contatos)`, 's');
+    } catch (e) {
+      console.error('[ctc export pdf]', e);
+      toast('Erro ao gerar PDF: ' + (e.message || 'desconhecido'), 'e');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = origHTML; if (window.lucide) lucide.createIcons(); }
+    }
+  };
 })();

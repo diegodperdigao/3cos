@@ -47,15 +47,47 @@ window.confirmDeleteUser=(id)=>{
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-danger" onclick="deleteUser('${id}')">Excluir</button>`);
 };
-window.deleteUser=(id)=>{
-  const idx=STATE.users.findIndex(x=>x.id===id);
-  if(idx<0)return;
-  const name=STATE.users[idx].name;
-  STATE.users.splice(idx,1);
-  if (typeof logAction === 'function') logAction('Usuário excluído',name);
-  saveToLocal();closeModal();
+window.deleteUser = async (id) => {
+  const idx = STATE.users.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const name = STATE.users[idx].name;
+  if (!confirm(`Excluir "${name}"? Essa ação remove o login do Supabase e não pode ser desfeita.`)) return;
+
+  // If Supabase is wired up, do the real delete via the admin endpoint so the
+  // row doesn't come back on the next loadFromCloud (which rebuilds STATE.users
+  // from the profiles table).
+  if (window.SUPABASE_CONFIGURED && window.sb) {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const token = session?.access_token;
+      if (!token) { toast('Sessão expirada. Faça login novamente.', 'e'); return; }
+
+      const resp = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id }),
+      });
+      let body = {};
+      try { body = await resp.json(); } catch (_) {}
+      if (!resp.ok || !body.ok) {
+        toast('Erro ao excluir: ' + (body.error || `HTTP ${resp.status}`), 'e');
+        return;
+      }
+    } catch (e) {
+      toast('Erro ao excluir: ' + (e.message || 'rede'), 'e');
+      return;
+    }
+  }
+
+  STATE.users.splice(idx, 1);
+  if (typeof logAction === 'function') logAction('Usuário excluído', name);
+  saveToLocal();
+  closeModal();
   _rerenderUsersAnywhere();
-  toast('Usuário removido','s');
+  toast('Usuário removido', 's');
 };
 
 // Re-renderiza o módulo Usuários onde quer que esteja montado:

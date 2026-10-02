@@ -615,7 +615,7 @@ window.applyAppTheme = () => {
     'neonflow':       { edition: '',         theme: 'dark'  },
     'bento':          { edition: 'bento',    theme: 'light' },
   };
-  const themeKey = STATE.settings?.theme || 'default-dark';
+  const themeKey = STATE.settings?.theme || 'default-light';
   const pair = MAP[themeKey] || MAP['default-light'];
   root.setAttribute('data-theme', pair.theme);
   if (pair.edition && STATE.user) root.setAttribute('data-edition', pair.edition);
