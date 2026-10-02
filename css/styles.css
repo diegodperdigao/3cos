@@ -105,6 +105,7 @@ body::before {
    LOCK
 ══════════════════════════════════════════════════════════ */
 #lock{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.6s;}
+#reset-screen{position:fixed;inset:0;z-index:210;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.6s;}
 #lock .mosaic-wrapper{display:none;}
 .lock-box{position:relative;z-index:1;width:380px;text-align:center;
   padding:48px 40px;background:var(--bg2);backdrop-filter:blur(20px);

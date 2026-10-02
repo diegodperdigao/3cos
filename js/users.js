@@ -573,6 +573,17 @@ window.toggleTheme = _wrapToggleTheme;
 // Restore session from localStorage + return to the active module
 
 (function(){
+  // If the URL carries a password-recovery token, don't restore the previous
+  // session or boot the hub — app.js will show the reset screen instead.
+  const _rh = (window.location.hash || '').toLowerCase();
+  const _rq = (window.location.search || '').toLowerCase();
+  if (_rh.includes('type=recovery') || _rq.includes('reset=1')) {
+    document.documentElement.removeAttribute('data-edition');
+    const lk = document.getElementById('lock');
+    if (lk) { lk.style.display = 'none'; lk.style.opacity = '0'; }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    return;
+  }
   const sess=localStorage.getItem('3cos_sess');
   if(sess){
     try{
@@ -624,6 +635,11 @@ window.toggleTheme = _wrapToggleTheme;
 async function _validateSession() {
   // Supabase first (Phase 3+ primary)
   if (window.SUPABASE_CONFIGURED && window.sb) {
+    // If the URL carries a recovery token, don't treat the short-lived
+    // recovery session as a normal login — app.js will show the reset UI.
+    const _h = (window.location.hash || '').toLowerCase();
+    const _q = (window.location.search || '').toLowerCase();
+    if (_h.includes('type=recovery') || _q.includes('reset=1')) return false;
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (session?.user) {

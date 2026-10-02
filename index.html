@@ -148,6 +148,22 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 </div>
 
+<!-- RESET PASSWORD (shown when user arrives via recovery email) -->
+<div id="reset-screen" style="display:none">
+  <div class="mosaic-wrapper"><div class="mosaic-container"><div class="mosaic-pattern" id="reset-mosaic"></div></div></div>
+  <div class="lock-box">
+    <img src="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg" class="lock-logo">
+    <div class="lock-title">3C<span>OS</span></div>
+    <div class="lock-sub">Definir nova senha</div>
+    <input type="password" id="rp-new" class="lock-field" placeholder="Nova senha (mín. 8)" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doResetPassword()">
+    <input type="password" id="rp-confirm" class="lock-field" placeholder="Confirmar nova senha" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doResetPassword()">
+    <button class="lock-btn" id="rp-btn" onclick="doResetPassword()">Salvar nova senha</button>
+    <div class="lock-hint">Depois de salvar, você fará login com a nova senha</div>
+    <div id="rp-err" class="lock-err"></div>
+    <div class="lock-reset" onclick="doCancelReset()">Voltar ao login</div>
+  </div>
+</div>
+
 <!-- HUB -->
 <div id="hub" style="display:none;flex-direction:column">
   <div class="hub-bg">

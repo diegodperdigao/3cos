@@ -1237,6 +1237,123 @@ window.doForgotPassword = async () => {
   }
 };
 
+// ── RESET PASSWORD FLOW (post-recovery-email) ──
+// Supabase JS parses the URL hash (#access_token=...&type=recovery) and
+// fires PASSWORD_RECOVERY via onAuthStateChange, plus leaves a short-lived
+// recovery session on sb.auth. We swap the lock screen for the reset UI,
+// let the user set a new password with sb.auth.updateUser, then sign out
+// and send them back to the login so they re-authenticate with the new one.
+window._resetFlow = { active: false };
+
+function showResetScreen() {
+  if (window._resetFlow.active) return;
+  window._resetFlow.active = true;
+  const lock = document.getElementById('lock');
+  if (lock) { lock.style.display = 'none'; lock.style.opacity = '0'; }
+  const hub = document.getElementById('hub');
+  if (hub) { hub.style.display = 'none'; hub.style.opacity = '0'; }
+  document.querySelectorAll('.mod').forEach(m => { m.classList.remove('active'); m.style.display = 'none'; m.style.opacity = '0'; });
+  const rs = document.getElementById('reset-screen');
+  if (!rs) return;
+  rs.style.display = 'flex';
+  requestAnimationFrame(() => { rs.style.opacity = '1'; });
+  // Build the mosaic bg like the lock screen
+  if (typeof initMosaics === 'function') { try { initMosaics(); } catch (e) {} }
+  setTimeout(() => { document.getElementById('rp-new')?.focus(); }, 100);
+}
+
+function hideResetScreen() {
+  window._resetFlow.active = false;
+  const rs = document.getElementById('reset-screen');
+  if (!rs) return;
+  rs.style.opacity = '0';
+  setTimeout(() => { rs.style.display = 'none'; }, 400);
+}
+
+window.doResetPassword = async () => {
+  const np = document.getElementById('rp-new')?.value || '';
+  const cf = document.getElementById('rp-confirm')?.value || '';
+  const btn = document.getElementById('rp-btn');
+  const err = document.getElementById('rp-err');
+  if (err) { err.style.display = 'none'; err.textContent = ''; }
+  if (np.length < 8) {
+    if (err) { err.textContent = 'A senha precisa ter pelo menos 8 caracteres.'; err.style.display = 'block'; }
+    return;
+  }
+  if (np !== cf) {
+    if (err) { err.textContent = 'As senhas não coincidem.'; err.style.display = 'block'; }
+    return;
+  }
+  if (!window.SUPABASE_CONFIGURED || !window.sb) {
+    if (err) { err.textContent = 'Sistema não configurado.'; err.style.display = 'block'; }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'SALVANDO...'; }
+  try {
+    const { error } = await sb.auth.updateUser({ password: np });
+    if (error) throw error;
+    // Clear recovery session so the next login is a real credential check
+    try { await sb.auth.signOut(); } catch (_) {}
+    // Clean the URL (remove the recovery hash + ?reset=1)
+    try { history.replaceState(null, '', window.location.pathname); } catch (_) {}
+    toast('Senha redefinida. Faça login com a nova senha.', 's');
+    hideResetScreen();
+    const lock = document.getElementById('lock');
+    if (lock) { lock.style.display = 'flex'; requestAnimationFrame(() => lock.style.opacity = '1'); }
+  } catch (e) {
+    console.error('[reset password]', e);
+    if (err) {
+      err.textContent = e?.message?.includes('expired') || e?.message?.includes('invalid')
+        ? 'Link expirado. Peça um novo "esqueci minha senha".'
+        : (e?.message || 'Erro ao salvar nova senha.');
+      err.style.display = 'block';
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar nova senha'; }
+  }
+};
+
+window.doCancelReset = async () => {
+  try { if (window.sb) await sb.auth.signOut(); } catch (_) {}
+  try { history.replaceState(null, '', window.location.pathname); } catch (_) {}
+  hideResetScreen();
+  const lock = document.getElementById('lock');
+  if (lock) { lock.style.display = 'flex'; requestAnimationFrame(() => lock.style.opacity = '1'); }
+};
+
+// Detect recovery arrival. app.js is loaded BEFORE supabase-client.js, so at
+// this exact point the URL hash still carries `type=recovery` (Supabase JS
+// consumes it on createClient init a bit later). Capture the flag here, then
+// attach the auth listener once `window.sb` becomes available.
+window._isRecoveryBoot = (() => {
+  const hash = (window.location.hash || '').toLowerCase();
+  const qs = (window.location.search || '').toLowerCase();
+  return hash.includes('type=recovery') || qs.includes('reset=1');
+})();
+
+function _attachRecoveryListener() {
+  if (window.sb?.auth?.onAuthStateChange) {
+    sb.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') showResetScreen();
+    });
+    return true;
+  }
+  return false;
+}
+// Retry briefly until supabase-client.js has created window.sb.
+(function _waitForSb(tries) {
+  if (_attachRecoveryListener()) return;
+  if (tries > 0) setTimeout(() => _waitForSb(tries - 1), 50);
+})(20);
+
+if (window._isRecoveryBoot) {
+  // Show the reset UI on the next tick so DOM/HTML has mounted.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(showResetScreen, 50));
+  } else {
+    setTimeout(showResetScreen, 50);
+  }
+}
+
 window.doLogout=async ()=>{
   if (window.sb) {
     try { await sb.auth.signOut(); } catch (e) { console.warn('signOut:', e); }
