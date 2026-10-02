@@ -1245,202 +1245,238 @@
     return counts;
   }
 
-  // Editorial palette — paper-like whites, strong ink, one quiet accent.
-  // Nothing flashy; the typography does the work.
+  // 3C "Casino Domination" document system — dark header/footer with a
+  // holographic hairline, mono labels, display typography. Replicates the
+  // visual DNA of the reference artifact (CD-002 style sheet).
   const C = {
-    ink:    '#111827', // body copy / headings
-    mute:   '#6b7280', // metadata, labels
-    soft:   '#9ca3af', // page chrome
-    hair:   '#e5e7eb', // hairline rules
-    accent: '#111827', // kept monochrome; links use their own blue
-    link:   '#1d4ed8',
+    n950:   '#0a0a0a',  // header/footer dark
+    n900:   '#141414',
+    n700:   '#404040',
+    n500:   '#737373',
+    n400:   '#a3a3a3',
+    n300:   '#d4d4d4',
+    n200:   '#e8e8ea',
+    n100:   '#f5f5f6',
+    cyan:   '#00b6d4',
     paper:  '#ffffff',
+    link:   '#141414',   // underlined, same ink colour
   };
 
-  // Editorial directory layout — generous whitespace, no filled badges,
-  // large name as the hero of each entry. Metadata is just text separated
-  // by middle dots; status/tier/type each get a tiny colored square dot.
-  function _dot(color) {
-    return {
-      canvas: [{ type: 'rect', x: 0, y: 2, w: 6, h: 6, color }],
-      width: 10,
-    };
-  }
-
-  const DOT_COLORS = {
-    tier:   { 1: '#dc2626', 2: '#d97706', 3: '#6b7280' },
-    status: { wishlist: '#9ca3af', in_pipeline: '#2563eb', customer: '#059669', churned: '#dc2626' },
-    type:   { b2b: '#4338ca', b2c: '#be185d', both: '#7c3aed' },
-  };
-
-  function _metaLine(c) {
-    // Returns a `text` run (array of inline segments) with middle-dot separators
-    // and small colored dots preceding categorical metadata.
-    const parts = [];
-    const pushPart = (prefix, label) => {
-      if (!label) return;
-      if (parts.length) parts.push({ text: '  ·  ', color: C.soft });
-      if (prefix) parts.push(prefix);
-      parts.push({ text: label, color: C.mute, fontSize: 10 });
-    };
-    const tierId = [1, 2, 3].includes(Number(c.tier)) ? Number(c.tier) : 0;
-    if (c.type && TYPE_LABEL[c.type]) {
-      pushPart({ text: '■ ', color: DOT_COLORS.type[c.type] || C.mute, fontSize: 7 }, TYPE_LABEL[c.type]);
-    }
-    if (tierId > 0) {
-      pushPart({ text: '■ ', color: DOT_COLORS.tier[tierId], fontSize: 7 }, 'Tier ' + tierId);
-    }
-    if (c.status && STATUS_LABEL[c.status]) {
-      pushPart({ text: '■ ', color: DOT_COLORS.status[c.status] || C.mute, fontSize: 7 }, STATUS_LABEL[c.status]);
-    }
-    const profileLabel = c.profile ? (PROFILE_BY_ID[c.profile]?.label || c.profile) : null;
-    if (profileLabel) pushPart(null, profileLabel);
-    if (c.company) pushPart(null, c.company);
-    return parts.length ? { text: parts, margin: [0, 4, 0, 0] } : null;
-  }
-
-  function _contactEntry(c) {
-    const ig = _plainIg(c);
-    const contactBits = [];
-
-    if (c.email) {
-      contactBits.push({ text: c.email, color: C.link, fontSize: 10, link: `mailto:${c.email}` });
-    }
-    if (c.phone) {
-      if (contactBits.length) contactBits.push({ text: '   ·   ', color: C.soft, fontSize: 10 });
-      const digits = String(c.phone).replace(/[^\d+]/g, '');
-      contactBits.push({ text: c.phone, color: C.link, fontSize: 10, link: `tel:${digits}` });
-    }
-    if (ig) {
-      if (contactBits.length) contactBits.push({ text: '   ·   ', color: C.soft, fontSize: 10 });
-      contactBits.push({ text: '@' + ig, color: C.link, fontSize: 10, link: `https://instagram.com/${ig}` });
-    }
-    if (c.website) {
-      if (contactBits.length) contactBits.push({ text: '   ·   ', color: C.soft, fontSize: 10 });
-      contactBits.push({ text: c.website, color: C.link, fontSize: 10, link: _normalizeURL(c.website) });
-    }
-
-    const stack = [
-      { text: c.name || '(sem nome)', fontSize: 15, bold: true, color: C.ink, characterSpacing: -0.2 },
+  // Approximates the --holo gradient (cyan → violet → pink → amber) with
+  // 80 abutting rects. pdfmake canvas only supports solid fills.
+  function _holoRects(y, h, pageWidth) {
+    const stops = [
+      [0.00, [0, 224, 255]],
+      [0.34, [124, 92, 255]],
+      [0.67, [255, 92, 174]],
+      [1.00, [255, 215, 92]],
     ];
-    const meta = _metaLine(c);
-    if (meta) stack.push(meta);
-    if (contactBits.length) stack.push({ text: contactBits, margin: [0, 6, 0, 0], lineHeight: 1.3 });
-    if (c.notes) stack.push({ text: c.notes, italics: true, color: C.mute, fontSize: 9.5, lineHeight: 1.4, margin: [0, 6, 0, 0] });
+    const n = 80;
+    const slice = pageWidth / n;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1);
+      let a = stops[0], b = stops[stops.length - 1];
+      for (let j = 0; j < stops.length - 1; j++) {
+        if (t >= stops[j][0] && t <= stops[j + 1][0]) { a = stops[j]; b = stops[j + 1]; break; }
+      }
+      const u = (t - a[0]) / (b[0] - a[0] || 1);
+      const r = Math.round(a[1][0] + (b[1][0] - a[1][0]) * u);
+      const g = Math.round(a[1][1] + (b[1][1] - a[1][1]) * u);
+      const bl = Math.round(a[1][2] + (b[1][2] - a[1][2]) * u);
+      const hex = '#' + [r, g, bl].map(x => x.toString(16).padStart(2, '0')).join('');
+      out.push({ type: 'rect', x: i * slice, y, w: slice + 0.6, h, color: hex });
+    }
+    return out;
+  }
+
+  // Avatar: dark circle with white letters, surrounded by a thin paper ring
+  // then a soft outer gray ring — same stacked rings as the HTML design.
+  function _ringedAvatarPng(initials, size = 180) {
+    try {
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, size, size);
+      // Outer ring (lighter neutral)
+      ctx.fillStyle = C.n200;
+      ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI*2); ctx.fill();
+      // Paper gap
+      ctx.fillStyle = C.paper;
+      ctx.beginPath(); ctx.arc(size/2, size/2, size/2 - 5, 0, Math.PI*2); ctx.fill();
+      // Avatar body
+      ctx.fillStyle = C.n900;
+      ctx.beginPath(); ctx.arc(size/2, size/2, size/2 - 11, 0, Math.PI*2); ctx.fill();
+      // Initials
+      ctx.fillStyle = C.n100;
+      ctx.font = `800 ${Math.round(size * 0.34)}px -apple-system, Helvetica, Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(initials, size/2, size/2 + 2);
+      return c.toDataURL('image/png');
+    } catch (_) { return null; }
+  }
+
+  // A pill-shaped social chip: thin outline with mono text, matching
+  // .cr-social from the reference. Approximated with a rounded-rect
+  // canvas + a text column — pdfmake canvas does support ellipse-like
+  // rounded rectangles via `r`.
+  function _socialPill(label, link) {
+    const seg = [
+      {
+        margin: [0, 2, 0, 0],
+        table: {
+          body: [[{
+            text: label,
+            fontSize: 8,
+            characterSpacing: 0.4,
+            color: C.n900,
+            bold: true,
+            link,
+          }]],
+        },
+        layout: {
+          hLineWidth: () => 0.6, vLineWidth: () => 0.6,
+          hLineColor: () => C.n200, vLineColor: () => C.n200,
+          paddingTop: () => 2.5, paddingBottom: () => 2.5,
+          paddingLeft: () => 7, paddingRight: () => 7,
+          fillColor: () => null,
+        },
+      },
+    ];
+    return seg;
+  }
+
+  function _socialsFor(c) {
+    const ig = _plainIg(c);
+    const pills = [];
+    if (ig) pills.push({ label: '@' + ig, link: `https://instagram.com/${ig}` });
+    if (c.email) pills.push({ label: c.email, link: `mailto:${c.email}` });
+    if (c.phone) {
+      const digits = String(c.phone).replace(/[^\d+]/g, '');
+      pills.push({ label: c.phone, link: `tel:${digits}` });
+    }
+    if (c.website) pills.push({ label: c.website.replace(/^https?:\/\//, ''), link: _normalizeURL(c.website) });
+    return pills;
+  }
+
+  function _bulletList(items) {
+    return {
+      ul: items.map(t => ({ text: t, fontSize: 10, color: C.n900 })),
+      // pdfmake draws default round bullets — override via `type:'square'`
+      type: 'square',
+      margin: [0, 2, 0, 0],
+    };
+  }
+
+  function _contactEntry(c, idx) {
+    const avatar = _ringedAvatarPng(_initialsFor(c.name));
+    const socials = _socialsFor(c);
+
+    // ── LEFT COLUMN ────────────────────────────────────────────
+    const leftStack = [];
+    if (avatar) {
+      leftStack.push({ image: avatar, width: 80, height: 80, margin: [0, 0, 0, 14] });
+    } else {
+      leftStack.push({ text: _initialsFor(c.name), fontSize: 32, bold: true, color: C.n900, margin: [0, 0, 0, 14] });
+    }
+    leftStack.push({ text: `CONTATO ${String(idx).padStart(2, '0')}`, fontSize: 8.5, characterSpacing: 1.4, color: C.n400, bold: true });
+    leftStack.push({ text: c.name || '(sem nome)', fontSize: 17, bold: true, color: C.n900, characterSpacing: -0.3, margin: [0, 4, 0, 0] });
+
+    if (socials.length) {
+      // Render pills on wrapping rows (max 2 per row for readability)
+      const rows = [];
+      for (let i = 0; i < socials.length; i += 2) {
+        const r = [socials[i], socials[i + 1]].filter(Boolean);
+        rows.push({ columns: r.map(s => ({ width: 'auto', ..._socialPill(s.label, s.link)[0] })), columnGap: 6, margin: [0, 7, 0, 0] });
+      }
+      leftStack.push(...rows);
+    }
+
+    // ── RIGHT COLUMN ───────────────────────────────────────────
+    const tierId = [1, 2, 3].includes(Number(c.tier)) ? Number(c.tier) : 0;
+    const rightStack = [];
+
+    // Classificação block ("Proposta" slot in the reference)
+    rightStack.push({ text: 'CLASSIFICAÇÃO', fontSize: 8.5, characterSpacing: 1.4, color: C.n500, bold: true });
+    const typeLabel = c.type && TYPE_LABEL[c.type] ? TYPE_LABEL[c.type] : '—';
+    rightStack.push({
+      text: typeLabel,
+      fontSize: 22, bold: true, color: C.n900, characterSpacing: -0.5,
+      margin: [0, 6, 0, 0],
+    });
+    const classBits = [];
+    if (tierId > 0) classBits.push('Tier ' + tierId);
+    if (c.status && STATUS_LABEL[c.status]) classBits.push(STATUS_LABEL[c.status]);
+    const profileLabel = c.profile ? (PROFILE_BY_ID[c.profile]?.label || c.profile) : null;
+    if (profileLabel) classBits.push(profileLabel);
+    if (classBits.length) {
+      rightStack.push({
+        text: classBits.join('  ·  ').toUpperCase(),
+        fontSize: 9, characterSpacing: 0.8, color: C.n500,
+        margin: [0, 7, 0, 0],
+      });
+    }
+
+    // Escopo block (company/source/notes)
+    const scopeItems = [];
+    if (c.company) scopeItems.push(c.company);
+    if (c.source && SOURCE_LABEL[c.source]) scopeItems.push('Origem: ' + SOURCE_LABEL[c.source]);
+    if (c.notes) scopeItems.push(c.notes);
+    if (scopeItems.length) {
+      rightStack.push({ text: 'ESCOPO', fontSize: 8.5, characterSpacing: 1.4, color: C.n500, bold: true, margin: [0, 26, 0, 9] });
+      rightStack.push(_bulletList(scopeItems));
+    }
 
     return {
-      // Keep each contact together on the page; separate with a hairline below.
       unbreakable: true,
+      margin: [0, 0, 0, 28],
       stack: [
-        { stack, margin: [0, 2, 0, 0] },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.4, lineColor: C.hair }], margin: [0, 14, 0, 14] },
+        {
+          columns: [
+            { width: 180, stack: leftStack },
+            { width: '*', stack: rightStack, margin: [26, 2, 0, 0] },
+          ],
+        },
+        // Thin bottom rule — same 1px #e8e8ea separator as the reference
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 475, y2: 0, lineWidth: 0.5, lineColor: C.n200 }], margin: [0, 28, 0, 0] },
       ],
     };
   }
 
-  function _coverPage(total, filtersSummary, userName) {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  function _coverContent(total, filtersSummary) {
     return [
-      { text: ' ', margin: [0, 110, 0, 0] },
-      // Eyebrow
-      { text: '3cos — crm comercial', fontSize: 10, color: C.mute, characterSpacing: 1.2 },
-      // Title
-      { text: 'Diretório', fontSize: 56, bold: true, color: C.ink, characterSpacing: -2, margin: [0, 24, 0, -4] },
-      { text: 'de contatos', fontSize: 56, bold: false, color: C.ink, characterSpacing: -2, margin: [0, 0, 0, 0] },
-      // Hairline rule
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 60, y2: 0, lineWidth: 1.4, lineColor: C.ink }], margin: [0, 36, 0, 24] },
-      // Metadata grid
+      { text: 'RESUMO DA ATIVAÇÃO', fontSize: 9, characterSpacing: 1.4, color: C.n500, bold: true, margin: [0, 0, 0, 10] },
+      { text: 'DIRETÓRIO\nDE CONTATOS', fontSize: 44, bold: true, color: C.n950, lineHeight: 0.98, characterSpacing: -1.1 },
+      {
+        columns: [
+          { width: 430, text: filtersSummary, fontSize: 13, color: C.n500, lineHeight: 1.5 },
+          { width: '*', text: '' },
+        ],
+        margin: [0, 14, 0, 0],
+      },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 475, y2: 0, lineWidth: 1.5, lineColor: C.n200 }], margin: [0, 30, 0, 30] },
       {
         columns: [
           {
             width: '*',
             stack: [
-              { text: 'ESCOPO', fontSize: 8, color: C.mute, characterSpacing: 1.4, bold: true },
-              { text: filtersSummary || 'Todos os contatos', fontSize: 11, color: C.ink, margin: [0, 4, 0, 0], lineHeight: 1.3 },
+              { text: 'TOTAL', fontSize: 8.5, characterSpacing: 1.4, color: C.n500, bold: true },
+              { text: String(total), fontSize: 32, bold: true, color: C.n900, margin: [0, 6, 0, 0], characterSpacing: -0.6 },
+              { text: total === 1 ? 'contato catalogado' : 'contatos catalogados', fontSize: 9, characterSpacing: 0.6, color: C.n500, margin: [0, 2, 0, 0] },
             ],
           },
           {
             width: 'auto',
             stack: [
-              { text: 'TOTAL', fontSize: 8, color: C.mute, characterSpacing: 1.4, bold: true, alignment: 'right' },
-              { text: String(total), fontSize: 11, color: C.ink, margin: [0, 4, 0, 0], alignment: 'right' },
+              { text: 'STATUS DO DOCUMENTO', fontSize: 8.5, characterSpacing: 1.4, color: C.n500, bold: true, alignment: 'right' },
+              { text: 'ATIVO', fontSize: 11, color: C.n900, margin: [0, 6, 0, 0], characterSpacing: 1, bold: true, alignment: 'right' },
+              { text: 'confidencial · uso interno', fontSize: 9, color: C.n500, margin: [0, 2, 0, 0], alignment: 'right' },
             ],
           },
         ],
-        columnGap: 24,
-        margin: [0, 0, 0, 14],
+        columnGap: 30,
       },
-      {
-        columns: [
-          {
-            width: '*',
-            stack: [
-              { text: 'PUBLICADO EM', fontSize: 8, color: C.mute, characterSpacing: 1.4, bold: true },
-              { text: dateStr, fontSize: 11, color: C.ink, margin: [0, 4, 0, 0] },
-            ],
-          },
-          {
-            width: 'auto',
-            stack: [
-              { text: 'ORGANIZADO POR', fontSize: 8, color: C.mute, characterSpacing: 1.4, bold: true, alignment: 'right' },
-              { text: userName || '3cos', fontSize: 11, color: C.ink, margin: [0, 4, 0, 0], alignment: 'right' },
-            ],
-          },
-        ],
-        columnGap: 24,
-      },
-      // Bottom mark
-      { text: ' ', margin: [0, 140, 0, 0] },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.4, lineColor: C.hair }] },
-      { text: 'Links de email, telefone e Instagram são clicáveis no leitor de PDF.', fontSize: 8.5, color: C.soft, italics: true, margin: [0, 10, 0, 0] },
-      { text: '', pageBreak: 'after' },
-    ];
-  }
-
-  function _panoramaPage(counts, total) {
-    // Editorial "Panorama" — a single page with four quiet rows, each
-    // a label and an inline run "A 12  ·  B 34  ·  C 56". No bar charts
-    // or filled cells; the number-first typography does the hierarchy.
-    function row(label, items) {
-      const inline = [];
-      items.forEach(([lbl, n], i) => {
-        if (i > 0) inline.push({ text: '    ·    ', color: C.soft, fontSize: 11 });
-        inline.push({ text: String(n), bold: true, fontSize: 14, color: C.ink });
-        inline.push({ text: ' ' + lbl, fontSize: 11, color: C.mute });
-      });
-      return {
-        margin: [0, 0, 0, 22],
-        stack: [
-          { text: label, fontSize: 8.5, color: C.mute, characterSpacing: 1.4, bold: true },
-          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.4, lineColor: C.hair }], margin: [0, 6, 0, 10] },
-          { text: inline, lineHeight: 1.4 },
-        ],
-      };
-    }
-
-    return [
-      { text: 'Panorama', fontSize: 36, bold: true, color: C.ink, characterSpacing: -1, margin: [0, 10, 0, 4] },
-      { text: `${total} ${total === 1 ? 'contato catalogado' : 'contatos catalogados'}`, fontSize: 11, color: C.mute, margin: [0, 0, 0, 36] },
-      row('POR TIPO', [
-        ['B2B', counts.type.b2b],
-        ['B2C', counts.type.b2c],
-        ['B2B + B2C', counts.type.both],
-      ]),
-      row('POR TIER', [
-        ['Tier 1', counts.tier[1]],
-        ['Tier 2', counts.tier[2]],
-        ['Tier 3', counts.tier[3]],
-        ['sem tier', counts.tier[0]],
-      ]),
-      row('POR STATUS', [
-        ['Wishlist', counts.status.wishlist],
-        ['No pipeline', counts.status.in_pipeline],
-        ['Clientes', counts.status.customer],
-        ['Perdidos', counts.status.churned],
-      ]),
-      row('POR PERFIL', PROFILES.map(p => [p.label, counts.profile[p.id] || 0])
-        .concat([['sem perfil', counts.profile.none || 0]])),
       { text: '', pageBreak: 'after' },
     ];
   }
@@ -1456,7 +1492,6 @@
     try {
       await _loadPdfMake();
 
-      // Summary of active filters, for the cover subtitle
       const bits = [];
       if (F.type) bits.push('Tipo: ' + (TYPE_LABEL[F.type] || F.type));
       if (F.profile === '__none__') bits.push('Perfil: sem perfil');
@@ -1464,69 +1499,81 @@
       if (F.tier) bits.push('Tier: T' + F.tier);
       if (F.status) bits.push('Status: ' + (STATUS_LABEL[F.status] || F.status));
       if (F.search) bits.push(`Busca: "${F.search}"`);
-      const filtersSummary = bits.length ? bits.join(' · ') : 'Todos os contatos';
+      const filtersSummary = bits.length ? bits.join(' · ') : 'Relação de contatos da base — perfis, canais e escopo de atuação de cada um.';
 
-      const counts = _summaryCounts(list);
-      const grouped = _groupByTier(list);
-      const userName = STATE?.user?.name || '';
+      const userName = STATE?.user?.name || '3cos';
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      // Order the list for the directory: by tier (1→3→sem), then by name
+      const ordered = [...list].sort((a, b) => {
+        const ta = [1, 2, 3].includes(Number(a.tier)) ? Number(a.tier) : 99;
+        const tb = [1, 2, 3].includes(Number(b.tier)) ? Number(b.tier) : 99;
+        if (ta !== tb) return ta - tb;
+        return (a.name || '').localeCompare(b.name || '', 'pt-BR');
+      });
 
       const content = [];
-      content.push(..._coverPage(list.length, filtersSummary, userName));
-      content.push(..._panoramaPage(counts, list.length));
+      content.push(..._coverContent(list.length, filtersSummary));
+      ordered.forEach((c, i) => content.push(_contactEntry(c, i + 1)));
 
-      // Per-tier sections — each starts with a bold editorial header + rule.
-      const tierOrder = [1, 2, 3, 0];
-      let firstSection = true;
-      tierOrder.forEach(tid => {
-        const bucket = grouped[tid];
-        if (!bucket.length) return;
-        const title = tid === 0 ? 'Sem tier definido' : `Tier ${tid}`;
-        const sub = tid === 0 ? 'Contatos sem prioridade atribuída' : (TIERS.find(t => t.id === tid)?.desc || '');
-
-        if (!firstSection) content.push({ text: '', pageBreak: 'before' });
-        firstSection = false;
-
-        content.push({
-          text: title,
-          fontSize: 36, bold: true, color: C.ink, characterSpacing: -1,
-          margin: [0, 10, 0, 2],
-        });
-        content.push({
-          columns: [
-            { text: `${bucket.length} ${bucket.length === 1 ? 'contato' : 'contatos'}`, fontSize: 10, color: C.mute, width: 'auto' },
-            { text: sub, fontSize: 10, color: C.mute, alignment: 'right', width: '*' },
-          ],
-          margin: [0, 0, 0, 10],
-        });
-        content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.2, lineColor: C.ink }], margin: [0, 0, 0, 20] });
-
-        bucket.forEach(c => content.push(_contactEntry(c)));
-      });
+      // A4 in points: 595.28 × 841.89
+      const PAGE_W = 595.28, PAGE_H = 841.89;
+      const HEADER_H = 110, FOOTER_H = 60, HOLO_H = 3;
 
       const docDefinition = {
         info: {
           title: 'Diretório de contatos — 3cos',
-          author: userName || '3cos',
+          author: userName,
           subject: filtersSummary,
           creator: '3cos CRM',
         },
         pageSize: 'A4',
-        // Wide outer margins give the page editorial breathing room
-        pageMargins: [60, 70, 60, 70],
-        defaultStyle: { font: 'Roboto', color: C.ink, lineHeight: 1.25, fontSize: 10 },
+        pageMargins: [54, HEADER_H + 32, 54, FOOTER_H + 24],
+        defaultStyle: { font: 'Roboto', color: C.n900, lineHeight: 1.3, fontSize: 10 },
+
+        // Dark header + holo bar + dark footer + holo bar on every page
+        background: () => ({
+          canvas: [
+            { type: 'rect', x: 0, y: 0, w: PAGE_W, h: HEADER_H, color: C.n950 },
+            ..._holoRects(HEADER_H, HOLO_H, PAGE_W),
+            { type: 'rect', x: 0, y: PAGE_H - FOOTER_H, w: PAGE_W, h: FOOTER_H, color: C.n950 },
+            ..._holoRects(PAGE_H - FOOTER_H - HOLO_H, HOLO_H, PAGE_W),
+          ],
+        }),
+
+        // Text overlays on the dark header
+        header: (currentPage) => ({
+          margin: [54, 32, 54, 0],
+          columns: [
+            {
+              width: '*',
+              stack: [
+                { text: '3COS', fontSize: 20, color: C.paper, bold: true, characterSpacing: 2 },
+                { text: 'CASINO DOMINATION · CRM', fontSize: 9, color: C.cyan, bold: true, characterSpacing: 1.6, margin: [0, 6, 0, 0] },
+              ],
+            },
+            {
+              width: 'auto',
+              alignment: 'right',
+              stack: [
+                { text: ['DOCUMENTO · ', { text: `CD-${String(currentPage).padStart(3, '0')}`, color: C.paper, bold: true }], fontSize: 9, characterSpacing: 1.2, color: C.n400 },
+                { text: ['DATA · ', { text: dateStr, color: C.paper, bold: true }], fontSize: 9, characterSpacing: 1.2, color: C.n400, margin: [0, 4, 0, 0] },
+                { text: 'CONFIDENCIAL', fontSize: 9, characterSpacing: 1.2, color: C.n400, margin: [0, 4, 0, 0] },
+              ],
+            },
+          ],
+        }),
+
+        footer: (currentPage, pageCount) => ({
+          margin: [54, 24, 54, 0],
+          columns: [
+            { text: '3COS', fontSize: 10, color: C.paper, bold: true, characterSpacing: 1.8, width: '*' },
+            { text: userName.toUpperCase(), fontSize: 9, color: C.n400, characterSpacing: 1.2, alignment: 'center', width: '*' },
+            { text: `${String(currentPage).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}`, fontSize: 9, color: C.n400, characterSpacing: 1.2, alignment: 'right', width: '*' },
+          ],
+        }),
+
         content,
-        header: (currentPage) => currentPage === 1 ? null : {
-          columns: [
-            { text: 'Diretório de contatos', fontSize: 8.5, color: C.soft, margin: [60, 32, 0, 0] },
-            { text: '3cos', fontSize: 8.5, color: C.soft, alignment: 'right', margin: [0, 32, 60, 0] },
-          ],
-        },
-        footer: (currentPage, pageCount) => currentPage === 1 ? null : {
-          columns: [
-            { text: new Date().getFullYear().toString(), fontSize: 8.5, color: C.soft, margin: [60, 0, 0, 0] },
-            { text: `${currentPage - 1} / ${pageCount - 1}`, fontSize: 8.5, color: C.soft, alignment: 'right', margin: [0, 0, 60, 0] },
-          ],
-        },
       };
 
       const fname = `3cos-diretorio-${new Date().toISOString().slice(0, 10)}.pdf`;
