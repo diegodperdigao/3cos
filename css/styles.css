@@ -6225,3 +6225,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
 /* Progress fills rendered as <span> need block display to take width/height */
 .hw2-forecast-bar,.hw2-forecast-fill,.hw2-pulse-bar,.hw2-pulse-fill,.hw2-bar-track,.hw2-bar-fill,.dash-source-bar,.dash-source-fill{display:block;}
+
+/* Contact tile: Instagram glyph + typed secondary line (phone / email / company) */
+.ig-glyph{width:12px;height:12px;flex-shrink:0;}
+.ctc-tile-ig .ig-glyph{width:13px;height:13px;}
+.ctc-ig-cta-ico .ig-glyph{width:18px;height:18px;}
+.ctc-tile-sub{display:flex;align-items:center;gap:6px;}
+.ctc-tile-sub svg{width:12px;height:12px;flex-shrink:0;stroke:var(--text3) !important;}

@@ -33,6 +33,10 @@
   ];
   const TIER_BY_ID = Object.fromEntries(TIERS.map(t => [t.id, t]));
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
+  // Instagram glyph (Lucide no longer ships brand icons). Inherits currentColor.
+  const IG_SVG = '<svg class="ig-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>';
+  window._igSvg = () => IG_SVG;
+
   const SOURCE_LABEL = { inbound: 'Inbound', outbound: 'Outbound', referral: 'Indicação', event: 'Evento', social: 'Redes sociais', other: 'Outro' };
 
   // ── MOUNT ─────────────────────────────────────────────────
@@ -173,7 +177,10 @@
       const avatar = _avatarHTML(c, hue, initials);
       const prof = PROFILE_BY_ID[c.profile];
       const tier = TIER_BY_ID[c.tier];
-      const subLine = c.company || c.email || c.phone || '';
+      const sub = c.company ? { icon: 'building-2', text: c.company, title: 'Empresa' }
+        : c.email ? { icon: 'mail', text: c.email, title: 'Email' }
+        : c.phone ? { icon: 'phone', text: c.phone, title: 'Telefone' }
+        : null;
       const checked = _selected.has(c.id);
       const onclickAttr = _selectMode
         ? `onclick="window._ctcToggleSel('${c.id}', event)"`
@@ -191,9 +198,9 @@
         <div class="ctc-tile-body">
           <div class="ctc-tile-name">${_esc(c.name)}</div>
           ${ig ? `<a class="ctc-tile-ig" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            <i data-lucide="at-sign"></i>@${_esc(ig)}
+            ${IG_SVG}@${_esc(ig)}
           </a>` : ''}
-          ${subLine ? `<div class="ctc-tile-sub">${_esc(subLine)}</div>` : '<div class="ctc-tile-sub" style="opacity:0.4">—</div>'}
+          ${sub ? `<div class="ctc-tile-sub" title="${sub.title}"><i data-lucide="${sub.icon}"></i>${_esc(sub.text)}</div>` : '<div class="ctc-tile-sub" style="opacity:0.4">—</div>'}
         </div>
         <div class="ctc-tile-foot">
           ${prof ? `<span class="ctc-tile-badge profile-badge" style="--prof-c:${prof.color}">
@@ -496,7 +503,7 @@
         </div>
       </div>
       ${ig ? `<a class="ctc-ig-cta" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener">
-        <span class="ctc-ig-cta-ico"><i data-lucide="at-sign"></i></span>
+        <span class="ctc-ig-cta-ico">${IG_SVG}</span>
         <span class="ctc-ig-cta-info">
           <span class="ctc-ig-cta-k">Instagram</span>
           <span class="ctc-ig-cta-handle">@${_esc(ig)}</span>
