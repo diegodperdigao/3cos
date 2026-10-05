@@ -368,7 +368,7 @@ function _renderGeneralSettings(el){
         <div class="st-card">
           <div class="st-row st-row-col">
             <div class="st-label">Tema</div>
-            <div class="st-theme-grid st-theme-grid-3">
+            <div class="st-theme-grid">
               <div class="st-theme-card ${themeName==='default-dark'?'on':''}" onclick="setAppTheme('default-dark')">
                 <div class="st-theme-preview st-theme-default-dark"></div>
                 <div class="st-theme-name">Default Dark</div>
@@ -388,16 +388,6 @@ function _renderGeneralSettings(el){
                 <div class="st-theme-preview st-theme-mono-light"></div>
                 <div class="st-theme-name">Mono Light</div>
                 <div class="st-theme-desc">Monocromático em base clara</div>
-              </div>
-              <div class="st-theme-card ${themeName==='glass-dark'?'on':''}" onclick="setAppTheme('glass-dark')">
-                <div class="st-theme-preview st-theme-glass-dark"></div>
-                <div class="st-theme-name">Liquid Glass</div>
-                <div class="st-theme-desc">Vidro translúcido · profundidade e blur</div>
-              </div>
-              <div class="st-theme-card ${themeName==='glass-light'?'on':''}" onclick="setAppTheme('glass-light')">
-                <div class="st-theme-preview st-theme-glass-light"></div>
-                <div class="st-theme-name">Liquid Glass Light</div>
-                <div class="st-theme-desc">Vidro sobre base clara</div>
               </div>
             </div>
           </div>
@@ -631,32 +621,32 @@ window.setAppTheme = (name) => {
   STATE.settings.theme = name;
   applyAppTheme();
   saveToLocal();
-  const labels={'default-dark':'Default Dark','default-light':'Default Light','mono-dark':'Mono Dark','mono-light':'Mono Light','bento-dark':'Bento Dark','bento-light':'Bento Light','meridian-light':'Meridian Light','meridian-dark':'Meridian Dark','glass-dark':'Liquid Glass','glass-light':'Liquid Glass Light'};
+  const labels={'default-dark':'Default Dark','default-light':'Default Light','mono-dark':'Mono Dark','mono-light':'Mono Light'};
   if (prev !== name) logAction('Tema alterado', `${labels[prev]||prev} → ${labels[name]||name}`);
   toast(`Tema ${labels[name]||name} aplicado`, 's');
   // Re-render settings to update selection UI
   rerenderSettings();
 };
 
-// Theme name encodes edition + mode, e.g. "bento-dark", "mono-light".
+// Theme name encodes edition + mode, e.g. "mono-dark", "default-light".
 // Decodes into data-edition + data-theme pair.
 window.THEME_MAP = {
   'default-dark':   { edition: '',         theme: 'dark'  },
   'default-light':  { edition: '',         theme: 'light' },
   'mono-dark':      { edition: 'mono',     theme: 'dark'  },
   'mono-light':     { edition: 'mono',     theme: 'light' },
-  'bento-light':    { edition: 'bento',    theme: 'light' },
-  'bento-dark':     { edition: 'bento',    theme: 'dark'  },
-  'meridian-light': { edition: 'meridian', theme: 'light' },
-  'meridian-dark':  { edition: 'meridian', theme: 'dark'  },
-  'glass-dark':     { edition: 'glass',    theme: 'dark'  },
-  'glass-light':    { edition: 'glass',    theme: 'light' },
-  // Legacy keys (migrated on first load)
+  // Legacy keys — retired editions (glass, bento, meridian, neonflow) fall back to Default
   'default':        { edition: '',         theme: 'dark'  },
   'mono':           { edition: 'mono',     theme: 'dark'  },
-  'glass':          { edition: 'glass',    theme: 'dark'  },
+  'bento-light':    { edition: '',         theme: 'light' },
+  'bento-dark':     { edition: '',         theme: 'dark'  },
+  'bento':          { edition: '',         theme: 'light' },
+  'meridian-light': { edition: '',         theme: 'light' },
+  'meridian-dark':  { edition: '',         theme: 'dark'  },
+  'glass-dark':     { edition: '',         theme: 'dark'  },
+  'glass-light':    { edition: '',         theme: 'light' },
+  'glass':          { edition: '',         theme: 'dark'  },
   'neonflow':       { edition: '',         theme: 'dark'  },
-  'bento':          { edition: 'bento',    theme: 'light' },
 };
 
 window.applyAppTheme = () => {

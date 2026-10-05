@@ -131,7 +131,7 @@ const DEFAULT_STATE={
   },
   // ── USER SETTINGS (persisted in localStorage + Supabase user_settings) ──
   settings:{
-    theme:'default-light',      // 'default-dark' | 'default-light' | 'mono-dark' | 'mono-light' | 'bento-dark' | 'bento-light'
+    theme:'default-light',      // 'default-dark' | 'default-light' | 'mono-dark' | 'mono-light'
     density:'comfortable',     // 'comfortable' | 'compact'
     showIntroVideo:true,
     reducedMotion:false,
@@ -606,17 +606,18 @@ window.applyAppTheme = () => {
     'default-light':  { edition: '',         theme: 'light' },
     'mono-dark':      { edition: 'mono',     theme: 'dark'  },
     'mono-light':     { edition: 'mono',     theme: 'light' },
-    'bento-light':    { edition: 'bento',    theme: 'light' },
-    'bento-dark':     { edition: 'bento',    theme: 'dark'  },
-    'meridian-light': { edition: 'meridian', theme: 'light' },
-    'meridian-dark':  { edition: 'meridian', theme: 'dark'  },
     'default':        { edition: '',         theme: 'dark'  },
     'mono':           { edition: 'mono',     theme: 'dark'  },
-    'glass-dark':     { edition: 'glass',    theme: 'dark'  },
-    'glass-light':    { edition: 'glass',    theme: 'light' },
-    'glass':          { edition: 'glass',    theme: 'dark'  },
+    // Legacy editions (glass, bento, meridian, neonflow) were retired — fall back to Default
+    'bento-light':    { edition: '',         theme: 'light' },
+    'bento-dark':     { edition: '',         theme: 'dark'  },
+    'bento':          { edition: '',         theme: 'light' },
+    'meridian-light': { edition: '',         theme: 'light' },
+    'meridian-dark':  { edition: '',         theme: 'dark'  },
+    'glass-dark':     { edition: '',         theme: 'dark'  },
+    'glass-light':    { edition: '',         theme: 'light' },
+    'glass':          { edition: '',         theme: 'dark'  },
     'neonflow':       { edition: '',         theme: 'dark'  },
-    'bento':          { edition: 'bento',    theme: 'light' },
   };
   const themeKey = STATE.settings?.theme || 'default-light';
   const pair = MAP[themeKey] || MAP['default-light'];
@@ -732,10 +733,6 @@ window.setLockTheme = (themeKey) => {
     'default-light': { edition: '', theme: 'light' },
     'mono-dark': { edition: 'mono', theme: 'dark' },
     'mono-light': { edition: 'mono', theme: 'light' },
-    'bento-dark': { edition: 'bento', theme: 'dark' },
-    'bento-light': { edition: 'bento', theme: 'light' },
-    'meridian-dark': { edition: 'meridian', theme: 'dark' },
-    'meridian-light': { edition: 'meridian', theme: 'light' },
   };
   const pair = TM[themeKey];
   if (!pair) return;
@@ -764,10 +761,6 @@ const _LOCK_THEME_MAP = {
   'default-light': { edition: '', theme: 'light' },
   'mono-dark': { edition: 'mono', theme: 'dark' },
   'mono-light': { edition: 'mono', theme: 'light' },
-  'bento-dark': { edition: 'bento', theme: 'dark' },
-  'bento-light': { edition: 'bento', theme: 'light' },
-  'meridian-dark': { edition: 'meridian', theme: 'dark' },
-  'meridian-light': { edition: 'meridian', theme: 'light' },
 };
 function _applyLockThemeKey(themeKey) {
   const pair = _LOCK_THEME_MAP[themeKey];
