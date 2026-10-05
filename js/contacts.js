@@ -147,8 +147,17 @@
     }
 
     if (!list.length) {
-      el.innerHTML = `<div class="empty"><i data-lucide="user-plus"></i><p>Nenhum contato com esses filtros</p>
-        <button class="btn btn-theme" onclick="window._ctcOpenNew()" style="margin-top:12px"><i data-lucide="plus"></i> Adicionar primeiro contato</button></div>`;
+      const hasAny = STATE.crm.contacts.length > 0;
+      el.className = 'ctc-empty-wrap';
+      el.innerHTML = hasAny
+        ? `<div class="empty"><i data-lucide="search-x"></i>
+            <p>Nenhum contato corresponde aos filtros atuais</p>
+            <span class="empty-sub">${STATE.crm.contacts.length === 1 ? '1 contato na base. Ajuste ou limpe os filtros para vê-lo.' : STATE.crm.contacts.length + ' contatos na base. Ajuste ou limpe os filtros para vê-los.'}</span>
+            <button class="btn btn-outline" onclick="window._ctcClearFilters()" style="margin-top:12px"><i data-lucide="x"></i> Limpar filtros</button></div>`
+        : `<div class="empty"><i data-lucide="user-plus"></i>
+            <p>Nenhum contato ainda</p>
+            <span class="empty-sub">Comece adicionando o primeiro contato à wishlist.</span>
+            <button class="btn btn-theme" onclick="window._ctcOpenNew()" style="margin-top:12px"><i data-lucide="plus"></i> Adicionar primeiro contato</button></div>`;
       lucide.createIcons();
       return;
     }
