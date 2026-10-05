@@ -8322,17 +8322,144 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .ctc-import-batch .btn{flex-shrink: 0;}
 
 /* ══════════════════════════════════════════════════════════
-   PRO PREVIEW OVERRIDES — kill gradients, shrink hero,
-   hairlines instead of shadows. Scoped to the whole app.
-   Everything in this block overrides the legacy design;
-   if we drop the preview we revert this block only.
+   PRO PREVIEW OVERRIDES — full-platform professional pass.
+   Everything AI-looking (gradients, candy pills, coloured
+   module hues, soft shadows, uppercase shouting) gets
+   neutralised here so the whole app reads as a serious tool.
+   Scoped to one block → to revert, drop this block.
    ══════════════════════════════════════════════════════════ */
 
-/* 1 — Kill ALL text gradients (hero name, brand accents) */
+/* ── [GLOBAL] typography reset — no uppercase shouting ──── */
+.sec-hdr, .sec-lbl, .st-section-title, .kpi-lbl,
+.ac-section-title, .ctc-filter-lbl, .ctc-fb-chip,
+.bk-card-t, .st-label, .mod-hdr-t,
+.hub-hero-eyebrow, .search-pill-hint {
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+.sec-lbl {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+}
+.kpi-lbl, .st-label, .ctc-filter-lbl {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--text2) !important;
+}
+
+/* ── [LOCK SCREEN] mono, no glow ─────────────────────────── */
+.lock-box {
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  border: 1px solid var(--gb2) !important;
+  background: var(--bg) !important;
+}
+.lock-logo {
+  box-shadow: none !important;
+  border: 1px solid var(--gb2) !important;
+}
+.lock-title, .lock-title span {
+  background: none !important;
+  -webkit-text-fill-color: var(--text) !important;
+  color: var(--text) !important;
+  letter-spacing: -0.015em !important;
+}
+.lock-field {
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  background: var(--bg3) !important;
+  border: 1px solid var(--gb2) !important;
+}
+.lock-field:focus {
+  border-color: var(--text) !important;
+  box-shadow: 0 0 0 2px var(--theme-dim) !important;
+  background: var(--bg) !important;
+}
+.lock-btn {
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  border: 1px solid var(--text) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 500 !important;
+}
+.lock-btn:hover { opacity: 0.88 !important; transform: none !important; box-shadow: none !important; }
+.lock-hint, .lock-reset {
+  color: var(--text3) !important;
+  letter-spacing: 0 !important;
+}
+
+/* ── [TOPBAR / HUB-BAR] flat ─────────────────────────────── */
+.hub-bar {
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--gb) !important;
+  background: var(--bg) !important;
+  backdrop-filter: none !important;
+}
+.hub-wordmark {
+  color: var(--text) !important;
+  letter-spacing: -0.015em !important;
+}
+.hub-wordmark em {
+  color: var(--text) !important;
+  opacity: 0.6 !important;
+  font-style: normal !important;
+  font-weight: 300 !important;
+}
+.hub-icon-btn {
+  background: transparent !important;
+  border: 1px solid var(--gb) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+.hub-icon-btn:hover { background: var(--bg3) !important; }
+.hub-user-chip {
+  background: var(--bg3) !important;
+  border: 1px solid var(--gb) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+.hub-user-avatar {
+  box-shadow: none !important;
+  border: 1px solid var(--gb2) !important;
+}
+.hub-user-role {
+  background: var(--bg3) !important;
+  color: var(--text2) !important;
+  border: 1px solid var(--gb) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  border-radius: 4px !important;
+}
+.hub-notif-badge {
+  background: var(--red) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+.search-pill {
+  background: var(--bg3) !important;
+  border: 1px solid var(--gb) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+.search-pill:hover, .search-pill:focus-within {
+  background: var(--bg) !important;
+  border-color: var(--text) !important;
+}
+.search-pill-hint {
+  background: var(--bg) !important;
+  color: var(--text3) !important;
+  border: 1px solid var(--gb) !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+}
+
+/* ── [TEXT GRADIENTS] all killed ─────────────────────────── */
 .hub-hero-name,
 .hub-hero-name *,
-.hub-wordmark,
-.hub-wordmark em,
 .lock-title,
 .lock-title *,
 .doc-wordmark,
@@ -8345,7 +8472,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   color: var(--text) !important;
 }
 
-/* 2 — Hub hero: shrunk + left-aligned + data-first */
+/* ── [HUB HERO] compact, data-first ─────────────────────── */
 .hub-hero {
   text-align: left !important;
   align-items: flex-start !important;
@@ -8394,9 +8521,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .hub-hero-cta .hub-cta-btn i {
   width: 13px !important; height: 13px !important;
 }
-
-/* Status strip under the greeting — a dense inline row of KPIs,
-   generated by updateHubHero. One row, mono numbers, muted labels. */
 .hub-hero-strip {
   display: flex;
   flex-wrap: wrap;
@@ -8408,69 +8532,40 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   background: var(--bg3);
 }
 .hub-hero-strip .kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 0 !important;
-  background: none !important;
-  border: 0 !important;
-  box-shadow: none !important;
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  padding: 0 !important; background: none !important;
+  border: 0 !important; box-shadow: none !important;
 }
 .hub-hero-strip .kpi-label {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text3);
-  font-weight: 600;
+  font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text3); font-weight: 600;
 }
 .hub-hero-strip .kpi-value {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
+  font-size: 20px; font-weight: 600; color: var(--text);
+  font-variant-numeric: tabular-nums; line-height: 1.1;
   letter-spacing: -0.01em;
 }
-.hub-hero-strip .kpi-sub {
-  font-size: 11px;
-  color: var(--text2);
-}
+.hub-hero-strip .kpi-sub { font-size: 11px; color: var(--text2); }
 .hub-hero-strip .kpi + .kpi {
-  border-left: 1px solid var(--gb);
-  padding-left: 24px !important;
+  border-left: 1px solid var(--gb); padding-left: 24px !important;
 }
 
-/* 3 — Replace soft shadows with 1px hairlines on major cards */
-.dock-item,
-.hub-widget,
-.kpi,
-.bk-card,
-.st-card,
-.ctc-tile,
-.pipeline-card,
-.modal-ctn,
-.panel {
+/* ── [HUB DOCK / MODULE CARDS] neutral ───────────────────── */
+.dock-item {
   box-shadow: none !important;
   border: 1px solid var(--gb2) !important;
+  border-radius: 8px !important;
+  background: var(--bg2) !important;
 }
-.dock-item:hover,
-.hub-widget:hover {
-  box-shadow: none !important;
+.dock-item:hover {
   border-color: var(--text) !important;
   transform: none !important;
-}
-
-/* Dock items: neutral, no colored glow backgrounds */
-.dock-item {
-  background: var(--bg2) !important;
-  border-radius: 8px !important;
 }
 .dock-item .dock-item-icon {
   background: var(--bg3) !important;
   border: 1px solid var(--gb) !important;
   box-shadow: none !important;
-  color: var(--text) !important;
+  border-radius: 6px !important;
 }
 .dock-item .dock-item-icon i,
 .dock-item .dock-item-icon svg {
@@ -8480,6 +8575,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .dock-item .dock-item-label {
   font-weight: 600 !important;
   letter-spacing: 0 !important;
+  color: var(--text) !important;
 }
 .dock-item .dock-item-sub {
   letter-spacing: 0 !important;
@@ -8487,29 +8583,64 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   color: var(--text2) !important;
 }
 
-/* 4 — Dial back the uppercase + letter-spacing shouting */
-.hub-hero-eyebrow,
-.kpi-lbl,
-.sec-lbl,
-.st-label,
-.ctc-fb-chip {
-  letter-spacing: 0.06em !important;
-}
+/* ── [HUB BACKGROUND] no mesh ────────────────────────────── */
+.hub-bg, .hub-overlay { background: var(--bg) !important; }
+.mosaic-pattern, .mosaic-container { opacity: 0.015 !important; }
 
-/* 5 — Pills less candy */
-.ctc-fb-chip,
-.st-badge-ok,
-.st-badge-err,
-.st-badge-mute,
-.cr-social {
+/* ── [MODULE HEADERS / HEROES] flat ──────────────────────── */
+.mod-hdr {
+  background: var(--bg) !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--gb) !important;
+  backdrop-filter: none !important;
+}
+.mod-hero, .mod-hero-l {
+  background: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.mod-hero-t, .hero-title {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--text) !important;
+}
+.mod-hero-s, .hero-sub {
+  color: var(--text2) !important;
+  font-size: 13px !important;
+}
+.mod-hero-ico, .hero-icon {
+  background: var(--bg3) !important;
+  border: 1px solid var(--gb) !important;
+  box-shadow: none !important;
   border-radius: 6px !important;
+  color: var(--text) !important;
+}
+.mod-hero-ico i, .hero-icon i {
+  stroke: var(--text) !important;
+  color: var(--text) !important;
 }
 
-/* 6 — Buttons: slightly more serious radius, no glow */
-.btn,
-.btn-theme,
-.btn-outline,
-.btn-ghost {
+/* ── [KPI ROWS / DASHBOARD CARDS] hairline + tabular ───── */
+.kpi, .kpi-row > div {
+  box-shadow: none !important;
+  border: 1px solid var(--gb2) !important;
+  background: var(--bg) !important;
+  border-radius: 8px !important;
+}
+.kpi-val, .kpi-value, .kpi-val.sm {
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: -0.015em !important;
+  color: var(--text) !important;
+}
+.kpi-icon-row i, .kpi-icon-row svg {
+  stroke: var(--text) !important;
+  color: var(--text) !important;
+}
+.kpi-sub { color: var(--text2) !important; }
+
+/* ── [BUTTONS] mono system ───────────────────────────────── */
+.btn, .btn-outline, .btn-ghost, .btn-danger, .btn-theme {
   border-radius: 6px !important;
   box-shadow: none !important;
   letter-spacing: 0 !important;
@@ -8519,17 +8650,235 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .btn-theme {
   background: var(--text) !important;
   color: var(--bg) !important;
+  border: 1px solid var(--text) !important;
+}
+.btn-theme:hover { opacity: 0.88 !important; transform: none !important; }
+.btn-outline {
+  background: transparent !important;
+  border: 1px solid var(--gb3) !important;
+  color: var(--text) !important;
+}
+.btn-outline:hover { background: var(--bg3) !important; border-color: var(--text) !important; }
+.btn-ghost {
+  background: transparent !important;
+  color: var(--text) !important;
+  border: 1px solid transparent !important;
+}
+.btn-ghost:hover { background: var(--bg3) !important; }
+.btn-danger {
+  background: var(--red) !important;
+  color: #fff !important;
+  border: 1px solid var(--red) !important;
+}
+.btn-danger:hover { opacity: 0.9 !important; }
+
+/* ── [FORMS] serious inputs ──────────────────────────────── */
+.fi, .fi:not(:focus) {
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  border: 1px solid var(--gb2) !important;
+}
+.fi:focus {
+  border-color: var(--text) !important;
+  box-shadow: 0 0 0 2px var(--theme-dim) !important;
+  outline: none !important;
+}
+.ff label {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 12px !important;
+  color: var(--text2) !important;
+  font-weight: 500 !important;
+}
+
+/* ── [MODALS] hairline + modest shadow ───────────────────── */
+.modal-ctn, .modal-content {
+  border-radius: 10px !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08) !important;
+  border: 1px solid var(--gb2) !important;
+}
+
+/* ── [CONTACTS: FILTERBAR + TILES] ──────────────────────── */
+.ctc-filterbar {
+  background: var(--bg3) !important;
+  border: 1px solid var(--gb) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+.ctc-fb-chip {
+  border-radius: 6px !important;
+  background: transparent !important;
+  border: 1px solid var(--gb) !important;
+  color: var(--text2) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+.ctc-fb-chip.on {
+  background: var(--text) !important;
+  color: var(--bg) !important;
   border-color: var(--text) !important;
 }
-.btn-theme:hover { opacity: 0.88; transform: none !important; }
+.ctc-fb-chip:hover:not(.on) {
+  border-color: var(--text) !important;
+  color: var(--text) !important;
+}
+.ctc-fb-count {
+  background: var(--bg) !important;
+  border: 1px solid var(--gb2) !important;
+  color: var(--text) !important;
+}
+.ctc-fb-divider { background: var(--gb) !important; }
+.ctc-tile {
+  box-shadow: none !important;
+  border: 1px solid var(--gb2) !important;
+  border-radius: 8px !important;
+  background: var(--bg) !important;
+}
+.ctc-tile:hover {
+  border-color: var(--text) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.ctc-tile-badge {
+  border-radius: 4px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 500 !important;
+}
+.ctc-tile-badge.status-customer {
+  background: color-mix(in srgb, var(--green) 12%, transparent) !important;
+  color: var(--green) !important;
+  border: 1px solid color-mix(in srgb, var(--green) 30%, transparent) !important;
+}
+.ctc-tile-badge.status-churned {
+  background: color-mix(in srgb, var(--red) 10%, transparent) !important;
+  color: var(--red) !important;
+  border: 1px solid color-mix(in srgb, var(--red) 25%, transparent) !important;
+}
+.ctc-tile-badge.status-wishlist,
+.ctc-tile-badge.status-in_pipeline {
+  background: var(--bg3) !important;
+  color: var(--text2) !important;
+  border: 1px solid var(--gb) !important;
+}
+.ctc-tile-ig {
+  background: var(--bg3) !important;
+  border: 1px solid var(--gb) !important;
+  color: var(--text) !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+}
+/* Contact tier chip (T1/T2/T3) — tiny neutral marker */
+.ctc-tile [class*="tier-"],
+.ctc-tile .tier-badge {
+  background: var(--bg3) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--gb2) !important;
+  border-radius: 4px !important;
+}
 
-/* 7 — Modal: no colored glows */
-.modal-ctn { border-radius: 10px !important; }
+/* ── [PIPELINE KANBAN] ──────────────────────────────────── */
+.pipeline-col, .pipe-col {
+  background: var(--bg3) !important;
+  border: 1px solid var(--gb) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+.pipeline-card, .pipe-card {
+  background: var(--bg) !important;
+  border: 1px solid var(--gb2) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+.pipeline-card:hover, .pipe-card:hover {
+  border-color: var(--text) !important;
+  box-shadow: none !important;
+}
 
-/* 8 — Scrollbars: neutral */
-::-webkit-scrollbar-thumb { background: var(--gb3) !important; }
+/* ── [SETTINGS TABS + CARDS] ────────────────────────────── */
+.st-tabs {
+  background: var(--bg3) !important;
+  border: 1px solid var(--gb) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+.st-tab {
+  border-radius: 6px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+.st-tab.on {
+  background: var(--text) !important;
+  color: var(--bg) !important;
+}
+.st-tab.on i, .st-tab.on svg { stroke: var(--bg) !important; color: var(--bg) !important; }
+.st-section {
+  background: var(--bg) !important;
+  border: 1px solid var(--gb2) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+.st-section-title {
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: var(--text) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+.st-section-icon {
+  background: var(--bg3) !important;
+  border: 1px solid var(--gb) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+  color: var(--text) !important;
+}
+.st-section-icon i, .st-section-icon svg {
+  stroke: var(--text) !important;
+  color: var(--text) !important;
+}
+.st-card, .bk-card {
+  background: var(--bg) !important;
+  border: 1px solid var(--gb2) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+.st-badge-ok, .st-badge-err, .st-badge-mute {
+  border-radius: 4px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 500 !important;
+}
 
-/* 9 — Hub background: no colored mesh */
-.hub-bg,
-.hub-overlay { background: var(--bg) !important; }
-.mosaic-pattern { opacity: 0.02 !important; }
+/* ── [ACTION CENTER (notifications panel)] ──────────────── */
+.ac-hdr {
+  border-bottom: 1px solid var(--gb) !important;
+  background: var(--bg) !important;
+  box-shadow: none !important;
+}
+.ac-section-title { color: var(--text2) !important; }
+.ac-notif, .ac-card {
+  background: var(--bg) !important;
+  border: 1px solid var(--gb2) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+.ac-notif-unread { border-left: 2px solid var(--text) !important; }
+
+/* ── [TOASTS] mono ──────────────────────────────────────── */
+.toast {
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
+  border-radius: 6px !important;
+  border: 0 !important;
+}
+
+/* ── [SPLASH / INTRO VIDEO] disable for pro feel ────────── */
+/* (keep as-is — only shows once; not worth touching) */
+
+/* ── [SCROLLBARS] already neutral via scrollbar-thumb token */
+::-webkit-scrollbar-thumb {
+  background: var(--gb3) !important;
+  border-radius: 3px !important;
+}
+
