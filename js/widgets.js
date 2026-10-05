@@ -82,13 +82,13 @@ function _wFocusToday() {
   if (hotContacts.length) {
     items += hotContacts.map(c => `
       <div class="hw2-item" onclick="openMod('contacts')">
-        <span class="hw2-item-dot" style="background:#ef4444"></span>
+        <span class="hw2-item-dot" style="background:var(--red)"></span>
         <span class="hw2-item-text"><strong>${_esc(c.name)}</strong> está pronto para o pipeline</span>
       </div>`).join('');
   }
   if (tasks.length) {
     items += tasks.map(t => {
-      const col = t.priority === 'alta' ? '#ef4444' : t.priority === 'média' ? '#f59e0b' : '#10b981';
+      const col = t.priority === 'alta' ? 'var(--red)' : t.priority === 'média' ? 'var(--amber)' : 'var(--text3)';
       return `<div class="hw2-item" onclick="openMod('tasks')">
         <span class="hw2-item-dot" style="background:${col}"></span>
         <span class="hw2-item-text">${_esc(t.title)}</span>
@@ -98,7 +98,7 @@ function _wFocusToday() {
   if (stuckCards.length) {
     items += stuckCards.map(c => `
       <div class="hw2-item" onclick="openMod('pipeline')">
-        <span class="hw2-item-dot" style="background:#94a3b8"></span>
+        <span class="hw2-item-dot" style="background:var(--text3)"></span>
         <span class="hw2-item-text"><strong>${_esc(c.title)}</strong> parado há mais de 7 dias</span>
       </div>`).join('');
   }
@@ -131,7 +131,7 @@ function _wHotPipeline() {
   const items = cards.map((c, i) => {
     const contact = (STATE.crm?.contacts || []).find(x => x.id === c.contact_id);
     const widthPct = (c.score / maxScore) * 100;
-    const scopeColor = c.scope === 'b2b' ? '#6366f1' : '#d946ef';
+    const scopeColor = c.scope === 'b2b' ? 'var(--blue)' : 'var(--theme)';
     return `<div class="hw2-bar-item" onclick="openMod('pipeline')">
       <div class="hw2-bar-row">
         <span class="hw2-bar-rank">${i + 1}</span>
@@ -225,8 +225,8 @@ function _wHealthCheck() {
   }
 
   const scopes = [
-    { key: 'b2b', label: 'B2B', color: '#6366f1' },
-    { key: 'b2c', label: 'B2C', color: '#d946ef' },
+    { key: 'b2b', label: 'B2B', color: 'var(--blue)' },
+    { key: 'b2c', label: 'B2C', color: 'var(--theme)' },
   ];
 
   const rows = scopes.map(scope => {
@@ -270,10 +270,10 @@ function _wWishlistPulse() {
   }
 
   const temps = [
-    { k: 'ready', label: 'Pronto',  color: '#10b981' },
-    { k: 'hot',   label: 'Quente',  color: '#ef4444' },
-    { k: 'warm',  label: 'Morno',   color: '#f59e0b' },
-    { k: 'cold',  label: 'Frio',    color: '#3b82f6' },
+    { k: 'ready', label: 'Pronto',  color: 'var(--green)' },
+    { k: 'hot',   label: 'Quente',  color: 'var(--red)' },
+    { k: 'warm',  label: 'Morno',   color: 'var(--amber)' },
+    { k: 'cold',  label: 'Frio',    color: 'var(--blue)' },
   ];
 
   const dots = temps.map(t => {
@@ -391,12 +391,12 @@ function _wRevenue() {
     <svg class="hw2-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
       <defs>
         <linearGradient id="rev-grad" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stop-color="#10b981" stop-opacity="0.4"/>
-          <stop offset="1" stop-color="#10b981" stop-opacity="0"/>
+          <stop offset="0" style="stop-color:var(--theme)" stop-opacity="0.25"/>
+          <stop offset="1" style="stop-color:var(--theme)" stop-opacity="0"/>
         </linearGradient>
       </defs>
       <polygon points="${area}" fill="url(#rev-grad)"/>
-      <polyline points="${points}" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="${points}" fill="none" style="stroke:var(--theme)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`,
     `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
     'default', 'var(--green)');

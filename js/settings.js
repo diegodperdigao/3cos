@@ -115,8 +115,8 @@ function _renderProductsGrid() {
       </div>
       ${p.description ? `<div class="st-product-desc">${_escapeHTML(p.description)}</div>` : ''}
       <div class="st-product-actions">
-        <button class="btn btn-ghost" onclick="window._prodOpenEdit('${p.id}')"><i data-lucide="edit-2" style="width:12px;height:12px"></i> Editar</button>
-        <button class="btn btn-ghost" style="color:var(--red)" onclick="window._prodDelete('${p.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i> Excluir</button>
+        <button class="btn btn-ghost" onclick="window._prodOpenEdit('${p.id}')"><i data-lucide="pencil" style="width:12px;height:12px"></i> Editar</button>
+        <button class="btn btn-ghost" style="color:var(--red)" onclick="window._prodDelete('${p.id}')"><i data-lucide="trash" style="width:12px;height:12px"></i> Excluir</button>
       </div>
     </div>
   `).join('');
@@ -372,12 +372,12 @@ function _renderGeneralSettings(el){
               <div class="st-theme-card ${themeName==='default-dark'?'on':''}" onclick="setAppTheme('default-dark')">
                 <div class="st-theme-preview st-theme-default-dark"></div>
                 <div class="st-theme-name">Default Dark</div>
-                <div class="st-theme-desc">Padrão · gradientes rosa/roxo sobre preto profundo</div>
+                <div class="st-theme-desc">Padrão · neutro escuro com acento rosa</div>
               </div>
               <div class="st-theme-card ${themeName==='default-light'?'on':''}" onclick="setAppTheme('default-light')">
                 <div class="st-theme-preview st-theme-default-light"></div>
                 <div class="st-theme-name">Default Light</div>
-                <div class="st-theme-desc">Padrão em base clara</div>
+                <div class="st-theme-desc">Padrão · neutro claro com acento rosa</div>
               </div>
               <div class="st-theme-card ${themeName==='mono-dark'?'on':''}" onclick="setAppTheme('mono-dark')">
                 <div class="st-theme-preview st-theme-mono-dark"></div>
@@ -572,7 +572,7 @@ function _renderGeneralSettings(el){
               <div class="st-label">Limpar cache local</div>
               <div class="st-hint">Remove o snapshot offline; nova sincronização será feita ao recarregar</div>
             </div>
-            <button class="btn btn-outline" onclick="clearLocalCache()"><i data-lucide="trash-2"></i> Limpar</button>
+            <button class="btn btn-outline" onclick="clearLocalCache()"><i data-lucide="trash"></i> Limpar</button>
           </div>
         </div>
       </div>
@@ -1249,7 +1249,7 @@ window.renderAutomationsSection = () => {
           <i data-lucide="${a.active?'pause':'play'}" style="width:13px;height:13px"></i>
         </button>
         <button class="ibt" onclick="testAutomation('${a.id}')" title="Testar"><i data-lucide="zap" style="width:13px;height:13px"></i></button>
-        <button class="ibt danger" onclick="deleteAutomation('${a.id}')" title="Excluir"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+        <button class="ibt danger" onclick="deleteAutomation('${a.id}')" title="Excluir"><i data-lucide="trash" style="width:13px;height:13px"></i></button>
       </div>
     </div>`;
   }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhuma automação configurada.</div>';

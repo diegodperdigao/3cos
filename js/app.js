@@ -423,7 +423,7 @@ window.openNoticesManager = () => {
       </div>
       <div class="notice-row-actions">
         <button class="btn btn-outline notice-action-btn" onclick="openEditNotice('${n.id}')" title="Editar"><i data-lucide="pencil"></i><span>Editar</span></button>
-        <button class="btn btn-outline notice-action-btn is-danger" onclick="deleteNotice('${n.id}')" title="Excluir"><i data-lucide="trash-2"></i><span>Excluir</span></button>
+        <button class="btn btn-outline notice-action-btn is-danger" onclick="deleteNotice('${n.id}')" title="Excluir"><i data-lucide="trash"></i><span>Excluir</span></button>
       </div>
     </div>`;
   }).join('') : '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum aviso personalizado.</div>';
@@ -560,9 +560,12 @@ window.openHubCustomizeMenu = (anchor) => {
 };
 
 // ── HELPERS ──
+// Reads a design token from the active theme so JS-rendered colors (charts, SVG)
+// stay in sync with CSS tokens and editions.
+window.cssVar=(name,fallback='')=>{try{return getComputedStyle(document.documentElement).getPropertyValue(name).trim()||fallback;}catch(e){return fallback;}};
 const fc=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0}).format(v||0);
 const pct=(a,b)=>b>0?Math.round(a/b*100):0;
-const cvC=p=>p>=60?'#10b981':p>=30?'#f59e0b':'#ef4444';
+const cvC=p=>p>=60?'var(--green)':p>=30?'var(--amber)':'var(--red)';
 const medal=i=>{
   const tier=i<3?['gold','silver','bronze'][i]:'';
   const n=String(i+1).padStart(2,'0');
@@ -578,7 +581,7 @@ window.userAvatar=(nameOrUser,size=28)=>{
   // deterministic color from name (used as a CSS var so themes can override)
   let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))|0;
   const hue=Math.abs(h)%360;
-  const bg=`hsl(${hue},60%,45%)`;
+  const bg=`hsl(${hue},30%,46%)`;
   const s=size;
   if(avatar){
     return `<img class="u-avatar" src="${avatar}" alt="${name}" title="${name}${u?.title?' · '+u.title:''}" style="width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;flex-shrink:0">`;
@@ -1123,11 +1126,11 @@ window.toggleTheme=function(){
   lucide.createIcons();
   
   if(window.mainChartInstance) {
-      window.mainChartInstance.options.plugins.legend.labels.color = isLight ? '#0f172a' : '#fff';
-      window.mainChartInstance.options.scales.x.ticks.color = isLight ? '#475569' : '#9898b8';
-      window.mainChartInstance.options.scales.y.ticks.color = isLight ? '#475569' : '#9898b8';
-      window.mainChartInstance.options.scales.x.grid.color = isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)';
-      window.mainChartInstance.options.scales.y.grid.color = isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)';
+      window.mainChartInstance.options.plugins.legend.labels.color = cssVar('--text');
+      window.mainChartInstance.options.scales.x.ticks.color = cssVar('--text2');
+      window.mainChartInstance.options.scales.y.ticks.color = cssVar('--text2');
+      window.mainChartInstance.options.scales.x.grid.color = cssVar('--gb');
+      window.mainChartInstance.options.scales.y.grid.color = cssVar('--gb');
       window.mainChartInstance.update();
   }
 
@@ -1493,7 +1496,7 @@ window.updateHubHero = () => {
 
 // ── HUB CARDS ──
 const MODS=[
-  {id:'dashboard',label:'Dashboard',icon:'bar-chart-2',sub:'Receita · Deals · Conversão',color:'rgba(236,72,153,0.32)',glow:'rgba(236,72,153,0.14)',bg:'rgba(236,72,153,0.1)',stroke:'#ec4899'},
+  {id:'dashboard',label:'Dashboard',icon:'chart-column',sub:'Receita · Deals · Conversão',color:'rgba(236,72,153,0.32)',glow:'rgba(236,72,153,0.14)',bg:'rgba(236,72,153,0.1)',stroke:'#ec4899'},
   {id:'contacts',label:'Contatos',icon:'contact-round',sub:'Wishlist · Prospects · Clientes',color:'rgba(20,184,166,0.32)',glow:'rgba(20,184,166,0.14)',bg:'rgba(20,184,166,0.1)',stroke:'#14b8a6'},
   {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'B2B · B2C · Kanban',color:'rgba(99,102,241,0.32)',glow:'rgba(99,102,241,0.14)',bg:'rgba(99,102,241,0.1)',stroke:'#6366f1'},
   {id:'tasks',label:'Tarefas',icon:'check-square',sub:'Workflow integrado',color:'rgba(16,185,129,0.32)',glow:'rgba(16,185,129,0.14)',bg:'rgba(16,185,129,0.1)',stroke:'#10b981'},

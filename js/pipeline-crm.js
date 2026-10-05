@@ -18,8 +18,8 @@
   };
 
   const SCOPE_META = {
-    b2b: { label: 'B2B', title: 'B2B — Marcas', sub: 'Negociações com marcas e empresas', icon: 'briefcase', color: '#6366f1' },
-    b2c: { label: 'B2C', title: 'B2C — Influencers', sub: 'Negociações com influencers e afiliados', icon: 'megaphone', color: '#d946ef' },
+    b2b: { label: 'B2B', title: 'B2B — Marcas', sub: 'Negociações com marcas e empresas', icon: 'briefcase', color: 'var(--blue)' },
+    b2c: { label: 'B2C', title: 'B2C — Influencers', sub: 'Negociações com influencers e afiliados', icon: 'megaphone', color: 'var(--theme)' },
   };
 
   function _setScope(scope) {
@@ -193,7 +193,7 @@
     const contact = CRM.contactById(card.contact_id);
     const product = CRM.productById(card.product_id);
     const prob = Number(card.probability) || 0;
-    const probColor = prob >= 70 ? '#10b981' : prob >= 40 ? '#f59e0b' : '#94a3b8';
+    const probColor = prob >= 70 ? 'var(--green)' : prob >= 40 ? 'var(--amber)' : 'var(--text3)';
 
     // Avatar do contato: avatar_url manual > iniciais em gradiente
     let avatarHTML = '';
@@ -201,7 +201,7 @@
       let h = 0; for (let i = 0; i < (contact.name || '').length; i++) h = (h * 31 + contact.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
       const initials = (contact.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
-      const fallback = `linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))`;
+      const fallback = `hsl(${hue},30%,46%)`;
       if (contact.avatar_url) {
         avatarHTML = `<img class="kan-card-av" src="${contact.avatar_url}" alt=""
           onerror="const d=document.createElement('div');d.className='kan-card-av';d.textContent='${initials}';d.style.background='${fallback}';this.replaceWith(d)">`;
@@ -343,7 +343,7 @@
       const hue = Math.abs(h) % 360;
       const ig = c.social_links?.instagram;
       return `<div class="pcrm-contact-opt" onclick="window._pcrmPickContact('${c.id}')">
-        <span class="pcrm-contact-opt-av" style="background:hsl(${hue},60%,45%)">${initials}</span>
+        <span class="pcrm-contact-opt-av" style="background:hsl(${hue},30%,46%)">${initials}</span>
         <div class="pcrm-contact-opt-info">
           <div class="pcrm-contact-opt-name">${_esc(c.name)}</div>
           <div class="pcrm-contact-opt-sub">${c.company ? _esc(c.company) : ig ? '@' + _esc(ig) : c.email ? _esc(c.email) : '—'}</div>
@@ -365,7 +365,7 @@
     let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
     const hue = Math.abs(h) % 360;
     selected.innerHTML = `
-      <span class="pcrm-contact-opt-av" style="background:hsl(${hue},60%,45%)">${initials}</span>
+      <span class="pcrm-contact-opt-av" style="background:hsl(${hue},30%,46%)">${initials}</span>
       <div class="pcrm-contact-opt-info">
         <div class="pcrm-contact-opt-name">${_esc(c.name)}</div>
         <div class="pcrm-contact-opt-sub">${c.company ? _esc(c.company) : (c.email || '—')}</div>
@@ -489,7 +489,7 @@
     `;
 
     const footer = `
-      <button class="btn btn-danger" onclick="window._pcrmDeleteCard('${card.id}')"><i data-lucide="trash-2"></i> Excluir</button>
+      <button class="btn btn-danger" onclick="window._pcrmDeleteCard('${card.id}')"><i data-lucide="trash"></i> Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
       ${contact ? `<button class="btn btn-outline" onclick="closeModal();openMod('contacts');setTimeout(()=>window._ctcOpenDetail('${contact.id}'),300)"><i data-lucide="user"></i> Ver contato</button>` : ''}
     `;

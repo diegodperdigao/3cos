@@ -39,8 +39,8 @@ function renderTasks(list){
           <span class="pri pri-${t.priority[0]==='a'?'a':t.priority[0]==='m'?'m':'b'}">${t.priority.toUpperCase()}</span>
           ${canEdit ? `
           <div class="tk-acts">
-            <button class="ibt" onclick="openEditTask('${t.id}')" data-tooltip="Editar tarefa"><i data-lucide="edit-2"></i></button>
-            <button class="ibt danger" onclick="confirmRemoveTask('${t.id}')" data-tooltip="Excluir tarefa"><i data-lucide="trash-2"></i></button>
+            <button class="ibt" onclick="openEditTask('${t.id}')" data-tooltip="Editar tarefa"><i data-lucide="pencil"></i></button>
+            <button class="ibt danger" onclick="confirmRemoveTask('${t.id}')" data-tooltip="Excluir tarefa"><i data-lucide="trash"></i></button>
           </div>` : ''}
         </div>
       </div>
@@ -48,7 +48,7 @@ function renderTasks(list){
       ${(t.subtasks&&t.subtasks.length)?`<div style="padding-left:27px;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <div style="flex:1;height:4px;background:var(--bg3);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${Math.round(t.subtasks.filter(s=>s.done).length/t.subtasks.length*100)}%;background:linear-gradient(90deg,#ec4899,#a855f7);border-radius:3px;transition:width 0.3s"></div>
+            <div style="height:100%;width:${Math.round(t.subtasks.filter(s=>s.done).length/t.subtasks.length*100)}%;background:var(--theme);border-radius:3px;transition:width 0.3s"></div>
           </div>
           <span style="font-size:9px;font-weight:700;color:var(--text2)">${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length}</span>
         </div>

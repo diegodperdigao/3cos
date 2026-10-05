@@ -158,7 +158,7 @@
       const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
       let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
-      const avatarBg = `hsl(${hue},65%,50%)`;
+      const avatarBg = `hsl(${hue},30%,46%)`;
       const ig = _normalizeIgHandle(c.social_links?.instagram);
       // Avatar: prioridade = avatar_url manual > iniciais
       const avatar = _avatarHTML(c, hue, initials);
@@ -182,7 +182,7 @@
         <div class="ctc-tile-body">
           <div class="ctc-tile-name">${_esc(c.name)}</div>
           ${ig ? `<a class="ctc-tile-ig" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            <i data-lucide="instagram"></i>@${_esc(ig)}
+            <i data-lucide="at-sign"></i>@${_esc(ig)}
           </a>` : ''}
           ${subLine ? `<div class="ctc-tile-sub">${_esc(subLine)}</div>` : '<div class="ctc-tile-sub" style="opacity:0.4">—</div>'}
         </div>
@@ -487,7 +487,7 @@
         </div>
       </div>
       ${ig ? `<a class="ctc-ig-cta" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener">
-        <span class="ctc-ig-cta-ico"><i data-lucide="instagram"></i></span>
+        <span class="ctc-ig-cta-ico"><i data-lucide="at-sign"></i></span>
         <span class="ctc-ig-cta-info">
           <span class="ctc-ig-cta-k">Instagram</span>
           <span class="ctc-ig-cta-handle">@${_esc(ig)}</span>
@@ -504,9 +504,9 @@
     `;
 
     const footer = `
-      <button class="btn btn-danger" onclick="window._ctcDelete('${c.id}')"><i data-lucide="trash-2"></i> Excluir</button>
+      <button class="btn btn-danger" onclick="window._ctcDelete('${c.id}')"><i data-lucide="trash"></i> Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
-      <button class="btn btn-theme" onclick="window._ctcOpenEdit('${c.id}')"><i data-lucide="edit-2"></i> Editar</button>
+      <button class="btn btn-theme" onclick="window._ctcOpenEdit('${c.id}')"><i data-lucide="pencil"></i> Editar</button>
     `;
 
     openModal(c.name, body, footer);
@@ -575,7 +575,7 @@
               <span style="width:12px;height:12px;background:${t.color};border-radius:50%;display:inline-block"></span>
               ${_esc(t.name)}
             </span>
-            <button class="btn btn-ghost" onclick="window._ctcTagRemove('${t.id}')"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+            <button class="btn btn-ghost" onclick="window._ctcTagRemove('${t.id}')"><i data-lucide="trash" style="width:12px;height:12px"></i></button>
           </div>
         `).join('') : '<div style="color:var(--text3);text-align:center;padding:14px">Nenhuma tag criada ainda.</div>'}
       </div>
@@ -668,7 +668,7 @@
           <i data-lucide="check-square"></i> ${_selected.size === total ? 'Nenhum' : 'Selecionar todos'}
         </button>
         <button class="btn btn-danger" onclick="window._ctcDeleteSelected()" ${_selected.size === 0 ? 'disabled' : ''}>
-          <i data-lucide="trash-2"></i> Excluir ${_selected.size > 0 ? '(' + _selected.size + ')' : ''}
+          <i data-lucide="trash"></i> Excluir ${_selected.size > 0 ? '(' + _selected.size + ')' : ''}
         </button>
         <button class="btn btn-ghost" onclick="window._ctcToggleSelect()">
           <i data-lucide="x"></i> Cancelar
@@ -745,7 +745,7 @@
                 </div>
               </div>
               <button class="btn btn-danger" onclick="window._ctcDeleteImport('${imp.createdAt}')">
-                <i data-lucide="trash-2"></i> Excluir
+                <i data-lucide="trash"></i> Excluir
               </button>
             </div>`;
           }).join('')}
@@ -1136,9 +1136,9 @@
   // bloqueia scraping cada vez mais, não valia a inconsistência visual.)
   function _avatarHTML(c, hue, initials) {
     if (c.avatar_url) {
-      return `<img class="ctc-tile-av" src="${_esc(c.avatar_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ctc-tile-av',innerHTML:'${initials}',style:'background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))'}))">`;
+      return `<img class="ctc-tile-av" src="${_esc(c.avatar_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ctc-tile-av',innerHTML:'${initials}',style:'background:hsl(${hue},30%,46%)'}))">`;
     }
-    return `<div class="ctc-tile-av" style="background:linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue+40)%360},70%,45%))">${initials}</div>`;
+    return `<div class="ctc-tile-av" style="background:hsl(${hue},30%,46%)">${initials}</div>`;
   }
 
   // ── PDF EXPORT ─────────────────────────────────────────────
@@ -1858,7 +1858,7 @@
     // Deterministic hue → same gradient as the app's contact tiles,
     // so the printed sheet feels like the live UI.
     const hue = _hueFor(c.name || '');
-    const grad = `linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue + 40) % 360},70%,45%))`;
+    const grad = `hsl(${hue},30%,46%)`;
     const avatarInner = c.avatar_url
       ? `<img src="${_esc(c.avatar_url)}" alt="${name}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cr-initials',textContent:'${initials}',style:'background:${grad}'}))">`
       : `<div class="cr-initials" style="background:${grad}">${initials}</div>`;
@@ -1925,7 +1925,7 @@
 
     const btn = document.querySelector('button[onclick="window._ctcExportPDF()"]');
     const origHTML = btn?.innerHTML;
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Preparando...'; if (window.lucide) lucide.createIcons(); }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-circle" class="spin"></i> Preparando...'; if (window.lucide) lucide.createIcons(); }
 
     try {
       // Filter summary → the subtitle under the cover title
