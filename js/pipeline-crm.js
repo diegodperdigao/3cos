@@ -9,7 +9,7 @@
 
 (function () {
   // Scope ativo (persistido na sessão)
-  let _scope = sessionStorage.getItem('pcrm_scope') || 'b2b';
+  let _scope = sessionStorage.getItem('pcrm_scope') || 'b2c';
 
   // Filtros independentes por scope
   const F = {
@@ -38,15 +38,15 @@
       <div class="mod-main">
         <!-- Abas de scope -->
         <div class="pcrm-tabs">
-          <button class="pcrm-tab ${_scope === 'b2b' ? 'on' : ''}" data-scope="b2b" onclick="window._pcrmSwitchTab('b2b')">
-            <i data-lucide="briefcase"></i>
-            <span>B2B — Marcas</span>
-            <span class="pcrm-tab-count" id="pcrm-count-b2b"></span>
-          </button>
           <button class="pcrm-tab ${_scope === 'b2c' ? 'on' : ''}" data-scope="b2c" onclick="window._pcrmSwitchTab('b2c')">
             <i data-lucide="megaphone"></i>
             <span>B2C — Influencers</span>
             <span class="pcrm-tab-count" id="pcrm-count-b2c"></span>
+          </button>
+          <button class="pcrm-tab ${_scope === 'b2b' ? 'on' : ''}" data-scope="b2b" onclick="window._pcrmSwitchTab('b2b')">
+            <i data-lucide="briefcase"></i>
+            <span>B2B — Marcas</span>
+            <span class="pcrm-tab-count" id="pcrm-count-b2b"></span>
           </button>
         </div>
 
@@ -502,7 +502,7 @@
     try {
       await CRM.cards.moveToStage(cardId, stageId);
       const card = STATE.crm.cards.find(c => c.id === cardId);
-      _renderBoard(card?.scope || 'b2b');
+      _renderBoard(card?.scope || 'b2c');
       toast('Negociação movida', 's');
     } catch (e) {
       toast('Erro ao mover: ' + (e.message || 'desconhecido'), 'e');

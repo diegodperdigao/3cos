@@ -102,8 +102,8 @@
             <button class="ctc-fb-chip on" data-v="" onclick="window._ctcFilter(this)">
               <i data-lucide="users" style="width:11px;height:11px"></i>Tipo: todos
             </button>
-            <button class="ctc-fb-chip" data-v="b2b" onclick="window._ctcFilter(this)" style="--chip-c:#6366f1">B2B</button>
-            <button class="ctc-fb-chip" data-v="b2c" onclick="window._ctcFilter(this)" style="--chip-c:#d946ef">B2C</button>
+            <button class="ctc-fb-chip" data-v="b2c" onclick="window._ctcFilter(this)">B2C</button>
+            <button class="ctc-fb-chip" data-v="b2b" onclick="window._ctcFilter(this)">B2B</button>
             <button class="ctc-fb-chip" data-v="both" onclick="window._ctcFilter(this)" style="--chip-c:#14b8a6">Ambos</button>
           </div>
 
