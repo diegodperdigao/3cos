@@ -1420,11 +1420,8 @@ function showHub(){
     // Avatar (foto se tiver URL, senão iniciais coloridas)
     const avEl=document.getElementById('hub-user-avatar');
     if (avEl) avEl.innerHTML=window.userAvatar?window.userAvatar(STATE.user,32):'';
-    // Time-aware greeting: Bom dia / Boa tarde / Boa noite
-    const _h=new Date().getHours();
-    const _g=_h<12?'Bom dia':(_h<18?'Boa tarde':'Boa noite');
-    const _heroT=document.getElementById('hub-hero-title');
-    if(_heroT)_heroT.innerHTML=`${_g}, <span class="hub-hero-name">${fn}</span>.`;
+    // Time-aware greeting (updated live via updateHubGreeting)
+    if (window.updateHubGreeting) updateHubGreeting();
     // Hero sub + CTA contextual
     if (window.updateHubHero) updateHubHero();
     const hub=document.getElementById('hub');hub.style.display='flex';
@@ -1576,8 +1573,39 @@ window.goBack=()=>{
   const hub=document.getElementById('hub');hub.style.display='flex';setTimeout(()=>hub.style.opacity='1',50);
   if(window.mainChartInstance) { window.mainChartInstance.destroy(); window.mainChartInstance = null; }
   buildHubCards();buildMobileHome();updateNotifBadge();initMosaics();lucide.createIcons();
+  if(window.updateHubGreeting)updateHubGreeting();
+  if(window.updateHubHero)updateHubHero();
   updateBottomNav('hub');
 };
+
+// Recomputes the hero greeting from the current clock. Called on login,
+// on goBack, on tab visibility change, and once per minute while idle —
+// so the user doesn't have to F5 at 18:00 to stop seeing "Boa noite".
+window.updateHubGreeting = () => {
+  const el = document.getElementById('hub-hero-title');
+  if (!el || !STATE.user) return;
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Bom dia' : (h < 18 ? 'Boa tarde' : 'Boa noite');
+  const fn = STATE.user.name.split(' ')[0];
+  el.innerHTML = `${g}, <span class="hub-hero-name">${fn}</span>.`;
+};
+
+// Keep the greeting fresh without a reload. Runs cheaply; only writes
+// to the DOM when the computed phrase actually changes.
+(function _greetingAutoUpdater(){
+  let last = '';
+  function tick() {
+    if (!STATE.user) return;
+    const h = new Date().getHours();
+    const g = h < 12 ? 'Bom dia' : (h < 18 ? 'Boa tarde' : 'Boa noite');
+    if (g !== last) {
+      last = g;
+      if (window.updateHubGreeting) updateHubGreeting();
+    }
+  }
+  setInterval(tick, 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+})();
 function updateBottomNav(activeId){
   const nav=document.getElementById('mob-bottom-nav');if(!nav)return;
   const map={hub:0,dashboard:1,affiliates:2,pipeline:3,payments:4};

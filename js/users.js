@@ -791,10 +791,7 @@ window.toggleTheme = _wrapToggleTheme;
         const fn=STATE.user.name.split(' ')[0];
         document.getElementById('hub-uname').textContent=STATE.user.name;
         document.getElementById('hub-urole').textContent=ROLES[STATE.user.role]?.label||STATE.user.role;
-        const _h=new Date().getHours();
-        const _g=_h<12?'Bom dia':(_h<18?'Boa tarde':'Boa noite');
-        const _heroT=document.getElementById('hub-hero-title');
-        if(_heroT)_heroT.innerHTML=`${_g}, <span class="hub-hero-name">${fn}</span>.`;
+        if (window.updateHubGreeting) updateHubGreeting();
         // Populate the hub avatar on session restore (showHub is not called here)
         const _avEl=document.getElementById('hub-user-avatar');
         if(_avEl && typeof window.userAvatar === 'function'){
