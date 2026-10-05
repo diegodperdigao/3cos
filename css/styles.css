@@ -6194,7 +6194,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .dock-item-icon{background:var(--text) !important;border-color:var(--text) !important;}
 .dock-item-icon svg{stroke:var(--bg) !important;stroke-width:1.8 !important;}
 .dock-item-label{color:var(--text) !important;font-size:13px !important;font-weight:600 !important;}
-.dock-item:hover{border-color:var(--gb3) !important;background:var(--bg2) !important;box-shadow:var(--shadow-2);transform:translateY(-2px) !important;}
+.dock-item,.dock-item:hover,.dock-item:active,.dock-item:focus-visible{transform:none !important;transition:border-color 0.15s ease,box-shadow 0.15s ease !important;}
+.dock-item-icon,.dock-item:hover .dock-item-icon{transform:none !important;transition:background 0.15s ease,border-color 0.15s ease !important;}
+.dock-item:hover{border-color:var(--gb3) !important;background:var(--bg2) !important;box-shadow:var(--shadow-2);}
 .dock-item:hover .dock-item-icon{background:var(--theme) !important;border-color:var(--theme) !important;}
 .dock-item:hover .dock-item-icon svg{stroke:#fff !important;}
-.dock-item:active{transform:translateY(0) !important;}
+.dock-item:active{box-shadow:var(--shadow-1);}
