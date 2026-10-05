@@ -10,14 +10,14 @@
 // ══════════════════════════════════════════════════════════
 
 const GS_GROUPS = [
-  { key: 'affiliates', name: 'Afiliados',   icon: 'users',       color: '#ec4899' },
-  { key: 'brands',     name: 'Marcas',      icon: 'tag',         color: '#a855f7' },
-  { key: 'contracts',  name: 'Contratos',   icon: 'file-text',   color: '#10b981' },
-  { key: 'payments',   name: 'Pagamentos',  icon: 'banknote',    color: '#f59e0b' },
-  { key: 'closings',   name: 'Fechamentos', icon: 'file-check',  color: '#3b82f6' },
-  { key: 'tasks',      name: 'Tarefas',     icon: 'check-square',color: '#06b6d4' },
-  { key: 'reports',    name: 'Lançamentos', icon: 'activity',    color: '#6366f1' },
-  { key: 'users',      name: 'Usuários',    icon: 'shield',      color: '#ef4444' },
+  { key: 'affiliates', name: 'Afiliados',   icon: 'users',       color: 'var(--text3)' },
+  { key: 'brands',     name: 'Marcas',      icon: 'tag',         color: 'var(--text3)' },
+  { key: 'contracts',  name: 'Contratos',   icon: 'file-text',   color: 'var(--text3)' },
+  { key: 'payments',   name: 'Pagamentos',  icon: 'banknote',    color: 'var(--text3)' },
+  { key: 'closings',   name: 'Fechamentos', icon: 'file-check',  color: 'var(--text3)' },
+  { key: 'tasks',      name: 'Tarefas',     icon: 'check-square',color: 'var(--text3)' },
+  { key: 'reports',    name: 'Lançamentos', icon: 'activity',    color: 'var(--text3)' },
+  { key: 'users',      name: 'Usuários',    icon: 'shield',      color: 'var(--text3)' },
 ];
 
 // ── Core search: returns { results: {group: []}, total: N } ──

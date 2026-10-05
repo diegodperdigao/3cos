@@ -17,7 +17,7 @@ function _renderUserGrid(filter){
       <div class="user-actions">
         <button class="btn btn-outline user-action-btn" onclick="openEditUser('${u.id}')" title="Editar usuário"><i data-lucide="pencil"></i><span>Editar</span></button>
         ${isSelf?'':`<button class="btn btn-outline user-action-btn ${u.status==='ativo'?'is-warn':'is-ok'}" onclick="toggleUserStatus('${u.id}')" title="${blockLbl}"><i data-lucide="${blockIcon}"></i><span>${blockLbl}</span></button>
-        <button class="btn btn-outline user-action-btn is-danger" onclick="confirmDeleteUser('${u.id}')" title="Excluir usuário"><i data-lucide="trash-2"></i><span>Excluir</span></button>`}
+        <button class="btn btn-outline user-action-btn is-danger" onclick="confirmDeleteUser('${u.id}')" title="Excluir usuário"><i data-lucide="trash"></i><span>Excluir</span></button>`}
       </div>
     </div>`;
   }).join('')||'<div class="empty" style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Nenhum usuário encontrado.</div>';
@@ -294,7 +294,7 @@ window._userSaveNew = async () => {
   // Lock the save button to prevent double-create
   const saveBtn = document.querySelector('.modal-ftr .btn-theme');
   const origBtnHTML = saveBtn?.innerHTML;
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width:14px;height:14px"></i> Criando...'; if (typeof lucide !== 'undefined') lucide.createIcons(); }
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i data-lucide="loader-circle" class="spin" style="width:14px;height:14px"></i> Criando...'; if (typeof lucide !== 'undefined') lucide.createIcons(); }
 
   try {
     if (!window.SUPABASE_CONFIGURED || !window.sb) {
@@ -687,8 +687,8 @@ function buildMobSidebar() {
   // Hub item
   const isHub = !_currentMod || _currentMod === 'hub';
   nav += `<div class="mob-sb-item ${isHub ? 'active' : ''}" onclick="closeMobSidebar(); goBack()">
-    <div class="mob-sb-item-icon" style="--app-bg:rgba(236,72,153,0.1);--app-border:rgba(236,72,153,0.2)">
-      <i data-lucide="grid" style="stroke:#ec4899"></i>
+    <div class="mob-sb-item-icon">
+      <i data-lucide="grid"></i>
     </div>
     <div><div class="mob-sb-item-name">Hub</div><div class="mob-sb-item-sub">Tela inicial</div></div>
   </div>`;
@@ -752,7 +752,7 @@ const origToggleTheme = window.toggleTheme;
 const _wrapToggleTheme = () => {
   origToggleTheme();
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isLight ? '#f8fafc' : '#030008');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isLight ? '#f4f5f7' : '#0f1114');
   const mobIcon = document.getElementById('mob-theme-icon');
   if (mobIcon) { mobIcon.setAttribute('data-lucide', isLight ? 'moon' : 'sun'); lucide.createIcons(); }
 };
@@ -761,7 +761,7 @@ window.toggleTheme = _wrapToggleTheme;
 // ── INIT THEME COLOR ──
 (function() {
   const t = localStorage.getItem('3cos_theme') || 'dark';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'light' ? '#f8fafc' : '#030008');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'light' ? '#f4f5f7' : '#0f1114');
 })();
 
 // ── AUTO SESSION RESTORE ──

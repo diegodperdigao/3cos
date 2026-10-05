@@ -43,7 +43,7 @@
             </select>
           </div>
           <div class="pipe-filter-group">
-            <label>Scope</label>
+            <label>Escopo</label>
             <select class="fi pipe-filter-select" onchange="window._dashSetScope(this.value)">
               <option value="all">B2B + B2C</option>
               <option value="b2b">Apenas B2B</option>
@@ -233,18 +233,18 @@
         labels: monthKeys.map(m => m.label),
         datasets: [{
           data,
-          borderColor: '#10b981',
+          borderColor: cssVar('--theme'),
           backgroundColor: (ctx) => {
             const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 180);
-            g.addColorStop(0, 'rgba(16,185,129,0.3)');
-            g.addColorStop(1, 'rgba(16,185,129,0)');
+            g.addColorStop(0, cssVar('--theme-glow', 'rgba(0,0,0,0.15)'));
+            g.addColorStop(1, 'rgba(0,0,0,0)');
             return g;
           },
           fill: true,
           tension: 0.35,
           borderWidth: 2,
           pointRadius: 3,
-          pointBackgroundColor: '#10b981',
+          pointBackgroundColor: cssVar('--theme'),
         }]
       },
       options: _chartOpts()
@@ -279,8 +279,8 @@
       data: {
         labels: monthKeys.map(m => m.label),
         datasets: [
-          { label: 'B2B', data: b2bData, backgroundColor: '#6366f1', borderRadius: 6 },
-          { label: 'B2C', data: b2cData, backgroundColor: '#d946ef', borderRadius: 6 },
+          { label: 'B2B', data: b2bData, backgroundColor: cssVar('--blue'), borderRadius: 4 },
+          { label: 'B2C', data: b2cData, backgroundColor: cssVar('--theme'), borderRadius: 4 },
         ]
       },
       options: _chartOpts(true)
@@ -303,7 +303,7 @@
     }
     el.innerHTML = cards.map(c => {
       const contact = (STATE.crm.contacts || []).find(x => x.id === c.contact_id);
-      const scopeCol = c.scope === 'b2b' ? '#6366f1' : '#d946ef';
+      const scopeCol = c.scope === 'b2b' ? 'var(--blue)' : 'var(--theme)';
       return `<div class="dash-list-item" onclick="openMod('pipeline')">
         <span class="dash-list-dot" style="background:${scopeCol}"></span>
         <div class="dash-list-main">
@@ -327,28 +327,27 @@
       return;
     }
     const labels = { inbound: 'Inbound', outbound: 'Outbound', referral: 'Indicação', event: 'Evento', social: 'Redes sociais', other: 'Outro' };
-    const colors = { inbound: '#10b981', outbound: '#6366f1', referral: '#f59e0b', event: '#ec4899', social: '#06b6d4', other: '#94a3b8' };
+    const colors = { inbound: 'var(--green)', outbound: 'var(--blue)', referral: 'var(--amber)', event: 'var(--purple)', social: 'var(--theme)', other: 'var(--text3)' };
     el.innerHTML = Object.entries(sources).sort((a, b) => b[1] - a[1]).map(([k, n]) => {
       const pct = Math.round(n / total * 100);
       return `<div class="dash-source-row">
-        <span class="dash-source-dot" style="background:${colors[k] || '#94a3b8'}"></span>
+        <span class="dash-source-dot" style="background:${colors[k] || 'var(--text3)'}"></span>
         <span class="dash-source-label">${labels[k] || k}</span>
-        <span class="dash-source-bar"><span class="dash-source-fill" style="width:${pct}%;background:${colors[k] || '#94a3b8'}"></span></span>
+        <span class="dash-source-bar"><span class="dash-source-fill" style="width:${pct}%;background:${colors[k] || 'var(--text3)'}"></span></span>
         <span class="dash-source-count">${n} <span style="color:var(--text3);font-weight:400">(${pct}%)</span></span>
       </div>`;
     }).join('');
   }
 
   function _chartOpts(stacked = false) {
-    const isLight = (document.documentElement.getAttribute('data-theme') || 'dark') === 'light';
-    const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
-    const textColor = isLight ? '#475569' : '#94a3b8';
+    const gridColor = cssVar('--gb', 'rgba(128,128,128,0.15)');
+    const textColor = cssVar('--text3', '#8a919e');
     return {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: stacked, position: 'bottom', labels: { color: textColor, font: { size: 11 }, usePointStyle: true, boxWidth: 6 } },
-        tooltip: { backgroundColor: '#0f121c', borderColor: '#2a3142', borderWidth: 1, titleColor: '#f1f5f9', bodyColor: '#94a3b8' },
+        tooltip: { backgroundColor: cssVar('--text'), titleColor: cssVar('--bg'), bodyColor: cssVar('--bg'), padding: 10, cornerRadius: 6, displayColors: false },
       },
       scales: {
         x: { grid: { color: gridColor, display: false }, ticks: { color: textColor, font: { size: 10 } } },

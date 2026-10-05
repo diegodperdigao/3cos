@@ -208,7 +208,7 @@ function renderCopilotHistory() {
       ${_copilotSelectMode ? `
         <button class="cp-hist-btn" onclick="cpSelectAll()"><i data-lucide="check-square"></i> ${_copilotSelected.size === _copilotConvs.length ? 'Nenhum' : 'Todos'}</button>
         <div class="cp-hist-toolbar-count">${_copilotSelected.size} selecionada(s)</div>
-        <button class="cp-hist-btn danger" onclick="cpBulkDelete()" ${_copilotSelected.size === 0 ? 'disabled' : ''}><i data-lucide="trash-2"></i> Apagar</button>
+        <button class="cp-hist-btn danger" onclick="cpBulkDelete()" ${_copilotSelected.size === 0 ? 'disabled' : ''}><i data-lucide="trash"></i> Apagar</button>
         <button class="cp-hist-btn" onclick="cpExitSelectMode()"><i data-lucide="x"></i></button>
       ` : `
         <button class="cp-hist-btn" onclick="cpEnterSelectMode()"><i data-lucide="check-square"></i> Selecionar</button>
@@ -245,7 +245,7 @@ function renderCopilotHistory() {
       <div class="cp-hist-item-title">${escapeHTML(c.title)}</div>
       <div class="cp-hist-item-meta">${timeAgo}${msgCount ? ` · ${msgCount} msg` : ''}</div>
       <button class="cp-hist-del" onclick="deleteCopilotConv('${c.id}', event)" title="Apagar conversa">
-        <i data-lucide="trash-2"></i>
+        <i data-lucide="trash"></i>
       </button>
     </div>`;
   }).join('');
