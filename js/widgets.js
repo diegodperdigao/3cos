@@ -225,8 +225,8 @@ function _wHealthCheck() {
   }
 
   const scopes = [
-    { key: 'b2b', label: 'B2B', color: 'var(--blue)' },
     { key: 'b2c', label: 'B2C', color: 'var(--theme)' },
+    { key: 'b2b', label: 'B2B', color: 'var(--blue)' },
   ];
 
   const rows = scopes.map(scope => {

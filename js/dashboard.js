@@ -45,9 +45,9 @@
           <div class="pipe-filter-group">
             <label>Escopo</label>
             <select class="fi pipe-filter-select" onchange="window._dashSetScope(this.value)">
-              <option value="all">B2B + B2C</option>
-              <option value="b2b">Apenas B2B</option>
+              <option value="all">B2C + B2B</option>
               <option value="b2c">Apenas B2C</option>
+              <option value="b2b">Apenas B2B</option>
             </select>
           </div>
         </div>
@@ -279,8 +279,8 @@
       data: {
         labels: monthKeys.map(m => m.label),
         datasets: [
-          { label: 'B2B', data: b2bData, backgroundColor: cssVar('--blue'), borderRadius: 4 },
           { label: 'B2C', data: b2cData, backgroundColor: cssVar('--theme'), borderRadius: 4 },
+          { label: 'B2B', data: b2bData, backgroundColor: cssVar('--blue'), borderRadius: 4 },
         ]
       },
       options: _chartOpts(true)
