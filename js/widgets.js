@@ -17,6 +17,7 @@
 const HUB_WIDGETS = [
   { id: 'revenue',         name: 'Receita',           icon: 'banknote',    desc: 'Receita do mês + delta vs anterior com sparkline 8 semanas' },
   { id: 'forecast',        name: 'Forecast mensal',   icon: 'line-chart',  desc: 'Projeção de receita dos próximos 3 meses (valor × probabilidade)' },
+  { id: 'stalled_leads',   name: 'Leads parados',     icon: 'hourglass',   desc: 'Negociações sem movimento há 7+ dias e contatos quentes esquecidos' },
   { id: 'focus_today',     name: 'Foco de hoje',      icon: 'target',      desc: 'Tarefas urgentes + contatos quentes + cards parados' },
   { id: 'hot_pipeline',    name: 'Pipeline quente',   icon: 'flame',       desc: 'Top negociações por probabilidade × valor' },
   { id: 'health_check',    name: 'Saúde do pipeline', icon: 'activity',    desc: 'Distribuição de cards por etapa (B2B + B2C)' },
@@ -28,11 +29,14 @@ const HUB_WIDGETS = [
 ];
 window.HUB_WIDGETS = HUB_WIDGETS;
 
-const DEFAULT_HUB_WIDGETS = ['revenue', 'focus_today', 'hot_pipeline', 'health_check'];
+const DEFAULT_HUB_WIDGETS = ['revenue', 'forecast', 'stalled_leads', 'focus_today'];
+const LEGACY_DEFAULT_HUB_WIDGETS = ['revenue', 'focus_today', 'hot_pipeline', 'health_check'];
 
 function _activeWidgets() {
   const saved = STATE.settings?.hubWidgets;
   if (Array.isArray(saved) && saved.length > 0) {
+    // Users who never customized kept the old default set — move them to the new one.
+    if (saved.length === LEGACY_DEFAULT_HUB_WIDGETS.length && saved.every((id, i) => id === LEGACY_DEFAULT_HUB_WIDGETS[i])) return DEFAULT_HUB_WIDGETS;
     const filtered = saved.filter(id => HUB_WIDGETS.some(w => w.id === id));
     // Se o filtered perdeu quase tudo (preferências antigas de widgets que
     // não existem mais), caímos nos defaults em vez de mostrar só 1 widget.
@@ -529,6 +533,65 @@ function _wForecast() {
     'default', 'var(--purple)');
 }
 
+// ── 11. STALLED LEADS (leads parados) ─────────────────────
+// Negociações abertas sem movimento há 7+ dias e contatos quentes/prontos
+// sem nenhuma atualização há 14+ dias. Ordenado do mais antigo ao mais novo.
+function _wStalledLeads() {
+  const DAY = 86400000;
+  const now = Date.now();
+  const stages = STATE.crm?.stages || [];
+  const stageName = (id) => ((stages.find(x => x.id === id) || {}).name || '').toLowerCase();
+  const isClosed = (c) => { const n = stageName(c.stage_id); return n.includes('ganho') || n.includes('perd') || n === 'ativo' || n.includes('descart') || (n.includes('fechado') && !n.includes('perd')); };
+  const contacts = STATE.crm?.contacts || [];
+  const byId = (id) => contacts.find(c => c.id === id);
+
+  const stalledCards = (STATE.crm?.cards || [])
+    .filter(c => !isClosed(c))
+    .map(c => ({ kind: 'card', id: c.id, scope: c.scope, title: c.title, value: Number(c.value) || 0,
+      who: byId(c.contact_id)?.name || '', days: Math.floor((now - new Date(c.updated_at || c.created_at).getTime()) / DAY) }))
+    .filter(x => x.days >= 7);
+
+  const cardContactIds = new Set((STATE.crm?.cards || []).map(c => c.contact_id));
+  const stalledContacts = contacts
+    .filter(c => (c.temperature === 'hot' || c.temperature === 'ready') && c.status !== 'customer' && c.status !== 'churned' && !cardContactIds.has(c.id))
+    .map(c => ({ kind: 'contact', id: c.id, title: c.name, value: 0, who: c.temperature === 'ready' ? 'pronto, sem negociação' : 'quente, sem negociação',
+      days: Math.floor((now - new Date(c.updated_at || c.created_at).getTime()) / DAY) }))
+    .filter(x => x.days >= 14);
+
+  const all = [...stalledCards, ...stalledContacts].sort((a, b) => b.days - a.days);
+
+  if (!all.length) {
+    return _shell('stalled_leads', 'Leads parados', 'hourglass',
+      `<div class="hw2-empty"><p>Nada parado. Todas as negociações se moveram nos últimos 7 dias.</p></div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
+      'default', 'var(--amber)');
+  }
+
+  const b1 = all.filter(x => x.days < 15).length;
+  const b2 = all.filter(x => x.days >= 15 && x.days < 30).length;
+  const b3 = all.filter(x => x.days >= 30).length;
+  const stuckValue = stalledCards.reduce((s, x) => s + x.value, 0);
+  const seg = (n, color) => n ? `<span class="hw2-seg" style="flex:${n};background:${color}" title="${n}"></span>` : '';
+
+  const items = all.slice(0, 4).map(x => `
+    <div class="hw2-item" onclick="openMod('${x.kind === 'card' ? 'pipeline' : 'contacts'}')">
+      <span class="hw2-stall-days ${x.days >= 30 ? 'is-red' : x.days >= 15 ? 'is-amber' : ''}">${x.days}d</span>
+      <span class="hw2-item-text"><strong>${_esc(x.title)}</strong>${x.who ? ` · ${_esc(x.who)}` : ''}</span>
+      ${x.value ? `<span class="hw2-item-time">${_fmt(x.value)}</span>` : ''}
+    </div>`).join('');
+
+  return _shell('stalled_leads', 'Leads parados', 'hourglass',
+    `<div class="hw2-big-row">
+      <div class="hw2-big-val">${all.length}</div>
+      <div class="hw2-big-sub-inline">${stuckValue ? `${_fmt(stuckValue)} em negociações paradas` : 'sem movimento'}</div>
+    </div>
+    <div class="hw2-stack" aria-label="7 a 14 dias, 15 a 29 dias, 30 dias ou mais">${seg(b1, 'var(--text3)')}${seg(b2, 'var(--amber)')}${seg(b3, 'var(--red)')}</div>
+    <div class="hw2-stall-legend"><span><i style="background:var(--text3)"></i>7–14d ${b1}</span><span><i style="background:var(--amber)"></i>15–29d ${b2}</span><span><i style="background:var(--red)"></i>30d+ ${b3}</span></div>
+    <div class="hw2-list">${items}</div>`,
+    all.length > 4 ? `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Ver todos os ${all.length} →</button>` : null,
+    'default', 'var(--amber)');
+}
+
 // ── MOUNT ──────────────────────────────────────────────────
 window.buildHubWidgets = () => {
   const wrap = document.getElementById('hub-widget-strip');
@@ -537,6 +600,7 @@ window.buildHubWidgets = () => {
   const renderMap = {
     revenue: _wRevenue,
     forecast: _wForecast,
+    stalled_leads: _wStalledLeads,
     focus_today: _wFocusToday,
     hot_pipeline: _wHotPipeline,
     health_check: _wHealthCheck,

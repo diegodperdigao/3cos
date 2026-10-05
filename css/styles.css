@@ -6214,3 +6214,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
 /* Dock container must not clip the lifted tile or its shadow */
 .hub-stage .hub-dock{overflow:visible !important;padding:8px 4px 10px !important;}
+
+/* Leads parados widget */
+.hw2-stall-days{flex-shrink:0;min-width:34px;text-align:center;font-size:10.5px;font-weight:600;padding:2px 6px;border-radius:5px;background:var(--bg3);color:var(--text2);font-variant-numeric:tabular-nums;}
+.hw2-stall-days.is-amber{background:color-mix(in srgb,var(--amber) 14%,transparent);color:var(--amber);}
+.hw2-stall-days.is-red{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red);}
+.hw2-stall-legend{display:flex;gap:12px;font-size:10.5px;color:var(--text3);margin-top:-4px;}
+.hw2-stall-legend span{display:inline-flex;align-items:center;gap:5px;}
+.hw2-stall-legend i{display:inline-block;width:7px;height:7px;border-radius:2px;}
+
+/* Progress fills rendered as <span> need block display to take width/height */
+.hw2-forecast-bar,.hw2-forecast-fill,.hw2-pulse-bar,.hw2-pulse-fill,.hw2-bar-track,.hw2-bar-fill,.dash-source-bar,.dash-source-fill{display:block;}
