@@ -33,6 +33,14 @@
   ];
   const TIER_BY_ID = Object.fromEntries(TIERS.map(t => [t.id, t]));
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
+  // Company values that are import placeholders, not real companies.
+  // The CSV we import marks every row as "Prospect" in the company column.
+  const COMPANY_PLACEHOLDERS = new Set(['prospect', 'prospects', 'lead', 'leads', 'wishlist', 'n/a', 'na', '-', '—', 'null', 'none', 'sem empresa']);
+  const _companyOf = (c) => {
+    const v = String((c && c.company) || '').trim();
+    return v && !COMPANY_PLACEHOLDERS.has(v.toLowerCase()) ? v : '';
+  };
+  window._ctcCompanyOf = _companyOf;
   // Instagram glyph (Lucide no longer ships brand icons). Inherits currentColor.
   const IG_SVG = '<svg class="ig-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>';
   window._igSvg = () => IG_SVG;
@@ -177,7 +185,8 @@
       const avatar = _avatarHTML(c, hue, initials);
       const prof = PROFILE_BY_ID[c.profile];
       const tier = TIER_BY_ID[c.tier];
-      const sub = c.company ? { icon: 'building-2', text: c.company, title: 'Empresa' }
+      const company = _companyOf(c);
+      const sub = company ? { icon: 'building-2', text: company, title: 'Empresa' }
         : c.email ? { icon: 'mail', text: c.email, title: 'Email' }
         : c.phone ? { icon: 'phone', text: c.phone, title: 'Telefone' }
         : null;
@@ -499,7 +508,7 @@
           </span>` : ''}
         </div>
         <div style="color:var(--text2);font-size:12px;margin-top:4px">
-          ${c.company || '—'} · ${TYPE_LABEL[c.type] || c.type} · ${STATUS_LABEL[c.status] || c.status}
+          ${_companyOf(c) || '—'} · ${TYPE_LABEL[c.type] || c.type} · ${STATUS_LABEL[c.status] || c.status}
         </div>
       </div>
       ${ig ? `<a class="ctc-ig-cta" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener">
@@ -990,7 +999,7 @@
           if (det.type === 'instagram' && !row.instagram) row.instagram = det.value;
           else if (det.type === 'email' && !row.email) row.email = det.value;
           else if (det.type === 'phone' && !row.phone) row.phone = det.value;
-          else if (det.type === 'company' && !row.company) row.company = det.value;
+          else if (det.type === 'company' && !row.company && !COMPANY_PLACEHOLDERS.has(String(det.value || '').trim().toLowerCase())) row.company = det.value;
         }
       }
 
@@ -1436,7 +1445,7 @@
 
     // Escopo block (company/source/notes)
     const scopeItems = [];
-    if (c.company) scopeItems.push(c.company);
+    if (_companyOf(c)) scopeItems.push(_companyOf(c));
     if (c.source && SOURCE_LABEL[c.source]) scopeItems.push('Origem: ' + SOURCE_LABEL[c.source]);
     if (c.notes) scopeItems.push(c.notes);
     if (scopeItems.length) {
@@ -1906,7 +1915,7 @@
 
     // Scope bullets: company, source, notes
     const scope = [];
-    if (c.company) scope.push(c.company);
+    if (_companyOf(c)) scope.push(_companyOf(c));
     if (c.source && SOURCE_LABEL[c.source]) scope.push('Origem: ' + SOURCE_LABEL[c.source]);
     if (c.notes) scope.push(c.notes);
     const scopeHTML = scope.length
