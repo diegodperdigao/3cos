@@ -13,7 +13,7 @@ const fbAuth = { signInWithEmailAndPassword: () => Promise.reject(new Error('Fir
 const fbDb = null;
 const FB_DOC = { get: () => Promise.resolve({ exists: false }), set: () => Promise.resolve() };
 
-const LOGO='https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg';
+const LOGO='assets/brand/3cos-app-icon.svg';
 const CONTRACT_TYPES={
   cpa:{label:'CPA + Rev Share',css:'cpa'},
   tiered:{label:'CPA Escalonado',css:'tiered'},
@@ -1624,7 +1624,9 @@ function modHdr(label){
   return `<div class="mod-hdr">
     <div class="mod-hdr-l">
       <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
-      <div class="mod-hdr-logo" onclick="goBack()">3C<em>OS</em></div>
+      <a class="mod-hdr-logo" href="#" onclick="event.preventDefault();goBack()" title="Voltar ao hub"><span class="brand-h" style="--brand-h:22px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span></a>
+      <span class="mod-hdr-sep" aria-hidden="true">/</span>
+      <span class="mod-hdr-name">${String(label||"").split(" — ")[0]}</span>
     </div>
     <div class="mod-hdr-c">
       <div class="search-pill search-pill-sm" onclick="focusSearchInput(this)">
@@ -1658,15 +1660,19 @@ function modHdr(label){
   </div>`;
 }
 
+const HERO_ICONS={dashboard:'chart-column',contacts:'contact-round','pipeline-crm':'git-branch',pipeline:'git-branch',tasks:'check-square',settings:'settings',audit:'activity',users:'users',backup:'cloud'};
 function heroHTML(mosId,eyebrow,title,sub){
-  // Hero compact — Apple-style page header: title + subtitle inline, no mosaic,
-  // no eyebrow banner. The eyebrow is preserved as a small caption above the
-  // title to keep semantic hierarchy (module category), but is de-emphasized.
+  // Module cover: a full-width ink band with the module icon, a small
+  // category eyebrow, a large title and a one-line description.
+  const icon=HERO_ICONS[mosId]||'layout-grid';
   return `<div class="hero" id="${mosId}-hero">
     <div class="hero-content">
-      ${eyebrow?`<div class="hero-eyebrow">${eyebrow}</div>`:''}
-      <div class="hero-title">${title}</div>
-      ${sub?`<div class="hero-sub">${sub}</div>`:''}
+      <div class="hero-icon"><i data-lucide="${icon}"></i></div>
+      <div class="hero-text">
+        ${eyebrow?`<div class="hero-eyebrow">${eyebrow}</div>`:''}
+        <h1 class="hero-title">${title}</h1>
+        ${sub?`<p class="hero-sub">${sub}</p>`:''}
+      </div>
     </div>
   </div>`;
 }

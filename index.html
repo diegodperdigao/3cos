@@ -8,10 +8,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f4f5f7">
 <title>3C OS Pro</title>
-<link rel="icon" href="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg">
+<link rel="icon" href="assets/brand/3cos-favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="assets/brand/favicon.ico">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=191">
+<link rel="stylesheet" href="css/styles.css?v=192">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -106,8 +108,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <div id="mob-sidebar-overlay" onclick="closeMobSidebar()"></div>
 <div id="mob-sidebar">
   <div class="mob-sb-hdr">
-    <img src="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg" class="mob-sb-logo">
-    <div class="mob-sb-brand">3C<em>OS</em></div>
+    <span class="mob-sb-brand brand-h" style="--brand-h:26px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span>
     <button class="mob-sb-close" onclick="closeMobSidebar()"><i data-lucide="x" style="width:18px;height:18px"></i></button>
   </div>
   <div class="mob-sb-user" id="mob-sb-user"></div>
@@ -123,8 +124,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <div id="lock" style="display:none">
   <div class="mosaic-wrapper"><div class="mosaic-container"><div class="mosaic-pattern" id="lock-mosaic"></div></div></div>
   <div class="lock-box">
-    <img src="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg" class="lock-logo">
-    <div class="lock-title">3C<span>OS</span></div>
+    <span class="lock-brand brand-h" style="--brand-h:44px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span>
     <div class="lock-sub">Sistema Operacional — Pro</div>
     <input type="email" id="le" class="lock-field" placeholder="nome@3c.gg" autocomplete="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter') doLogin()">
     <input type="password" id="lp" class="lock-field" placeholder="••••••••" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doLogin()">
@@ -148,8 +148,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <div id="reset-screen" style="display:none">
   <div class="mosaic-wrapper"><div class="mosaic-container"><div class="mosaic-pattern" id="reset-mosaic"></div></div></div>
   <div class="lock-box">
-    <img src="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg" class="lock-logo">
-    <div class="lock-title">3C<span>OS</span></div>
+    <span class="lock-brand brand-h" style="--brand-h:44px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span>
     <div class="lock-sub">Definir nova senha</div>
     <input type="password" id="rp-new" class="lock-field" placeholder="Nova senha (mín. 8)" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doResetPassword()">
     <input type="password" id="rp-confirm" class="lock-field" placeholder="Confirmar nova senha" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doResetPassword()">
@@ -170,8 +169,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="hub-bar-l">
       <button class="hub-hamburger" onclick="openMobSidebar()"><i data-lucide="menu"></i></button>
       <div class="hub-logo-row">
-        <img src="https://i.ibb.co/1G2wKkkY/favicon-3cgg.jpg" class="hub-logo-img">
-        <div class="hub-wordmark">3C<em>OS</em></div>
+        <span class="hub-wordmark brand-h" style="--brand-h:30px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span>
       </div>
     </div>
     <div class="hub-bar-c">
@@ -313,23 +311,23 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=191"></script>
+<script src="js/app.js?v=192"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=191"></script>
-<script src="js/data.js?v=191"></script>
-<script src="js/widgets.js?v=191"></script>
+<script src="js/supabase-client.js?v=192"></script>
+<script src="js/data.js?v=192"></script>
+<script src="js/widgets.js?v=192"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=191"></script>
+<script src="js/search.js?v=192"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=191"></script>
-<script src="js/tasks.js?v=191"></script>
-<script src="js/audit.js?v=191"></script>
-<script src="js/users.js?v=191"></script>
-<script src="js/settings.js?v=191"></script>
+<script src="js/dashboard.js?v=192"></script>
+<script src="js/tasks.js?v=192"></script>
+<script src="js/audit.js?v=192"></script>
+<script src="js/users.js?v=192"></script>
+<script src="js/settings.js?v=192"></script>
 <!-- CRM (frente comercial — schema crm) -->
-<script src="js/crm-data.js?v=191"></script>
-<script src="js/contacts.js?v=191"></script>
-<script src="js/pipeline-crm.js?v=191"></script>
-<script src="js/copilot.js?v=191"></script>
+<script src="js/crm-data.js?v=192"></script>
+<script src="js/contacts.js?v=192"></script>
+<script src="js/pipeline-crm.js?v=192"></script>
+<script src="js/copilot.js?v=192"></script>
 </body>
 </html>
