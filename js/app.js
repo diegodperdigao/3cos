@@ -1442,62 +1442,78 @@ function showHub(){
   },650);
 }
 
-// ── HERO CONTEXT (sub + CTA) ──
-// Olha pro estado do CRM pra sugerir uma próxima ação relevante.
-// Rodado tanto no login quanto quando volta ao hub.
+// ── HERO CONTEXT — PRO PREVIEW ──
+// Compact: a muted one-liner + a data strip of real KPIs + a single
+// optional CTA. No greetings-as-content, no rhetorical questions.
 window.updateHubHero = () => {
   const sub = document.getElementById('hub-hero-sub');
   const cta = document.getElementById('hub-hero-cta');
   if (!sub || !cta) return;
 
   const crm = STATE.crm || {};
-  const contactsCount = (crm.contacts || []).length;
-  const hotContacts = (crm.contacts || []).filter(c => c.temperature === 'hot' || c.temperature === 'ready').length;
-  const cardsCount = (crm.cards || []).length;
-  const pendingTasks = (STATE.tasks || []).filter(t => t.status !== 'concluída').length;
+  const contacts = crm.contacts || [];
+  const cards = crm.cards || [];
+  const tasks = STATE.tasks || [];
+  const totalContacts = contacts.length;
+  const hotContacts = contacts.filter(c => c.temperature === 'hot' || c.temperature === 'ready').length;
+  const activeDeals = cards.length;
+  const pendingTasks = tasks.filter(t => t.status !== 'concluída').length;
 
-  let subText = 'O que você quer fazer hoje?';
+  // Date line in muted body copy. No "o que você quer fazer hoje?"
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('pt-BR', {
+    weekday: 'long', day: '2-digit', month: 'long',
+  }).replace(/^./, c => c.toUpperCase());
+
+  sub.innerHTML = `${dateStr} · visão geral do dia`;
+
+  // Build the KPI strip (replaces the big CTA button).
+  // Strip is inserted into the cta slot so we don't touch index.html.
+  const strip = `
+    <div class="hub-hero-strip">
+      <div class="kpi">
+        <div class="kpi-label">Contatos</div>
+        <div class="kpi-value">${totalContacts}</div>
+        <div class="kpi-sub">${hotContacts} quente${hotContacts === 1 ? '' : 's'}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Pipeline</div>
+        <div class="kpi-value">${activeDeals}</div>
+        <div class="kpi-sub">negociaç${activeDeals === 1 ? 'ão ativa' : 'ões ativas'}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Tarefas</div>
+        <div class="kpi-value">${pendingTasks}</div>
+        <div class="kpi-sub">pendente${pendingTasks === 1 ? '' : 's'}</div>
+      </div>
+    </div>
+  `;
+
+  // Only surface a next-action button when there's something urgent;
+  // otherwise the strip speaks for itself.
   let ctaHtml = '';
-
-  // Priorização simples: estado vazio > tarefas pendentes > contatos quentes > default
-  if (contactsCount === 0) {
-    subText = 'Comece adicionando seus primeiros contatos à wishlist.';
-    ctaHtml = `<button class="hub-cta-btn primary" onclick="openMod('contacts')">
-      <i data-lucide="user-plus"></i>
-      <span>Adicionar primeiro contato</span>
-    </button>`;
-  } else if (hotContacts > 0 && cardsCount === 0) {
-    subText = `Você tem <strong>${hotContacts} contato${hotContacts > 1 ? 's' : ''} quente${hotContacts > 1 ? 's' : ''}</strong> pronto${hotContacts > 1 ? 's' : ''} para o pipeline.`;
-    ctaHtml = `<button class="hub-cta-btn primary" onclick="openMod('contacts')">
-      <i data-lucide="flame"></i>
-      <span>Revisar contatos quentes</span>
-    </button>`;
+  if (totalContacts === 0) {
+    ctaHtml = `<button class="hub-cta-btn primary" onclick="openMod('contacts')">Adicionar primeiro contato</button>`;
+  } else if (hotContacts > 0 && activeDeals === 0) {
+    ctaHtml = `<button class="hub-cta-btn primary" onclick="openMod('contacts')">Revisar contatos quentes</button>`;
   } else if (pendingTasks > 3) {
-    subText = `<strong>${pendingTasks} tarefa${pendingTasks > 1 ? 's' : ''}</strong> esperando sua atenção.`;
-    ctaHtml = `<button class="hub-cta-btn primary" onclick="openMod('tasks')">
-      <i data-lucide="check-square"></i>
-      <span>Ver tarefas</span>
-    </button>`;
-  } else if (cardsCount > 0) {
-    subText = `${cardsCount} negociação${cardsCount > 1 ? 'ões' : ''} ativa${cardsCount > 1 ? 's' : ''} no pipeline.`;
-    ctaHtml = `<button class="hub-cta-btn" onclick="openMod('pipeline')">
-      <i data-lucide="git-branch"></i>
-      <span>Ver pipeline</span>
-    </button>`;
+    ctaHtml = `<button class="hub-cta-btn primary" onclick="openMod('tasks')">Ver tarefas</button>`;
   }
 
-  sub.innerHTML = subText;
-  cta.innerHTML = ctaHtml;
+  cta.innerHTML = strip + (ctaHtml ? `<div style="margin-top:12px">${ctaHtml}</div>` : '');
   if (window.lucide) lucide.createIcons();
 };
 
-// ── HUB CARDS ──
+// ── HUB CARDS — PRO PREVIEW ──
+// All five modules share a neutral palette so the surface reads as a
+// tool (Linear/Attio) rather than a candy dock. The accent only shows
+// up on hover (handled by CSS: border → ink).
 const MODS=[
-  {id:'dashboard',label:'Dashboard',icon:'bar-chart-2',sub:'Receita · Deals · Conversão',color:'rgba(236,72,153,0.32)',glow:'rgba(236,72,153,0.14)',bg:'rgba(236,72,153,0.1)',stroke:'#ec4899'},
-  {id:'contacts',label:'Contatos',icon:'contact-round',sub:'Wishlist · Prospects · Clientes',color:'rgba(20,184,166,0.32)',glow:'rgba(20,184,166,0.14)',bg:'rgba(20,184,166,0.1)',stroke:'#14b8a6'},
-  {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'B2B · B2C · Kanban',color:'rgba(99,102,241,0.32)',glow:'rgba(99,102,241,0.14)',bg:'rgba(99,102,241,0.1)',stroke:'#6366f1'},
-  {id:'tasks',label:'Tarefas',icon:'check-square',sub:'Workflow integrado',color:'rgba(16,185,129,0.32)',glow:'rgba(16,185,129,0.14)',bg:'rgba(16,185,129,0.1)',stroke:'#10b981'},
-  {id:'settings',label:'Configurações',icon:'settings',sub:'Equipe · Auditoria · Backup · MCP',color:'rgba(148,163,184,0.32)',glow:'rgba(148,163,184,0.14)',bg:'rgba(148,163,184,0.1)',stroke:'#94a3b8'},
+  {id:'dashboard',label:'Dashboard',icon:'bar-chart-2',sub:'Receita · Deals · Conversão',color:'transparent',glow:'transparent',bg:'transparent',stroke:'currentColor'},
+  {id:'contacts',label:'Contatos',icon:'contact-round',sub:'Wishlist · Prospects · Clientes',color:'transparent',glow:'transparent',bg:'transparent',stroke:'currentColor'},
+  {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'B2B · B2C · Kanban',color:'transparent',glow:'transparent',bg:'transparent',stroke:'currentColor'},
+  {id:'tasks',label:'Tarefas',icon:'check-square',sub:'Workflow integrado',color:'transparent',glow:'transparent',bg:'transparent',stroke:'currentColor'},
+  {id:'settings',label:'Configurações',icon:'settings',sub:'Equipe · Auditoria · Backup · MCP',color:'transparent',glow:'transparent',bg:'transparent',stroke:'currentColor'},
 ];
 function buildHubCards(){
   const userMods=STATE.user?.modules||[];
