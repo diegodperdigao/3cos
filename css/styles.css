@@ -6320,3 +6320,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .hw2-fc{margin:8px 0 6px;gap:6px;}
 .hw2-stall-list .hw2-item,.hw2-item{padding:5px 2px;}
 .cp-title-icon .cp-gemini-icon{stroke:var(--theme-fg);}
+
+/* ── Picker de contato da pipeline: criar contato sem sair do fluxo ── */
+.pcrm-contact-create{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;border:0;border-top:1px solid var(--gb);background:transparent;color:var(--theme);font:inherit;font-size:12px;font-weight:600;cursor:pointer;text-align:left;}
+.pcrm-contact-create:hover{background:var(--bg3);}
+.pcrm-contact-create svg{width:14px;height:14px;flex-shrink:0;}
+.pcrm-contact-create strong{font-weight:700;}
+.pcrm-contact-empty + .pcrm-contact-create{border-top:1px solid var(--gb);}

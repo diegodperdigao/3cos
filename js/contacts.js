@@ -328,6 +328,43 @@
   };
 
   let _savingNew = false;
+  // Criação de contato a partir de outro módulo (ex.: picker da pipeline).
+  // Abre o mesmo formulário, pré-preenchido, e devolve o contato criado
+  // via callback em vez de voltar para a lista de contatos.
+  let _inlineCb = null;
+  window._ctcOpenNewInline = ({ name = '', type = 'b2c', onCreated, onCancel, title = 'Novo contato' } = {}) => {
+    _inlineCb = { onCreated, onCancel };
+    openModal(title, _formHTML({ name, type }), `
+      <button class="btn btn-ghost" onclick="window._ctcCancelInline()">Voltar</button>
+      <button class="btn btn-theme" onclick="window._ctcSaveNewInline()"><i data-lucide="check"></i> Criar contato</button>
+    `);
+    lucide.createIcons();
+    setTimeout(() => document.getElementById(name ? 'ctc-f-email' : 'ctc-f-name')?.focus(), 60);
+  };
+  window._ctcCancelInline = () => {
+    const cb = _inlineCb; _inlineCb = null;
+    if (cb?.onCancel) cb.onCancel(); else closeModal();
+  };
+  window._ctcSaveNewInline = async () => {
+    if (_savingNew) return;
+    const payload = _formRead();
+    if (!payload.name) { toast('Nome é obrigatório', 'e'); return; }
+    _savingNew = true;
+    const btn = document.querySelector('.modal-ft .btn-theme');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader"></i> Criando...'; lucide.createIcons(); }
+    try {
+      const created = await CRM.contacts.create(payload);
+      const cb = _inlineCb; _inlineCb = null;
+      toast(`"${created.name}" criado`, 's');
+      if (cb?.onCreated) cb.onCreated(created); else closeModal();
+    } catch (e) {
+      toast('Erro ao criar: ' + (e.message || 'desconhecido'), 'e');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="check"></i> Criar contato'; lucide.createIcons(); }
+    } finally {
+      _savingNew = false;
+    }
+  };
+
   window._ctcSaveNew = async () => {
     if (_savingNew) return;  // guarda contra double-click
     const payload = _formRead();
