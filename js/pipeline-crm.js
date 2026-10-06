@@ -230,9 +230,12 @@
       </div>` : ''}
       <div class="kan-card-title">${_esc(card.title)}</div>
       ${contact && CRM.tagsForContact ? CRM.tagsForContact(contact.id).map(t => CRM.tagChip(t, 'kan-card-tagchip')).join('') : ''}
-      ${contact ? `<div class="kan-card-contact">
+      ${contact ? `<div class="kan-card-contact"
+          onmouseenter="window._ctcShowHoverCard && _ctcShowHoverCard('${contact.id}', this)"
+          onmouseleave="window._ctcHideHoverCard && _ctcHideHoverCard()">
         ${avatarHTML}
-        <span class="kan-card-contact-name">${_esc(contact.name)}</span>
+        <span class="kan-card-contact-name" title="Ver perfil de ${_esc(contact.name)}"
+          onclick="event.stopPropagation();window._ctcHideHoverCard && _ctcHideHoverCard(0);window._ctcOpenDetail && _ctcOpenDetail('${contact.id}')">${_esc(contact.name)}</span>
       </div>` : ''}
       <div class="kan-card-foot">
         <span class="kan-card-age${ageClass}"><i data-lucide="clock" style="width:11px;height:11px"></i>${_ageLabel(days)}</span>
@@ -520,7 +523,7 @@
     const footer = `
       <button class="btn btn-danger" onclick="window._pcrmDeleteCard('${card.id}')"><i data-lucide="trash"></i> Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
-      ${contact ? `<button class="btn btn-outline" onclick="closeModal();openMod('contacts');setTimeout(()=>window._ctcOpenDetail('${contact.id}'),300)"><i data-lucide="user"></i> Ver contato</button>` : ''}
+      ${contact ? `<button class="btn btn-outline" onclick="window._ctcOpenDetail('${contact.id}')"><i data-lucide="user"></i> Ver contato</button>` : ''}
     `;
 
     openModal(card.title, body, footer);

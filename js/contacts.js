@@ -531,6 +531,87 @@
   };
 
   // ── DETALHES DO CONTATO ──────────────────────────────────
+  // ── PERFIL RÁPIDO (hover card) ─────────────────────────────
+  // Usado pela pipeline: ao passar o cursor no contato do card mostra
+  // telefone, email, Instagram, tags e notas; clique abre o perfil completo.
+  let _popEl = null, _popShowTimer = null, _popHideTimer = null, _popId = null;
+  function _popNode() {
+    if (_popEl) return _popEl;
+    _popEl = document.createElement('div');
+    _popEl.id = 'ctc-hover-card';
+    _popEl.className = 'ctc-pop';
+    _popEl.addEventListener('mouseenter', () => { clearTimeout(_popHideTimer); });
+    _popEl.addEventListener('mouseleave', () => window._ctcHideHoverCard());
+    document.body.appendChild(_popEl);
+    const hideNow = () => window._ctcHideHoverCard(0);
+    document.addEventListener('dragstart', hideNow, true);
+    document.addEventListener('scroll', hideNow, true);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideNow(); });
+    return _popEl;
+  }
+  function _popHTML(c) {
+    const ig = _normalizeIgHandle(c.social_links?.instagram);
+    const prof = PROFILE_BY_ID[c.profile];
+    const tier = TIER_BY_ID[c.tier];
+    const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+    let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
+    const hue = Math.abs(h) % 360;
+    const phoneDigits = String(c.phone || '').replace(/\D/g, '');
+    const wa = phoneDigits ? `https://wa.me/${phoneDigits.length <= 11 ? '55' + phoneDigits : phoneDigits}` : '';
+    const tags = (window.CRM?.tagsForContact ? CRM.tagsForContact(c.id) : []);
+    const days = Math.max(0, Math.floor((Date.now() - new Date(c.updated_at || c.created_at).getTime()) / 86400000));
+    const company = _companyOf(c);
+    const row = (icon, html, title) => `<div class="ctc-pop-row" title="${title || ''}"><i data-lucide="${icon}"></i><span>${html}</span></div>`;
+    const rows = [
+      c.phone ? row('phone', `${_esc(c.phone)}${wa ? ` <a href="${wa}" target="_blank" rel="noopener" class="ctc-pop-link">WhatsApp</a>` : ''}`, 'Telefone') : '',
+      c.email ? row('mail', `<a href="mailto:${_esc(c.email)}" class="ctc-pop-link">${_esc(c.email)}</a>`, 'Email') : '',
+      ig ? `<div class="ctc-pop-row" title="Instagram">${IG_SVG}<span><a href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener" class="ctc-pop-link">@${_esc(ig)}</a></span></div>` : '',
+      company ? row('building-2', _esc(company), 'Empresa') : '',
+      c.lead_meta?.channel ? row('globe', `Landing page · ${_esc(c.lead_meta.channel)}`, 'Origem') : (c.source ? row('compass', SOURCE_LABEL[c.source] || _esc(c.source), 'Origem') : ''),
+    ].filter(Boolean).join('');
+    return `
+      <div class="ctc-pop-head">
+        ${_avatarHTML(c, hue, initials)}
+        <div class="ctc-pop-id">
+          <div class="ctc-pop-name">${_esc(c.name)}</div>
+          <div class="ctc-pop-badges">
+            ${prof ? `<span class="ctc-tile-badge profile-badge" style="--prof-c:${prof.color}"><i data-lucide="${prof.icon}" style="width:9px;height:9px"></i>${prof.label}</span>` : ''}
+            ${tier ? `<span class="ctc-tile-badge" style="color:${tier.color};border-color:${tier.color}55">${tier.label}</span>` : ''}
+            <span class="ctc-tile-badge status-${c.status}">${STATUS_LABEL[c.status] || c.status}</span>
+          </div>
+        </div>
+      </div>
+      ${rows ? `<div class="ctc-pop-rows">${rows}</div>` : '<div class="ctc-pop-empty">Sem telefone, email ou rede social cadastrados.</div>'}
+      ${tags.length ? `<div class="crm-tag-row" style="margin-top:8px">${tags.map(t => CRM.tagChip(t)).join('')}</div>` : ''}
+      ${c.notes ? `<div class="ctc-pop-notes">${_esc(c.notes)}</div>` : ''}
+      <div class="ctc-pop-foot">
+        <span>${days === 0 ? 'atualizado hoje' : `atualizado há ${days} dia${days === 1 ? '' : 's'}`}</span>
+        <a class="ctc-pop-link" onclick="window._ctcHideHoverCard(0);window._ctcOpenDetail('${c.id}')">Ver perfil completo →</a>
+      </div>`;
+  }
+  window._ctcShowHoverCard = (id, anchor) => {
+    if (window.matchMedia && window.matchMedia('(hover: none)').matches) return; // touch: só clique
+    clearTimeout(_popHideTimer); clearTimeout(_popShowTimer);
+    _popShowTimer = setTimeout(() => {
+      const c = CRM.contactById(id); if (!c || !anchor?.isConnected) return;
+      const el = _popNode();
+      _popId = id;
+      el.innerHTML = _popHTML(c);
+      el.classList.add('open');
+      if (window.lucide) lucide.createIcons();
+      const r = anchor.getBoundingClientRect();
+      const pw = el.offsetWidth, ph = el.offsetHeight;
+      let left = Math.min(Math.max(8, r.left), window.innerWidth - pw - 8);
+      let top = r.bottom + 8;
+      if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 8);
+      el.style.left = left + 'px'; el.style.top = top + 'px';
+    }, 220);
+  };
+  window._ctcHideHoverCard = (delay = 140) => {
+    clearTimeout(_popShowTimer); clearTimeout(_popHideTimer);
+    _popHideTimer = setTimeout(() => { if (_popEl) _popEl.classList.remove('open'); _popId = null; }, delay);
+  };
+
   window._ctcOpenDetail = (id) => {
     const c = CRM.contactById(id);
     if (!c) return;
