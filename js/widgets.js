@@ -478,24 +478,65 @@ function _delta(cur, prev) {
 
 
 
-// Par de KPIs (mês até hoje vs mesmo trecho do mês anterior)
-function _affPair(id, title, icon, accent, a, b, footLine, emptyMsg) {
+// Série semanal (últimas n semanas, mais antiga → atual) de um campo dos reports
+function _affWeekly(field, n = 8) {
+  const week = 7 * 86400000;
+  const b = Array(n).fill(0);
+  (STATE.reports || []).forEach(r => {
+    const diff = Date.now() - new Date(r.date).getTime();
+    const idx = n - 1 - Math.floor(diff / week);
+    if (idx >= 0 && idx < n) b[idx] += Number(r[field]) || 0;
+  });
+  return b;
+}
+function _affSpark(series, accent) {
+  const w = 84, h = 30, gap = 3;
+  const bw = (w - gap * (series.length - 1)) / series.length;
+  const min = Math.min(0, ...series), max = Math.max(...series, 1);
+  const span = max - min || 1;
+  const zeroY = h - ((0 - min) / span) * h;
+  const bars = series.map((v, i) => {
+    const y = h - ((v - min) / span) * h;
+    const top = Math.min(y, zeroY), hh = Math.max(2, Math.abs(zeroY - y));
+    const last = i === series.length - 1;
+    return `<rect x="${(i * (bw + gap)).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}" rx="1.5" fill="${last ? accent : 'color-mix(in srgb, var(--text) 16%, transparent)'}"/>`;
+  }).join('');
+  return `<svg class="hw2-aff-spark" viewBox="0 0 ${w} ${h}" aria-hidden="true">${bars}</svg>`;
+}
+function _lastReportDate() {
+  const d = (STATE.reports || []).map(r => String(r.date || '').substring(0, 10)).filter(Boolean).sort().pop();
+  return d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '') : null;
+}
+
+// Widget com uma linha por métrica: rótulo, valor grande, delta e sparkline 8 semanas
+function _affRows(id, title, icon, accent, rows, footLine, emptyMsg) {
   if (!(STATE.reports || []).length) {
     return _shell(id, title, icon,
       `<div class="hw2-empty"><p>${emptyMsg}</p></div>`,
       `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
       'default', accent);
   }
-  const kpi = (k) => `<div class="hw2-kpi">
-      <span class="hw2-kpi-k">${k.label}</span>
-      <span class="hw2-kpi-v is-lg${k.negative ? ' is-neg' : ''}">${k.value}</span>
-      <span class="hw2-kpi-d ${k.delta >= 0 ? 'pos' : 'neg'}"><i data-lucide="${k.delta >= 0 ? 'arrow-up-right' : 'arrow-down-right'}"></i>${k.delta >= 0 ? '+' : ''}${k.delta}% vs anterior</span>
-    </div>`;
+  const html = rows.map(r => `
+    <div class="hw2-aff-row">
+      <div class="hw2-aff-main">
+        <span class="hw2-aff-top">
+          <span class="hw2-kpi-k">${r.label}</span>
+          <span class="hw2-big-delta ${r.delta >= 0 ? 'pos' : 'neg'}"><i data-lucide="${r.delta >= 0 ? 'arrow-up-right' : 'arrow-down-right'}"></i>${r.delta >= 0 ? '+' : ''}${r.delta}%</span>
+        </span>
+        <span class="hw2-aff-num${r.negative ? ' is-neg' : ''}">${r.value}</span>
+      </div>
+      ${_affSpark(r.series, accent)}
+    </div>`).join('');
   return _shell(id, title, icon,
-    `<div class="hw2-kpi-grid is-pair">${kpi(a)}${kpi(b)}</div>
+    `<div class="hw2-aff-rows">${html}</div>
     <div class="hw2-big-sub">${footLine}</div>`,
     `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
     'default', accent);
+}
+function _affFoot(cur, detail) {
+  const any = cur.deposits || cur.registrations || cur.ftd || cur.ngr;
+  if (!any) { const d = _lastReportDate(); return `sem lançamentos neste mês${d ? ` · último em ${d}` : ''}`; }
+  return `mês até hoje vs mês anterior · ${detail}`;
 }
 
 function _wAffFunnel() {
@@ -504,11 +545,11 @@ function _wAffFunnel() {
   const cur = AFF.sum(AFF.rows(s0, e0));
   const prev = AFF.sum(AFF.rows(s1, e1));
   const conv = cur.registrations > 0 ? Math.round(cur.ftd / cur.registrations * 100) : 0;
-  return _affPair('aff_funnel', 'Cadastros e FTDs', 'user-plus', 'var(--blue)',
-    { label: 'Cadastros', value: _fmtInt(cur.registrations), delta: _delta(cur.registrations, prev.registrations) },
-    { label: 'FTDs', value: _fmtInt(cur.ftd), delta: _delta(cur.ftd, prev.ftd) },
-    `mês até hoje · ${conv}% dos cadastros viraram FTD · ${_fmtInt(cur.qftd)} QFTD`,
-    'Nenhum resultado de afiliado lançado ainda.');
+  return _affRows('aff_funnel', 'Cadastros e FTDs', 'user-plus', 'var(--blue)', [
+    { label: 'Cadastros', value: _fmtInt(cur.registrations), delta: _delta(cur.registrations, prev.registrations), series: _affWeekly('registrations') },
+    { label: 'FTDs', value: _fmtInt(cur.ftd), delta: _delta(cur.ftd, prev.ftd), series: _affWeekly('ftd') },
+  ], _affFoot(cur, `${conv}% dos cadastros viraram FTD · ${_fmtInt(cur.qftd)} QFTD`),
+  'Nenhum resultado de afiliado lançado ainda.');
 }
 
 function _wAffMoney() {
@@ -517,11 +558,11 @@ function _wAffMoney() {
   const cur = AFF.sum(AFF.rows(s0, e0));
   const prev = AFF.sum(AFF.rows(s1, e1));
   const margin = cur.deposits > 0 ? Math.round(cur.ngr / cur.deposits * 100) : 0;
-  return _affPair('aff_money', 'Depósitos e NGR', 'banknote', 'var(--green)',
-    { label: 'Depósitos', value: _fmt(cur.deposits), delta: _delta(cur.deposits, prev.deposits) },
-    { label: 'Lucro (NGR)', value: _fmt(cur.ngr), delta: _delta(cur.ngr, prev.ngr), negative: cur.ngr < 0 },
-    `mês até hoje · NGR = ${margin}% dos depósitos · ${cur.affiliates.size} afiliado${cur.affiliates.size === 1 ? '' : 's'}`,
-    'Nenhum resultado de afiliado lançado ainda.');
+  return _affRows('aff_money', 'Depósitos e NGR', 'banknote', 'var(--green)', [
+    { label: 'Depósitos', value: _fmt(cur.deposits), delta: _delta(cur.deposits, prev.deposits), series: _affWeekly('deposits') },
+    { label: 'Lucro (NGR)', value: _fmt(cur.ngr), delta: _delta(cur.ngr, prev.ngr), negative: cur.ngr < 0, series: _affWeekly('netRev') },
+  ], _affFoot(cur, `NGR = ${margin}% dos depósitos · ${cur.affiliates.size} afiliado${cur.affiliates.size === 1 ? '' : 's'}`),
+  'Nenhum resultado de afiliado lançado ainda.');
 }
 
 // ── MOUNT ──────────────────────────────────────────────────
