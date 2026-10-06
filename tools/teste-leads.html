@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Teste de leads da LP</title>
+<link rel="icon" href="/assets/brand/3cos-favicon.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: uma coluna estreita, formulário à esquerda do resultado em telas largas */
+  :root{
+    --bg:#f4f5f7; --bg2:#ffffff; --gb:#dfe2e7; --gb2:#c9ced6;
+    --text:#111418; --text2:#555b64; --text3:#8a919e;
+    --theme:#c81e5b; --theme-fg:#ffffff;
+    --ok:#15803d; --ok-bg:#dcfce7; --warn:#b7791f; --warn-bg:#fef3c7; --bad:#c62828; --bad-bg:#fee2e2;
+    --fd:'Inter',system-ui,sans-serif; --fmono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --bg:#0f1114; --bg2:#171a1f; --gb:#262a31; --gb2:#363b44;
+    --text:#f1f2f4; --text2:#aab0ba; --text3:#7b8290;
+    --theme:#e4407f; --ok:#4ade80; --ok-bg:#0f2e1c; --warn:#fbbf24; --warn-bg:#33270a; --bad:#f87171; --bad-bg:#3a1414;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f1114; --bg2:#171a1f; --gb:#262a31; --gb2:#363b44;
+    --text:#f1f2f4; --text2:#aab0ba; --text3:#7b8290;
+    --theme:#e4407f; --ok:#4ade80; --ok-bg:#0f2e1c; --warn:#fbbf24; --warn-bg:#33270a; --bad:#f87171; --bad-bg:#3a1414;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.5 var(--fd);padding-block:28px 48px;padding-inline:16px}
+  .wrap{max-width:980px;margin:0 auto}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  header img{height:28px}
+  header h1{font-size:18px;font-weight:600;margin:0;letter-spacing:-0.01em}
+  header p{margin:2px 0 0;color:var(--text3);font-size:12.5px}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+  @media (max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--bg2);border:1px solid var(--gb);border-radius:12px;padding:20px;min-width:0}
+  .card h2{font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--text3);margin:0 0 14px}
+  form{display:grid;gap:12px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:480px){.row{grid-template-columns:1fr}}
+  label{display:grid;gap:5px;font-size:12px;font-weight:500;color:var(--text2)}
+  input,select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--gb2);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
+  input:focus,select:focus{outline:2px solid var(--theme);outline-offset:1px;border-color:var(--theme)}
+  .check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);font-weight:400}
+  .check input{width:auto}
+  .hint{font-size:12px;color:var(--text3);margin:0}
+  button{font:inherit;font-weight:600;color:var(--theme-fg);background:var(--theme);border:0;border-radius:8px;padding:11px 16px;cursor:pointer}
+  button:disabled{opacity:0.6;cursor:wait}
+  button:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+  .status{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:13px;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--gb)}
+  .status .code{font-family:var(--fmono);font-variant-numeric:tabular-nums}
+  .status.ok{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+  .status.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+  .status.bad{background:var(--bad-bg);color:var(--bad);border-color:transparent}
+  .verdict{margin:12px 0 0;font-size:14px}
+  .verdict strong{font-weight:600}
+  .next{margin:10px 0 0;padding-left:18px;color:var(--text2);font-size:13px}
+  .next li{margin:3px 0}
+  pre{margin:14px 0 0;background:var(--bg);border:1px solid var(--gb);border-radius:8px;padding:12px;font:12px/1.5 var(--fmono);overflow-x:auto;color:var(--text2);white-space:pre-wrap;word-break:break-word}
+  .empty{color:var(--text3);font-size:13px;margin:0}
+  footer{margin-top:18px;font-size:12px;color:var(--text3)}
+  footer code{font-family:var(--fmono);font-size:11.5px}
+  @media (prefers-reduced-motion:no-preference){button{transition:filter .15s}button:hover{filter:brightness(0.95)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="/assets/brand/3cos-app-icon.svg" alt="">
+    <div>
+      <h1>Teste de leads da LP</h1>
+      <p>Envia um lead de teste para <code>/api/leads</code> e mostra a resposta. Nada é salvo nesta página.</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Lead de teste</h2>
+      <form id="f">
+        <label>Chave da API (x-api-key)
+          <input id="key" type="password" autocomplete="off" required placeholder="cole a chave registrada no Vercel">
+        </label>
+        <div class="row">
+          <label>Nome <input id="nome" type="text" value="Teste LP Chute" required></label>
+          <label>Perfil
+            <select id="perfil">
+              <option value="tipster" selected>Tipster</option>
+              <option value="influencer">Influencer</option>
+              <option value="streamer">Streamer</option>
+              <option value="agencia">Agência</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Email <input id="email" type="email" value="teste@chuteparceiros.com"></label>
+          <label>Telefone <input id="telefone" type="tel" value="+55 11 99999-0000"></label>
+        </div>
+        <label>Origem <input id="origem" type="text" value="lp-chute-parceiros"></label>
+        <label class="check"><input id="teste" type="checkbox" checked> Marcar como teste (prefixo [TESTE] no contato e no card)</label>
+        <label class="check"><input id="lgpd" type="checkbox" checked> Consentimento LGPD (obrigatório para a API aceitar)</label>
+        <button id="go" type="submit">Enviar lead de teste</button>
+        <p class="hint">A chave fica só nesta aba e vai direto para a API no mesmo domínio.</p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Resposta da API</h2>
+      <div id="out"><p class="empty">Preencha a chave e envie. O resultado aparece aqui.</p></div>
+    </section>
+  </div>
+
+  <footer>Leads de teste podem ser apagados depois em Contatos (filtre por "[TESTE]") e na coluna Lead LP da pipeline B2C.</footer>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const out = $('out');
+  const btn = $('go');
+
+  function render({ cls, code, label, verdict, next, raw }) {
+    const nextHTML = next && next.length ? `<ul class="next">${next.map(n => `<li>${n}</li>`).join('')}</ul>` : '';
+    out.innerHTML = `
+      <span class="status ${cls}"><span class="code">${code}</span><span>${label}</span></span>
+      <p class="verdict">${verdict}</p>
+      ${nextHTML}
+      ${raw ? `<pre>${raw.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</pre>` : ''}`;
+  }
+
+  function interpret(status, body) {
+    if (status === 201 && body && body.ok) {
+      const card = body.card;
+      return {
+        cls: 'ok', code: status, label: 'Lead recebido',
+        verdict: card
+          ? `<strong>Integração ativa.</strong> Contato criado e negociação na etapa <strong>${card.stage}</strong> do funil ${String(card.scope || '').toUpperCase()}.`
+          : `<strong>Contato criado</strong>, mas a negociação na pipeline não foi criada. Confira as etapas do funil B2C.`,
+        next: ['Pode avisar a Chute Parceiros que o endpoint está ativo.', 'Abra a pipeline B2C e confira a coluna Lead LP.']
+      };
+    }
+    if (status === 503) return { cls: 'warn', code: status, label: 'Não configurado', verdict: 'O deploy ativo ainda não tem a variável <strong>LEAD_INTAKE_API_KEY</strong>.', next: ['No Vercel, confirme a variável em Production.', 'Faça um Redeploy do último deployment e teste de novo.'] };
+    if (status === 401) return { cls: 'bad', code: status, label: 'Chave rejeitada', verdict: 'A chave digitada não é a mesma salva em <strong>LEAD_INTAKE_API_KEY</strong>.', next: ['Confira espaços no início ou no fim ao colar.', 'Se mudou a variável, faça Redeploy.'] };
+    if (status === 400) return { cls: 'warn', code: status, label: 'Dados inválidos', verdict: (body && body.error) || 'A API recusou o corpo da requisição.', next: [] };
+    if (status === 500) return { cls: 'bad', code: status, label: 'Erro no servidor', verdict: (body && body.error) || 'Erro interno.', next: ['Se a mensagem citar env vars, faltam SUPABASE_URL ou SUPABASE_SERVICE_KEY no Vercel.'] };
+    if (status === 404) return { cls: 'bad', code: status, label: 'Endpoint não encontrado', verdict: 'O deploy ativo não tem <strong>/api/leads</strong>. Confira se o último merge já foi publicado.', next: [] };
+    return { cls: 'bad', code: status, label: 'Resposta inesperada', verdict: (body && body.error) || 'Veja o corpo bruto abaixo.', next: [] };
+  }
+
+  $('f').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const key = $('key').value.trim();
+    if (!key) { $('key').focus(); return; }
+    const payload = {
+      nome: $('nome').value.trim(),
+      email: $('email').value.trim() || undefined,
+      telefone: $('telefone').value.trim() || undefined,
+      perfil: $('perfil').value,
+      origem: $('origem').value.trim() || undefined,
+      url_origem: location.href,
+      consentimento_lgpd: $('lgpd').checked,
+      test: $('teste').checked,
+      utm: { source: 'teste-manual', medium: 'ferramenta-3cos' }
+    };
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    out.innerHTML = '<p class="empty">Aguardando a API…</p>';
+    try {
+      const r = await fetch('/api/leads', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': key }, body: JSON.stringify(payload) });
+      const text = await r.text();
+      let body = null; try { body = JSON.parse(text); } catch (_) {}
+      const v = interpret(r.status, body);
+      render({ ...v, raw: body ? JSON.stringify(body, null, 2) : text });
+    } catch (e) {
+      render({ cls: 'bad', code: '—', label: 'Sem resposta', verdict: 'Não foi possível falar com a API. Verifique a conexão e tente de novo.', next: [], raw: String(e && e.message || e) });
+    } finally {
+      btn.disabled = false; btn.textContent = 'Enviar lead de teste';
+    }
+  });
+})();
+</script>
+</body>
+</html>
