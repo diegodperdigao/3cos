@@ -5,7 +5,7 @@
 //   - focus_today: tarefas + contatos quentes + cards parados em 1 card
 //   - aff_funnel: cadastros e FTDs do mês (public.reports)
 //   - aff_money: depósitos e NGR do mês (public.reports)
-//   - pipeline_forecast: negociações em Reunião / Em negociação / Contrato (contagens, sem dinheiro)
+//   - pipeline_forecast: negociações em Em negociação / Contrato (contagens, sem dinheiro)
 //   - momentum: sparkline de deals criados por semana + delta
 //   - health_check: distribuição visual do pipeline (barras empilhadas B2B+B2C)
 //   - wishlist_pulse: contagem de contatos por temperatura com dots
@@ -23,7 +23,7 @@ const HUB_WIDGETS = [
   { id: 'aff_funnel',      name: 'Cadastros e FTDs',  icon: 'user-plus',   desc: 'Cadastros e FTDs trazidos pelos afiliados no mês, com conversão' },
   { id: 'aff_money',       name: 'Depósitos e NGR',   icon: 'banknote',    desc: 'Depósitos e lucro (NGR) dos afiliados no mês, vs mês anterior' },
   { id: 'stalled_leads',   name: 'Leads parados',     icon: 'hourglass',   desc: 'Negociações sem movimento há 7+ dias e contatos quentes esquecidos' },
-  { id: 'pipeline_forecast', name: 'Forecast',        icon: 'crosshair',   desc: 'Quantas negociações estão em Reunião agendada, Em negociação e Contrato' },
+  { id: 'pipeline_forecast', name: 'Forecast',        icon: 'crosshair',   desc: 'Quantas negociações estão em Em negociação e Contrato' },
   { id: 'focus_today',     name: 'Foco de hoje',      icon: 'target',      desc: 'Tarefas urgentes + contatos quentes + cards parados' },
   { id: 'health_check',    name: 'Saúde do pipeline', icon: 'activity',    desc: 'Distribuição de cards por etapa (B2B + B2C)' },
   { id: 'conversion',      name: 'Taxa de conversão', icon: 'percent',     desc: 'Prospects → clientes (90 dias)' },
@@ -574,16 +574,15 @@ function _wPipelineForecast() {
   const stages = STATE.crm?.stages || [];
   const nameOf = (id) => (stages.find(s => s.id === id)?.name || '').toLowerCase();
   const STEPS = [
-    { key: 'reuni',    label: 'Reunião agendada', color: '#3b82f6' },
-    { key: 'negocia',  label: 'Em negociação',    color: '#f59e0b' },
-    { key: 'contrato', label: 'Contrato',         color: '#a855f7' },
+    { key: 'negocia',  label: 'Em negociação', color: '#f59e0b' },
+    { key: 'contrato', label: 'Contrato',      color: '#a855f7' },
   ];
   const rows = STEPS.map(st => {
     const inStage = cards.filter(c => nameOf(c.stage_id).includes(st.key));
     return { ...st, total: inStage.length, b2c: inStage.filter(c => c.scope === 'b2c').length, b2b: inStage.filter(c => c.scope === 'b2b').length };
   });
-  const likely = rows.filter(r => r.key !== 'reuni').reduce((s, r) => s + r.total, 0);
-  const meetings = rows[0].total;
+  const likely = rows.reduce((s, r) => s + r.total, 0);
+  const meetings = cards.filter(c => nameOf(c.stage_id).includes('reuni')).length;
   const now = new Date();
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const closedMonth = cards.filter(c => nameOf(c.stage_id).includes('fechado') && String(c.updated_at || '').startsWith(monthKey)).length;

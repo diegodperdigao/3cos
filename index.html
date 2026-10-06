@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=207">
+<link rel="stylesheet" href="css/styles.css?v=208">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <!-- COPILOT (Beta — AI chat) -->
 <button id="copilot-fab" onclick="toggleCopilot()" title="3C Copilot" style="display:none">
-  <svg viewBox="0 0 24 24" class="cp-gemini-icon"><path d="M12 2C12 8.627 15.373 12 22 12C15.373 12 12 15.373 12 22C12 15.373 8.627 12 2 12C8.627 12 12 8.627 12 2Z" fill="currentColor"/></svg>
+  <svg viewBox="0 0 24 24" class="cp-gemini-icon"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
   <span class="cp-fab-pulse"></span>
 </button>
 <div id="copilot-overlay" onclick="closeCopilot()"></div>
@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   <div class="cp-hdr">
     <div class="cp-title">
       <button class="cp-hdr-btn cp-hist-toggle" onclick="toggleCopilotHistory()" title="Histórico de conversas"><i data-lucide="menu"></i></button>
-      <div class="cp-title-icon"><svg viewBox="0 0 24 24" class="cp-gemini-icon"><path d="M12 2C12 8.627 15.373 12 22 12C15.373 12 12 15.373 12 22C12 15.373 8.627 12 2 12C8.627 12 12 8.627 12 2Z" fill="currentColor"/></svg></div>
+      <div class="cp-title-icon"><svg viewBox="0 0 24 24" class="cp-gemini-icon"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>
       <div>
         <div class="cp-title-main">3C Copilot</div>
         <div class="cp-title-sub">IA conectada aos seus dados</div>
@@ -311,23 +311,23 @@ document.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=207"></script>
+<script src="js/app.js?v=208"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=207"></script>
-<script src="js/data.js?v=207"></script>
-<script src="js/widgets.js?v=207"></script>
+<script src="js/supabase-client.js?v=208"></script>
+<script src="js/data.js?v=208"></script>
+<script src="js/widgets.js?v=208"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=207"></script>
+<script src="js/search.js?v=208"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=207"></script>
-<script src="js/tasks.js?v=207"></script>
-<script src="js/audit.js?v=207"></script>
-<script src="js/users.js?v=207"></script>
-<script src="js/settings.js?v=207"></script>
+<script src="js/dashboard.js?v=208"></script>
+<script src="js/tasks.js?v=208"></script>
+<script src="js/audit.js?v=208"></script>
+<script src="js/users.js?v=208"></script>
+<script src="js/settings.js?v=208"></script>
 <!-- CRM (frente comercial — schema crm) -->
-<script src="js/crm-data.js?v=207"></script>
-<script src="js/contacts.js?v=207"></script>
-<script src="js/pipeline-crm.js?v=207"></script>
-<script src="js/copilot.js?v=207"></script>
+<script src="js/crm-data.js?v=208"></script>
+<script src="js/contacts.js?v=208"></script>
+<script src="js/pipeline-crm.js?v=208"></script>
+<script src="js/copilot.js?v=208"></script>
 </body>
 </html>
