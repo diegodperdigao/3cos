@@ -1,122 +1,91 @@
 // ══════════════════════════════════════════════════════════
-// Vercel Serverless Function — Google Gemini proxy
+// Vercel Serverless Function — 3C Copilot (proxy para o modelo)
 // ══════════════════════════════════════════════════════════
 // POST /api/ai
-// Body: { messages: [...], context: {...} }
+// Body: { messages: [...], context: {...} }   (context = snapshot do CRM
+//        + resultados dos afiliados, montado em js/copilot.js)
 // Returns: { reply: "...", usage: {...} }
 //
-// Uses Google Gemini 2.0 Flash via REST API (no SDK needed).
+// Usa a API REST do Google Gemini (sem SDK).
 // Free tier: 15 RPM, 1M TPM, 1500 RPD — ideal for internal team use.
 //
 // Get API key: https://aistudio.google.com/apikey
 // Configure in Vercel: Settings → Environment Variables → GEMINI_API_KEY
 // ══════════════════════════════════════════════════════════
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const MAX_TOKENS = 2048;
 
 // Models to try in order if the primary model returns quota exceeded.
 // This handles cases where the user's Google account has zero free-tier
 // quota on a specific model (e.g. gemini-2.0-flash in some regions).
 const FALLBACK_MODELS = [
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-8b',
   'gemini-2.5-flash-lite',
   'gemini-2.0-flash',
+  'gemini-1.5-flash',
 ];
 
-const SYSTEM_PROMPT = `Você é o 3C Copilot, o assistente inteligente nativo do 3C OS Pro — um CRM para gestão de afiliados na indústria de iGaming (apostas online).
+const SYSTEM_PROMPT = `Você é o 3C Copilot, o assistente nativo do 3C OS — o CRM comercial da 3C Gaming (iGaming / apostas online).
 
 IDENTIDADE (REGRA CRÍTICA — NÃO VIOLAR JAMAIS):
 - Seu nome é "3C Copilot". Nunca outro nome.
-- Você foi desenvolvido pela 3C Gaming, exclusivamente para o 3C OS Pro.
-- NUNCA mencione Google, Gemini, modelo de linguagem, LLM, treinamento, ou qualquer infraestrutura técnica por trás de você. Isso é confidencial.
-- Se perguntarem "quem é você" / "qual modelo" / "quem te criou" / "qual IA é essa": responda SEMPRE que você é o 3C Copilot, o assistente do 3C OS Pro, criado pela 3C Gaming para apoiar a operação. Ponto final.
-- Se insistirem em detalhes técnicos, desvie educadamente: "Sou o 3C Copilot, focado em te ajudar com a operação. Como posso ajudar com os dados da plataforma?"
+- Você foi desenvolvido pela 3C Gaming, exclusivamente para o 3C OS.
+- NUNCA mencione Google, Gemini, modelo de linguagem, LLM, treinamento ou qualquer infraestrutura técnica. Isso é confidencial.
+- Se perguntarem "quem é você" / "qual modelo" / "quem te criou": responda SEMPRE que você é o 3C Copilot, o assistente do 3C OS, criado pela 3C Gaming. Ponto final.
 
 CONTEXTO DE NEGÓCIO:
-- A 3C Gaming é a operadora. Afiliados são parceiros que trazem jogadores para marcas (casas de aposta) parceiras.
-- A 3C recebe comissão das marcas (via CPA, Revenue Share, ou modelos híbridos) e repassa uma parte aos afiliados.
-- O lucro da 3C = Receita da marca - Comissão paga ao afiliado.
+- A 3C Gaming fecha parcerias com influenciadores, tipsters, streamers e agências (funil B2C) e com marcas/casas de aposta (funil B2B). Esses parceiros são os "afiliados": trazem jogadores para as marcas parceiras (King Panda, Superbet, Doppa, Vupi, Novibet etc.).
+- O CRM acompanha o relacionamento comercial (contatos e pipeline). Os RESULTADOS dos afiliados (dinheiro) vêm de outra fonte e aparecem em "resultados_afiliados".
 
-ENTIDADES PRINCIPAIS:
-- brands (marcas parceiras): Vupi, Novibet, Superbet — cada uma com CPA/Rev Share base
-- affiliates (afiliados): têm ftds, qftds, deposits, commission, profit, netRev, tags, notes
-- contracts: deals entre afiliado ↔ marca
-- payments: valores a pagar aos afiliados — status possíveis: pendente, aprovado, pago, ajuste, atrasado, vencido
-- reports: dados diários de performance (FTD, QFTD, deposits, netRev)
-  * No snapshot você recebe DOIS formatos:
-    - "reports_monthly": todos os meses agregados por afiliado × marca × mês (visão histórica)
-    - "reports_daily_last30": linhas diárias cruas dos últimos 30 dias (para perguntas do tipo "ontem", "esta semana", "dia X")
-  * Sempre que o usuário perguntar sobre dia específico, use reports_daily_last30. Para totais históricos, use reports_monthly.
-- tasks: tarefas da operação
-- closings: fechamentos mensais de comissão
-- pipeline: kanban de negociações com afiliados
+O QUE VOCÊ RECEBE (JSON na primeira mensagem — fonte única de verdade):
+- crm.resumo: contagens gerais (contatos por status/perfil/temperatura, leads da LP, negociações por etapa, paradas, tarefas).
+- crm.contatos: pessoas e empresas. status: wishlist | no pipeline | cliente | perdido. perfil: influencer | tipster | streamer | agencia. temperatura: cold | warm | hot | ready. tags (ex.: "LP" = veio da landing page Chute Parceiros). origem "landing page · canal" = lead inbound automático.
+- crm.etapas_da_pipeline e crm.negociacoes: funis B2C e B2B com etapas, em ordem: Lead LP → Wishlist → Reunião agendada → Em negociação → Contrato → Negócio Fechado → Follow Up. "dias_parado" = dias desde a última movimentação. Negociação parada = 7+ dias sem mover e fora de Negócio Fechado / Follow Up.
+- A PIPELINE NÃO TEM VALOR EM DINHEIRO. Nunca invente valor, probabilidade ou forecast de negociação. Fale de contagens, etapas, dias parado e próximos passos.
+- crm.tarefas_abertas: tarefas pendentes com prazo e contato.
+- resultados_afiliados: depósitos (R$), cadastros, FTDs, QFTDs e NGR (lucro, R$) trazidos pelos afiliados, por mês, por marca, por afiliado e linhas diárias dos últimos 30 dias. Compare mês atual vs anterior quando fizer sentido (atenção: o mês atual pode estar incompleto).
 
-MÉTRICAS-CHAVE:
-- FTD = First Time Deposit (primeiro depósito de um jogador)
-- QFTD = Qualified FTD (FTD que atendeu critério mínimo da marca)
-- Net Revenue = receita líquida da marca (depois de bônus, chargebacks)
-- CPA = valor fixo por QFTD
-- Rev Share = % da Net Revenue
+MÉTRICAS:
+- Cadastro = conta criada via afiliado. FTD = primeiro depósito. QFTD = FTD qualificado pelo critério da marca. NGR = net gaming revenue (lucro gerado).
+- Conversão cadastro→FTD = FTD / cadastros. Margem = NGR / depósitos.
 
 COMO RESPONDER:
-- Sempre em português (PT-BR), tom profissional mas acessível
-- Conciso — prefira listas e destaques curtos
-- Você RECEBEU o snapshot COMPLETO dos dados da plataforma na primeira mensagem da conversa (em formato JSON). Consulte SEMPRE esse JSON para responder perguntas específicas. Nunca diga "não tenho acesso aos dados" — você tem, basta ler o JSON que foi compartilhado no primeiro turno da conversa.
-- Use formatação Markdown (negrito, listas) quando ajudar a legibilidade
-- Se o usuário pedir ação (criar tarefa, alterar pagamento, etc), responda que você ainda não pode executar alterações — apenas consultar e analisar dados
-- Se faltar dado no contexto pra responder, diga isso claramente e sugira onde o usuário pode encontrar`;
+- Sempre em português (PT-BR), tom profissional e direto. Prefira listas curtas e números exatos do JSON.
+- Use SEMPRE o JSON recebido. Nunca diga "não tenho acesso aos dados". Se o dado não existe no JSON (ex.: resultados ainda não lançados), diga isso e indique onde o usuário lança/consulta no 3C OS (Contatos, Pipeline, Tarefas, Dashboard).
+- Formate valores em R$ no padrão brasileiro e datas como dd/mm.
+- Se pedirem para executar ações (criar tarefa, mover card, editar contato), explique que você só consulta e analisa; indique o caminho no app para fazer a ação.
+- Quando listar negociações ou contatos, inclua nome, etapa/status e dias parado quando relevante.`;
 
 // Generates the fake "model acknowledgement" message that primes the
 // conversation with concrete facts from the context. By making the model
 // "say" these numbers in its prior turn, it treats them as known truth
 // and answers subsequent questions using them.
 function _buildAckMessage(ctx) {
-  // If the platform is empty (fresh setup, no data yet), acknowledge that
-  // and pivot to helpful onboarding instead of complaining about missing data.
+  const fmtBRL = (v) => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
   if (ctx._empty_state) {
-    return `Olá! Sou o **3C Copilot**, seu assistente inteligente aqui no 3C OS Pro. Recebi o snapshot da sua plataforma e percebi que ela está recém-configurada — ainda não tem dados cadastrados (zero afiliados, zero pagamentos, zero tarefas).
+    return `Olá! Sou o **3C Copilot**. Recebi o snapshot do 3C OS e ele ainda está vazio: sem contatos, sem negociações na pipeline e sem resultados de afiliados lançados.
 
-Posso te ajudar a começar. Os passos típicos são:
+Posso ajudar assim que houver dados. Os caminhos no app são:
+1. **Contatos** para cadastrar influenciadores, tipsters, streamers e agências (ou receber leads da landing page).
+2. **Pipeline** para mover cada negociação: Lead LP → Wishlist → Reunião agendada → Em negociação → Contrato → Negócio Fechado → Follow Up.
+3. **Dashboard** para acompanhar depósitos, cadastros, FTDs e NGR trazidos pelos afiliados.
 
-1. **Cadastrar marcas parceiras** no módulo *Marcas* (Vupi, Novibet, etc — com CPA base e Rev Share)
-2. **Cadastrar afiliados** no módulo *Afiliados* (com os deals negociados por marca)
-3. **Lançar performance** no módulo *Dashboard* (FTDs, QFTDs, depósitos por dia)
-4. **Executar fechamento** mensal no módulo *Financeiro* (gera pagamentos automaticamente)
-
-Depois que tiver dados lançados, posso te ajudar com análises: top afiliados, pagamentos vencidos, performance por marca, previsões, etc. O que você quer fazer primeiro?`;
+O que você quer fazer primeiro?`;
   }
+  const r = ctx.crm?.resumo || {};
+  const res = ctx.resultados_afiliados || {};
+  const m = res.mes_atual || {};
+  const etapas = Object.entries(r.negociacoes_por_etapa || {}).map(([k, v]) => `${k}: ${v}`).join(', ') || 'nenhuma';
+  const perfis = Object.entries(r.por_perfil || {}).map(([k, v]) => `${v} ${k}`).join(', ') || '—';
+  const temResultados = (res.por_mes || []).length > 0;
+  return `Olá! Sou o **3C Copilot**. Recebi e analisei o snapshot do 3C OS. Confirmação do que tenho agora:
 
-  const affCount = (ctx.affiliates || []).length;
-  // Support both new structure (payments.by_status) and legacy (payments_by_status)
-  const payBuckets = ctx.payments?.by_status || ctx.payments_by_status || {};
-  const totalPayments = Object.values(payBuckets).reduce((s, b) => s + (b.count || 0), 0);
-  const taskCount = (ctx.tasks_open || ctx.tasks || []).length;
-  const contractCount = (ctx.contracts || []).length;
-  const brands = Object.keys(ctx.brands || {});
+- **Contatos**: ${r.contatos || 0} (${perfis}); ${r.leads_lp_total || 0} vieram da landing page, ${r.leads_lp_ultimos_30_dias || 0} nos últimos 30 dias
+- **Pipeline**: ${r.negociacoes || 0} negociações — ${etapas}; ${r.negociacoes_paradas_7d || 0} paradas há 7+ dias
+- **Tarefas abertas**: ${r.tarefas_abertas || 0}
+- **Resultados dos afiliados (${m.mes || 'mês atual'})**: ${temResultados ? `${fmtBRL(m.depositos)} em depósitos, ${m.cadastros || 0} cadastros, ${m.ftd || 0} FTDs (${m.qftd || 0} QFTD), NGR ${fmtBRL(m.ngr)}` : 'nenhum resultado lançado ainda'}
 
-  // List top 3 affiliates by profit so the model has them explicit
-  const top3 = [...(ctx.affiliates || [])]
-    .sort((a, b) => (b.profit || 0) - (a.profit || 0))
-    .slice(0, 3)
-    .map(a => `${a.name} (lucro R$${(a.profit || 0).toLocaleString('pt-BR')}, ${a.ftds || 0} FTDs, ${a.qftds || 0} QFTDs)`)
-    .join(', ') || 'nenhum';
-
-  const statusSummary = Object.entries(payBuckets)
-    .map(([k, v]) => `${v.count} ${k} (R$${(v.total || 0).toLocaleString('pt-BR')})`)
-    .join(', ') || 'nenhum';
-
-  return `Olá! Sou o **3C Copilot**, seu assistente inteligente aqui no 3C OS Pro. Recebi e analisei o snapshot da plataforma. Confirmação dos dados que tenho agora:
-
-- **Afiliados**: ${affCount} cadastrados
-- **Top 3 por lucro 3C**: ${top3}
-- **Marcas parceiras**: ${brands.join(', ') || 'nenhuma'}
-- **Contratos**: ${contractCount}
-- **Pagamentos**: ${totalPayments} no total — ${statusSummary}
-- **Tarefas abertas**: ${taskCount}
-
-Estou pronto para responder qualquer pergunta sobre esses dados. O que você quer saber?`;
+Pode perguntar sobre qualquer um desses pontos.`;
 }
 
 module.exports = async function handler(req, res) {
@@ -155,7 +124,7 @@ module.exports = async function handler(req, res) {
       {
         role: 'user',
         parts: [{
-          text: `Aqui está o snapshot atual da plataforma 3C OS que você deve consultar para responder todas as minhas perguntas. Use este JSON como fonte única de verdade:\n\n\`\`\`json\n${contextText}\n\`\`\`\n\nConfirme que recebeu os dados listando brevemente quantos afiliados, pagamentos e tarefas eu tenho na plataforma agora.`
+          text: `Aqui está o snapshot atual da plataforma 3C OS que você deve consultar para responder todas as minhas perguntas. Use este JSON como fonte única de verdade:\n\n\`\`\`json\n${contextText}\n\`\`\`\n\nConfirme que recebeu os dados listando brevemente quantos contatos, negociações e tarefas eu tenho agora e os resultados do mês.`
         }]
       },
       {
@@ -196,11 +165,10 @@ module.exports = async function handler(req, res) {
           '(sem resposta)';
         // Debug: echo back what we actually sent so frontend can verify
         const contextStats = {
-          affiliates: (context.affiliates || []).length,
-          contracts: (context.contracts || []).length,
-          tasks: (context.tasks || []).length,
-          payments_statuses: Object.keys(context.payments_by_status || {}),
-          brands: Object.keys(context.brands || {}),
+          contatos: (context.crm?.contatos || []).length,
+          negociacoes: (context.crm?.negociacoes || []).length,
+          tarefas: (context.crm?.tarefas_abertas || []).length,
+          meses_resultados: (context.resultados_afiliados?.por_mes || []).length,
           context_bytes: contextText.length,
           contents_turns: contents.length,
         };
@@ -211,7 +179,7 @@ module.exports = async function handler(req, res) {
           finish_reason: data?.candidates?.[0]?.finishReason,
           attempts: attempts.length > 0 ? attempts : undefined,
           _debug_context_stats: contextStats,
-          _build_id: 'ai-v2-primed',
+          _build_id: 'ai-v3-crm',
         });
       }
 
