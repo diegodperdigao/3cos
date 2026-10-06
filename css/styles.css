@@ -6327,3 +6327,23 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .pcrm-contact-create svg{width:14px;height:14px;flex-shrink:0;}
 .pcrm-contact-create strong{font-weight:700;}
 .pcrm-contact-empty + .pcrm-contact-create{border-top:1px solid var(--gb);}
+
+/* ── Perfil rápido do contato (hover no card da pipeline) ── */
+.ctc-pop{position:fixed;z-index:400;width:300px;max-width:calc(100vw - 16px);background:var(--bg2);border:1px solid var(--gb2);border-radius:12px;box-shadow:var(--shadow-2);padding:14px;font-size:12.5px;color:var(--text);opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .14s ease,transform .14s ease;}
+.ctc-pop.open{opacity:1;pointer-events:auto;transform:none;}
+.ctc-pop-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.ctc-pop .ctc-tile-av{width:40px;height:40px;font-size:13px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;object-fit:cover;}
+.ctc-pop-id{min-width:0;}
+.ctc-pop-name{font-weight:600;font-size:14px;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ctc-pop-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.ctc-pop-rows{display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid var(--gb);}
+.ctc-pop-row{display:flex;align-items:center;gap:8px;color:var(--text2);min-width:0;}
+.ctc-pop-row svg{width:13px;height:13px;flex-shrink:0;color:var(--text3);stroke:currentColor;}
+.ctc-pop-row span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ctc-pop-link{color:var(--theme);font-weight:600;cursor:pointer;text-decoration:none;}
+.ctc-pop-link:hover{text-decoration:underline;}
+.ctc-pop-empty{padding-top:10px;border-top:1px solid var(--gb);color:var(--text3);font-size:12px;}
+.ctc-pop-notes{margin-top:10px;padding:8px 10px;background:var(--bg3);border-radius:8px;color:var(--text2);font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;}
+.ctc-pop-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;font-size:11px;color:var(--text3);}
+.kan-card-contact-name{cursor:pointer;}
+.kan-card-contact-name:hover{color:var(--theme);text-decoration:underline;}
