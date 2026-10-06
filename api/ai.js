@@ -40,7 +40,7 @@ CONTEXTO DE NEGÓCIO:
 O QUE VOCÊ RECEBE (JSON na primeira mensagem — fonte única de verdade):
 - crm.resumo: contagens gerais (contatos por status/perfil/temperatura, leads da LP, negociações por etapa, paradas, tarefas).
 - crm.contatos: pessoas e empresas. status: wishlist | no pipeline | cliente | perdido. perfil: influencer | tipster | streamer | agencia. temperatura: cold | warm | hot | ready. tags (ex.: "LP" = veio da landing page Chute Parceiros). origem "landing page · canal" = lead inbound automático.
-- crm.etapas_da_pipeline e crm.negociacoes: funis B2C e B2B com etapas, em ordem: Lead LP → Wishlist → Reunião agendada → Em negociação → Contrato → Negócio Fechado → Follow Up. "dias_parado" = dias desde a última movimentação. Negociação parada = 7+ dias sem mover e fora de Negócio Fechado / Follow Up.
+- crm.etapas_da_pipeline e crm.negociacoes: funis B2C e B2B com etapas, em ordem: Lead LP → Wishlist → Abordagem → Reunião agendada → Em negociação → Contrato → Negócio Fechado → Follow Up. "dias_parado" = dias desde a última movimentação. Negociação parada = 7+ dias sem mover e fora de Negócio Fechado / Follow Up.
 - A PIPELINE NÃO TEM VALOR EM DINHEIRO. Nunca invente valor, probabilidade ou forecast de negociação. Fale de contagens, etapas, dias parado e próximos passos.
 - crm.tarefas_abertas: tarefas pendentes com prazo e contato.
 - resultados_afiliados: depósitos (R$), cadastros, FTDs, QFTDs e NGR (lucro, R$) trazidos pelos afiliados, por mês, por marca, por afiliado e linhas diárias dos últimos 30 dias. Compare mês atual vs anterior quando fizer sentido (atenção: o mês atual pode estar incompleto).
@@ -67,7 +67,7 @@ function _buildAckMessage(ctx) {
 
 Posso ajudar assim que houver dados. Os caminhos no app são:
 1. **Contatos** para cadastrar influenciadores, tipsters, streamers e agências (ou receber leads da landing page).
-2. **Pipeline** para mover cada negociação: Lead LP → Wishlist → Reunião agendada → Em negociação → Contrato → Negócio Fechado → Follow Up.
+2. **Pipeline** para mover cada negociação: Lead LP → Wishlist → Abordagem → Reunião agendada → Em negociação → Contrato → Negócio Fechado → Follow Up.
 3. **Dashboard** para acompanhar depósitos, cadastros, FTDs e NGR trazidos pelos afiliados.
 
 O que você quer fazer primeiro?`;
