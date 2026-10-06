@@ -260,14 +260,16 @@
   window._pcrmOwner = (scope, v) => { F[scope].owner = v; _renderBoard(scope); };
 
   // ── NOVO CARD ──────────────────────────────────────────────
-  window._pcrmOpenNewCard = (scope) => {
+  let _newCardScope = 'b2c';
+  // `draft` restaura o que já estava preenchido (usado ao voltar da criação
+  // inline de contato).
+  window._pcrmOpenNewCard = (scope, draft = null) => {
     const meta = SCOPE_META[scope];
     const stages = CRM.stagesForScope(scope);
-    const contacts = STATE.crm.contacts || [];
     const products = STATE.crm.products || [];
+    _newCardScope = scope;
 
     if (!stages.length) { toast('Crie as etapas primeiro', 'w'); return; }
-    if (!contacts.length) { toast('Adicione pelo menos um contato antes', 'w'); return; }
 
     const body = `
       <div class="form-grid">
@@ -309,6 +311,35 @@
       <button class="btn btn-theme" onclick="window._pcrmSaveNewCard('${scope}')"><i data-lucide="check"></i> Criar</button>
     `);
     lucide.createIcons();
+
+    if (draft) {
+      const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+      set('pcrm-f-title', draft.title); set('pcrm-f-product', draft.product_id);
+      set('pcrm-f-stage', draft.stage_id); set('pcrm-f-notes', draft.notes);
+      if (draft.contact_id) window._pcrmPickContact(draft.contact_id);
+      else if (draft.search) { const si = document.getElementById('pcrm-f-contact-search'); if (si) { si.value = draft.search; si.focus(); } }
+    }
+  };
+
+  function _pcrmReadDraft() {
+    const get = (id) => document.getElementById(id)?.value || '';
+    return { title: get('pcrm-f-title'), product_id: get('pcrm-f-product'), stage_id: get('pcrm-f-stage'), notes: get('pcrm-f-notes'), search: get('pcrm-f-contact-search') };
+  }
+
+  // Busca sem resultado → cria o contato sem sair do fluxo e volta para a
+  // negociação com tudo que já estava preenchido.
+  window._pcrmCreateContactInline = () => {
+    if (!window._ctcOpenNewInline) { closeModal(); openMod('contacts'); return; }
+    const scope = _newCardScope;
+    const draft = _pcrmReadDraft();
+    const name = (draft.search || '').trim().replace(/^@/, '');
+    window._ctcOpenNewInline({
+      name,
+      type: scope === 'b2b' ? 'b2b' : 'b2c',
+      title: 'Novo contato para a negociação',
+      onCreated: (c) => { window._pcrmOpenNewCard(scope, { ...draft, contact_id: c.id }); },
+      onCancel: () => { window._pcrmOpenNewCard(scope, draft); },
+    });
   };
 
   // Autocomplete do contato no form de nova negociação
@@ -326,10 +357,14 @@
       );
     }
     list = list.slice(0, 8);
+    const createRow = `<button type="button" class="pcrm-contact-create" onmousedown="event.preventDefault()" onclick="window._pcrmCreateContactInline()">
+        <i data-lucide="user-plus"></i>
+        <span>${term ? `Criar contato <strong>${_esc(q.trim())}</strong>` : 'Criar novo contato'}</span>
+      </button>`;
     if (!list.length) {
-      results.innerHTML = `<div class="pcrm-contact-empty">Nenhum contato encontrado.
-        <br><a onclick="closeModal();openMod('contacts')" style="color:var(--theme);cursor:pointer;font-size:11px">Ir para Contatos →</a></div>`;
+      results.innerHTML = `<div class="pcrm-contact-empty">Nenhum contato encontrado${term ? ` para "${_esc(q.trim())}"` : ''}.</div>${createRow}`;
       results.style.display = 'block';
+      if (window.lucide) lucide.createIcons();
       return;
     }
     results.innerHTML = list.map(c => {
@@ -344,8 +379,9 @@
           <div class="pcrm-contact-opt-sub">${c.company ? _esc(c.company) : ig ? '@' + _esc(ig) : c.email ? _esc(c.email) : '—'}</div>
         </div>
       </div>`;
-    }).join('');
+    }).join('') + createRow;
     results.style.display = 'block';
+    if (window.lucide) lucide.createIcons();
   };
 
   window._pcrmPickContact = (id) => {
