@@ -3,23 +3,26 @@
 // ══════════════════════════════════════════════════════════
 // Widgets reimaginados para o contexto comercial do CRM:
 //   - focus_today: tarefas + contatos quentes + cards parados em 1 card
-//   - hot_pipeline: top 3 deals por probabilidade × valor com mini barras
+//   - affiliate_results: depósitos, cadastros, FTDs e NGR do mês (public.reports)
+//   - ngr: NGR do mês + delta vs anterior com sparkline 8 semanas
 //   - momentum: sparkline de deals criados por semana + delta
 //   - health_check: distribuição visual do pipeline (barras empilhadas B2B+B2C)
 //   - wishlist_pulse: contagem de contatos por temperatura com dots
 //   - recent_activity: últimas 5 atividades do CRM
 //   - notifications: alertas do sistema (mantido do anterior)
 //
+// A pipeline não carrega dinheiro: valores financeiros vêm só dos
+// resultados dos afiliados (STATE.reports).
+//
 // Cada widget expõe uma visualização ou lista acionável, não apenas um
 // número solto. Clique abre o módulo correspondente com contexto.
 // ══════════════════════════════════════════════════════════
 
 const HUB_WIDGETS = [
-  { id: 'revenue',         name: 'Receita',           icon: 'banknote',    desc: 'Receita do mês + delta vs anterior com sparkline 8 semanas' },
-  { id: 'forecast',        name: 'Forecast mensal',   icon: 'line-chart',  desc: 'Projeção de receita dos próximos 3 meses (valor × probabilidade)' },
+  { id: 'affiliate_results', name: 'Resultados',      icon: 'coins',       desc: 'Depósitos, cadastros, FTDs e NGR trazidos pelos afiliados no mês' },
+  { id: 'ngr',             name: 'NGR',               icon: 'banknote',    desc: 'Lucro (NGR) do mês + delta vs anterior com sparkline 8 semanas' },
   { id: 'stalled_leads',   name: 'Leads parados',     icon: 'hourglass',   desc: 'Negociações sem movimento há 7+ dias e contatos quentes esquecidos' },
   { id: 'focus_today',     name: 'Foco de hoje',      icon: 'target',      desc: 'Tarefas urgentes + contatos quentes + cards parados' },
-  { id: 'hot_pipeline',    name: 'Pipeline quente',   icon: 'flame',       desc: 'Top negociações por probabilidade × valor' },
   { id: 'health_check',    name: 'Saúde do pipeline', icon: 'activity',    desc: 'Distribuição de cards por etapa (B2B + B2C)' },
   { id: 'conversion',      name: 'Taxa de conversão', icon: 'percent',     desc: 'Prospects → clientes (90 dias)' },
   { id: 'new_prospects',   name: 'Novos prospects',   icon: 'user-plus',   desc: 'Contatos adicionados nos últimos 7 dias por origem' },
@@ -29,15 +32,22 @@ const HUB_WIDGETS = [
 ];
 window.HUB_WIDGETS = HUB_WIDGETS;
 
-const DEFAULT_HUB_WIDGETS = ['revenue', 'forecast', 'stalled_leads', 'focus_today'];
-const LEGACY_DEFAULT_HUB_WIDGETS = ['revenue', 'focus_today', 'hot_pipeline', 'health_check'];
+const DEFAULT_HUB_WIDGETS = ['affiliate_results', 'ngr', 'stalled_leads', 'focus_today'];
+const LEGACY_DEFAULT_SETS = [
+  ['revenue', 'focus_today', 'hot_pipeline', 'health_check'],
+  ['revenue', 'forecast', 'stalled_leads', 'focus_today'],
+];
+// Widgets aposentados (dependiam de valor/probabilidade dos cards) → substituto
+const WIDGET_ALIASES = { revenue: 'ngr', forecast: 'affiliate_results', hot_pipeline: 'stalled_leads' };
 
 function _activeWidgets() {
   const saved = STATE.settings?.hubWidgets;
   if (Array.isArray(saved) && saved.length > 0) {
     // Users who never customized kept the old default set — move them to the new one.
-    if (saved.length === LEGACY_DEFAULT_HUB_WIDGETS.length && saved.every((id, i) => id === LEGACY_DEFAULT_HUB_WIDGETS[i])) return DEFAULT_HUB_WIDGETS;
-    const filtered = saved.filter(id => HUB_WIDGETS.some(w => w.id === id));
+    if (LEGACY_DEFAULT_SETS.some(set => saved.length === set.length && saved.every((id, i) => id === set[i]))) return DEFAULT_HUB_WIDGETS;
+    const filtered = saved.map(id => WIDGET_ALIASES[id] || id)
+      .filter((id, i, arr) => arr.indexOf(id) === i)
+      .filter(id => HUB_WIDGETS.some(w => w.id === id));
     // Se o filtered perdeu quase tudo (preferências antigas de widgets que
     // não existem mais), caímos nos defaults em vez de mostrar só 1 widget.
     if (filtered.length >= 2) return filtered;
@@ -114,48 +124,6 @@ function _wFocusToday() {
     null, 'default', 'var(--amber)');
 }
 
-// ── 2. HOT PIPELINE ───────────────────────────────────────
-function _wHotPipeline() {
-  const cards = (STATE.crm?.cards || [])
-    .map(c => ({ ...c, score: (c.value || 0) * (c.probability || 0) / 100 }))
-    .filter(c => c.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
-
-  if (!cards.length) {
-    return _shell('hot_pipeline', 'Pipeline quente', 'flame',
-      `<div class="hw2-empty">
-        <p>Nenhuma negociação ativa ainda.</p>
-      </div>`,
-      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
-      'default', 'var(--red)');
-  }
-
-  const maxScore = Math.max(...cards.map(c => c.score));
-  const items = cards.map((c, i) => {
-    const contact = (STATE.crm?.contacts || []).find(x => x.id === c.contact_id);
-    const widthPct = (c.score / maxScore) * 100;
-    const scopeColor = c.scope === 'b2b' ? 'var(--blue)' : 'var(--theme)';
-    return `<div class="hw2-bar-item" onclick="openMod('pipeline')">
-      <div class="hw2-bar-row">
-        <span class="hw2-bar-rank">${i + 1}</span>
-        <span class="hw2-bar-label">${_esc(c.title)}</span>
-        <span class="hw2-bar-value">${_fmt(c.score)}</span>
-      </div>
-      <div class="hw2-bar-track">
-        <div class="hw2-bar-fill" style="width:${widthPct}%;background:linear-gradient(90deg, ${scopeColor}, color-mix(in srgb, ${scopeColor} 50%, var(--amber)))"></div>
-      </div>
-      <div class="hw2-bar-meta">
-        <span>${contact?.name || '—'}</span>
-        <span>${c.probability}% × ${_fmt(c.value)}</span>
-      </div>
-    </div>`;
-  }).join('');
-
-  return _shell('hot_pipeline', 'Pipeline quente', 'flame',
-    `<div class="hw2-bar-list">${items}</div>`,
-    null, 'default', 'var(--red)');
-}
 
 // ── 3. MOMENTUM (sparkline) ───────────────────────────────
 function _wMomentum() {
@@ -343,68 +311,6 @@ function _wNotifications() {
     'default', 'var(--amber)');
 }
 
-// ── 8. REVENUE (big number + delta + sparkline semanal) ──
-function _wRevenue() {
-  const cards = STATE.crm?.cards || [];
-  const wonCards = cards.filter(c => {
-    const s = (STATE.crm?.stages || []).find(x => x.id === c.stage_id);
-    const name = (s?.name || '').toLowerCase();
-    return name.includes('ganho') || name === 'ativo' || (name.includes('fechado') && !name.includes('perd'));
-  });
-
-  // Receita do mês vs mês anterior
-  const now = new Date();
-  const curMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-  const curRev = wonCards.filter(c => (c.updated_at || '').startsWith(curMonthKey)).reduce((s, c) => s + (Number(c.value) || 0), 0);
-  const prevRev = wonCards.filter(c => (c.updated_at || '').startsWith(prevMonthKey)).reduce((s, c) => s + (Number(c.value) || 0), 0);
-  const delta = prevRev > 0 ? Math.round((curRev - prevRev) / prevRev * 100) : (curRev > 0 ? 100 : 0);
-  const positive = delta >= 0;
-
-  if (!wonCards.length) {
-    return _shell('revenue', 'Receita', 'banknote',
-      `<div class="hw2-empty"><p>Sem deals fechados ainda.</p></div>`,
-      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
-      'default', 'var(--green)');
-  }
-
-  // Sparkline das últimas 8 semanas (receita por semana)
-  const week = 7 * 86400000;
-  const buckets = Array(8).fill(0);
-  wonCards.forEach(c => {
-    const diff = Date.now() - new Date(c.updated_at).getTime();
-    const idx = 7 - Math.floor(diff / week);
-    if (idx >= 0 && idx < 8) buckets[idx] += (Number(c.value) || 0);
-  });
-  const max = Math.max(...buckets, 1);
-  const w = 240, h = 42;
-  const stepX = w / (buckets.length - 1);
-  const points = buckets.map((v, i) => `${i * stepX},${h - (v / max) * h * 0.9 - 3}`).join(' ');
-  const area = `0,${h} ${points} ${w},${h}`;
-
-  return _shell('revenue', 'Receita', 'banknote',
-    `<div class="hw2-big-row">
-      <div class="hw2-big-val">${_fmt(curRev)}</div>
-      <div class="hw2-big-delta ${positive ? 'pos' : 'neg'}">
-        <i data-lucide="${positive ? 'arrow-up-right' : 'arrow-down-right'}"></i>
-        ${positive ? '+' : ''}${delta}%
-      </div>
-    </div>
-    <div class="hw2-big-sub">neste mês · vs ${_fmt(prevRev)} anterior</div>
-    <svg class="hw2-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="rev-grad" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" style="stop-color:var(--theme)" stop-opacity="0.25"/>
-          <stop offset="1" style="stop-color:var(--theme)" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <polygon points="${area}" fill="url(#rev-grad)"/>
-      <polyline points="${points}" fill="none" style="stroke:var(--theme)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
-    'default', 'var(--green)');
-}
 
 // ── 9. CONVERSION RATE ────────────────────────────────────
 function _wConversion() {
@@ -472,66 +378,6 @@ function _wNewProspects() {
     null, 'default', 'var(--blue)');
 }
 
-// ── 11. FORECAST MENSAL (projeção próximos 3 meses) ──────
-function _wForecast() {
-  const cards = STATE.crm?.cards || [];
-  const stages = STATE.crm?.stages || [];
-  const isOpen = (c) => {
-    const s = stages.find(x => x.id === c.stage_id);
-    const name = (s?.name || '').toLowerCase();
-    return !name.includes('ganho') && !name.includes('perd') && !name.includes('ativo') && !name.includes('descart');
-  };
-  const openCards = cards.filter(isOpen);
-
-  if (!openCards.length) {
-    return _shell('forecast', 'Forecast mensal', 'line-chart',
-      `<div class="hw2-empty"><p>Sem deals abertos para projetar.</p></div>`,
-      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
-      'default', 'var(--purple)');
-  }
-
-  // Agrupa expected por mês com base em expected_close_date (ou mês atual se não informado)
-  const now = new Date();
-  const months = [];
-  for (let i = 0; i < 3; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    months.push({
-      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-      label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase(),
-      expected: 0,
-      count: 0,
-    });
-  }
-  const firstMonthKey = months[0].key;
-  openCards.forEach(c => {
-    const exp = (Number(c.value) || 0) * (Number(c.probability) || 0) / 100;
-    const closeKey = c.expected_close_date ? c.expected_close_date.substring(0, 7) : firstMonthKey;
-    const m = months.find(x => x.key === closeKey);
-    if (m) { m.expected += exp; m.count++; }
-    // Fora dos 3 meses → joga no mês mais próximo (geralmente passado = ignora)
-  });
-
-  const total = months.reduce((s, m) => s + m.expected, 0);
-  const max = Math.max(...months.map(m => m.expected), 1);
-
-  const rows = months.map(m => {
-    const pct = (m.expected / max) * 100;
-    return `<div class="hw2-forecast-row">
-      <span class="hw2-forecast-month">${m.label}</span>
-      <span class="hw2-forecast-bar"><span class="hw2-forecast-fill" style="width:${pct}%"></span></span>
-      <span class="hw2-forecast-val">${_fmt(m.expected)}</span>
-    </div>`;
-  }).join('');
-
-  return _shell('forecast', 'Forecast mensal', 'line-chart',
-    `<div class="hw2-big-row">
-      <div class="hw2-big-val">${_fmt(total)}</div>
-      <div class="hw2-big-sub-inline">projetado 3m</div>
-    </div>
-    <div class="hw2-forecast">${rows}</div>`,
-    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
-    'default', 'var(--purple)');
-}
 
 // ── 11. STALLED LEADS (leads parados) ─────────────────────
 // Negociações abertas sem movimento há 7+ dias e contatos quentes/prontos
@@ -541,20 +387,20 @@ function _wStalledLeads() {
   const now = Date.now();
   const stages = STATE.crm?.stages || [];
   const stageName = (id) => ((stages.find(x => x.id === id) || {}).name || '').toLowerCase();
-  const isClosed = (c) => { const n = stageName(c.stage_id); return n.includes('ganho') || n.includes('perd') || n === 'ativo' || n.includes('descart') || (n.includes('fechado') && !n.includes('perd')); };
+  const isClosed = (c) => { const n = stageName(c.stage_id); return n.includes('ganho') || n.includes('perd') || n === 'ativo' || n.includes('descart') || n.includes('follow') || (n.includes('fechado') && !n.includes('perd')); };
   const contacts = STATE.crm?.contacts || [];
   const byId = (id) => contacts.find(c => c.id === id);
 
   const stalledCards = (STATE.crm?.cards || [])
     .filter(c => !isClosed(c))
-    .map(c => ({ kind: 'card', id: c.id, scope: c.scope, title: c.title, value: Number(c.value) || 0,
+    .map(c => ({ kind: 'card', id: c.id, scope: c.scope, title: c.title,
       who: byId(c.contact_id)?.name || '', days: Math.floor((now - new Date(c.updated_at || c.created_at).getTime()) / DAY) }))
     .filter(x => x.days >= 7);
 
   const cardContactIds = new Set((STATE.crm?.cards || []).map(c => c.contact_id));
   const stalledContacts = contacts
     .filter(c => (c.temperature === 'hot' || c.temperature === 'ready') && c.status !== 'customer' && c.status !== 'churned' && !cardContactIds.has(c.id))
-    .map(c => ({ kind: 'contact', id: c.id, title: c.name, value: 0, who: c.temperature === 'ready' ? 'pronto, sem negociação' : 'quente, sem negociação',
+    .map(c => ({ kind: 'contact', id: c.id, title: c.name, who: c.temperature === 'ready' ? 'pronto, sem negociação' : 'quente, sem negociação',
       days: Math.floor((now - new Date(c.updated_at || c.created_at).getTime()) / DAY) }))
     .filter(x => x.days >= 14);
 
@@ -570,20 +416,19 @@ function _wStalledLeads() {
   const b1 = all.filter(x => x.days < 15).length;
   const b2 = all.filter(x => x.days >= 15 && x.days < 30).length;
   const b3 = all.filter(x => x.days >= 30).length;
-  const stuckValue = stalledCards.reduce((s, x) => s + x.value, 0);
   const seg = (n, color) => n ? `<span class="hw2-seg" style="flex:${n};background:${color}" title="${n}"></span>` : '';
 
   const items = all.slice(0, 4).map(x => `
     <div class="hw2-item" onclick="openMod('${x.kind === 'card' ? 'pipeline' : 'contacts'}')">
       <span class="hw2-stall-days ${x.days >= 30 ? 'is-red' : x.days >= 15 ? 'is-amber' : ''}">${x.days}d</span>
       <span class="hw2-item-text"><strong>${_esc(x.title)}</strong>${x.who ? ` · ${_esc(x.who)}` : ''}</span>
-      ${x.value ? `<span class="hw2-item-time">${_fmt(x.value)}</span>` : ''}
+      <span class="hw2-item-time">${x.kind === 'card' ? (x.scope || '').toUpperCase() : 'contato'}</span>
     </div>`).join('');
 
   return _shell('stalled_leads', 'Leads parados', 'hourglass',
     `<div class="hw2-big-row">
       <div class="hw2-big-val">${all.length}</div>
-      <div class="hw2-big-sub-inline">${stuckValue ? `${_fmt(stuckValue)} em negociações paradas` : 'sem movimento'}</div>
+      <div class="hw2-big-sub-inline">${stalledCards.length} negociaç${stalledCards.length === 1 ? 'ão' : 'ões'} · ${stalledContacts.length} contato${stalledContacts.length === 1 ? '' : 's'}</div>
     </div>
     <div class="hw2-stack" aria-label="7 a 14 dias, 15 a 29 dias, 30 dias ou mais">${seg(b1, 'var(--text3)')}${seg(b2, 'var(--amber)')}${seg(b3, 'var(--red)')}</div>
     <div class="hw2-stall-legend"><span><i style="background:var(--text3)"></i>7–14d ${b1}</span><span><i style="background:var(--amber)"></i>15–29d ${b2}</span><span><i style="background:var(--red)"></i>30d+ ${b3}</span></div>
@@ -592,17 +437,139 @@ function _wStalledLeads() {
     'default', 'var(--amber)');
 }
 
+// ── RESULTADOS DOS AFILIADOS (fonte: STATE.reports) ───────
+// Agregador compartilhado com o dashboard. Datas em 'YYYY-MM-DD'.
+window.AFF = {
+  rows(startKey, endKey) {
+    return (STATE.reports || []).filter(r => {
+      const d = String(r.date || '').substring(0, 10);
+      return d && (!startKey || d >= startKey) && (!endKey || d <= endKey);
+    });
+  },
+  sum(rows) {
+    const t = { deposits: 0, registrations: 0, ftd: 0, qftd: 0, ngr: 0, affiliates: new Set(), brands: new Set() };
+    rows.forEach(r => {
+      t.deposits += Number(r.deposits) || 0;
+      t.registrations += Number(r.registrations) || 0;
+      t.ftd += Number(r.ftd) || 0;
+      t.qftd += Number(r.qftd) || 0;
+      t.ngr += Number(r.netRev) || 0;
+      if (r.affiliateId) t.affiliates.add(r.affiliateId);
+      if (r.brand) t.brands.add(r.brand);
+    });
+    return t;
+  },
+  dateKey(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; },
+};
+
+// Mês atual até hoje vs. mesmo trecho do mês anterior (comparação justa no início do mês)
+function _monthRange(offset = 0) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0).getDate();
+  const end = new Date(now.getFullYear(), now.getMonth() + offset, Math.min(now.getDate(), lastDay));
+  return [AFF.dateKey(start), AFF.dateKey(end)];
+}
+function _delta(cur, prev) {
+  if (prev > 0) return Math.round((cur - prev) / prev * 100);
+  return cur > 0 ? 100 : 0;
+}
+
+function _wAffiliateResults() {
+  const [s0, e0] = _monthRange(0);
+  const [s1, e1] = _monthRange(-1);
+  const cur = AFF.sum(AFF.rows(s0, e0));
+  const prev = AFF.sum(AFF.rows(s1, e1));
+
+  if (!(STATE.reports || []).length) {
+    return _shell('affiliate_results', 'Resultados', 'coins',
+      `<div class="hw2-empty"><p>Nenhum resultado de afiliado lançado ainda.</p></div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
+      'default', 'var(--green)');
+  }
+
+  const kpi = (label, val, d) => `<div class="hw2-kpi">
+      <span class="hw2-kpi-k">${label}</span>
+      <span class="hw2-kpi-v">${val}</span>
+      <span class="hw2-kpi-d ${d >= 0 ? 'pos' : 'neg'}">${d >= 0 ? '+' : ''}${d}%</span>
+    </div>`;
+
+  return _shell('affiliate_results', 'Resultados', 'coins',
+    `<div class="hw2-kpi-grid">
+      ${kpi('Depósitos', _fmt(cur.deposits), _delta(cur.deposits, prev.deposits))}
+      ${kpi('Cadastros', _fmtInt(cur.registrations), _delta(cur.registrations, prev.registrations))}
+      ${kpi('FTDs', _fmtInt(cur.ftd), _delta(cur.ftd, prev.ftd))}
+      ${kpi('NGR', _fmt(cur.ngr), _delta(cur.ngr, prev.ngr))}
+    </div>
+    <div class="hw2-big-sub">mês até hoje vs mesmo trecho anterior · ${cur.affiliates.size} afiliado${cur.affiliates.size === 1 ? '' : 's'} · ${cur.brands.size} marca${cur.brands.size === 1 ? '' : 's'}</div>`,
+    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
+    'default', 'var(--green)');
+}
+
+function _wNgr() {
+  if (!(STATE.reports || []).length) {
+    return _shell('ngr', 'NGR', 'banknote',
+      `<div class="hw2-empty"><p>Sem resultados lançados ainda.</p></div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
+      'default', 'var(--green)');
+  }
+  const [s0, e0] = _monthRange(0);
+  const [s1, e1] = _monthRange(-1);
+  const cur = AFF.sum(AFF.rows(s0, e0)).ngr;
+  const prev = AFF.sum(AFF.rows(s1, e1)).ngr;
+  const delta = _delta(cur, prev);
+  const positive = delta >= 0;
+
+  // Sparkline das últimas 8 semanas (NGR por semana)
+  const week = 7 * 86400000;
+  const buckets = Array(8).fill(0);
+  (STATE.reports || []).forEach(r => {
+    const diff = Date.now() - new Date(r.date).getTime();
+    const idx = 7 - Math.floor(diff / week);
+    if (idx >= 0 && idx < 8) buckets[idx] += Number(r.netRev) || 0;
+  });
+  const min = Math.min(...buckets, 0);
+  const max = Math.max(...buckets, 1);
+  const span = max - min || 1;
+  const w = 240, h = 42;
+  const stepX = w / (buckets.length - 1);
+  const points = buckets.map((v, i) => `${i * stepX},${h - ((v - min) / span) * h * 0.9 - 3}`).join(' ');
+  const area = `0,${h} ${points} ${w},${h}`;
+
+  return _shell('ngr', 'NGR', 'banknote',
+    `<div class="hw2-big-row">
+      <div class="hw2-big-val">${_fmt(cur)}</div>
+      <div class="hw2-big-delta ${positive ? 'pos' : 'neg'}">
+        <i data-lucide="${positive ? 'arrow-up-right' : 'arrow-down-right'}"></i>
+        ${positive ? '+' : ''}${delta}%
+      </div>
+    </div>
+    <div class="hw2-big-sub">lucro no mês até hoje · vs ${_fmt(prev)} no mesmo trecho anterior</div>
+    <svg class="hw2-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="ngr-grad" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" style="stop-color:var(--theme)" stop-opacity="0.25"/>
+          <stop offset="1" style="stop-color:var(--theme)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${area}" fill="url(#ngr-grad)"/>
+      <polyline points="${points}" fill="none" stroke="var(--theme)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>
+    <div class="hw2-big-sub">últimas 8 semanas</div>`,
+    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
+    'default', 'var(--green)');
+}
+
 // ── MOUNT ──────────────────────────────────────────────────
 window.buildHubWidgets = () => {
   const wrap = document.getElementById('hub-widget-strip');
   if (!wrap) return;
   const active = _activeWidgets().slice(0, 4);
   const renderMap = {
-    revenue: _wRevenue,
-    forecast: _wForecast,
+    affiliate_results: _wAffiliateResults,
+    ngr: _wNgr,
     stalled_leads: _wStalledLeads,
     focus_today: _wFocusToday,
-    hot_pipeline: _wHotPipeline,
     health_check: _wHealthCheck,
     conversion: _wConversion,
     new_prospects: _wNewProspects,
@@ -652,8 +619,10 @@ window._saveHubWidgets = () => {
 function _esc(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+function _fmtInt(v) { return new Intl.NumberFormat('pt-BR').format(Math.round(Number(v) || 0)); }
 function _fmt(v) {
   if (!v) return 'R$ 0';
+  if (v < 0) return '-' + _fmt(-v);
   if (v >= 1000) return 'R$ ' + (v / 1000).toFixed(v >= 10000 ? 0 : 1) + 'k';
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
 }

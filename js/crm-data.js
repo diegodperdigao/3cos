@@ -183,8 +183,6 @@ CRM.cards = {
       stage_id: firstStage?.id || null,
       contact_id: contactId,
       title: extraFields.title || `${contact.name}${contact.company ? ' · ' + contact.company : ''}`,
-      value: extraFields.value ?? 0,
-      probability: extraFields.probability ?? 25,
       notes: extraFields.notes || '',
     };
     const card = await CRM.cards.create(payload);
