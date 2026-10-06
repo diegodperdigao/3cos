@@ -3,8 +3,8 @@
 // ══════════════════════════════════════════════════════════
 // Widgets reimaginados para o contexto comercial do CRM:
 //   - focus_today: tarefas + contatos quentes + cards parados em 1 card
-//   - affiliate_results: depósitos, cadastros, FTDs e NGR do mês (public.reports)
-//   - ngr: NGR do mês + delta vs anterior com sparkline 8 semanas
+//   - aff_funnel: cadastros e FTDs do mês (public.reports)
+//   - aff_money: depósitos e NGR do mês (public.reports)
 //   - momentum: sparkline de deals criados por semana + delta
 //   - health_check: distribuição visual do pipeline (barras empilhadas B2B+B2C)
 //   - wishlist_pulse: contagem de contatos por temperatura com dots
@@ -19,8 +19,8 @@
 // ══════════════════════════════════════════════════════════
 
 const HUB_WIDGETS = [
-  { id: 'affiliate_results', name: 'Resultados',      icon: 'coins',       desc: 'Depósitos, cadastros, FTDs e NGR trazidos pelos afiliados no mês' },
-  { id: 'ngr',             name: 'NGR',               icon: 'banknote',    desc: 'Lucro (NGR) do mês + delta vs anterior com sparkline 8 semanas' },
+  { id: 'aff_funnel',      name: 'Cadastros e FTDs',  icon: 'user-plus',   desc: 'Cadastros e FTDs trazidos pelos afiliados no mês, com conversão' },
+  { id: 'aff_money',       name: 'Depósitos e NGR',   icon: 'banknote',    desc: 'Depósitos e lucro (NGR) dos afiliados no mês, vs mês anterior' },
   { id: 'stalled_leads',   name: 'Leads parados',     icon: 'hourglass',   desc: 'Negociações sem movimento há 7+ dias e contatos quentes esquecidos' },
   { id: 'focus_today',     name: 'Foco de hoje',      icon: 'target',      desc: 'Tarefas urgentes + contatos quentes + cards parados' },
   { id: 'health_check',    name: 'Saúde do pipeline', icon: 'activity',    desc: 'Distribuição de cards por etapa (B2B + B2C)' },
@@ -32,13 +32,14 @@ const HUB_WIDGETS = [
 ];
 window.HUB_WIDGETS = HUB_WIDGETS;
 
-const DEFAULT_HUB_WIDGETS = ['affiliate_results', 'ngr', 'stalled_leads', 'focus_today'];
+const DEFAULT_HUB_WIDGETS = ['aff_funnel', 'aff_money', 'stalled_leads', 'focus_today'];
 const LEGACY_DEFAULT_SETS = [
   ['revenue', 'focus_today', 'hot_pipeline', 'health_check'],
   ['revenue', 'forecast', 'stalled_leads', 'focus_today'],
+  ['affiliate_results', 'ngr', 'stalled_leads', 'focus_today'],
 ];
 // Widgets aposentados (dependiam de valor/probabilidade dos cards) → substituto
-const WIDGET_ALIASES = { revenue: 'ngr', forecast: 'affiliate_results', hot_pipeline: 'stalled_leads' };
+const WIDGET_ALIASES = { revenue: 'aff_money', forecast: 'aff_funnel', hot_pipeline: 'stalled_leads', affiliate_results: 'aff_funnel', ngr: 'aff_money' };
 
 function _activeWidgets() {
   const saved = STATE.settings?.hubWidgets;
@@ -475,89 +476,52 @@ function _delta(cur, prev) {
   return cur > 0 ? 100 : 0;
 }
 
-function _wAffiliateResults() {
+
+
+// Par de KPIs (mês até hoje vs mesmo trecho do mês anterior)
+function _affPair(id, title, icon, accent, a, b, footLine, emptyMsg) {
+  if (!(STATE.reports || []).length) {
+    return _shell(id, title, icon,
+      `<div class="hw2-empty"><p>${emptyMsg}</p></div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
+      'default', accent);
+  }
+  const kpi = (k) => `<div class="hw2-kpi">
+      <span class="hw2-kpi-k">${k.label}</span>
+      <span class="hw2-kpi-v is-lg${k.negative ? ' is-neg' : ''}">${k.value}</span>
+      <span class="hw2-kpi-d ${k.delta >= 0 ? 'pos' : 'neg'}"><i data-lucide="${k.delta >= 0 ? 'arrow-up-right' : 'arrow-down-right'}"></i>${k.delta >= 0 ? '+' : ''}${k.delta}% vs anterior</span>
+    </div>`;
+  return _shell(id, title, icon,
+    `<div class="hw2-kpi-grid is-pair">${kpi(a)}${kpi(b)}</div>
+    <div class="hw2-big-sub">${footLine}</div>`,
+    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
+    'default', accent);
+}
+
+function _wAffFunnel() {
   const [s0, e0] = _monthRange(0);
   const [s1, e1] = _monthRange(-1);
   const cur = AFF.sum(AFF.rows(s0, e0));
   const prev = AFF.sum(AFF.rows(s1, e1));
-
-  if (!(STATE.reports || []).length) {
-    return _shell('affiliate_results', 'Resultados', 'coins',
-      `<div class="hw2-empty"><p>Nenhum resultado de afiliado lançado ainda.</p></div>`,
-      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
-      'default', 'var(--green)');
-  }
-
-  const kpi = (label, val, d) => `<div class="hw2-kpi">
-      <span class="hw2-kpi-k">${label}</span>
-      <span class="hw2-kpi-v">${val}</span>
-      <span class="hw2-kpi-d ${d >= 0 ? 'pos' : 'neg'}">${d >= 0 ? '+' : ''}${d}%</span>
-    </div>`;
-
-  return _shell('affiliate_results', 'Resultados', 'coins',
-    `<div class="hw2-kpi-grid">
-      ${kpi('Depósitos', _fmt(cur.deposits), _delta(cur.deposits, prev.deposits))}
-      ${kpi('Cadastros', _fmtInt(cur.registrations), _delta(cur.registrations, prev.registrations))}
-      ${kpi('FTDs', _fmtInt(cur.ftd), _delta(cur.ftd, prev.ftd))}
-      ${kpi('NGR', _fmt(cur.ngr), _delta(cur.ngr, prev.ngr))}
-    </div>
-    <div class="hw2-big-sub">mês até hoje vs mesmo trecho anterior · ${cur.affiliates.size} afiliado${cur.affiliates.size === 1 ? '' : 's'} · ${cur.brands.size} marca${cur.brands.size === 1 ? '' : 's'}</div>`,
-    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
-    'default', 'var(--green)');
+  const conv = cur.registrations > 0 ? Math.round(cur.ftd / cur.registrations * 100) : 0;
+  return _affPair('aff_funnel', 'Cadastros e FTDs', 'user-plus', 'var(--blue)',
+    { label: 'Cadastros', value: _fmtInt(cur.registrations), delta: _delta(cur.registrations, prev.registrations) },
+    { label: 'FTDs', value: _fmtInt(cur.ftd), delta: _delta(cur.ftd, prev.ftd) },
+    `mês até hoje · ${conv}% dos cadastros viraram FTD · ${_fmtInt(cur.qftd)} QFTD`,
+    'Nenhum resultado de afiliado lançado ainda.');
 }
 
-function _wNgr() {
-  if (!(STATE.reports || []).length) {
-    return _shell('ngr', 'NGR', 'banknote',
-      `<div class="hw2-empty"><p>Sem resultados lançados ainda.</p></div>`,
-      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
-      'default', 'var(--green)');
-  }
+function _wAffMoney() {
   const [s0, e0] = _monthRange(0);
   const [s1, e1] = _monthRange(-1);
-  const cur = AFF.sum(AFF.rows(s0, e0)).ngr;
-  const prev = AFF.sum(AFF.rows(s1, e1)).ngr;
-  const delta = _delta(cur, prev);
-  const positive = delta >= 0;
-
-  // Sparkline das últimas 8 semanas (NGR por semana)
-  const week = 7 * 86400000;
-  const buckets = Array(8).fill(0);
-  (STATE.reports || []).forEach(r => {
-    const diff = Date.now() - new Date(r.date).getTime();
-    const idx = 7 - Math.floor(diff / week);
-    if (idx >= 0 && idx < 8) buckets[idx] += Number(r.netRev) || 0;
-  });
-  const min = Math.min(...buckets, 0);
-  const max = Math.max(...buckets, 1);
-  const span = max - min || 1;
-  const w = 240, h = 42;
-  const stepX = w / (buckets.length - 1);
-  const points = buckets.map((v, i) => `${i * stepX},${h - ((v - min) / span) * h * 0.9 - 3}`).join(' ');
-  const area = `0,${h} ${points} ${w},${h}`;
-
-  return _shell('ngr', 'NGR', 'banknote',
-    `<div class="hw2-big-row">
-      <div class="hw2-big-val">${_fmt(cur)}</div>
-      <div class="hw2-big-delta ${positive ? 'pos' : 'neg'}">
-        <i data-lucide="${positive ? 'arrow-up-right' : 'arrow-down-right'}"></i>
-        ${positive ? '+' : ''}${delta}%
-      </div>
-    </div>
-    <div class="hw2-big-sub">lucro no mês até hoje · vs ${_fmt(prev)} no mesmo trecho anterior</div>
-    <svg class="hw2-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="ngr-grad" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" style="stop-color:var(--theme)" stop-opacity="0.25"/>
-          <stop offset="1" style="stop-color:var(--theme)" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <polygon points="${area}" fill="url(#ngr-grad)"/>
-      <polyline points="${points}" fill="none" stroke="var(--theme)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    </svg>
-    <div class="hw2-big-sub">últimas 8 semanas</div>`,
-    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,
-    'default', 'var(--green)');
+  const cur = AFF.sum(AFF.rows(s0, e0));
+  const prev = AFF.sum(AFF.rows(s1, e1));
+  const margin = cur.deposits > 0 ? Math.round(cur.ngr / cur.deposits * 100) : 0;
+  return _affPair('aff_money', 'Depósitos e NGR', 'banknote', 'var(--green)',
+    { label: 'Depósitos', value: _fmt(cur.deposits), delta: _delta(cur.deposits, prev.deposits) },
+    { label: 'Lucro (NGR)', value: _fmt(cur.ngr), delta: _delta(cur.ngr, prev.ngr), negative: cur.ngr < 0 },
+    `mês até hoje · NGR = ${margin}% dos depósitos · ${cur.affiliates.size} afiliado${cur.affiliates.size === 1 ? '' : 's'}`,
+    'Nenhum resultado de afiliado lançado ainda.');
 }
 
 // ── MOUNT ──────────────────────────────────────────────────
@@ -566,8 +530,8 @@ window.buildHubWidgets = () => {
   if (!wrap) return;
   const active = _activeWidgets().slice(0, 4);
   const renderMap = {
-    affiliate_results: _wAffiliateResults,
-    ngr: _wNgr,
+    aff_funnel: _wAffFunnel,
+    aff_money: _wAffMoney,
     stalled_leads: _wStalledLeads,
     focus_today: _wFocusToday,
     health_check: _wHealthCheck,

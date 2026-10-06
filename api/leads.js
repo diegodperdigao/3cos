@@ -32,6 +32,7 @@
 //   type                 → IGNORADO: a LP é só B2C (tipsters/influencers).
 //                          Contato e negociação sempre entram no funil B2C.
 //   tags                 → stored on lead_meta.tags (for future linking)
+//   (sempre)             → tag "LP" vinculada ao contato (crm.contact_tags)
 //   test / ?test=1       → lead_meta.test:true + notes prefixed with [TESTE]
 //   criado_em            → IGNORED (server time wins)
 // ══════════════════════════════════════════════════════════
@@ -90,6 +91,29 @@ function pickUtm(obj) {
     if (s) out[k] = s;
   });
   return out;
+}
+
+// Marca o contato com a tag "LP" (cria a tag se ainda não existir) para
+// identificar na aba Contatos que ele veio da landing page. Nunca derruba
+// a requisição.
+const LP_TAG = { name: 'LP', color: '#0ea5e9', category: 'other' };
+async function tagContactLP(sb, contactId) {
+  try {
+    let { data: tags, error } = await sb.schema('crm').from('tags').select('id, name').ilike('name', LP_TAG.name);
+    if (error) throw error;
+    let tag = (tags || []).find(t => (t.name || '').toLowerCase() === LP_TAG.name.toLowerCase());
+    if (!tag) {
+      const ins = await sb.schema('crm').from('tags').insert(LP_TAG).select('id, name').single();
+      if (ins.error) throw ins.error;
+      tag = ins.data;
+    }
+    const link = await sb.schema('crm').from('contact_tags').insert({ contact_id: contactId, tag_id: tag.id });
+    if (link.error && link.error.code !== '23505') throw link.error;
+    return tag.id;
+  } catch (e) {
+    console.error('[leads] LP tag failed:', e);
+    return null;
+  }
 }
 
 // Cria o card da pipeline para o lead recebido. Nunca derruba a requisição:
@@ -265,7 +289,8 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ── Negociação na etapa "Lead LP" ─────────────────────────
+    // ── Tag "LP" + negociação na etapa "Lead LP" ──────────────
+    await tagContactLP(sb, data.id);
     const card = await createLeadCard(sb, data, { profile, origem, landingUrl, testFlag });
 
     res.status(201).json({ ok: true, lead: data, card });

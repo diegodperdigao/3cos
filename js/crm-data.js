@@ -57,15 +57,16 @@ CRM.loadAll = async () => {
 
   const sb = window.sb.schema('crm');
   try {
-    const [contacts, products, tags, stages, cards, tasks] = await Promise.all([
+    const [contacts, products, tags, stages, cards, tasks, contactTags] = await Promise.all([
       sb.from('contacts').select('*').order('created_at', { ascending: false }),
       sb.from('products').select('*').order('name'),
       sb.from('tags').select('*').order('name'),
       sb.from('pipeline_stages').select('*').order('position'),
       sb.from('pipeline_cards').select('*').order('position'),
       sb.from('tasks').select('*').order('due_date', { nullsFirst: false }),
+      sb.from('contact_tags').select('contact_id, tag_id'),
     ]);
-    const errors = [contacts, products, tags, stages, cards, tasks].filter(r => r.error);
+    const errors = [contacts, products, tags, stages, cards, tasks, contactTags].filter(r => r.error);
     if (errors.length) {
       console.error('[CRM Data] erros ao carregar:', errors.map(e => e.error));
     }
@@ -75,6 +76,7 @@ CRM.loadAll = async () => {
     STATE.crm.stages = stages.data || [];
     STATE.crm.cards = cards.data || [];
     STATE.crm.tasks = tasks.data || [];
+    STATE.crm.contactTags = contactTags.data || [];
     STATE.crm.loaded = true;
     console.log('[CRM Data] loaded:',
       `${STATE.crm.contacts.length} contatos, ${STATE.crm.products.length} produtos, ${STATE.crm.cards.length} cards, ${STATE.crm.stages.length} stages`);
@@ -213,6 +215,8 @@ CRM.tags = {
     const sb = _crmClient(); if (!sb) return null;
     const { error } = await sb.from('contact_tags').insert({ contact_id: contactId, tag_id: tagId });
     if (error && error.code !== '23505') { console.error('[tags.link]', error); throw error; }
+    STATE.crm.contactTags = STATE.crm.contactTags || [];
+    if (!STATE.crm.contactTags.some(x => x.contact_id === contactId && x.tag_id === tagId)) STATE.crm.contactTags.push({ contact_id: contactId, tag_id: tagId });
     return true;
   },
   async unlinkFromContact(contactId, tagId) {
@@ -220,9 +224,18 @@ CRM.tags = {
     const { error } = await sb.from('contact_tags').delete()
       .eq('contact_id', contactId).eq('tag_id', tagId);
     if (error) { console.error('[tags.unlink]', error); throw error; }
+    STATE.crm.contactTags = (STATE.crm.contactTags || []).filter(x => !(x.contact_id === contactId && x.tag_id === tagId));
     return true;
   },
 };
+
+// Tags de um contato (objetos de crm.tags), via contact_tags carregado no loadAll
+CRM.tagsForContact = (contactId) => {
+  const ids = (STATE.crm.contactTags || []).filter(x => x.contact_id === contactId).map(x => x.tag_id);
+  return (STATE.crm.tags || []).filter(t => ids.includes(t.id));
+};
+// Chip HTML de tag (compartilhado entre contatos e pipeline)
+CRM.tagChip = (t, extraClass = '') => `<span class="crm-tag ${extraClass}" style="--tag-c:${t.color || '#94a3b8'}">${String(t.name || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))}</span>`;
 
 // ── CONTACT-PRODUCT FIT ────────────────────────────────────
 
