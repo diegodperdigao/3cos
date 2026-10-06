@@ -6274,3 +6274,16 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .hw2-kpi-v.is-neg{color:var(--red);}
 .hw2-kpi-d{display:inline-flex;align-items:center;gap:2px;}
 .hw2-kpi-d svg{width:11px;height:11px;}
+
+/* ── Widgets de afiliados: uma linha por métrica + sparkline semanal ── */
+.hw2-aff-rows{display:flex;flex-direction:column;}
+.hw2-aff-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--gb);}
+.hw2-aff-row:first-child{padding-top:2px;}
+.hw2-aff-row:last-child{border-bottom:0;}
+.hw2-aff-main{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.hw2-aff-top{display:flex;align-items:center;gap:8px;}
+.hw2-aff-top .hw2-big-delta{font-size:10px;padding:1px 6px;}
+.hw2-aff-num{font-family:var(--fd);font-size:26px;font-weight:600;color:var(--text);line-height:1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;}
+.hw2-aff-num.is-neg{color:var(--red);}
+.hw2-aff-spark{width:84px;height:30px;flex-shrink:0;display:block;}
+.hw2-aff-rows + .hw2-big-sub{margin-top:10px;}
