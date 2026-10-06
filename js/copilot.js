@@ -1,8 +1,9 @@
 // ══════════════════════════════════════════════════════════
-// 3C COPILOT — Gemini AI integration (Beta)
+// 3C COPILOT — IA conversacional sobre os dados do CRM
 // ══════════════════════════════════════════════════════════
-// Floating button + chat drawer. Visible only when STATE.betaMode = true.
-// Talks to /api/ai (Vercel serverless → Google Gemini, free tier).
+// Botão flutuante + drawer de chat. Visível para qualquer usuário logado.
+// Envia um snapshot compacto do CRM (contatos, pipeline, tarefas, tags)
+// e dos resultados dos afiliados (public.reports) para /api/ai.
 // Conversations persist in localStorage with Gemini-style history sidebar.
 // ══════════════════════════════════════════════════════════
 
@@ -181,12 +182,12 @@ function renderCopilot() {
       <div class="cp-welcome">
         <div class="cp-welcome-icon">${COPILOT_ICON_SVG}</div>
         <div class="cp-welcome-title">Olá! Sou o Copilot 3C</div>
-        <div class="cp-welcome-sub">Pergunte qualquer coisa sobre afiliados, pagamentos, performance ou o estado da operação.</div>
+        <div class="cp-welcome-sub">Pergunte sobre contatos, pipeline, leads da LP, tarefas ou os resultados dos afiliados.</div>
         <div class="cp-suggestions">
-          <button class="cp-sug" onclick="copilotAsk('Quais pagamentos estão vencidos no momento?')">Pagamentos vencidos?</button>
-          <button class="cp-sug" onclick="copilotAsk('Quem são os 3 afiliados que mais deram lucro pra 3C?')">Top 3 afiliados por lucro</button>
-          <button class="cp-sug" onclick="copilotAsk('Resuma a situação financeira do mês atual')">Resumo financeiro</button>
-          <button class="cp-sug" onclick="copilotAsk('Há algum afiliado sem contato recente que mereça atenção?')">Afiliados em risco</button>
+          <button class="cp-sug" onclick="copilotAsk('Quais negociações estão paradas há mais de 7 dias e com quem?')">Leads parados</button>
+          <button class="cp-sug" onclick="copilotAsk('Quantos leads da landing page chegaram nos últimos 7 dias? Liste nome e perfil.')">Leads da LP esta semana</button>
+          <button class="cp-sug" onclick="copilotAsk('Resuma os resultados dos afiliados deste mês: depósitos, cadastros, FTDs e NGR, comparando com o mês anterior.')">Resultados do mês</button>
+          <button class="cp-sug" onclick="copilotAsk('Quem está em Contrato ou Em negociação agora? O que falta para fechar?')">Em fase final</button>
         </div>
       </div>`;
   } else {
@@ -420,32 +421,14 @@ window.sendCopilotMessage = async () => {
     _copilotActiveId = conv.id;
   }
 
-  // If STATE is empty, try to re-sync from Supabase before asking the AI.
-  // Avoids the "tenho dados stale" case when user opens Copilot during/after a fresh login.
-  const sBefore = STATE || {};
-  const hasData = (sBefore.affiliates || []).length > 0 || (sBefore.payments || []).length > 0;
-  if (!hasData && window.Data?.loadAll) {
-    console.log('[Copilot] STATE parece vazio, re-sincronizando com Supabase...');
-    try {
-      await Data.loadAll();
-      console.log('[Copilot] Re-sync done. Afiliados:', (STATE.affiliates || []).length,
-        'Pagamentos:', (STATE.payments || []).length);
-    } catch (e) {
-      console.warn('[Copilot] Re-sync falhou:', e);
-    }
+  // Garante o CRM carregado e fresco antes de montar o snapshot: leads da LP
+  // e movimentos da pipeline chegam pela API sem passar por este app.
+  if (window.CRM?.loadAll) {
+    try { await CRM.loadAll(); } catch (e) { console.warn('[Copilot] CRM.loadAll falhou:', e); }
   }
-
-  const s = STATE || {};
-  const stateStats = {
-    hasUser: !!s.user,
-    affiliates: (s.affiliates || []).length,
-    payments: (s.payments || []).length,
-    contracts: (s.contracts || []).length,
-    tasks: (s.tasks || []).length,
-    brands: Object.keys(s.brands || {}).length,
-    reports: (s.reports || []).length,
-  };
-  console.log('[Copilot] STATE antes de enviar:', JSON.stringify(stateStats));
+  if (!(STATE.reports || []).length && window.Data?.loadAll) {
+    try { await Data.loadAll(); } catch (e) { console.warn('[Copilot] Data.loadAll falhou:', e); }
+  }
 
   conv.messages.push({ role: 'user', content: text });
   if (conv.messages.length === 1) conv.title = _titleFromText(text);
@@ -465,7 +448,6 @@ window.sendCopilotMessage = async () => {
       body: JSON.stringify({ messages: conv.messages, context }),
     });
     const data = await res.json();
-    console.log('[Copilot] build_id:', data._build_id, '| stats:', JSON.stringify(data._debug_context_stats));
     if (!res.ok) {
       const err = new Error(data.error || `HTTP ${res.status}`);
       err.status = res.status;
@@ -487,133 +469,126 @@ window.sendCopilotMessage = async () => {
 // ── DATA CONTEXT ──
 function buildCopilotContext() {
   const s = STATE || {};
+  const crm = s.crm || {};
   const today = new Date().toISOString().split('T')[0];
+  const now = Date.now();
+  const DAY = 86400000;
+  const days = (ts) => ts ? Math.max(0, Math.floor((now - new Date(ts).getTime()) / DAY)) : null;
+  const r2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+  const count = (arr, key) => arr.reduce((m, x) => { const k = x[key] || '—'; m[k] = (m[k] || 0) + 1; return m; }, {});
 
-  // Flag empty state so AI knows the platform has no data yet
-  const isEmpty = (s.affiliates || []).length === 0 &&
-                  (s.payments || []).length === 0 &&
-                  (s.tasks || []).length === 0;
+  const contacts = crm.contacts || [];
+  const stages = crm.stages || [];
+  const cards = crm.cards || [];
+  const tags = crm.tags || [];
+  const contactTags = crm.contactTags || [];
+  const products = crm.products || [];
+  const stageName = (id) => stages.find(x => x.id === id)?.name || '—';
+  const contactName = (id) => contacts.find(x => x.id === id)?.name || '—';
+  const tagsOf = (cid) => contactTags.filter(x => x.contact_id === cid).map(x => tags.find(t => t.id === x.tag_id)?.name).filter(Boolean);
+  const STATUS = { wishlist: 'wishlist', in_pipeline: 'no pipeline', customer: 'cliente', churned: 'perdido' };
 
-  // ── PAYMENTS: just counts + totals by status (no item list — AI can ask if needed) ──
-  const paymentsByStatus = {};
-  (s.payments || []).forEach(p => {
-    const cs = (typeof computePaymentStatus === 'function') ? computePaymentStatus(p) : p.status;
-    if (!paymentsByStatus[cs]) paymentsByStatus[cs] = { count: 0, total: 0 };
-    paymentsByStatus[cs].count++;
-    paymentsByStatus[cs].total += (p.amount || 0);
+  // ── CONTATOS (compactos) ──
+  const contatos = contacts.slice(0, 400).map(c => {
+    const o = { nome: c.name, status: STATUS[c.status] || c.status, tipo: c.type };
+    if (c.profile) o.perfil = c.profile;
+    if (c.temperature) o.temperatura = c.temperature;
+    if (c.company) o.empresa = c.company;
+    if (c.tier) o.tier = c.tier;
+    const t = tagsOf(c.id); if (t.length) o.tags = t;
+    if (c.lead_meta?.channel) o.origem = 'landing page · ' + c.lead_meta.channel;
+    else if (c.source) o.origem = c.source;
+    if (c.social_links?.instagram) o.instagram = '@' + String(c.social_links.instagram).replace(/^@/, '');
+    o.criado_em = String(c.created_at || '').substring(0, 10);
+    o.dias_sem_atualizar = days(c.updated_at || c.created_at);
+    if (c.notes) o.notas = String(c.notes).substring(0, 120);
+    return o;
   });
-  // Only include individual items for overdue/at-risk (most likely to be asked)
-  const criticalPayments = (s.payments || [])
-    .filter(p => {
-      const cs = (typeof computePaymentStatus === 'function') ? computePaymentStatus(p) : p.status;
-      return cs === 'vencido' || cs === 'atrasado';
-    })
-    .map(p => ({
-      affiliate: p.affiliate, brand: p.brand, amount: p.amount,
-      dueDate: p.dueDate, type: p.type,
-    }));
+  const leadsLP = contacts.filter(c => c.lead_meta?.received_at);
+  const leadsLP30 = leadsLP.filter(c => days(c.lead_meta.received_at) <= 30);
 
-  // ── AFFILIATES: only active, compact fields, notes trimmed ──
-  const compact = v => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
-  const allAffiliates = (s.affiliates || [])
-    .filter(a => a.status !== 'inativo')
-    .map(a => {
-      const o = {
-        id: a.id, name: a.name, contractType: a.contractType,
-        ftds: a.ftds, qftds: a.qftds,
-        deposits: Math.round((a.deposits || 0) * 100) / 100,
-        netRev: Math.round((a.netRev || 0) * 100) / 100,
-        commission: Math.round((a.commission || 0) * 100) / 100,
-        profit: Math.round((a.profit || 0) * 100) / 100,
-        deals: a.deals,
-      };
-      if (!compact(a.notes)) o.notes = String(a.notes).substring(0, 100);
-      if (!compact(a.tags)) o.tags = a.tags;
-      return o;
-    });
-
-  // ── REPORTS: aggregate by affiliate × brand × month (huge token saving) ──
-  const monthlyAgg = {};
-  (s.reports || []).forEach(r => {
-    const month = (r.date || '').substring(0, 7); // YYYY-MM
-    const key = `${r.affiliateId}|${r.brand}|${month}`;
-    if (!monthlyAgg[key]) {
-      const affName = (s.affiliates || []).find(a => a.id === r.affiliateId)?.name || r.affiliateId;
-      monthlyAgg[key] = {
-        affiliate: affName, brand: r.brand, month,
-        ftd: 0, qftd: 0, deposits: 0, netRev: 0,
-      };
-    }
-    const agg = monthlyAgg[key];
-    agg.ftd += r.ftd || 0;
-    const qf = typeof r.qftd === 'number' ? r.qftd : (typeof r.qftd === 'object' && r.qftd ? Object.values(r.qftd).reduce((s, v) => s + (v || 0), 0) : 0);
-    agg.qftd += qf;
-    agg.deposits += r.deposits || 0;
-    agg.netRev += r.netRev || 0;
+  // ── PIPELINE (sem dinheiro: etapas, contagens, dias parado) ──
+  const etapas = {};
+  stages.forEach(st => { (etapas[st.scope] = etapas[st.scope] || []).push(st.name); });
+  const isSettled = (n) => /fechado|follow/i.test(n);
+  const negociacoes = cards.map(c => {
+    const st = stageName(c.stage_id);
+    const o = { titulo: c.title, contato: contactName(c.contact_id), funil: (c.scope || '').toUpperCase(), etapa: st, dias_parado: days(c.updated_at || c.created_at), criado_em: String(c.created_at || '').substring(0, 10) };
+    const prod = products.find(p => p.id === c.product_id); if (prod) o.produto = prod.name;
+    if (c.notes) o.notas = String(c.notes).substring(0, 120);
+    return o;
   });
-  const monthlyReports = Object.values(monthlyAgg).map(r => ({
-    ...r,
-    deposits: Math.round(r.deposits * 100) / 100,
-    netRev: Math.round(r.netRev * 100) / 100,
-  })).sort((a, b) => (b.month + b.affiliate).localeCompare(a.month + a.affiliate));
+  const porEtapa = {};
+  cards.forEach(c => { const k = `${(c.scope || '').toUpperCase()} · ${stageName(c.stage_id)}`; porEtapa[k] = (porEtapa[k] || 0) + 1; });
+  const paradas7 = negociacoes.filter(n => !isSettled(n.etapa) && n.dias_parado >= 7);
 
-  // Also include RAW daily rows from the last 30 days so the AI can answer
-  // questions like "ontem", "esta semana", "3 de abril". Keeps monthly rollup
-  // for historical context without bloating tokens.
-  const cutoff = new Date(Date.now() - 30 * 86400000);
-  const recentDaily = (s.reports || [])
-    .filter(r => r.date && new Date(r.date) >= cutoff)
-    .map(r => {
-      const affName = (s.affiliates || []).find(a => a.id === r.affiliateId)?.name || r.affiliateId;
-      const qf = typeof r.qftd === 'number' ? r.qftd : (typeof r.qftd === 'object' && r.qftd ? Object.values(r.qftd).reduce((s, v) => s + (v || 0), 0) : 0);
-      return {
-        affiliate: affName, brand: r.brand, date: r.date,
-        ftd: r.ftd || 0, qftd: qf,
-        deposits: Math.round((r.deposits || 0) * 100) / 100,
-        netRev: Math.round((r.netRev || 0) * 100) / 100,
-      };
-    })
-    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  // ── TAREFAS do CRM (abertas) ──
+  const tarefas = (crm.tasks || []).filter(t => t.status !== 'done' && t.status !== 'concluída').map(t => {
+    const o = { titulo: t.title, prioridade: t.priority, status: t.status };
+    if (t.due_date) o.prazo = String(t.due_date).substring(0, 10);
+    if (t.related_contact_id) o.contato = contactName(t.related_contact_id);
+    return o;
+  });
 
-  // ── TASKS: only non-completed ──
-  const openTasks = (s.tasks || [])
-    .filter(t => t.status !== 'concluída')
-    .map(t => {
-      const o = { title: t.title, priority: t.priority, status: t.status, assignee: t.assignee };
-      if (t.dueDate) o.dueDate = t.dueDate;
-      if (t.description) o.description = String(t.description).substring(0, 80);
-      return o;
-    });
+  // ── RESULTADOS DOS AFILIADOS (public.reports → STATE.reports) ──
+  const reports = s.reports || [];
+  const affName = (id) => (s.affiliates || []).find(a => a.id === id)?.name || id;
+  const sumRows = (rows) => rows.reduce((t, r) => {
+    t.depositos += Number(r.deposits) || 0; t.cadastros += Number(r.registrations) || 0;
+    t.ftd += Number(r.ftd) || 0; t.qftd += Number(r.qftd) || 0; t.ngr += Number(r.netRev) || 0; return t;
+  }, { depositos: 0, cadastros: 0, ftd: 0, qftd: 0, ngr: 0 });
+  const round = (t) => ({ depositos: r2(t.depositos), cadastros: t.cadastros, ftd: t.ftd, qftd: t.qftd, ngr: r2(t.ngr) });
+  const ym = (d) => String(d || '').substring(0, 7);
+  const d0 = new Date(); const curKey = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}`;
+  const d1 = new Date(d0.getFullYear(), d0.getMonth() - 1, 1); const prevKey = `${d1.getFullYear()}-${String(d1.getMonth() + 1).padStart(2, '0')}`;
+  const porMes = {};
+  reports.forEach(r => { const k = ym(r.date); if (!porMes[k]) porMes[k] = []; porMes[k].push(r); });
+  const resultadosPorMes = Object.keys(porMes).sort().slice(-12).map(k => ({ mes: k, ...round(sumRows(porMes[k])) }));
+  const porMarcaMes = {};
+  (porMes[curKey] || []).forEach(r => { const b = r.brand || 'Outros'; (porMarcaMes[b] = porMarcaMes[b] || []).push(r); });
+  const porAfiliadoMes = {};
+  (porMes[curKey] || []).forEach(r => { const a = affName(r.affiliateId); (porAfiliadoMes[a] = porAfiliadoMes[a] || []).push(r); });
+  const ultimos30 = reports.filter(r => days(r.date) <= 30).map(r => ({
+    data: String(r.date || '').substring(0, 10), marca: r.brand, afiliado: affName(r.affiliateId),
+    depositos: r2(r.deposits), cadastros: Number(r.registrations) || 0, ftd: Number(r.ftd) || 0, qftd: Number(r.qftd) || 0, ngr: r2(r.netRev),
+  })).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 400);
 
-  // ── CONTRACTS: only actives, lean fields ──
-  const activeContracts = (s.contracts || [])
-    .filter(c => c.status !== 'encerrado')
-    .map(c => ({
-      affiliate: c.affiliate, brand: c.brand, type: c.type,
-      value: c.value, paid: c.paid, paymentStatus: c.paymentStatus,
-    }));
+  const isEmpty = !contacts.length && !cards.length && !reports.length;
 
   return {
-    today,
-    user: { name: s.user?.name, role: s.user?.role },
-    brands: s.brands,
-    affiliates: allAffiliates,
-    contracts: activeContracts,
-    payments: {
-      by_status: paymentsByStatus,
-      critical: criticalPayments,  // only vencidos + atrasados
+    hoje: today,
+    usuario: { nome: s.user?.name, papel: s.user?.role },
+    crm: {
+      resumo: {
+        contatos: contacts.length,
+        por_status: count(contatos, 'status'),
+        por_perfil: count(contatos, 'perfil'),
+        por_temperatura: count(contatos, 'temperatura'),
+        leads_lp_total: leadsLP.length,
+        leads_lp_ultimos_30_dias: leadsLP30.length,
+        negociacoes: cards.length,
+        negociacoes_por_etapa: porEtapa,
+        negociacoes_paradas_7d: paradas7.length,
+        tarefas_abertas: tarefas.length,
+      },
+      etapas_da_pipeline: etapas,
+      produtos: products.map(p => p.name),
+      tags: tags.map(t => t.name),
+      contatos,
+      negociacoes,
+      tarefas_abertas: tarefas,
     },
-    tasks_open: openTasks,
-    closings: (s.closings || []).slice(-6).map(c => ({
-      affiliate: c.affiliate, brand: c.brand, month: c.month, totalComm: c.totalComm, status: c.status,
-    })),
-    reports_monthly: monthlyReports,  // all-time aggregate by month (token-friendly)
-    reports_daily_last30: recentDaily,  // raw daily rows from last 30 days (for precise questions)
-    deadlines: s.deadlines,
+    resultados_afiliados: {
+      mes_atual: { mes: curKey, ...round(sumRows(porMes[curKey] || [])) },
+      mes_anterior: { mes: prevKey, ...round(sumRows(porMes[prevKey] || [])) },
+      por_mes: resultadosPorMes,
+      por_marca_mes_atual: Object.entries(porMarcaMes).map(([marca, rows]) => ({ marca, ...round(sumRows(rows)) })),
+      por_afiliado_mes_atual: Object.entries(porAfiliadoMes).map(([afiliado, rows]) => ({ afiliado, ...round(sumRows(rows)) })).sort((a, b) => b.ngr - a.ngr),
+      ultimos_30_dias: ultimos30,
+      _nota: reports.length ? null : 'Nenhum resultado lançado ainda em public.reports.',
+    },
     _empty_state: isEmpty,
-    _empty_note: isEmpty
-      ? 'IMPORTANTE: A plataforma não tem dados cadastrados. Oriente o usuário a cadastrar marcas, afiliados e lançar performance. NÃO diga que não tem acesso — explique que o sistema está vazio.'
-      : null,
+    _empty_note: isEmpty ? 'A plataforma ainda não tem contatos, negociações nem resultados lançados. Oriente o usuário a cadastrar contatos, mover negociações na pipeline e lançar resultados dos afiliados. NÃO diga que não tem acesso — o sistema está vazio.' : null,
   };
 }
 
@@ -621,8 +596,7 @@ function buildCopilotContext() {
 window.updateCopilotVisibility = () => {
   const btn = document.getElementById('copilot-fab');
   if (!btn) return;
-  const show = STATE?.betaMode === true && !!STATE?.user;
-  btn.style.display = show ? 'flex' : 'none';
+  btn.style.display = STATE?.user ? 'flex' : 'none';
 };
 
 // Safety net: keep checking every 2s for the first 20s after boot,
