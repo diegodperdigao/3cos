@@ -4,7 +4,12 @@
 // POST /api/leads
 // Auth: `x-api-key: <LEAD_INTAKE_API_KEY>` header
 // Body (JSON): see FIELD MAPPING below
-// Returns: { ok: true, lead: { id, name, email, phone, created_at } }
+// Returns: { ok: true, lead: { id, name, email, phone, created_at },
+//            card: { id, scope, stage } | null }
+//
+// Além do contato, cria a negociação na etapa "Lead LP" da pipeline
+// (scope = type do contato; 'both' cai em b2c). Se a etapa não existir
+// no scope, usa a primeira etapa. O contato fica com status in_pipeline.
 //
 // Env vars (Vercel → Settings → Environment Variables):
 //   SUPABASE_URL / SUPABASE_SERVICE_KEY  (shared helper picks these up)
@@ -24,7 +29,9 @@
 //   consentimento_lgpd   → lead_meta.consent_lgpd + lead_meta.consent_at
 //                          (REQUIRED to be true — LGPD)
 //   notes                → contacts.notes
-//   type                 → contacts.type           (default 'b2b' for parceiros)
+//   type                 → contacts.type           (b2b | b2c | both; default 'b2c':
+//                                                   tipsters/influencers são o
+//                                                   funil B2C do CRM)
 //   tags                 → stored on lead_meta.tags (for future linking)
 //   test / ?test=1       → lead_meta.test:true + notes prefixed with [TESTE]
 //   criado_em            → IGNORED (server time wins)
@@ -86,6 +93,60 @@ function pickUtm(obj) {
   return out;
 }
 
+// Cria o card da pipeline para o lead recebido. Nunca derruba a requisição:
+// o contato já foi gravado; se o card falhar, devolve null e loga.
+async function createLeadCard(sb, contact, { type, profile, origem, landingUrl, testFlag }) {
+  const scope = type === 'b2b' ? 'b2b' : 'b2c';
+  try {
+    const { data: stages, error: stErr } = await sb
+      .schema('crm')
+      .from('pipeline_stages')
+      .select('id, name, position')
+      .eq('scope', scope)
+      .order('position', { ascending: true });
+    if (stErr) throw stErr;
+    if (!stages || !stages.length) {
+      console.error('[leads] no stages for scope', scope);
+      return null;
+    }
+    const stage = stages.find(s => /lead\s*lp/i.test(s.name || '')) || stages[0];
+
+    const titleBase = contact.name + (profile ? ' · ' + profile : '');
+    const title = (testFlag ? '[TESTE] ' : '') + titleBase;
+    const noteParts = ['Lead recebido via landing page'];
+    if (origem) noteParts.push('origem: ' + origem);
+    if (landingUrl) noteParts.push(landingUrl);
+
+    const { data: card, error: cardErr } = await sb
+      .schema('crm')
+      .from('pipeline_cards')
+      .insert({
+        scope,
+        stage_id: stage.id,
+        contact_id: contact.id,
+        title: title.slice(0, 200),
+        notes: noteParts.join(' · '),
+        position: 0,
+      })
+      .select('id, scope, stage_id')
+      .single();
+    if (cardErr) throw cardErr;
+
+    // Mesmo comportamento do app ao promover um contato para a pipeline
+    const { error: upErr } = await sb
+      .schema('crm')
+      .from('contacts')
+      .update({ status: 'in_pipeline' })
+      .eq('id', contact.id);
+    if (upErr) console.error('[leads] contact status update failed:', upErr);
+
+    return { id: card.id, scope: card.scope, stage: stage.name };
+  } catch (e) {
+    console.error('[leads] card creation failed:', e);
+    return null;
+  }
+}
+
 module.exports = async (req, res) => {
   const origin = (req.headers.origin || '').toString();
   setCORS(res, origin);
@@ -133,7 +194,7 @@ module.exports = async (req, res) => {
   const landingUrl = clean(body.url_origem || body.landing_url, 1000);
   const notesIn = clean(body.notes, 2000);
   const typeIn = clean(body.type, 10);
-  const type = ['b2b', 'b2c', 'both'].includes(typeIn) ? typeIn : 'b2b';
+  const type = ['b2b', 'b2c', 'both'].includes(typeIn) ? typeIn : 'b2c';
   const tags = Array.isArray(body.tags) ? body.tags.slice(0, 20).map(t => clean(t, 60)).filter(Boolean) : [];
   const utm = pickUtm(body.utm);
   const consent = body.consentimento_lgpd === true || body.consent_lgpd === true;
@@ -206,7 +267,10 @@ module.exports = async (req, res) => {
       return;
     }
 
-    res.status(201).json({ ok: true, lead: data });
+    // ── Negociação na etapa "Lead LP" ─────────────────────────
+    const card = await createLeadCard(sb, data, { type, profile, origem, landingUrl, testFlag });
+
+    res.status(201).json({ ok: true, lead: data, card });
   } catch (e) {
     console.error('[leads]', e);
     res.status(500).json({ error: e.message || 'Erro interno.' });
