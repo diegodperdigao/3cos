@@ -60,6 +60,7 @@ window.Data = (function () {
     reports: {
       id: 'id', brand: 'brand', affiliate_id: 'affiliateId',
       date: 'date', ftd: 'ftd', qftd: 'qftd', deposits: 'deposits', net_rev: 'netRev',
+      registrations: 'registrations',
     },
     audit_log: {
       id: 'id', action: 'action', detail: 'detail', user_name: 'user',

@@ -144,15 +144,21 @@
       });
     }
 
-    // Métricas
-    const totalValue = cards.reduce((s, c) => s + (Number(c.value) || 0), 0);
-    const weighted = cards.reduce((s, c) => s + (Number(c.value) || 0) * (Number(c.probability) || 0) / 100, 0);
+    // Métricas (sem dinheiro: a pipeline mede movimento, não valor)
+    const _stageName = (id) => ((CRM.stageById(id)?.name) || '').toLowerCase();
+    const meetings = cards.filter(c => _stageName(c.stage_id).includes('reuni')).length;
+    const closed = cards.filter(c => _stageName(c.stage_id).includes('fechado')).length;
+    const stalled = cards.filter(c => {
+      const n = _stageName(c.stage_id);
+      return !n.includes('fechado') && !n.includes('follow') && _daysSince(c.updated_at) >= 7;
+    }).length;
     const metricsEl = document.getElementById('pcrm-metrics');
     if (metricsEl) {
       metricsEl.innerHTML = `
         <div class="pipe-metric"><span class="pipe-metric-k">Negociações</span><span class="pipe-metric-v">${cards.length}</span></div>
-        <div class="pipe-metric"><span class="pipe-metric-k">Pipeline</span><span class="pipe-metric-v">${_fmt(totalValue)}</span></div>
-        <div class="pipe-metric"><span class="pipe-metric-k">Esperado</span><span class="pipe-metric-v" style="color:var(--green)">${_fmt(weighted)}</span></div>
+        <div class="pipe-metric"><span class="pipe-metric-k">Reuniões</span><span class="pipe-metric-v">${meetings}</span></div>
+        <div class="pipe-metric"><span class="pipe-metric-k">Fechados</span><span class="pipe-metric-v" style="color:var(--green)">${closed}</span></div>
+        <div class="pipe-metric"><span class="pipe-metric-k">Parados 7d+</span><span class="pipe-metric-v" style="color:${stalled ? 'var(--amber)' : 'var(--text)'}">${stalled}</span></div>
       `;
     }
 
@@ -170,7 +176,6 @@
     board.style.gridTemplateColumns = `repeat(${stages.length}, minmax(240px, 1fr))`;
     board.innerHTML = stages.map(stage => {
       const stageCards = cards.filter(c => c.stage_id === stage.id);
-      const stageTotal = stageCards.reduce((s, c) => s + (Number(c.value) || 0), 0);
       return `<div class="kan-col" data-stage="${stage.id}"
           ondragover="event.preventDefault();this.classList.add('kan-col-drop')"
           ondragleave="this.classList.remove('kan-col-drop')"
@@ -180,7 +185,6 @@
           <span class="kan-stage-name">${_esc(stage.name)}</span>
           <span class="kan-stage-count">${stageCards.length}</span>
         </div>
-        <div class="kan-col-total">${_fmt(stageTotal)}</div>
         <div class="kan-cards">
           ${stageCards.map(card => _cardHTML(card)).join('')}
         </div>
@@ -192,8 +196,10 @@
   function _cardHTML(card) {
     const contact = CRM.contactById(card.contact_id);
     const product = CRM.productById(card.product_id);
-    const prob = Number(card.probability) || 0;
-    const probColor = prob >= 70 ? 'var(--green)' : prob >= 40 ? 'var(--amber)' : 'var(--text3)';
+    const days = _daysSince(card.updated_at);
+    const stageName = ((CRM.stageById(card.stage_id)?.name) || '').toLowerCase();
+    const settled = stageName.includes('fechado') || stageName.includes('follow');
+    const ageClass = settled ? '' : days >= 14 ? ' is-late' : days >= 7 ? ' is-warn' : '';
 
     // Avatar do contato: avatar_url manual > iniciais em gradiente
     let avatarHTML = '';
@@ -223,17 +229,9 @@
         ${avatarHTML}
         <span class="kan-card-contact-name">${_esc(contact.name)}</span>
       </div>` : ''}
-      <div class="kan-card-value-row">
-        <div class="kan-card-value">${_fmt(card.value)}</div>
-        <div class="kan-card-prob" style="color:${probColor}">
-          <svg viewBox="0 0 36 36" style="width:28px;height:28px">
-            <circle cx="18" cy="18" r="14" fill="none" stroke="var(--bg)" stroke-width="3"/>
-            <circle cx="18" cy="18" r="14" fill="none" stroke="${probColor}" stroke-width="3"
-              stroke-dasharray="${(prob/100)*87.96} 87.96" stroke-linecap="round"
-              transform="rotate(-90 18 18)"/>
-            <text x="18" y="22" text-anchor="middle" fill="${probColor}" font-size="9" font-weight="700">${prob}</text>
-          </svg>
-        </div>
+      <div class="kan-card-foot">
+        <span class="kan-card-age${ageClass}"><i data-lucide="clock" style="width:11px;height:11px"></i>${_ageLabel(days)}</span>
+        ${contact?.company ? `<span class="kan-card-company">${_esc(contact.company)}</span>` : ''}
       </div>
     </div>`;
   }
@@ -294,14 +292,6 @@
             <select id="pcrm-f-stage" class="fi">
               ${stages.map(s => `<option value="${s.id}">${_esc(s.name)}</option>`).join('')}
             </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="ff"><label>Valor (R$)</label>
-            <input id="pcrm-f-value" class="fi" type="number" step="0.01" value="0">
-          </div>
-          <div class="ff"><label>Probabilidade (%)</label>
-            <input id="pcrm-f-prob" class="fi" type="number" min="0" max="100" value="25">
           </div>
         </div>
         <div class="ff"><label>Notas</label>
@@ -401,8 +391,6 @@
       title: get('pcrm-f-title').trim(),
       product_id: get('pcrm-f-product') || null,
       stage_id: get('pcrm-f-stage'),
-      value: Number(get('pcrm-f-value')) || 0,
-      probability: Number(get('pcrm-f-prob')) || 25,
       notes: get('pcrm-f-notes').trim() || null,
       owner: STATE.user?.id || null,
     };
@@ -467,7 +455,7 @@
         <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">${_esc(card.title)}</div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:14px">
           ${stage ? `<span style="background:${stage.color}2a;color:${stage.color};padding:2px 8px;border-radius:4px;font-weight:600">${_esc(stage.name)}</span>` : ''}
-          · ${card.probability}% probabilidade · ${_fmt(card.value)}
+          · ${_ageLabel(_daysSince(card.updated_at))} · criado em ${new Date(card.created_at).toLocaleDateString('pt-BR')}
         </div>
         ${contact ? `<div class="ctc-detail-grid">
           <div><span class="ctc-dt-k">Contato</span><span>${_esc(contact.name)}</span></div>
@@ -570,7 +558,13 @@
   function _esc(s) {
     return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
-  function _fmt(v) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v || 0);
+  function _daysSince(ts) {
+    if (!ts) return 0;
+    return Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / 86400000));
+  }
+  function _ageLabel(days) {
+    if (days <= 0) return 'hoje';
+    if (days === 1) return 'há 1 dia';
+    return `há ${days} dias`;
   }
 })();

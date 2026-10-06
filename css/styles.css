@@ -6232,3 +6232,33 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .ctc-ig-cta-ico .ig-glyph{width:18px;height:18px;}
 .ctc-tile-sub{display:flex;align-items:center;gap:6px;}
 .ctc-tile-sub svg{width:12px;height:12px;flex-shrink:0;stroke:var(--text3) !important;}
+
+/* ── Dashboard: seções (afiliados / funil) ─────────────── */
+.dash-section-hdr{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:4px 0 12px;padding-top:4px;}
+.dash-section-hdr h2{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.01em;margin:0;}
+.dash-section-hdr span{font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums;}
+.dash-charts-grid + .dash-section-hdr{margin-top:8px;}
+.dash-kpi-delta.neg svg{width:11px;height:11px;margin-right:3px;vertical-align:-1px;}
+
+/* ── Kanban: rodapé do card sem dinheiro ───────────────── */
+.kan-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px solid var(--gb);font-size:11px;color:var(--text3);}
+.kan-card-age{display:inline-flex;align-items:center;gap:4px;font-weight:500;font-variant-numeric:tabular-nums;}
+.kan-card-age svg{stroke:currentColor;}
+.kan-card-age.is-warn{color:var(--amber);}
+.kan-card-age.is-late{color:var(--red);}
+.kan-card-company{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+
+/* ── Widget Resultados: grade 2×2 de mini KPIs ─────────── */
+.hw2-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-bottom:10px;}
+.hw2-kpi{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.hw2-kpi-k{font-size:10.5px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.03em;}
+.hw2-kpi-v{font-family:var(--fd);font-size:18px;font-weight:600;color:var(--text);letter-spacing:-0.01em;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hw2-kpi-d{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums;}
+.hw2-kpi-d.pos{color:var(--green);}
+.hw2-kpi-d.neg{color:var(--red);}
+/* Métricas da pipeline: sempre em linha, mesmo herdando .pipe-filter-group */
+.pipe-metrics{flex-direction:row !important;align-items:flex-end !important;gap:22px !important;flex-wrap:wrap;}
+@media (max-width:768px){.pipe-metrics{margin-left:0;width:100%;justify-content:space-between;gap:12px !important;}.pipe-metric{align-items:flex-start;}}
+/* Charts do dashboard: altura fixa (Chart.js responsivo sem aspect ratio cresce sem limite) */
+.dash-chart-card{min-width:0;}
+.dash-chart-card canvas{display:block;width:100% !important;height:200px !important;}
