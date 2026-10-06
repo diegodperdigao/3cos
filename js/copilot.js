@@ -171,7 +171,7 @@ window.deleteCopilotConv = (id, ev) => {
 };
 
 // ── RENDERING ──
-const COPILOT_ICON_SVG = `<svg viewBox="0 0 24 24" class="cp-gemini-icon"><path d="M12 2C12 8.627 15.373 12 22 12C15.373 12 12 15.373 12 22C12 15.373 8.627 12 2 12C8.627 12 12 8.627 12 2Z" fill="currentColor"/></svg>`;
+const COPILOT_ICON_SVG = `<svg viewBox="0 0 24 24" class="cp-gemini-icon"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>`;
 
 function renderCopilot() {
   const body = document.getElementById('copilot-body');
