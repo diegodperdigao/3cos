@@ -6262,3 +6262,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 /* Charts do dashboard: altura fixa (Chart.js responsivo sem aspect ratio cresce sem limite) */
 .dash-chart-card{min-width:0;}
 .dash-chart-card canvas{display:block;width:100% !important;height:200px !important;}
+
+/* ── Tags de contato (chips) — contatos, detalhe e cards da pipeline ── */
+.crm-tag{display:inline-flex;align-items:center;padding:3px 8px;border-radius:5px;font-size:9.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;line-height:1.2;
+  color:var(--tag-c);background:color-mix(in srgb,var(--tag-c) 12%,transparent);border:1px solid color-mix(in srgb,var(--tag-c) 35%,transparent);}
+.crm-tag-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.kan-card-tagchip{margin:0 0 8px;}
+.kan-card-tagchip{align-self:flex-start;}
+.hw2-kpi-grid.is-pair{gap:12px 18px;margin-bottom:12px;}
+.hw2-kpi-v.is-lg{font-size:26px;letter-spacing:-0.02em;}
+.hw2-kpi-v.is-neg{color:var(--red);}
+.hw2-kpi-d{display:inline-flex;align-items:center;gap:2px;}
+.hw2-kpi-d svg{width:11px;height:11px;}

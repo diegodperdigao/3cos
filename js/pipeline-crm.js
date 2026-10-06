@@ -77,13 +77,17 @@
         <div class="kanban" id="pcrm-board"></div>
       </div></div>`;
 
-    // Carrega CRM se necessário
-    if (!STATE.crm.loaded && window.CRM?.loadAll) {
-      document.getElementById('pcrm-board').innerHTML =
-        '<div class="empty" style="grid-column:1/-1"><i data-lucide="loader"></i><p>Carregando...</p></div>';
-      lucide.createIcons();
+    // Sempre recarrega ao abrir: leads chegam pela API sem passar pelo app
+    if (window.CRM?.loadAll) {
+      if (!STATE.crm.loaded) {
+        document.getElementById('pcrm-board').innerHTML =
+          '<div class="empty" style="grid-column:1/-1"><i data-lucide="loader"></i><p>Carregando...</p></div>';
+        lucide.createIcons();
+      } else {
+        _renderBoard(_scope); _renderTabCounts(); // mostra o que já temos enquanto atualiza
+      }
       const ok = await CRM.loadAll();
-      if (!ok) {
+      if (!ok && !STATE.crm.loaded) {
         document.getElementById('pcrm-board').innerHTML =
           '<div class="empty" style="grid-column:1/-1"><i data-lucide="alert-triangle" style="color:var(--amber)"></i><p>Erro ao carregar. Verifique se o schema `crm` está exposto na API do Supabase.</p></div>';
         lucide.createIcons();
@@ -225,6 +229,7 @@
         <i data-lucide="package" style="width:9px;height:9px"></i> ${_esc(product.name)}
       </div>` : ''}
       <div class="kan-card-title">${_esc(card.title)}</div>
+      ${contact && CRM.tagsForContact ? CRM.tagsForContact(contact.id).map(t => CRM.tagChip(t, 'kan-card-tagchip')).join('') : ''}
       ${contact ? `<div class="kan-card-contact">
         ${avatarHTML}
         <span class="kan-card-contact-name">${_esc(contact.name)}</span>

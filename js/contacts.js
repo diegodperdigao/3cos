@@ -216,6 +216,7 @@
             <i data-lucide="${prof.icon}" style="width:9px;height:9px"></i>${prof.label}
           </span>` : ''}
           <span class="ctc-tile-badge status-${c.status}">${STATUS_LABEL[c.status] || c.status}</span>
+          ${CRM.tagsForContact(c.id).map(t => CRM.tagChip(t)).join('')}
         </div>
       </article>`;
     }).join('');
@@ -300,8 +301,8 @@
     else if (F.profile) list = list.filter(c => c.profile === F.profile);
     if (F.tier) list = list.filter(c => c.tier === Number(F.tier));
     if (F.tag) {
-      // TODO: filtrar por tag via contact_tags (precisa query extra ou join)
-      // Por ora, mostra todos — tag filter é visual até implementar o join
+      const withTag = new Set((STATE.crm.contactTags || []).filter(x => x.tag_id === F.tag).map(x => x.contact_id));
+      list = list.filter(c => withTag.has(c.id));
     }
     if (F.product) {
       // TODO: filtrar por produto via contact_product_fit
@@ -510,6 +511,7 @@
         <div style="color:var(--text2);font-size:12px;margin-top:4px">
           ${_companyOf(c) || '—'} · ${TYPE_LABEL[c.type] || c.type} · ${STATUS_LABEL[c.status] || c.status}
         </div>
+        ${CRM.tagsForContact(c.id).length ? `<div class="crm-tag-row">${CRM.tagsForContact(c.id).map(t => CRM.tagChip(t)).join('')}</div>` : ''}
       </div>
       ${ig ? `<a class="ctc-ig-cta" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener">
         <span class="ctc-ig-cta-ico">${IG_SVG}</span>
@@ -522,7 +524,7 @@
       <div class="ctc-detail-grid">
         ${c.email ? `<div><span class="ctc-dt-k">Email</span><span>${_esc(c.email)}</span></div>` : ''}
         ${c.phone ? `<div><span class="ctc-dt-k">Telefone</span><span>${_esc(c.phone)}</span></div>` : ''}
-        ${c.source ? `<div><span class="ctc-dt-k">Origem</span><span>${SOURCE_LABEL[c.source] || c.source}</span></div>` : ''}
+        ${c.lead_meta?.channel ? `<div><span class="ctc-dt-k">Origem</span><span>Landing page · ${_esc(c.lead_meta.channel)}</span></div>` : c.source ? `<div><span class="ctc-dt-k">Origem</span><span>${SOURCE_LABEL[c.source] || c.source}</span></div>` : ''}
         <div><span class="ctc-dt-k">Criado em</span><span>${new Date(c.created_at).toLocaleDateString('pt-BR')}</span></div>
       </div>
       ${c.notes ? `<div style="margin-top:14px"><div class="ctc-dt-k" style="margin-bottom:6px">Notas</div><div style="font-size:13px;color:var(--text);white-space:pre-wrap">${_esc(c.notes)}</div></div>` : ''}
