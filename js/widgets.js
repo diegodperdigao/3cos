@@ -5,6 +5,7 @@
 //   - focus_today: tarefas + contatos quentes + cards parados em 1 card
 //   - aff_funnel: cadastros e FTDs do mês (public.reports)
 //   - aff_money: depósitos e NGR do mês (public.reports)
+//   - pipeline_forecast: negociações em Reunião / Em negociação / Contrato (contagens, sem dinheiro)
 //   - momentum: sparkline de deals criados por semana + delta
 //   - health_check: distribuição visual do pipeline (barras empilhadas B2B+B2C)
 //   - wishlist_pulse: contagem de contatos por temperatura com dots
@@ -22,6 +23,7 @@ const HUB_WIDGETS = [
   { id: 'aff_funnel',      name: 'Cadastros e FTDs',  icon: 'user-plus',   desc: 'Cadastros e FTDs trazidos pelos afiliados no mês, com conversão' },
   { id: 'aff_money',       name: 'Depósitos e NGR',   icon: 'banknote',    desc: 'Depósitos e lucro (NGR) dos afiliados no mês, vs mês anterior' },
   { id: 'stalled_leads',   name: 'Leads parados',     icon: 'hourglass',   desc: 'Negociações sem movimento há 7+ dias e contatos quentes esquecidos' },
+  { id: 'pipeline_forecast', name: 'Forecast',        icon: 'crosshair',   desc: 'Quantas negociações estão em Reunião agendada, Em negociação e Contrato' },
   { id: 'focus_today',     name: 'Foco de hoje',      icon: 'target',      desc: 'Tarefas urgentes + contatos quentes + cards parados' },
   { id: 'health_check',    name: 'Saúde do pipeline', icon: 'activity',    desc: 'Distribuição de cards por etapa (B2B + B2C)' },
   { id: 'conversion',      name: 'Taxa de conversão', icon: 'percent',     desc: 'Prospects → clientes (90 dias)' },
@@ -32,11 +34,12 @@ const HUB_WIDGETS = [
 ];
 window.HUB_WIDGETS = HUB_WIDGETS;
 
-const DEFAULT_HUB_WIDGETS = ['aff_funnel', 'aff_money', 'stalled_leads', 'focus_today'];
+const DEFAULT_HUB_WIDGETS = ['aff_funnel', 'aff_money', 'stalled_leads', 'pipeline_forecast'];
 const LEGACY_DEFAULT_SETS = [
   ['revenue', 'focus_today', 'hot_pipeline', 'health_check'],
   ['revenue', 'forecast', 'stalled_leads', 'focus_today'],
   ['affiliate_results', 'ngr', 'stalled_leads', 'focus_today'],
+  ['aff_funnel', 'aff_money', 'stalled_leads', 'focus_today'],
 ];
 // Widgets aposentados (dependiam de valor/probabilidade dos cards) → substituto
 const WIDGET_ALIASES = { revenue: 'aff_money', forecast: 'aff_funnel', hot_pipeline: 'stalled_leads', affiliate_results: 'aff_funnel', ngr: 'aff_money' };
@@ -565,6 +568,56 @@ function _wAffMoney() {
   'Nenhum resultado de afiliado lançado ainda.');
 }
 
+// ── FORECAST (contagens por etapa avançada — a pipeline não tem dinheiro) ──
+function _wPipelineForecast() {
+  const cards = STATE.crm?.cards || [];
+  const stages = STATE.crm?.stages || [];
+  const nameOf = (id) => (stages.find(s => s.id === id)?.name || '').toLowerCase();
+  const STEPS = [
+    { key: 'reuni',    label: 'Reunião agendada', color: '#3b82f6' },
+    { key: 'negocia',  label: 'Em negociação',    color: '#f59e0b' },
+    { key: 'contrato', label: 'Contrato',         color: '#a855f7' },
+  ];
+  const rows = STEPS.map(st => {
+    const inStage = cards.filter(c => nameOf(c.stage_id).includes(st.key));
+    return { ...st, total: inStage.length, b2c: inStage.filter(c => c.scope === 'b2c').length, b2b: inStage.filter(c => c.scope === 'b2b').length };
+  });
+  const likely = rows.filter(r => r.key !== 'reuni').reduce((s, r) => s + r.total, 0);
+  const meetings = rows[0].total;
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const closedMonth = cards.filter(c => nameOf(c.stage_id).includes('fechado') && String(c.updated_at || '').startsWith(monthKey)).length;
+  const followUp = cards.filter(c => nameOf(c.stage_id).includes('follow')).length;
+
+  if (!cards.length) {
+    return _shell('pipeline_forecast', 'Forecast', 'crosshair',
+      `<div class="hw2-empty"><p>Pipeline vazia. Sem negociações para projetar.</p></div>`,
+      `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
+      'default', 'var(--purple)');
+  }
+
+  const max = Math.max(...rows.map(r => r.total), 1);
+  const list = rows.map(r => `
+    <div class="hw2-fc-row" onclick="openMod('pipeline')">
+      <span class="hw2-fc-dot" style="background:${r.color}"></span>
+      <span class="hw2-fc-label">${r.label}</span>
+      <span class="hw2-fc-bar"><span class="hw2-fc-fill" style="width:${(r.total / max) * 100}%;background:${r.color}"></span></span>
+      <span class="hw2-fc-num">${r.total}</span>
+      <span class="hw2-fc-split">${r.b2c} B2C · ${r.b2b} B2B</span>
+    </div>`).join('');
+
+  return _shell('pipeline_forecast', 'Forecast', 'crosshair',
+    `<div class="hw2-big-row">
+      <div class="hw2-big-val">${likely}</div>
+      <div class="hw2-big-sub-inline">prováve${likely === 1 ? 'l' : 'is'} fechamento${likely === 1 ? '' : 's'}</div>
+    </div>
+    <div class="hw2-big-sub">em negociação ou contrato · ${meetings} reuni${meetings === 1 ? 'ão' : 'ões'} agendada${meetings === 1 ? '' : 's'}</div>
+    <div class="hw2-fc">${list}</div>
+    <div class="hw2-big-sub">${closedMonth} fechado${closedMonth === 1 ? '' : 's'} neste mês · ${followUp} em follow up</div>`,
+    `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Abrir pipeline →</button>`,
+    'default', 'var(--purple)');
+}
+
 // ── MOUNT ──────────────────────────────────────────────────
 window.buildHubWidgets = () => {
   const wrap = document.getElementById('hub-widget-strip');
@@ -574,6 +627,7 @@ window.buildHubWidgets = () => {
     aff_funnel: _wAffFunnel,
     aff_money: _wAffMoney,
     stalled_leads: _wStalledLeads,
+    pipeline_forecast: _wPipelineForecast,
     focus_today: _wFocusToday,
     health_check: _wHealthCheck,
     conversion: _wConversion,
