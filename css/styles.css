@@ -6347,3 +6347,22 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .ctc-pop-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;font-size:11px;color:var(--text3);}
 .kan-card-contact-name{cursor:pointer;}
 .kan-card-contact-name:hover{color:var(--theme);text-decoration:underline;}
+
+/* ── Pipeline: cards perdidos ────────────────────────── */
+.kan-card.is-lost {
+  position: relative;
+  opacity: 0.72;
+  background: color-mix(in srgb, var(--red) 4%, var(--bg3)) !important;
+  border-color: color-mix(in srgb, var(--red) 25%, var(--gb)) !important;
+}
+.kan-card.is-lost:hover { opacity: 0.88; }
+.kan-card.is-lost .kan-card-title,
+.kan-card.is-lost .kan-card-value { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--red) 60%, transparent); text-decoration-thickness: 1px; }
+.kan-card-lost-badge {
+  position: absolute; top: 8px; right: 8px;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--red); color: #fff;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em;
+  padding: 3px 7px; border-radius: 4px; text-transform: uppercase;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}

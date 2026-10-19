@@ -460,9 +460,39 @@
             <option value="other" ${c.source === 'other' ? 'selected' : ''}>Outro</option>
           </select>
         </div>
+
+        <!-- Hierarquia de afiliados: Master indica, Direto fecha com a gente,
+             Sub veio de um Master (campo master_id obrigatório via DB trigger). -->
+        <div class="form-row">
+          <div class="ff"><label>Categoria de parceria</label>
+            <select id="ctc-f-affiliate-role" class="fi" onchange="window._ctcAffiliateRoleChanged(this.value)">
+              <option value="" ${!c.affiliate_role ? 'selected' : ''}>— Não classificado</option>
+              <option value="master" ${c.affiliate_role === 'master' ? 'selected' : ''}>Master — indica outros parceiros</option>
+              <option value="direto" ${c.affiliate_role === 'direto' ? 'selected' : ''}>Afiliado Direto</option>
+              <option value="sub" ${c.affiliate_role === 'sub' ? 'selected' : ''}>Subafiliado — veio de um master</option>
+            </select>
+          </div>
+          <div class="ff" id="ctc-f-master-wrap" style="display:${c.affiliate_role === 'sub' ? 'block' : 'none'}">
+            <label>Master responsável *</label>
+            <select id="ctc-f-master" class="fi">
+              <option value="">— Selecione o master</option>
+              ${(STATE.crm?.contacts || [])
+                .filter(x => x.affiliate_role === 'master' && x.id !== c.id)
+                .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'))
+                .map(m => `<option value="${m.id}" ${c.master_id === m.id ? 'selected' : ''}>${_esc(m.name)}${m.company ? ' · ' + _esc(m.company) : ''}</option>`)
+                .join('')}
+            </select>
+          </div>
+        </div>
+
         <div class="ff"><label>Notas</label><textarea id="ctc-f-notes" rows="3" placeholder="Contexto, histórico, observações...">${_esc(c.notes || '')}</textarea></div>
       </div>`;
   }
+
+  window._ctcAffiliateRoleChanged = (val) => {
+    const wrap = document.getElementById('ctc-f-master-wrap');
+    if (wrap) wrap.style.display = (val === 'sub') ? 'block' : 'none';
+  };
 
   // Normaliza qualquer formato (@user, user, instagram.com/user, https://...)
   // para o handle puro ("user").
@@ -484,6 +514,7 @@
   function _formRead() {
     const get = (id) => document.getElementById(id)?.value || '';
     const ig = _normalizeIgHandle(get('ctc-f-instagram'));
+    const role = get('ctc-f-affiliate-role') || null;
     return {
       name: get('ctc-f-name').trim(),
       email: get('ctc-f-email').trim() || null,
@@ -497,6 +528,9 @@
       status: get('ctc-f-status'),
       source: get('ctc-f-source') || null,
       notes: get('ctc-f-notes').trim() || null,
+      affiliate_role: role,
+      // Only persisted when sub; the DB trigger also enforces this.
+      master_id: role === 'sub' ? (get('ctc-f-master') || null) : null,
     };
   }
 
@@ -618,6 +652,57 @@
     const ig = _normalizeIgHandle(c.social_links?.instagram);
     const prof = PROFILE_BY_ID[c.profile];
 
+    // ── Affiliate hierarchy block ─────────────────────────
+    const ROLE_LABEL = { master: 'Master', direto: 'Afiliado Direto', sub: 'Subafiliado' };
+    const ROLE_COLOR = { master: '#a855f7', direto: '#3b82f6', sub: '#14b8a6' };
+    let hierarchyHTML = '';
+    if (c.affiliate_role) {
+      const roleLabel = ROLE_LABEL[c.affiliate_role];
+      const roleColor = ROLE_COLOR[c.affiliate_role];
+      const parts = [`<span class="ctc-tile-badge" style="background:${roleColor}22;color:${roleColor};border:1px solid ${roleColor}44;font-weight:600">
+        <i data-lucide="network" style="width:10px;height:10px"></i> ${roleLabel}
+      </span>`];
+      if (c.affiliate_role === 'sub' && c.master_id) {
+        const master = CRM.contactById(c.master_id);
+        if (master) {
+          parts.push(`<span style="font-size:12px;color:var(--text2)">
+            Indicado por <a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>window._ctcOpenDetail('${master.id}'),200)" style="color:var(--text);font-weight:600;text-decoration:underline">${_esc(master.name)}</a>
+          </span>`);
+        }
+      }
+      hierarchyHTML = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">${parts.join('')}</div>`;
+    }
+
+    // Se é master → lista subafiliados dele (direto da STATE)
+    let subsHTML = '';
+    if (c.affiliate_role === 'master') {
+      const subs = (STATE.crm?.contacts || [])
+        .filter(x => x.affiliate_role === 'sub' && x.master_id === c.id)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+      subsHTML = `
+        <div style="margin-top:18px;padding:14px;background:var(--bg3);border:1px solid var(--gb);border-radius:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:11px;color:var(--text2);font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
+              <i data-lucide="users" style="width:12px;height:12px;vertical-align:-2px"></i> Subafiliados (${subs.length})
+            </div>
+          </div>
+          ${subs.length === 0
+            ? `<div style="font-size:12.5px;color:var(--text3);font-style:italic">Nenhum sub cadastrado ainda. Pra atribuir, edite o contato do sub e selecione <strong>${_esc(c.name)}</strong> como master.</div>`
+            : `<div style="display:flex;flex-direction:column;gap:6px">
+              ${subs.map(s => `<a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>window._ctcOpenDetail('${s.id}'),200)"
+                style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--gb);border-radius:6px;color:var(--text);text-decoration:none;font-size:13px">
+                <span>
+                  <strong>${_esc(s.name)}</strong>
+                  ${s.company ? `<span style="color:var(--text2);font-weight:400"> · ${_esc(s.company)}</span>` : ''}
+                </span>
+                <span style="font-size:11px;color:var(--text3)">${STATUS_LABEL[s.status] || s.status}</span>
+              </a>`).join('')}
+            </div>`
+          }
+        </div>
+      `;
+    }
+
     const body = `
       <div class="ctc-detail-head">
         <div style="display:flex;align-items:center;gap:10px">
@@ -630,6 +715,7 @@
           ${_companyOf(c) || '—'} · ${TYPE_LABEL[c.type] || c.type} · ${STATUS_LABEL[c.status] || c.status}
         </div>
         ${CRM.tagsForContact(c.id).length ? `<div class="crm-tag-row">${CRM.tagsForContact(c.id).map(t => CRM.tagChip(t)).join('')}</div>` : ''}
+        ${hierarchyHTML}
       </div>
       ${ig ? `<a class="ctc-ig-cta" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener">
         <span class="ctc-ig-cta-ico">${IG_SVG}</span>
@@ -645,6 +731,7 @@
         ${c.lead_meta?.channel ? `<div><span class="ctc-dt-k">Origem</span><span>Landing page · ${_esc(c.lead_meta.channel)}</span></div>` : c.source ? `<div><span class="ctc-dt-k">Origem</span><span>${SOURCE_LABEL[c.source] || c.source}</span></div>` : ''}
         <div><span class="ctc-dt-k">Criado em</span><span>${new Date(c.created_at).toLocaleDateString('pt-BR')}</span></div>
       </div>
+      ${subsHTML}
       ${c.notes ? `<div style="margin-top:14px"><div class="ctc-dt-k" style="margin-bottom:6px">Notas</div><div style="font-size:13px;color:var(--text);white-space:pre-wrap">${_esc(c.notes)}</div></div>` : ''}
     `;
 

@@ -200,10 +200,13 @@
   function _cardHTML(card) {
     const contact = CRM.contactById(card.contact_id);
     const product = CRM.productById(card.product_id);
+    const stage = CRM.stageById(card.stage_id);
+    const isLost = !!(stage && stage.is_lost);
     const days = _daysSince(card.updated_at);
-    const stageName = ((CRM.stageById(card.stage_id)?.name) || '').toLowerCase();
+    const stageName = (stage?.name || '').toLowerCase();
     const settled = stageName.includes('fechado') || stageName.includes('follow');
-    const ageClass = settled ? '' : days >= 14 ? ' is-late' : days >= 7 ? ' is-warn' : '';
+    // Lost cards já têm visual próprio — não aplicamos warning amber/red em cima.
+    const ageClass = (settled || isLost) ? '' : days >= 14 ? ' is-late' : days >= 7 ? ' is-warn' : '';
 
     // Avatar do contato: avatar_url manual > iniciais em gradiente
     let avatarHTML = '';
@@ -220,11 +223,16 @@
       }
     }
 
-    return `<div class="kan-card"
+    const lostOverlay = isLost ? `<div class="kan-card-lost-badge" title="${_esc(card.lost_reason || 'Perdido')}">
+      <i data-lucide="x-circle" style="width:11px;height:11px"></i> Perdido
+    </div>` : '';
+
+    return `<div class="kan-card${isLost ? ' is-lost' : ''}"
         draggable="true"
         ondragstart="event.dataTransfer.setData('text/plain', '${card.id}'); this.classList.add('kan-card-drag')"
         ondragend="this.classList.remove('kan-card-drag')"
         onclick="window._pcrmOpenCard('${card.id}')">
+      ${lostOverlay}
       ${product ? `<div class="kan-card-tag" style="background:${product.color || '#94a3b8'}22;color:${product.color || '#94a3b8'};border:1px solid ${product.color || '#94a3b8'}44">
         <i data-lucide="package" style="width:9px;height:9px"></i> ${_esc(product.name)}
       </div>` : ''}
@@ -250,11 +258,82 @@
     ev.currentTarget.classList.remove('kan-col-drop');
     const cardId = ev.dataTransfer.getData('text/plain');
     if (!cardId) return;
-    try {
-      await CRM.cards.moveToStage(cardId, stageId);
-      _renderBoard(scope);
-    } catch (e) {
-      toast('Erro ao mover: ' + (e.message || 'desconhecido'), 'e');
+    _pcrmMoveWithLostGate(cardId, stageId, scope);
+  };
+
+  // Centralised move helper: if the destination stage is flagged is_lost
+  // we open the justification modal before writing. On cancel, nothing is
+  // persisted. On confirm, the update includes lost_reason so the DB
+  // trigger lets it through.
+  function _pcrmMoveWithLostGate(cardId, stageId, scope) {
+    const dest = CRM.stageById(stageId);
+    const card = STATE.crm.cards.find(c => c.id === cardId);
+    if (!card) return;
+    if (dest && dest.is_lost) {
+      _pcrmOpenLostReasonModal(card, dest, async (reason) => {
+        try {
+          await CRM.cards.update(cardId, { stage_id: stageId, lost_reason: reason });
+          _renderBoard(scope);
+          toast('Negociação marcada como perdida', 's');
+        } catch (e) {
+          toast('Erro ao mover: ' + (e.message || 'desconhecido'), 'e');
+        }
+      });
+      return;
+    }
+    (async () => {
+      try {
+        await CRM.cards.moveToStage(cardId, stageId);
+        _renderBoard(scope);
+      } catch (e) {
+        toast('Erro ao mover: ' + (e.message || 'desconhecido'), 'e');
+      }
+    })();
+  }
+
+  function _pcrmOpenLostReasonModal(card, destStage, onConfirm) {
+    const body = `
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="padding:12px 14px;background:color-mix(in srgb, var(--red) 10%, transparent);border:1px solid color-mix(in srgb, var(--red) 30%, transparent);border-radius:8px;font-size:12.5px;color:var(--text2);line-height:1.5">
+          Você está movendo <strong style="color:var(--text)">${_esc(card.title)}</strong> para
+          <strong style="color:var(--text)">${_esc(destStage.name)}</strong>. Registre o motivo —
+          vai pro histórico do card e aparece no relatório de perdas.
+        </div>
+        <div class="ff">
+          <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
+            Justificativa <span style="color:var(--red)">*</span>
+          </label>
+          <textarea id="pcrm-lost-reason" class="fi" rows="5"
+            placeholder="Ex.: Cliente escolheu concorrente por preço · Deal congelado por 6 meses · Sem budget em 2026…"
+            style="resize:vertical;min-height:110px;font-size:13px;line-height:1.5"
+            oninput="document.getElementById('pcrm-lost-confirm').disabled = !this.value.trim()"></textarea>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px">Mínimo 3 caracteres.</div>
+        </div>
+      </div>
+    `;
+    const footer = `
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" id="pcrm-lost-confirm" disabled
+        onclick="window._pcrmConfirmLost()">
+        <i data-lucide="x-circle"></i> Marcar como perdido
+      </button>
+    `;
+    // Stash the callback globally so the footer button can reach it.
+    window.__pcrmPendingLostConfirm = (reason) => {
+      closeModal();
+      onConfirm(reason);
+      window.__pcrmPendingLostConfirm = null;
+    };
+    openModal('Marcar como Perdido', body, footer);
+    lucide.createIcons();
+    setTimeout(() => document.getElementById('pcrm-lost-reason')?.focus(), 100);
+  }
+
+  window._pcrmConfirmLost = () => {
+    const reason = (document.getElementById('pcrm-lost-reason')?.value || '').trim();
+    if (reason.length < 3) { toast('Justificativa precisa ter pelo menos 3 caracteres', 'w'); return; }
+    if (typeof window.__pcrmPendingLostConfirm === 'function') {
+      window.__pcrmPendingLostConfirm(reason);
     }
   };
 
@@ -493,6 +572,22 @@
     const stage = CRM.stageById(card.stage_id);
     const scope = card.scope;
     const stages = CRM.stagesForScope(scope);
+    const isLost = !!(stage && stage.is_lost);
+
+    const lostBlock = isLost ? `
+      <div style="margin-top:14px;padding:12px 14px;background:color-mix(in srgb, var(--red) 8%, transparent);border:1px solid color-mix(in srgb, var(--red) 25%, transparent);border-radius:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:11px;color:var(--red);font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
+            <i data-lucide="x-circle" style="width:12px;height:12px;vertical-align:-2px"></i> Motivo da perda
+          </span>
+          <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="window._pcrmEditLostReason('${card.id}')">
+            <i data-lucide="pencil" style="width:11px;height:11px"></i> Editar
+          </button>
+        </div>
+        <div style="font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.5">${_esc(card.lost_reason || '—')}</div>
+        ${card.lost_at ? `<div style="font-size:11px;color:var(--text3);margin-top:6px">Registrado em ${new Date(card.lost_at).toLocaleString('pt-BR')}</div>` : ''}
+      </div>
+    ` : '';
 
     const body = `
       <div class="pcrm-detail">
@@ -510,9 +605,10 @@
         <div style="margin-top:14px">
           <label class="ctc-dt-k" style="display:block;margin-bottom:6px">Mover para etapa</label>
           <select id="pcrm-move-stage" class="fi" onchange="window._pcrmQuickMove('${card.id}', this.value)">
-            ${stages.map(s => `<option value="${s.id}" ${s.id === card.stage_id ? 'selected' : ''}>${_esc(s.name)}</option>`).join('')}
+            ${stages.map(s => `<option value="${s.id}" ${s.id === card.stage_id ? 'selected' : ''}>${_esc(s.name)}${s.is_lost ? ' (perdido)' : ''}</option>`).join('')}
           </select>
         </div>
+        ${lostBlock}
         ${card.notes ? `<div style="margin-top:14px">
           <label class="ctc-dt-k" style="display:block;margin-bottom:6px">Notas</label>
           <div style="font-size:13px;color:var(--text);white-space:pre-wrap">${_esc(card.notes)}</div>
@@ -530,11 +626,55 @@
     lucide.createIcons();
   };
 
+  // Edit the lost reason on an already-lost card (opens the same modal
+  // we use at move-time, pre-filled, but keeps the card where it is).
+  window._pcrmEditLostReason = (cardId) => {
+    const card = STATE.crm.cards.find(c => c.id === cardId);
+    if (!card) return;
+    const stage = CRM.stageById(card.stage_id);
+    if (!stage || !stage.is_lost) return;
+    closeModal();
+    _pcrmOpenLostReasonModal(card, stage, async (reason) => {
+      try {
+        await CRM.cards.update(cardId, { stage_id: card.stage_id, lost_reason: reason });
+        _renderBoard(card.scope || 'b2b');
+        toast('Justificativa atualizada', 's');
+      } catch (e) {
+        toast('Erro ao salvar: ' + (e.message || 'desconhecido'), 'e');
+      }
+    });
+    // Pre-fill the textarea once the modal is in the DOM
+    setTimeout(() => {
+      const ta = document.getElementById('pcrm-lost-reason');
+      if (ta) {
+        ta.value = card.lost_reason || '';
+        document.getElementById('pcrm-lost-confirm').disabled = !ta.value.trim();
+      }
+    }, 50);
+  };
+
   window._pcrmQuickMove = async (cardId, stageId) => {
+    const card = STATE.crm.cards.find(c => c.id === cardId);
+    if (!card) return;
+    const dest = CRM.stageById(stageId);
+    if (dest && dest.is_lost) {
+      // Closing the current detail modal first so the lost-reason modal
+      // opens cleanly on top.
+      closeModal();
+      _pcrmOpenLostReasonModal(card, dest, async (reason) => {
+        try {
+          await CRM.cards.update(cardId, { stage_id: stageId, lost_reason: reason });
+          _renderBoard(card.scope || 'b2b');
+          toast('Negociação marcada como perdida', 's');
+        } catch (e) {
+          toast('Erro ao mover: ' + (e.message || 'desconhecido'), 'e');
+        }
+      });
+      return;
+    }
     try {
       await CRM.cards.moveToStage(cardId, stageId);
-      const card = STATE.crm.cards.find(c => c.id === cardId);
-      _renderBoard(card?.scope || 'b2c');
+      _renderBoard(card.scope || 'b2b');
       toast('Negociação movida', 's');
     } catch (e) {
       toast('Erro ao mover: ' + (e.message || 'desconhecido'), 'e');
