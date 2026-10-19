@@ -6387,3 +6387,21 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   align-items: center;
 }
 .pcrm-contact-clear:hover { background: var(--bg3); color: var(--text); }
+
+/* Radio-chip pros tipos de negócio (Revenue Share / Fixo) no modal de fechar */
+.pcrm-deal-type-opt {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 10px 14px;
+  background: var(--bg3); border: 1px solid var(--gb);
+  border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--text2);
+  transition: all 0.15s;
+}
+.pcrm-deal-type-opt:hover { border-color: var(--text); color: var(--text); }
+.pcrm-deal-type-opt input[type="radio"] { display: none; }
+.pcrm-deal-type-opt:has(input:checked) {
+  background: color-mix(in srgb, var(--green) 10%, var(--bg3));
+  border-color: var(--green); color: var(--green); font-weight: 600;
+}
+.pcrm-deal-type-opt span { display: inline-flex; align-items: center; gap: 8px; }

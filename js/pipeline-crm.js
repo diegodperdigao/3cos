@@ -272,9 +272,10 @@
   };
 
   // Centralised move helper: if the destination stage is flagged is_lost
-  // we open the justification modal before writing. On cancel, nothing is
-  // persisted. On confirm, the update includes lost_reason so the DB
-  // trigger lets it through.
+  // we open the justification modal before writing. If it's a won stage
+  // (Negócio Fechado) we open the deal-terms modal instead. On cancel,
+  // nothing is persisted. On confirm, the update includes the required
+  // fields so the DB trigger lets it through.
   function _pcrmMoveWithLostGate(cardId, stageId, scope) {
     const dest = CRM.stageById(stageId);
     const card = STATE.crm.cards.find(c => c.id === cardId);
@@ -291,6 +292,18 @@
       });
       return;
     }
+    if (dest && dest.is_won) {
+      _pcrmOpenWonDealModal(card, dest, async (terms) => {
+        try {
+          await CRM.cards.update(cardId, { stage_id: stageId, ...terms });
+          _renderBoard(scope);
+          toast('Negócio fechado! 🎉', 's');
+        } catch (e) {
+          toast('Erro ao fechar: ' + (e.message || 'desconhecido'), 'e');
+        }
+      });
+      return;
+    }
     (async () => {
       try {
         await CRM.cards.moveToStage(cardId, stageId);
@@ -300,6 +313,185 @@
       }
     })();
   }
+
+  // Modal pedindo os termos do negócio ao fechar. Dois tipos:
+  // Revenue Share (percentual, com cálculo automático do master quando sub)
+  // ou Fixo (valor mensal + duração + metas / entregas opcionais).
+  function _pcrmOpenWonDealModal(card, destStage, onConfirm) {
+    const isSub = card.affiliate_role === 'sub';
+    const existing = {
+      deal_type: card.deal_type || '',
+      rev_share_pct: card.rev_share_pct ?? '',
+      fixed_monthly_value: card.fixed_monthly_value ?? '',
+      fixed_contract_months: card.fixed_contract_months ?? '',
+      fixed_goals: card.fixed_goals || '',
+      fixed_deliverables: card.fixed_deliverables || '',
+    };
+    const body = `
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="padding:12px 14px;background:color-mix(in srgb, var(--green) 10%, transparent);border:1px solid color-mix(in srgb, var(--green) 30%, transparent);border-radius:8px;font-size:12.5px;color:var(--text2);line-height:1.5">
+          Fechando <strong style="color:var(--text)">${_esc(card.title)}</strong> em
+          <strong style="color:var(--text)">${_esc(destStage.name)}</strong>. Registre as condições
+          — vai pro histórico do card e pro relatório financeiro.
+        </div>
+
+        <div class="ff">
+          <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
+            Tipo de negócio <span style="color:var(--red)">*</span>
+          </label>
+          <div style="display:flex;gap:8px">
+            <label class="pcrm-deal-type-opt">
+              <input type="radio" name="won-deal-type" value="revenue_share"
+                ${existing.deal_type === 'revenue_share' ? 'checked' : ''}
+                onchange="window._pcrmWonDealTypeChanged('revenue_share')">
+              <span><i data-lucide="percent" style="width:14px;height:14px"></i> Revenue Share</span>
+            </label>
+            <label class="pcrm-deal-type-opt">
+              <input type="radio" name="won-deal-type" value="fixo"
+                ${existing.deal_type === 'fixo' ? 'checked' : ''}
+                onchange="window._pcrmWonDealTypeChanged('fixo')">
+              <span><i data-lucide="banknote" style="width:14px;height:14px"></i> Fixo</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Revenue Share block -->
+        <div id="won-rs-block" style="display:${existing.deal_type === 'revenue_share' ? 'block' : 'none'}">
+          <div class="ff">
+            <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
+              Percentual do ${isSub ? 'sub' : 'parceiro'} <span style="color:var(--red)">*</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input id="won-rs-pct" type="number" min="0" max="100" step="0.1"
+                value="${existing.rev_share_pct}"
+                class="fi" style="width:120px;text-align:right"
+                oninput="window._pcrmWonRsPctChanged(this.value)"
+                placeholder="40">
+              <span style="font-size:16px;color:var(--text2);font-weight:600">%</span>
+            </div>
+            ${isSub ? `
+              <div id="won-rs-split" style="margin-top:10px;padding:10px 12px;background:var(--bg3);border:1px solid var(--gb);border-radius:6px;font-size:12px;line-height:1.6">
+                <div style="color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:4px">Divisão automática (50% total)</div>
+                <div><strong style="color:var(--text)">Sub:</strong> <span id="won-rs-sub-pct" style="color:var(--text)">—</span></div>
+                <div><strong style="color:var(--text)">Master:</strong> <span id="won-rs-master-pct" style="color:var(--text)">—</span></div>
+                <div id="won-rs-warning" style="color:var(--red);font-size:11px;margin-top:4px;display:none">
+                  <i data-lucide="alert-triangle" style="width:11px;height:11px;vertical-align:-2px"></i>
+                  Sub não pode ter mais que 50% — o pool total do time é 50%.
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- Fixo block -->
+        <div id="won-fixo-block" style="display:${existing.deal_type === 'fixo' ? 'block' : 'none'}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="ff">
+              <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
+                Valor mensal (R$) <span style="color:var(--red)">*</span>
+              </label>
+              <input id="won-fixo-value" type="number" min="0" step="0.01"
+                value="${existing.fixed_monthly_value}"
+                class="fi" placeholder="5000.00">
+            </div>
+            <div class="ff">
+              <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
+                Tempo de contrato (meses)
+              </label>
+              <input id="won-fixo-months" type="number" min="1" step="1"
+                value="${existing.fixed_contract_months}"
+                class="fi" placeholder="12">
+            </div>
+          </div>
+          <div class="ff" style="margin-top:12px">
+            <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
+              Metas <span style="font-weight:400;color:var(--text3);font-size:11px">(opcional)</span>
+            </label>
+            <textarea id="won-fixo-goals" class="fi" rows="3"
+              placeholder="Ex.: 20 posts/mês · atingir 100k impressões · engajamento 3%+">${_esc(existing.fixed_goals)}</textarea>
+          </div>
+          <div class="ff" style="margin-top:12px">
+            <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
+              Entregas <span style="font-weight:400;color:var(--text3);font-size:11px">(opcional)</span>
+            </label>
+            <textarea id="won-fixo-deliverables" class="fi" rows="3"
+              placeholder="Ex.: 1 vídeo/semana no YouTube · 3 stories semanais · 1 live mensal">${_esc(existing.fixed_deliverables)}</textarea>
+          </div>
+        </div>
+      </div>
+    `;
+    const footer = `
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-theme" id="won-confirm" onclick="window._pcrmConfirmWon()">
+        <i data-lucide="check-circle"></i> Fechar negócio
+      </button>
+    `;
+    window.__pcrmPendingWonConfirm = (terms) => {
+      closeModal();
+      onConfirm(terms);
+      window.__pcrmPendingWonConfirm = null;
+    };
+    window.__pcrmWonCtx = { isSub };
+    openModal('Fechar negócio', body, footer);
+    lucide.createIcons();
+    // Pre-fill the split display if already in revenue_share with pct
+    if (existing.deal_type === 'revenue_share' && existing.rev_share_pct !== '') {
+      window._pcrmWonRsPctChanged(existing.rev_share_pct);
+    }
+  }
+
+  window._pcrmWonDealTypeChanged = (val) => {
+    document.getElementById('won-rs-block').style.display = val === 'revenue_share' ? 'block' : 'none';
+    document.getElementById('won-fixo-block').style.display = val === 'fixo' ? 'block' : 'none';
+  };
+
+  window._pcrmWonRsPctChanged = (val) => {
+    const pct = parseFloat(val);
+    if (!window.__pcrmWonCtx?.isSub) return;
+    const subEl = document.getElementById('won-rs-sub-pct');
+    const masEl = document.getElementById('won-rs-master-pct');
+    const warn = document.getElementById('won-rs-warning');
+    if (!subEl || !masEl) return;
+    if (isNaN(pct) || pct < 0) {
+      subEl.textContent = '—'; masEl.textContent = '—';
+      if (warn) warn.style.display = 'none';
+      return;
+    }
+    const masterPct = Math.max(0, 50 - pct);
+    subEl.textContent = pct.toFixed(2).replace(/\.00$/, '') + '%';
+    masEl.textContent = masterPct.toFixed(2).replace(/\.00$/, '') + '%';
+    if (warn) warn.style.display = pct > 50 ? 'block' : 'none';
+  };
+
+  window._pcrmConfirmWon = () => {
+    const typeRadio = document.querySelector('input[name="won-deal-type"]:checked');
+    const dealType = typeRadio?.value;
+    if (!dealType) { toast('Escolha o tipo de negócio', 'w'); return; }
+    const terms = { deal_type: dealType };
+    if (dealType === 'revenue_share') {
+      const pct = parseFloat(document.getElementById('won-rs-pct')?.value);
+      if (isNaN(pct) || pct <= 0 || pct > 100) { toast('Informe um percentual válido (0 a 100)', 'w'); return; }
+      if (window.__pcrmWonCtx?.isSub && pct > 50) { toast('Sub não pode ter mais que 50% (pool total do time)', 'e'); return; }
+      terms.rev_share_pct = pct;
+      // Clear fixed fields so UPDATE doesn't carry stale values
+      terms.fixed_monthly_value = null;
+      terms.fixed_contract_months = null;
+      terms.fixed_goals = null;
+      terms.fixed_deliverables = null;
+    } else {
+      const value = parseFloat(document.getElementById('won-fixo-value')?.value);
+      if (isNaN(value) || value <= 0) { toast('Informe o valor mensal', 'w'); return; }
+      terms.fixed_monthly_value = value;
+      const months = parseInt(document.getElementById('won-fixo-months')?.value, 10);
+      terms.fixed_contract_months = isNaN(months) ? null : months;
+      terms.fixed_goals = (document.getElementById('won-fixo-goals')?.value || '').trim() || null;
+      terms.fixed_deliverables = (document.getElementById('won-fixo-deliverables')?.value || '').trim() || null;
+      terms.rev_share_pct = null;
+    }
+    if (typeof window.__pcrmPendingWonConfirm === 'function') {
+      window.__pcrmPendingWonConfirm(terms);
+    }
+  };
 
   function _pcrmOpenLostReasonModal(card, destStage, onConfirm) {
     const body = `
@@ -804,9 +996,54 @@
       </div>
     ` : '';
 
-    // Affiliate hierarchy block — role badge + edit, and if the deal is
-    // 'master' we list every other deal (across both scopes) tagged as
-    // a sub pointing to this card's contact.
+    // Won deal block — shown when the stage is a won stage.
+    const isWon = !!(stage && stage.is_won);
+    let wonBlock = '';
+    if (isWon) {
+      const dealType = card.deal_type;
+      const _fmtBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0);
+      let dealBody = '';
+      if (dealType === 'revenue_share') {
+        const pct = Number(card.rev_share_pct) || 0;
+        const isSub = card.affiliate_role === 'sub';
+        const masterPct = isSub ? Math.max(0, 50 - pct) : null;
+        dealBody = `
+          <div style="font-size:13px;color:var(--text);line-height:1.6">
+            <div><strong>Tipo:</strong> Revenue Share</div>
+            <div><strong>${isSub ? 'Sub' : 'Parceiro'}:</strong> ${pct}%</div>
+            ${isSub ? `<div><strong>Master (automático):</strong> ${masterPct}% <span style="font-size:11px;color:var(--text3)">— pool total 50%</span></div>` : ''}
+          </div>
+        `;
+      } else if (dealType === 'fixo') {
+        dealBody = `
+          <div style="font-size:13px;color:var(--text);line-height:1.6">
+            <div><strong>Tipo:</strong> Fixo</div>
+            <div><strong>Mensal:</strong> ${_fmtBRL(card.fixed_monthly_value)}</div>
+            ${card.fixed_contract_months ? `<div><strong>Contrato:</strong> ${card.fixed_contract_months} mês${card.fixed_contract_months > 1 ? 'es' : ''}</div>` : ''}
+            ${card.fixed_goals ? `<div style="margin-top:6px"><strong>Metas:</strong><div style="white-space:pre-wrap;color:var(--text2);font-size:12.5px;margin-top:2px">${_esc(card.fixed_goals)}</div></div>` : ''}
+            ${card.fixed_deliverables ? `<div style="margin-top:6px"><strong>Entregas:</strong><div style="white-space:pre-wrap;color:var(--text2);font-size:12.5px;margin-top:2px">${_esc(card.fixed_deliverables)}</div></div>` : ''}
+          </div>
+        `;
+      } else {
+        dealBody = `<div style="font-size:12.5px;color:var(--text3);font-style:italic">Termos não registrados.</div>`;
+      }
+      wonBlock = `
+        <div style="margin-top:14px;padding:12px 14px;background:color-mix(in srgb, var(--green) 8%, transparent);border:1px solid color-mix(in srgb, var(--green) 25%, transparent);border-radius:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
+              <i data-lucide="check-circle" style="width:12px;height:12px;vertical-align:-2px"></i> Negócio fechado
+            </span>
+            <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="window._pcrmEditWonDeal('${card.id}')">
+              <i data-lucide="pencil" style="width:11px;height:11px"></i> Editar
+            </button>
+          </div>
+          ${dealBody}
+          ${card.closed_at ? `<div style="font-size:11px;color:var(--text3);margin-top:8px">Fechado em ${new Date(card.closed_at).toLocaleString('pt-BR')}</div>` : ''}
+        </div>
+      `;
+    }
+
+    // Affiliate hierarchy block
     const ROLE_LABEL = { master: 'Master', direto: 'Afiliado Direto', sub: 'Subafiliado' };
     const ROLE_COLOR = { master: '#a855f7', direto: '#3b82f6', sub: '#14b8a6' };
     let hierarchyBlock = '';
@@ -892,6 +1129,7 @@
         </div>
         ${lostBlock}
         ${hierarchyBlock}
+        ${wonBlock}
         ${card.notes ? `<div style="margin-top:14px">
           <label class="ctc-dt-k" style="display:block;margin-bottom:6px">Notas</label>
           <div style="font-size:13px;color:var(--text);white-space:pre-wrap">${_esc(card.notes)}</div>
@@ -955,6 +1193,25 @@
     }
   };
 
+  // Edit the won-deal terms on an already-won card. Reopens the same
+  // modal we use at close-time, pre-filled with the current values.
+  window._pcrmEditWonDeal = (cardId) => {
+    const card = STATE.crm.cards.find(c => c.id === cardId);
+    if (!card) return;
+    const stage = CRM.stageById(card.stage_id);
+    if (!stage || !stage.is_won) return;
+    closeModal();
+    _pcrmOpenWonDealModal(card, stage, async (terms) => {
+      try {
+        await CRM.cards.update(cardId, { stage_id: card.stage_id, ...terms });
+        _renderBoard(card.scope || 'b2b');
+        toast('Termos atualizados', 's');
+      } catch (e) {
+        toast('Erro ao salvar: ' + (e.message || 'desconhecido'), 'e');
+      }
+    });
+  };
+
   // Edit the lost reason on an already-lost card (opens the same modal
   // we use at move-time, pre-filled, but keeps the card where it is).
   window._pcrmEditLostReason = (cardId) => {
@@ -987,8 +1244,6 @@
     if (!card) return;
     const dest = CRM.stageById(stageId);
     if (dest && dest.is_lost) {
-      // Closing the current detail modal first so the lost-reason modal
-      // opens cleanly on top.
       closeModal();
       _pcrmOpenLostReasonModal(card, dest, async (reason) => {
         try {
@@ -997,6 +1252,19 @@
           toast('Negociação marcada como perdida', 's');
         } catch (e) {
           toast('Erro ao mover: ' + (e.message || 'desconhecido'), 'e');
+        }
+      });
+      return;
+    }
+    if (dest && dest.is_won) {
+      closeModal();
+      _pcrmOpenWonDealModal(card, dest, async (terms) => {
+        try {
+          await CRM.cards.update(cardId, { stage_id: stageId, ...terms });
+          _renderBoard(card.scope || 'b2b');
+          toast('Negócio fechado! 🎉', 's');
+        } catch (e) {
+          toast('Erro ao fechar: ' + (e.message || 'desconhecido'), 'e');
         }
       });
       return;
