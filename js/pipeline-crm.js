@@ -379,7 +379,7 @@
           </div>
           <div class="ff"><label>Etapa inicial</label>
             <select id="pcrm-f-stage" class="fi">
-              ${stages.map(s => `<option value="${s.id}">${_esc(s.name)}</option>`).join('')}
+              ${stages.filter(s => !s.is_lost).map(s => `<option value="${s.id}">${_esc(s.name)}</option>`).join('')}
             </select>
           </div>
         </div>
