@@ -227,6 +227,11 @@
       <i data-lucide="x-circle" style="width:11px;height:11px"></i> Perdido
     </div>` : '';
 
+    const AFF_LABEL = { master: 'M', direto: 'D', sub: 'S' };
+    const AFF_COLOR = { master: '#a855f7', direto: '#3b82f6', sub: '#14b8a6' };
+    const AFF_TITLE = { master: 'Master — indica outros', direto: 'Afiliado Direto', sub: 'Subafiliado' };
+    const affBadge = card.affiliate_role ? `<span class="kan-card-aff" style="background:${AFF_COLOR[card.affiliate_role]}22;color:${AFF_COLOR[card.affiliate_role]};border:1px solid ${AFF_COLOR[card.affiliate_role]}44" title="${AFF_TITLE[card.affiliate_role]}">${AFF_LABEL[card.affiliate_role]}</span>` : '';
+
     return `<div class="kan-card${isLost ? ' is-lost' : ''}"
         draggable="true"
         ondragstart="event.dataTransfer.setData('text/plain', '${card.id}'); this.classList.add('kan-card-drag')"
@@ -236,7 +241,7 @@
       ${product ? `<div class="kan-card-tag" style="background:${product.color || '#94a3b8'}22;color:${product.color || '#94a3b8'};border:1px solid ${product.color || '#94a3b8'}44">
         <i data-lucide="package" style="width:9px;height:9px"></i> ${_esc(product.name)}
       </div>` : ''}
-      <div class="kan-card-title">${_esc(card.title)}</div>
+      <div class="kan-card-title">${affBadge}${_esc(card.title)}</div>
       ${contact && CRM.tagsForContact ? CRM.tagsForContact(contact.id).map(t => CRM.tagChip(t, 'kan-card-tagchip')).join('') : ''}
       ${contact ? `<div class="kan-card-contact"
           onmouseenter="window._ctcShowHoverCard && _ctcShowHoverCard('${contact.id}', this)"
@@ -383,6 +388,27 @@
             </select>
           </div>
         </div>
+        <div class="form-row">
+          <div class="ff"><label>Categoria de parceria</label>
+            <select id="pcrm-f-affiliate-role" class="fi" onchange="window._pcrmAffRoleChanged(this.value)">
+              <option value="">— Não classificado</option>
+              <option value="master">Master — indica outros parceiros</option>
+              <option value="direto">Afiliado Direto</option>
+              <option value="sub">Subafiliado — veio de um master</option>
+            </select>
+          </div>
+          <div class="ff" id="pcrm-f-master-wrap" style="display:none">
+            <label>Master responsável *</label>
+            <select id="pcrm-f-master" class="fi">
+              <option value="">— Selecione o master</option>
+              ${(STATE.crm?.contacts || [])
+                .slice()
+                .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'))
+                .map(m => `<option value="${m.id}">${_esc(m.name)}${m.company ? ' · ' + _esc(m.company) : ''}</option>`)
+                .join('')}
+            </select>
+          </div>
+        </div>
         <div class="ff"><label>Notas</label>
           <textarea id="pcrm-f-notes" rows="3" placeholder="Contexto, próximos passos..."></textarea>
         </div>
@@ -506,8 +532,14 @@
     search.focus();
   };
 
+  window._pcrmAffRoleChanged = (val) => {
+    const wrap = document.getElementById('pcrm-f-master-wrap');
+    if (wrap) wrap.style.display = (val === 'sub') ? 'block' : 'none';
+  };
+
   window._pcrmSaveNewCard = async (scope) => {
     const get = (id) => document.getElementById(id)?.value || '';
+    const role = get('pcrm-f-affiliate-role') || null;
     const payload = {
       scope,
       contact_id: get('pcrm-f-contact'),
@@ -516,8 +548,13 @@
       stage_id: get('pcrm-f-stage'),
       notes: get('pcrm-f-notes').trim() || null,
       owner: STATE.user?.id || null,
+      affiliate_role: role,
+      // trigger limpa master_contact_id em roles != 'sub', mas enviamos
+      // null explícito pra manter o payload coerente.
+      master_contact_id: role === 'sub' ? (get('pcrm-f-master') || null) : null,
     };
     if (!payload.contact_id || !payload.title) { toast('Contato e título são obrigatórios', 'e'); return; }
+    if (role === 'sub' && !payload.master_contact_id) { toast('Selecione o master responsável', 'e'); return; }
     try {
       await CRM.cards.create(payload);
       // marca o contato como in_pipeline
@@ -589,6 +626,73 @@
       </div>
     ` : '';
 
+    // Affiliate hierarchy block — role badge + edit, and if the deal is
+    // 'master' we list every other deal (across both scopes) tagged as
+    // a sub pointing to this card's contact.
+    const ROLE_LABEL = { master: 'Master', direto: 'Afiliado Direto', sub: 'Subafiliado' };
+    const ROLE_COLOR = { master: '#a855f7', direto: '#3b82f6', sub: '#14b8a6' };
+    let hierarchyBlock = '';
+    if (card.affiliate_role) {
+      const role = card.affiliate_role;
+      const label = ROLE_LABEL[role];
+      const color = ROLE_COLOR[role];
+      let masterLine = '';
+      if (role === 'sub' && card.master_contact_id) {
+        const m = CRM.contactById(card.master_contact_id);
+        if (m) {
+          masterLine = `<div style="font-size:12px;color:var(--text2);margin-top:6px">
+            Indicado por <a href="#" onclick="event.preventDefault();window._ctcOpenDetail('${m.id}')" style="color:var(--text);font-weight:600;text-decoration:underline">${_esc(m.name)}</a>
+          </div>`;
+        }
+      }
+      let subsList = '';
+      if (role === 'master' && contact) {
+        const subs = (STATE.crm.cards || [])
+          .filter(c => c.affiliate_role === 'sub' && c.master_contact_id === contact.id && c.id !== card.id)
+          .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+        subsList = `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--gb)">
+          <div style="font-size:10.5px;color:var(--text2);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">
+            Subafiliados vinculados (${subs.length})
+          </div>
+          ${subs.length === 0
+            ? `<div style="font-size:12px;color:var(--text3);font-style:italic">Nenhum sub vinculado ainda. Pra atribuir, abra o card do sub e aponte este contato como master.</div>`
+            : `<div style="display:flex;flex-direction:column;gap:6px">
+              ${subs.map(s => {
+                const st = CRM.stageById(s.stage_id);
+                return `<a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>window._pcrmOpenCard('${s.id}'),200)"
+                  style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--gb);border-radius:6px;color:var(--text);text-decoration:none;font-size:13px">
+                  <span><strong>${_esc(s.title)}</strong> <span style="color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-left:6px">${s.scope}</span></span>
+                  <span style="font-size:11px;color:var(--text3)">${st ? _esc(st.name) : '—'}</span>
+                </a>`;
+              }).join('')}
+            </div>`
+          }
+        </div>`;
+      }
+      hierarchyBlock = `
+        <div style="margin-top:14px;padding:12px 14px;background:var(--bg3);border:1px solid var(--gb);border-radius:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;background:${color}22;color:${color};border:1px solid ${color}44;border-radius:4px;font-size:11px;font-weight:600">
+              <i data-lucide="network" style="width:11px;height:11px"></i> ${label}
+            </span>
+            <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="window._pcrmEditAffiliate('${card.id}')">
+              <i data-lucide="pencil" style="width:11px;height:11px"></i> Editar
+            </button>
+          </div>
+          ${masterLine}
+          ${subsList}
+        </div>
+      `;
+    } else {
+      hierarchyBlock = `
+        <div style="margin-top:14px">
+          <button class="btn btn-outline" style="width:100%;padding:8px;font-size:12px" onclick="window._pcrmEditAffiliate('${card.id}')">
+            <i data-lucide="network" style="width:12px;height:12px"></i> Classificar como Master / Direto / Sub
+          </button>
+        </div>
+      `;
+    }
+
     const body = `
       <div class="pcrm-detail">
         <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">${_esc(card.title)}</div>
@@ -609,6 +713,7 @@
           </select>
         </div>
         ${lostBlock}
+        ${hierarchyBlock}
         ${card.notes ? `<div style="margin-top:14px">
           <label class="ctc-dt-k" style="display:block;margin-bottom:6px">Notas</label>
           <div style="font-size:13px;color:var(--text);white-space:pre-wrap">${_esc(card.notes)}</div>
@@ -624,6 +729,58 @@
 
     openModal(card.title, body, footer);
     lucide.createIcons();
+  };
+
+  // Open a quick modal to classify/edit the deal's affiliate role.
+  // Separate from the main edit so it stays visible in the detail block.
+  window._pcrmEditAffiliate = (cardId) => {
+    const card = STATE.crm.cards.find(c => c.id === cardId);
+    if (!card) return;
+    const contacts = (STATE.crm.contacts || [])
+      .filter(c => c.id !== card.contact_id)
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+    const body = `
+      <div class="form-grid">
+        <div class="ff"><label>Categoria de parceria</label>
+          <select id="pcrm-aff-role" class="fi" onchange="(function(v){document.getElementById('pcrm-aff-master-wrap').style.display=v==='sub'?'block':'none'})(this.value)">
+            <option value="" ${!card.affiliate_role ? 'selected' : ''}>— Não classificado</option>
+            <option value="master" ${card.affiliate_role === 'master' ? 'selected' : ''}>Master — indica outros parceiros</option>
+            <option value="direto" ${card.affiliate_role === 'direto' ? 'selected' : ''}>Afiliado Direto</option>
+            <option value="sub" ${card.affiliate_role === 'sub' ? 'selected' : ''}>Subafiliado — veio de um master</option>
+          </select>
+        </div>
+        <div class="ff" id="pcrm-aff-master-wrap" style="display:${card.affiliate_role === 'sub' ? 'block' : 'none'}">
+          <label>Master responsável *</label>
+          <select id="pcrm-aff-master" class="fi">
+            <option value="">— Selecione o master</option>
+            ${contacts.map(c => `<option value="${c.id}" ${card.master_contact_id === c.id ? 'selected' : ''}>${_esc(c.name)}${c.company ? ' · ' + _esc(c.company) : ''}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    `;
+    openModal('Classificação de parceria', body, `
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-theme" onclick="window._pcrmSaveAffiliate('${cardId}')"><i data-lucide="check"></i> Salvar</button>
+    `);
+    lucide.createIcons();
+  };
+
+  window._pcrmSaveAffiliate = async (cardId) => {
+    const card = STATE.crm.cards.find(c => c.id === cardId);
+    if (!card) return;
+    const role = document.getElementById('pcrm-aff-role')?.value || null;
+    const masterId = role === 'sub' ? (document.getElementById('pcrm-aff-master')?.value || null) : null;
+    if (role === 'sub' && !masterId) { toast('Selecione o master responsável', 'e'); return; }
+    try {
+      await CRM.cards.update(cardId, { affiliate_role: role, master_contact_id: masterId });
+      closeModal();
+      _renderBoard(card.scope || 'b2b');
+      toast('Classificação atualizada', 's');
+      // Reabre o detalhe pra mostrar o estado atualizado
+      setTimeout(() => window._pcrmOpenCard(cardId), 150);
+    } catch (e) {
+      toast('Erro ao salvar: ' + (e.message || 'desconhecido'), 'e');
+    }
   };
 
   // Edit the lost reason on an already-lost card (opens the same modal
