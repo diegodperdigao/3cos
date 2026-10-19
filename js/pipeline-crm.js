@@ -223,9 +223,7 @@
       }
     }
 
-    const lostOverlay = isLost ? `<div class="kan-card-lost-badge" title="${_esc(card.lost_reason || 'Perdido')}">
-      <i data-lucide="x-circle" style="width:11px;height:11px"></i> Perdido
-    </div>` : '';
+    const lostOverlay = '';
 
     const AFF_LABEL = { master: 'Master', direto: 'Direto', sub: 'Sub' };
     const AFF_COLOR = { master: '#a855f7', direto: '#3b82f6', sub: '#14b8a6' };
