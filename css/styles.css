@@ -6366,15 +6366,24 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   padding: 3px 7px; border-radius: 4px; text-transform: uppercase;
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
-/* Micro badge M/D/S da classificação de parceria no card do kanban */
-.kan-card-aff {
+/* Row de tags inline no card do kanban (produto + classificação de parceria) */
+.kan-card-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.kan-card-tag-row .kan-card-tag { margin: 0; }
+/* Badge do master picker: botão de limpar seleção */
+.pcrm-contact-clear {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 18px; height: 18px;
-  font-size: 10px;
-  font-weight: 700;
-  border-radius: 4px;
-  margin-right: 6px;
-  vertical-align: 1px;
 }
+.pcrm-contact-clear:hover { background: var(--bg3); color: var(--text); }

@@ -227,10 +227,12 @@
       <i data-lucide="x-circle" style="width:11px;height:11px"></i> Perdido
     </div>` : '';
 
-    const AFF_LABEL = { master: 'M', direto: 'D', sub: 'S' };
+    const AFF_LABEL = { master: 'Master', direto: 'Direto', sub: 'Sub' };
     const AFF_COLOR = { master: '#a855f7', direto: '#3b82f6', sub: '#14b8a6' };
     const AFF_TITLE = { master: 'Master — indica outros', direto: 'Afiliado Direto', sub: 'Subafiliado' };
-    const affBadge = card.affiliate_role ? `<span class="kan-card-aff" style="background:${AFF_COLOR[card.affiliate_role]}22;color:${AFF_COLOR[card.affiliate_role]};border:1px solid ${AFF_COLOR[card.affiliate_role]}44" title="${AFF_TITLE[card.affiliate_role]}">${AFF_LABEL[card.affiliate_role]}</span>` : '';
+    const affChip = card.affiliate_role ? `<div class="kan-card-tag" style="background:${AFF_COLOR[card.affiliate_role]}22;color:${AFF_COLOR[card.affiliate_role]};border:1px solid ${AFF_COLOR[card.affiliate_role]}44" title="${AFF_TITLE[card.affiliate_role]}">
+      <i data-lucide="network" style="width:9px;height:9px"></i> ${AFF_LABEL[card.affiliate_role]}
+    </div>` : '';
 
     return `<div class="kan-card${isLost ? ' is-lost' : ''}"
         draggable="true"
@@ -238,10 +240,13 @@
         ondragend="this.classList.remove('kan-card-drag')"
         onclick="window._pcrmOpenCard('${card.id}')">
       ${lostOverlay}
-      ${product ? `<div class="kan-card-tag" style="background:${product.color || '#94a3b8'}22;color:${product.color || '#94a3b8'};border:1px solid ${product.color || '#94a3b8'}44">
-        <i data-lucide="package" style="width:9px;height:9px"></i> ${_esc(product.name)}
+      ${(product || affChip) ? `<div class="kan-card-tag-row">
+        ${product ? `<div class="kan-card-tag" style="background:${product.color || '#94a3b8'}22;color:${product.color || '#94a3b8'};border:1px solid ${product.color || '#94a3b8'}44">
+          <i data-lucide="package" style="width:9px;height:9px"></i> ${_esc(product.name)}
+        </div>` : ''}
+        ${affChip}
       </div>` : ''}
-      <div class="kan-card-title">${affBadge}${_esc(card.title)}</div>
+      <div class="kan-card-title">${_esc(card.title)}</div>
       ${contact && CRM.tagsForContact ? CRM.tagsForContact(contact.id).map(t => CRM.tagChip(t, 'kan-card-tagchip')).join('') : ''}
       ${contact ? `<div class="kan-card-contact"
           onmouseenter="window._ctcShowHoverCard && _ctcShowHoverCard('${contact.id}', this)"
@@ -399,14 +404,7 @@
           </div>
           <div class="ff" id="pcrm-f-master-wrap" style="display:none">
             <label>Master responsável *</label>
-            <select id="pcrm-f-master" class="fi">
-              <option value="">— Selecione o master</option>
-              ${(STATE.crm?.contacts || [])
-                .slice()
-                .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'))
-                .map(m => `<option value="${m.id}">${_esc(m.name)}${m.company ? ' · ' + _esc(m.company) : ''}</option>`)
-                .join('')}
-            </select>
+            ${_masterPickerHTML('pcrm-f-master', null)}
           </div>
         </div>
         <div class="ff"><label>Notas</label>
@@ -426,12 +424,36 @@
       set('pcrm-f-stage', draft.stage_id); set('pcrm-f-notes', draft.notes);
       if (draft.contact_id) window._pcrmPickContact(draft.contact_id);
       else if (draft.search) { const si = document.getElementById('pcrm-f-contact-search'); if (si) { si.value = draft.search; si.focus(); } }
+      // Restaurar categoria de parceria e master (quando voltar da criação
+      // inline de um contato que vai virar master do sub).
+      if (draft.affiliate_role) {
+        const roleSel = document.getElementById('pcrm-f-affiliate-role');
+        if (roleSel) { roleSel.value = draft.affiliate_role; window._pcrmAffRoleChanged(draft.affiliate_role); }
+      }
+      if (draft.master_contact_id) {
+        setTimeout(() => window._pcrmPickMaster('pcrm-f-master', draft.master_contact_id), 50);
+      } else if (draft.master_search) {
+        setTimeout(() => {
+          const si = document.getElementById('pcrm-f-master-search');
+          if (si) { si.value = draft.master_search; si.focus(); }
+        }, 50);
+      }
     }
   };
 
   function _pcrmReadDraft() {
     const get = (id) => document.getElementById(id)?.value || '';
-    return { title: get('pcrm-f-title'), product_id: get('pcrm-f-product'), stage_id: get('pcrm-f-stage'), notes: get('pcrm-f-notes'), search: get('pcrm-f-contact-search') };
+    return {
+      title: get('pcrm-f-title'),
+      product_id: get('pcrm-f-product'),
+      stage_id: get('pcrm-f-stage'),
+      notes: get('pcrm-f-notes'),
+      search: get('pcrm-f-contact-search'),
+      contact_id: get('pcrm-f-contact'),
+      affiliate_role: get('pcrm-f-affiliate-role'),
+      master_contact_id: get('pcrm-f-master'),
+      master_search: get('pcrm-f-master-search'),
+    };
   }
 
   // Busca sem resultado → cria o contato sem sair do fluxo e volta para a
@@ -531,6 +553,162 @@
     search.style.display = '';
     search.focus();
   };
+
+  // ── MASTER PICKER (searchable) ──────────────────────────
+  // Reused in the new-deal modal and in the edit-affiliate modal. Takes
+  // the hidden input id (e.g. 'pcrm-f-master' or 'pcrm-aff-master') so
+  // both modals can live in isolation. State lives on data-* attributes
+  // of a wrapper so the handlers can look things up.
+  function _masterPickerHTML(hiddenId, currentId, excludeContactId) {
+    const current = currentId ? CRM.contactById(currentId) : null;
+    const exclude = excludeContactId || '';
+    return `<div class="pcrm-contact-picker" data-master-picker="${hiddenId}" data-exclude="${exclude}">
+      <input id="${hiddenId}-search" class="fi" type="text" autocomplete="off"
+        placeholder="Digite nome, empresa ou @instagram do master..."
+        oninput="window._pcrmMasterSearch('${hiddenId}', this.value)"
+        onfocus="window._pcrmMasterSearch('${hiddenId}', this.value)"
+        onblur="setTimeout(()=>{const r=document.getElementById('${hiddenId}-results');if(r)r.style.display='none'},200)"
+        style="display:${current ? 'none' : 'block'}">
+      <input id="${hiddenId}" type="hidden" value="${current ? current.id : ''}">
+      <div id="${hiddenId}-selected" class="pcrm-contact-selected" style="display:${current ? 'flex' : 'none'}">
+        ${current ? _masterSelectedInner(current) : ''}
+      </div>
+      <div id="${hiddenId}-results" class="pcrm-contact-results" style="display:none"></div>
+    </div>`;
+  }
+  function _masterSelectedInner(c) {
+    const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+    let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
+    const hue = Math.abs(h) % 360;
+    const sub = c.company ? _esc(c.company) : c.social_links?.instagram ? '@' + _esc(c.social_links.instagram) : c.email ? _esc(c.email) : '—';
+    return `
+      <span class="pcrm-contact-opt-av" style="background:hsl(${hue},30%,46%)">${initials}</span>
+      <div class="pcrm-contact-opt-info">
+        <div class="pcrm-contact-opt-name">${_esc(c.name)}</div>
+        <div class="pcrm-contact-opt-sub">${sub}</div>
+      </div>
+      <button type="button" class="pcrm-contact-clear" onclick="window._pcrmClearMaster('${c.id ? '' : ''}'); event.stopPropagation();" data-hidden-id="" title="Trocar">
+        <i data-lucide="x" style="width:14px;height:14px"></i>
+      </button>
+    `;
+  }
+
+  window._pcrmMasterSearch = (hiddenId, q) => {
+    const results = document.getElementById(hiddenId + '-results');
+    if (!results) return;
+    const term = (q || '').trim().toLowerCase();
+    const wrap = results.closest('[data-master-picker]');
+    const excludeId = wrap?.dataset.exclude || '';
+    let list = (STATE.crm?.contacts || []).filter(c => c.id !== excludeId);
+    if (term) {
+      list = list.filter(c =>
+        (c.name || '').toLowerCase().includes(term)
+        || (c.company || '').toLowerCase().includes(term)
+        || (c.email || '').toLowerCase().includes(term)
+        || (c.social_links?.instagram || '').toLowerCase().includes(term)
+      );
+    }
+    list = list.slice(0, 8);
+    const createRow = `<button type="button" class="pcrm-contact-create" onmousedown="event.preventDefault()" onclick="window._pcrmCreateMasterInline('${hiddenId}')">
+      <i data-lucide="user-plus"></i>
+      <span>${term ? `Criar contato <strong>${_esc(q.trim())}</strong>` : 'Criar novo contato'}</span>
+    </button>`;
+    if (!list.length) {
+      results.innerHTML = `<div class="pcrm-contact-empty">Nenhum contato encontrado${term ? ` para "${_esc(q.trim())}"` : ''}.</div>${createRow}`;
+      results.style.display = 'block';
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    results.innerHTML = list.map(c => {
+      const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+      let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
+      const hue = Math.abs(h) % 360;
+      const ig = c.social_links?.instagram;
+      return `<div class="pcrm-contact-opt" onmousedown="event.preventDefault()" onclick="window._pcrmPickMaster('${hiddenId}', '${c.id}')">
+        <span class="pcrm-contact-opt-av" style="background:hsl(${hue},30%,46%)">${initials}</span>
+        <div class="pcrm-contact-opt-info">
+          <div class="pcrm-contact-opt-name">${_esc(c.name)}</div>
+          <div class="pcrm-contact-opt-sub">${c.company ? _esc(c.company) : ig ? '@' + _esc(ig) : c.email ? _esc(c.email) : '—'}</div>
+        </div>
+      </div>`;
+    }).join('') + createRow;
+    results.style.display = 'block';
+    if (window.lucide) lucide.createIcons();
+  };
+
+  // "Não encontrei o master" → cria o contato na hora e volta pra onde
+  // estava, com o novo contato já selecionado como master.
+  window._pcrmCreateMasterInline = (hiddenId) => {
+    if (!window._ctcOpenNewInline) { toast('Função de criação não carregada', 'e'); return; }
+    const search = document.getElementById(hiddenId + '-search');
+    const name = (search?.value || '').trim().replace(/^@/, '');
+
+    if (hiddenId === 'pcrm-f-master') {
+      // Contexto: modal de NOVA negociação. Preserva o rascunho inteiro
+      // e marca o novo contato como master quando reabrir.
+      const scope = _newCardScope;
+      const draft = _pcrmReadDraft();
+      window._ctcOpenNewInline({
+        name,
+        type: 'b2c',
+        title: 'Novo master para a negociação',
+        onCreated: (c) => { window._pcrmOpenNewCard(scope, { ...draft, master_contact_id: c.id, affiliate_role: 'sub' }); },
+        onCancel: () => { window._pcrmOpenNewCard(scope, draft); },
+      });
+    } else if (hiddenId === 'pcrm-aff-master') {
+      // Contexto: modal de edição de classificação. Reabre no final.
+      const roleSel = document.getElementById('pcrm-aff-role');
+      const roleNow = roleSel?.value || 'sub';
+      // O cardId é lido pelo botão Salvar — mas aqui precisamos achá-lo.
+      // Olhamos o botão com onclick que contém _pcrmSaveAffiliate.
+      const saveBtn = document.querySelector('button[onclick^="window._pcrmSaveAffiliate"]');
+      const match = saveBtn?.getAttribute('onclick')?.match(/_pcrmSaveAffiliate\('([^']+)'\)/);
+      const cardId = match?.[1];
+      if (!cardId) { toast('Não consegui identificar a negociação', 'e'); return; }
+      window._ctcOpenNewInline({
+        name,
+        type: 'b2c',
+        title: 'Novo master',
+        onCreated: (c) => {
+          window._pcrmEditAffiliate(cardId);
+          setTimeout(() => {
+            const rs = document.getElementById('pcrm-aff-role');
+            if (rs) { rs.value = roleNow; (document.getElementById('pcrm-aff-master-wrap') || {}).style = (roleNow === 'sub' ? 'display:block' : 'display:none'); }
+            window._pcrmPickMaster('pcrm-aff-master', c.id);
+          }, 150);
+        },
+        onCancel: () => { window._pcrmEditAffiliate(cardId); },
+      });
+    }
+  };
+
+  window._pcrmPickMaster = (hiddenId, contactId) => {
+    const c = CRM.contactById(contactId);
+    if (!c) return;
+    document.getElementById(hiddenId).value = contactId;
+    document.getElementById(hiddenId + '-search').style.display = 'none';
+    document.getElementById(hiddenId + '-results').style.display = 'none';
+    const sel = document.getElementById(hiddenId + '-selected');
+    sel.innerHTML = _masterSelectedInner(c)
+      // Patch the clear button to know its hidden id
+      .replace("_pcrmClearMaster('')", `_pcrmClearMaster('${hiddenId}')`);
+    sel.style.display = 'flex';
+    if (window.lucide) lucide.createIcons();
+  };
+
+  window._pcrmClearMaster = (hiddenId) => {
+    if (!hiddenId) return;
+    document.getElementById(hiddenId).value = '';
+    const sel = document.getElementById(hiddenId + '-selected');
+    const search = document.getElementById(hiddenId + '-search');
+    sel.innerHTML = '';
+    sel.style.display = 'none';
+    search.style.display = 'block';
+    search.value = '';
+    search.focus();
+  };
+
+  // ── MASTER PICKER END ────────────────────────────────────
 
   window._pcrmAffRoleChanged = (val) => {
     const wrap = document.getElementById('pcrm-f-master-wrap');
@@ -736,9 +914,6 @@
   window._pcrmEditAffiliate = (cardId) => {
     const card = STATE.crm.cards.find(c => c.id === cardId);
     if (!card) return;
-    const contacts = (STATE.crm.contacts || [])
-      .filter(c => c.id !== card.contact_id)
-      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
     const body = `
       <div class="form-grid">
         <div class="ff"><label>Categoria de parceria</label>
@@ -751,10 +926,7 @@
         </div>
         <div class="ff" id="pcrm-aff-master-wrap" style="display:${card.affiliate_role === 'sub' ? 'block' : 'none'}">
           <label>Master responsável *</label>
-          <select id="pcrm-aff-master" class="fi">
-            <option value="">— Selecione o master</option>
-            ${contacts.map(c => `<option value="${c.id}" ${card.master_contact_id === c.id ? 'selected' : ''}>${_esc(c.name)}${c.company ? ' · ' + _esc(c.company) : ''}</option>`).join('')}
-          </select>
+          ${_masterPickerHTML('pcrm-aff-master', card.master_contact_id, card.contact_id)}
         </div>
       </div>
     `;
