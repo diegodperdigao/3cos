@@ -417,25 +417,21 @@ function _wStalledLeads() {
       'default', 'var(--amber)');
   }
 
-  const b1 = all.filter(x => x.days < 15).length;
-  const b2 = all.filter(x => x.days >= 15 && x.days < 30).length;
-  const b3 = all.filter(x => x.days >= 30).length;
-  const seg = (n, color) => n ? `<span class="hw2-seg" style="flex:${n};background:${color}" title="${n}"></span>` : '';
+  // Título do card geralmente já é "Nome · Empresa"; mostramos só a parte
+  // antes do "·" pra não repetir.
+  const shortName = (t) => String(t || '').split(' · ')[0];
 
   const items = all.slice(0, 4).map(x => `
     <div class="hw2-item" onclick="openMod('${x.kind === 'card' ? 'pipeline' : 'contacts'}')">
+      <span class="hw2-item-text"><strong>${_esc(shortName(x.title))}</strong></span>
       <span class="hw2-stall-days ${x.days >= 30 ? 'is-red' : x.days >= 15 ? 'is-amber' : ''}">${x.days}d</span>
-      <span class="hw2-item-text"><strong>${_esc(x.title)}</strong>${x.who ? ` · ${_esc(x.who)}` : ''}</span>
-      <span class="hw2-item-time">${x.kind === 'card' ? (x.scope || '').toUpperCase() : 'contato'}</span>
     </div>`).join('');
 
   return _shell('stalled_leads', 'Leads parados', 'hourglass',
     `<div class="hw2-big-row">
       <div class="hw2-big-val">${all.length}</div>
-      <div class="hw2-big-sub-inline">${stalledCards.length} negociaç${stalledCards.length === 1 ? 'ão' : 'ões'} · ${stalledContacts.length} contato${stalledContacts.length === 1 ? '' : 's'}</div>
+      <div class="hw2-big-sub-inline">sem movimento há 7+ dias</div>
     </div>
-    <div class="hw2-stack" aria-label="7 a 14 dias, 15 a 29 dias, 30 dias ou mais">${seg(b1, 'var(--text3)')}${seg(b2, 'var(--amber)')}${seg(b3, 'var(--red)')}</div>
-    <div class="hw2-stall-legend"><span><i style="background:var(--text3)"></i>7–14d ${b1}</span><span><i style="background:var(--amber)"></i>15–29d ${b2}</span><span><i style="background:var(--red)"></i>30d+ ${b3}</span></div>
     <div class="hw2-list">${items}</div>`,
     all.length > 4 ? `<button class="hw2-cta" onclick="event.stopPropagation();openMod('pipeline')">Ver todos os ${all.length} →</button>` : null,
     'default', 'var(--amber)');
