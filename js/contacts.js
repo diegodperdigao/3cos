@@ -24,6 +24,14 @@
     { id: 'agencia',    label: 'Agência',    icon: 'building-2',  color: '#6366f1' },
     { id: 'tcg',        label: 'TCG',        icon: 'layers',      color: '#f59e0b' },
     { id: 'comunidade', label: 'Comunidade', icon: 'users',       color: '#0ea5e9' },
+    // Segmentos da pesquisa Rips
+    { id: 'youtuber',     label: 'YouTuber',          icon: 'youtube',       color: '#ef4444' },
+    { id: 'youtuber_tcg', label: 'YouTuber TCG',      icon: 'clapperboard',  color: '#dc2626' },
+    { id: 'tiktoker',     label: 'TikToker',          icon: 'music-2',       color: '#111827' },
+    { id: 'swarm',        label: 'Swarm',             icon: 'sparkles',      color: '#14b8a6' },
+    { id: 'tiktok_live',  label: 'Loja TikTok LIVE',  icon: 'shopping-bag',  color: '#f43f5e' },
+    { id: 'celebridade',  label: 'Celebridade',       icon: 'crown',         color: '#eab308' },
+    { id: 'pagina',       label: 'Página',            icon: 'file-text',     color: '#64748b' },
   ];
   const PROFILE_BY_ID = Object.fromEntries(PROFILES.map(p => [p.id, p]));
 
@@ -438,14 +446,14 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
         <div class="ctc-filterbar">
           <div class="ctc-fb-chip ctc-fb-count" id="ctc-counts">0 contatos</div>
 
-          <div class="ctc-fb-seg" data-f="profile">
-            <button class="ctc-fb-chip on" data-v="" onclick="window._ctcFilter(this)">
-              <i data-lucide="layers" style="width:11px;height:11px"></i> Perfil: todos
-            </button>
-            ${PROFILES.map(p => `<button class="ctc-fb-chip" data-v="${p.id}" onclick="window._ctcFilter(this)" style="--chip-c:${p.color}">
-              <i data-lucide="${p.icon}" style="width:11px;height:11px"></i>${p.label}
-            </button>`).join('')}
-          </div>
+          <label class="ctc-fb-select-wrap" title="Filtrar por perfil">
+            <i data-lucide="layers"></i>
+            <select id="ctc-fsel-profile" class="ctc-fb-select" onchange="window._ctcFilterSelect('profile', this.value)"></select>
+          </label>
+          <label class="ctc-fb-select-wrap" title="Filtrar por etiqueta">
+            <i data-lucide="tag"></i>
+            <select id="ctc-fsel-tag" class="ctc-fb-select" onchange="window._ctcFilterSelect('tag', this.value)"></select>
+          </label>
 
           <div class="ctc-fb-divider"></div>
 
@@ -519,6 +527,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
 
   // ── RENDER PRINCIPAL ──────────────────────────────────────
   function _renderList() {
+    _renderFilterSelects();
     const list = _computeList();
     const el = document.getElementById('ctc-list');
     const countsEl = document.getElementById('ctc-counts');
@@ -653,6 +662,38 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
     _renderList();
     _updateClearBtn();
   };
+
+  window._ctcFilterSelect = (key, val) => {
+    F[key] = val || null;
+    _renderList();
+    _updateClearBtn();
+  };
+
+  // Seletores de perfil e etiqueta com contagem (só opções com contatos).
+  function _renderFilterSelects() {
+    const all = STATE.crm?.contacts || [];
+    const ps = document.getElementById('ctc-fsel-profile');
+    if (ps) {
+      const cnt = {}; let none = 0;
+      all.forEach(c => { if (c.profile) cnt[c.profile] = (cnt[c.profile] || 0) + 1; else none++; });
+      const opts = PROFILES.filter(p => cnt[p.id] || F.profile === p.id)
+        .sort((a, b) => (cnt[b.id] || 0) - (cnt[a.id] || 0))
+        .map(p => `<option value="${p.id}" ${F.profile === p.id ? 'selected' : ''}>${p.label} (${cnt[p.id] || 0})</option>`).join('');
+      ps.innerHTML = `<option value="">Perfil: todos</option>${opts}${none ? `<option value="__none__" ${F.profile === '__none__' ? 'selected' : ''}>Sem perfil (${none})</option>` : ''}`;
+      ps.classList.toggle('on', !!F.profile);
+    }
+    const ts = document.getElementById('ctc-fsel-tag');
+    if (ts) {
+      const cnt = {};
+      (STATE.crm?.contactTags || []).forEach(x => { cnt[x.tag_id] = (cnt[x.tag_id] || 0) + 1; });
+      const tags = (STATE.crm?.tags || []).filter(t => cnt[t.id] || F.tag === t.id)
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+      ts.innerHTML = `<option value="">Etiqueta: todas</option>` +
+        tags.map(t => `<option value="${t.id}" ${F.tag === t.id ? 'selected' : ''}>${_esc(t.name)} (${cnt[t.id] || 0})</option>`).join('');
+      ts.closest('.ctc-fb-select-wrap').style.display = tags.length ? '' : 'none';
+      ts.classList.toggle('on', !!F.tag);
+    }
+  }
 
   window._ctcClearFilters = () => {
     F.status = null; F.type = null; F.profile = null; F.tier = null; F.tag = null; F.product = null;
@@ -1448,6 +1489,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
     return isNaN(n) ? null : Math.round(n);
   }
 
+  const RESEARCH_PROFILE = { A: 'youtuber', B: 'youtuber_tcg', C: 'swarm', TT: 'tiktoker', ST: 'streamer', LIVE: 'tiktok_live', CEL: 'celebridade', PG: 'pagina' };
   const RESEARCH_SEGMENTS = {
     A: 'Mainstream YouTube', B: 'TCG YouTube', C: 'Swarm', TT: 'TikTok-native',
     ST: 'Streamer', LIVE: 'Loja TikTok LIVE', CEL: 'Celebridade/futebol', PG: 'Página',
@@ -1491,7 +1533,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
       r.other_links && `Outros links: ${r.other_links}`,
       r.flag && `Alerta: ${RESEARCH_FLAGS[r.flag] || r.flag}`,
     ].filter(Boolean);
-    const tags = [seg];
+    const tags = [];
     if (r.status === 'selected') tags.push('Selecionado p/ contato');
     if (r.flag) tags.push(RESEARCH_FLAGS[r.flag] || r.flag);
     return {
@@ -1500,7 +1542,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
         name: r.name,
         email,
         type: 'b2c',
-        profile: 'tcg',
+        profile: RESEARCH_PROFILE[r.tier] || 'tcg',
         tier: TIER_BY_ID[r.tier] ? r.tier : null,
         status: 'wishlist',
         source: 'outbound',
@@ -1620,7 +1662,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
         ${it.payload.tier ? `<span class="ctc-tile-tier" style="--tier-c:${TIER_BY_ID[it.payload.tier].color};position:relative;top:0;right:0;margin:0 4px">${it.payload.tier}</span>` : ''}
         ${nets.map(n => _socialBadge(n)).join(' ')}
         ${reach ? `<span>· ${_fmtFollowers(reach)}</span>` : ''}
-        <span style="color:var(--text3)">· ${_esc(it.tags[0] || '')}</span>
+        <span style="color:var(--text3)">· ${_esc(PROFILE_BY_ID[it.payload.profile]?.label || it.tags[0] || '')}</span>
       </div>`;
     }).join('');
 
@@ -1628,7 +1670,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
       <div style="font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:12px">
         Arquivo <strong>${_esc(fileName)}</strong> reconhecido como planilha de
         <strong>${kind === 'creators' ? 'creators' : 'grupos de WhatsApp/Telegram'}</strong> da pesquisa Rips.
-        Perfil: <strong>${kind === 'creators' ? 'TCG' : 'Comunidade'}</strong> · status Wishlist · origem Outbound.
+        Perfil: <strong>${kind === 'creators' ? 'segmento da planilha (YouTuber, TikToker, Swarm…)' : 'Comunidade'}</strong> · status Wishlist · origem Outbound.
       </div>
       <div class="ctc-import-stats">
         <div class="ctc-import-stat"><div class="ctc-import-stat-v" style="color:var(--green)">${fresh.length}</div><div class="ctc-import-stat-k">Novos</div></div>

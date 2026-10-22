@@ -6478,3 +6478,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .fq-done strong{font-size:16px;color:var(--text);}
 .fq-done span{font-size:12.5px;color:var(--text2);}
 .fq-foot{margin-top:12px;display:flex;justify-content:flex-start;}
+
+/* Filtros de perfil/etiqueta como seletor */
+.ctc-fb-select-wrap{display:inline-flex;align-items:center;gap:6px;padding:0 4px 0 10px;border:1px solid var(--gb);border-radius:999px;background:var(--bg3);height:30px;cursor:pointer;}
+.ctc-fb-select-wrap svg{width:12px;height:12px;color:var(--text3);flex-shrink:0;}
+.ctc-fb-select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--text2);font-size:12px;font-weight:600;padding:0 22px 0 0;height:28px;cursor:pointer;max-width:220px;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 10px) 13px,calc(100% - 6px) 13px;background-size:4px 4px;background-repeat:no-repeat;}
+.ctc-fb-select:focus{outline:none;}
+.ctc-fb-select.on{color:var(--text);}
+.ctc-fb-select-wrap:has(.ctc-fb-select.on){border-color:var(--text);}
+.ctc-fb-select option{color:#111;background:#fff;}
