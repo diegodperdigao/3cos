@@ -6451,3 +6451,4 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .pcrm-owner-select{padding:4px 8px !important;font-size:12px !important;min-width:160px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .kan-card-foot{justify-content:flex-start !important;}
+.ctc-import-row .soc-badge{color:#fff !important;}

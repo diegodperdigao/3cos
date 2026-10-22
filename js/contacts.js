@@ -23,6 +23,7 @@
     { id: 'streamer',   label: 'Streamer',   icon: 'video',       color: '#a855f7' },
     { id: 'agencia',    label: 'Agência',    icon: 'building-2',  color: '#6366f1' },
     { id: 'tcg',        label: 'TCG',        icon: 'layers',      color: '#f59e0b' },
+    { id: 'comunidade', label: 'Comunidade', icon: 'users',       color: '#0ea5e9' },
   ];
   const PROFILE_BY_ID = Object.fromEntries(PROFILES.map(p => [p.id, p]));
 
@@ -64,6 +65,10 @@
     { id: 'twitch',    label: 'Twitch',    short: 'TW', color: '#9146FF', api: true,  url: h => `https://twitch.tv/${h}` },
     { id: 'kick',      label: 'Kick',      short: 'KK', color: '#2BB80F', api: true,  url: h => `https://kick.com/${h}` },
     { id: 'x',         label: 'X',         short: 'X',  color: '#000000', api: false, url: h => `https://x.com/${h}` },
+    { id: 'kwai',      label: 'Kwai',      short: 'KW', color: '#FF7A00', api: false, url: h => `https://www.kwai.com/@${h}` },
+    // WhatsApp/Telegram guardam o link completo (convite/canal), não um @.
+    { id: 'whatsapp',  label: 'WhatsApp',  short: 'WA', color: '#25D366', api: false, link: true, url: h => /^https?:/i.test(h) ? h : `https://${h}` },
+    { id: 'telegram',  label: 'Telegram',  short: 'TG', color: '#229ED9', api: false, link: true, url: h => /^https?:/i.test(h) ? h : `https://t.me/${h}` },
   ];
   const SOCIAL_BY_ID = Object.fromEntries(SOCIALS.map(s => [s.id, s]));
   const SOCIAL_STALE_MS = 24 * 3600 * 1000;
@@ -72,9 +77,10 @@
   function _normHandle(net, raw) {
     let s = String(raw || '').trim();
     if (!s) return '';
+    if (SOCIAL_BY_ID[net]?.link) return /^https?:/i.test(s) ? s : 'https://' + s.replace(/^\/+/, '');
     if (net === 'youtube') { const m = s.match(/(UC[\w-]{22})/); if (m) return m[1]; }
     s = s.replace(/^https?:\/\//i, '').replace(/^(www|m)\./i, '');
-    s = s.replace(/^(instagram\.com|instagr\.am|tiktok\.com|youtube\.com|youtu\.be|twitch\.tv|kick\.com|x\.com|twitter\.com)\//i, '');
+    s = s.replace(/^(instagram\.com|instagr\.am|tiktok\.com|youtube\.com|youtu\.be|twitch\.tv|kick\.com|x\.com|twitter\.com|kwai\.com)\//i, '');
     s = s.split(/[/?#]/)[0].replace(/^@/, '');
     return s;
   }
@@ -108,11 +114,11 @@
       if (s.posts) extra.push(`${_fmtFollowers(s.posts)} vídeos`);
       if (s.live) extra.push(`<span class="soc-live">ao vivo${s.live_viewers != null ? ` · ${_fmtFollowers(s.live_viewers)}` : ''}</span>`);
       const when = s.fetched_at ? new Date(s.fetched_at).toLocaleDateString('pt-BR') : '';
-      const src = s.source === 'api' ? `atualizado ${when}` : s.source === 'manual' ? `manual · ${when}` : (n.api ? 'ainda não buscado' : 'sem API — informe manualmente');
+      const src = s.source === 'api' ? `atualizado ${when}` : s.source === 'manual' ? `manual · ${when}` : s.source === 'import' ? `planilha · ${when}` : (n.api ? 'ainda não buscado' : 'sem API — informe manualmente');
       return `<div class="soc-row">
         ${_socialBadge(n)}
         <div class="soc-main">
-          <a href="${_esc(n.url(h))}" target="_blank" rel="noopener" class="soc-handle">@${_esc(h)}</a>
+          <a href="${_esc(n.url(h))}" target="_blank" rel="noopener" class="soc-handle">${n.link ? 'Abrir link' : '@' + _esc(h)}</a>
           <div class="soc-meta">${extra.length ? extra.join(' · ') + ' · ' : ''}${src}</div>
         </div>
         <div class="soc-followers" title="Seguidores">${_fmtFollowers(s.followers)}</div>
@@ -366,7 +372,7 @@
             const others = SOCIALS.filter(n => n !== net && c.social_links?.[n.id]).length;
             const reach = _totalReach(c);
             return `<a class="ctc-tile-ig" href="${_esc(net.url(h))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${net.label}">
-              ${_socialBadge(net)}@${_esc(h)}${others ? `<span class="soc-more">+${others}</span>` : ''}
+              ${_socialBadge(net)}${net.link ? net.label : '@' + _esc(h)}${others ? `<span class="soc-more">+${others}</span>` : ''}
             </a>${reach != null ? `<div class="ctc-tile-reach">${_fmtFollowers(reach)} seguidores</div>` : ''}`;
           })()}
           ${sub ? `<div class="ctc-tile-sub" title="${sub.title}"><i data-lucide="${sub.icon}"></i>${_esc(sub.text)}</div>` : '<div class="ctc-tile-sub" style="opacity:0.4">—</div>'}
@@ -727,7 +733,7 @@
       ...SOCIALS.filter(n => c.social_links?.[n.id]).map(n => {
         const h = c.social_links[n.id];
         const f = c.social_stats?.[n.id]?.followers;
-        return `<div class="ctc-pop-row" title="${n.label}">${_socialBadge(n)}<span><a href="${_esc(n.url(h))}" target="_blank" rel="noopener" class="ctc-pop-link">@${_esc(h)}</a>${f != null ? ` · ${_fmtFollowers(f)}` : ''}</span></div>`;
+        return `<div class="ctc-pop-row" title="${n.label}">${_socialBadge(n)}<span><a href="${_esc(n.url(h))}" target="_blank" rel="noopener" class="ctc-pop-link">${n.link ? 'Abrir ' + n.label : '@' + _esc(h)}</a>${f != null ? ` · ${_fmtFollowers(f)}` : ''}</span></div>`;
       }),
       company ? row('building-2', _esc(company), 'Empresa') : '',
       c.lead_meta?.channel ? row('globe', `Landing page · ${_esc(c.lead_meta.channel)}`, 'Origem') : (c.source ? row('compass', SOURCE_LABEL[c.source] || _esc(c.source), 'Origem') : ''),
@@ -1111,18 +1117,19 @@
         </div>
         <div class="ctc-import-format">
           <div class="ctc-import-format-k">Com Tier</div>
-          <code>João Silva, @joaosilva, 1<br>Maria, @maria, 2<br>Pedro, @pedro, 3</code>
+          <code>João Silva, @joaosilva, S<br>Maria, @maria, A<br>Pedro, @pedro, B</code>
         </div>
         <div class="ctc-import-format">
           <div class="ctc-import-format-k">CSV com cabeçalho</div>
-          <code>Nome, Instagram, Tier<br>João, @joao, 1<br>Maria, @maria, 2</code>
+          <code>Nome, Instagram, Tier<br>João, @joao, S<br>Maria, @maria, A</code>
         </div>
       </div>
 
       <div style="font-size:11px;color:var(--text3);margin:14px 0 8px;line-height:1.5">
         Separador: <strong>vírgula</strong>, <strong>ponto-e-vírgula</strong> ou <strong>tab</strong>.
         Colunas aceitas no cabeçalho: <strong>nome, instagram, tier, email, telefone, empresa, perfil, obs</strong>.
-        Tier aceita 1-5. Links <code>https://instagram.com/user?stkn=...</code> são automaticamente normalizados.
+        Tier aceita S, A, B, C. Links <code>https://instagram.com/user?stkn=...</code> são automaticamente normalizados.
+        Planilhas da pesquisa Rips (<em>creator-pipeline</em> e <em>group-pipeline</em>) são reconhecidas sozinhas ao carregar o arquivo.
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -1160,6 +1167,9 @@
     const reader = new FileReader();
     reader.onload = (e) => {
       let text = String(e.target.result || '');
+      // Planilhas da pesquisa Rips (creators / grupos) têm importador próprio.
+      const kind = _researchKind(text);
+      if (kind) { ev.target.value = ''; _openResearchImport(kind, text, file.name); return; }
       // Se tiver header (primeira linha com palavras-chave como "nome","email"),
       // remove para não contar como contato
       const firstLine = text.split(/\r?\n/)[0]?.toLowerCase() || '';
@@ -1181,6 +1191,326 @@
     };
     reader.onerror = () => toast('Erro ao ler o arquivo', 'e');
     reader.readAsText(file, 'UTF-8');
+  };
+
+  // ── IMPORTADOR DA PESQUISA RIPS (creator-pipeline / group-pipeline) ──
+  // CSV RFC 4180: aspas, vírgulas e quebras de linha dentro do campo.
+  function _parseCSV(text) {
+    const rows = []; let row = [], field = '', q = false;
+    const t = text.replace(/^﻿/, '');
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      if (q) {
+        if (ch === '"') { if (t[i + 1] === '"') { field += '"'; i++; } else q = false; }
+        else field += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && t[i + 1] === '\n') i++;
+        row.push(field); field = '';
+        if (row.length > 1 || row[0] !== '') rows.push(row);
+        row = [];
+      } else field += ch;
+    }
+    if (field !== '' || row.length) { row.push(field); rows.push(row); }
+    if (!rows.length) return [];
+    const head = rows[0].map(h => h.trim());
+    return rows.slice(1).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+  }
+
+  function _researchKind(text) {
+    const head = (text.replace(/^﻿/, '').split(/\r?\n/)[0] || '').toLowerCase();
+    if (head.includes('group_meaning') && head.includes('main_platform')) return 'creators';
+    if (head.includes('platform_kind') && head.includes('link_status')) return 'groups';
+    return null;
+  }
+
+  // "53.6M" / "9.9K" / "12,184" → número
+  function _parseCount(v) {
+    const m = String(v || '').replace(/,/g, '').match(/([\d.]+)\s*([KkMm])?/);
+    if (!m) return null;
+    const n = parseFloat(m[1]) * ({ K: 1e3, M: 1e6 }[(m[2] || '').toUpperCase()] || 1);
+    return isNaN(n) ? null : Math.round(n);
+  }
+
+  const RESEARCH_SEGMENTS = {
+    A: 'Mainstream YouTube', B: 'TCG YouTube', C: 'Swarm', TT: 'TikTok-native',
+    ST: 'Streamer', LIVE: 'Loja TikTok LIVE', CEL: 'Celebridade/futebol', PG: 'Página',
+  };
+  const RESEARCH_FLAGS = { 'Store-sponsored': 'Patrocinado por loja', 'Jamble-affiliated': 'Afiliado Jamble', 'Check history': 'Checar histórico' };
+  const GROUP_TOPICS = {
+    'Buy and sell': 'Compra e venda', Auctions: 'Leilões', Deals: 'Ofertas', Trades: 'Trocas',
+    Collecting: 'Colecionismo', Competitive: 'Competitivo', 'City and league': 'Cidade e liga',
+    Store: 'Loja', Creator: 'Creator', 'TCG Pocket': 'TCG Pocket', News: 'Notícias', 'Multi-TCG': 'Multi-TCG',
+  };
+  const GROUP_PLATFORMS = {
+    'WhatsApp group': 'Grupo WhatsApp', 'WhatsApp channel': 'Canal WhatsApp', 'WhatsApp community': 'Comunidade WhatsApp',
+    'Telegram group': 'Grupo Telegram', 'Telegram channel': 'Canal Telegram',
+  };
+
+  // Linha do CSV → { payload (crm.contacts), tags: [nomes] }
+  function _mapCreatorRow(r) {
+    const links = {}, stats = {};
+    const when = (r.updated_at || '').slice(0, 10) ? new Date(r.updated_at).toISOString() : new Date().toISOString();
+    [['youtube', 'YouTube'], ['tiktok', 'TikTok'], ['instagram', 'Instagram'], ['kick', 'Kick'], ['twitch', 'Twitch'], ['kwai', 'Kwai'], ['x', 'X']].forEach(([net, col]) => {
+      const url = r[col + ' url'];
+      if (!url) return;
+      const h = net === 'instagram' ? _normalizeIgHandle(url) : _normHandle(net, url);
+      if (!h) return;
+      links[net] = h;
+      const f = _parseCount(r[col + ' followers']);
+      if (f != null) stats[net] = { followers: f, source: 'import', fetched_at: when };
+    });
+    const email = (String(r.business_contact || '').match(/[\w.+-]+@[\w-]+\.[\w.-]+/) || [])[0] || null;
+    const seg = RESEARCH_SEGMENTS[r.tier] || r.tier_label || r.tier;
+    const lines = [
+      `Segmento: ${seg}${r.group_label ? ' · ' + r.group_label : ''}`,
+      `Plataforma principal: ${r.main_platform}${r.audience ? ' · Público: ' + r.audience : ''}`,
+      r.why && `Por quê: ${r.why}`,
+      r.pokemon_cadence && `Cadência Pokémon: ${r.pokemon_cadence}`,
+      r.business_contact && `Contato comercial: ${r.business_contact}`,
+      r.sponsors_seen && `Patrocínios vistos: ${r.sponsors_seen}`,
+      r.also && `Também: ${r.also}`,
+      r.city && `Cidade: ${r.city}`,
+      r['YouTube (2nd) url'] && `2º canal YouTube: ${r['YouTube (2nd) url']}${r['YouTube (2nd) followers'] ? ' (' + r['YouTube (2nd) followers'] + ')' : ''}`,
+      r.other_links && `Outros links: ${r.other_links}`,
+      r.flag && `Alerta: ${RESEARCH_FLAGS[r.flag] || r.flag}`,
+    ].filter(Boolean);
+    const tags = [seg];
+    if (r.status === 'selected') tags.push('Selecionado p/ contato');
+    if (r.flag) tags.push(RESEARCH_FLAGS[r.flag] || r.flag);
+    return {
+      key: r.id,
+      payload: {
+        name: r.name,
+        email,
+        type: 'b2c',
+        profile: 'tcg',
+        tier: TIER_BY_ID[r.tier] ? r.tier : null,
+        status: 'wishlist',
+        source: 'outbound',
+        social_links: links,
+        social_stats: stats,
+        notes: lines.join('\n'),
+        lead_meta: {
+          channel: 'Pesquisa Rips · creators', external_id: r.id, segment: r.tier, segment_label: seg,
+          group: r.group, rank: r.rank ? Number(r.rank) : null, research_source: r.source,
+          pokemon_examples: r.pokemon_examples || null, platforms_detail: r.platforms_detail || null,
+          research_updated_at: r.updated_at || null, imported_at: new Date().toISOString(),
+        },
+      },
+      tags,
+    };
+  }
+
+  function _mapGroupRow(r) {
+    const net = r.platform_kind === 'Telegram' ? 'telegram' : 'whatsapp';
+    const links = r.link ? { [net]: _normHandle(net, r.link) } : {};
+    const members = _parseCount(r.members);
+    const stats = members != null ? { [net]: { followers: members, source: 'import', fetched_at: new Date(r.added_at || Date.now()).toISOString() } } : {};
+    const topics = (r.topic_labels || '').split(';').map(t => t.trim()).filter(Boolean);
+    const platformLabel = GROUP_PLATFORMS[r.platform] || r.platform;
+    const linkStatus = { active: 'ativo', expired: 'expirado', unchecked: 'não verificado' }[r.link_status] || r.link_status;
+    const lines = [
+      `${platformLabel} · ${r.region}`,
+      topics.length && `Tópicos: ${topics.map(t => GROUP_TOPICS[t] || t).join(', ')}`,
+      members != null && `Membros: ${members.toLocaleString('pt-BR')} ${r.members_unit === 'members' ? 'membros' : 'seguidores'}${r.members_source ? ' (' + r.members_source + ')' : ''}`,
+      r.run_by && `Administrado por: ${r.run_by}${r.run_by_url ? ' · ' + r.run_by_url : ''}`,
+      r.link && `Link (${linkStatus}): ${r.link}`,
+      r.flags && `Alertas: ${r.flags}`,
+      r.description && `\n${r.description}`,
+      r.notes && r.notes,
+    ].filter(Boolean);
+    const tags = [platformLabel, ...topics.map(t => GROUP_TOPICS[t] || t)];
+    if (r.link_status === 'expired') tags.push('Link expirado');
+    return {
+      key: r.id,
+      payload: {
+        name: r.name,
+        type: 'b2c',
+        profile: 'comunidade',
+        tier: null,
+        status: 'wishlist',
+        source: 'outbound',
+        social_links: links,
+        social_stats: stats,
+        notes: lines.join('\n'),
+        lead_meta: {
+          channel: 'Pesquisa Rips · grupos', external_id: r.id, platform: r.platform, link: r.link || null,
+          link_status: r.link_status, region: r.region, topics: r.topics || null, members, members_unit: r.members_unit || null,
+          run_by: r.run_by || null, run_by_url: r.run_by_url || null, search_wave: r.search_wave || null,
+          research_source: r.source || null, source_url: r.source_url || null, found_at: r.found_at || null,
+          imported_at: new Date().toISOString(),
+        },
+      },
+      tags,
+    };
+  }
+
+  let _research = null; // { kind, items: [{key,payload,tags}], fresh: [...], dupes: n }
+
+  function _openResearchImport(kind, text, fileName) {
+    const rows = _parseCSV(text).filter(r => (r.name || '').trim());
+    const items = rows.map(kind === 'creators' ? _mapCreatorRow : _mapGroupRow);
+    const contacts = STATE.crm?.contacts || [];
+    const existingKeys = new Set(contacts.map(c => c.lead_meta?.external_id).filter(Boolean));
+    const lc = (x) => String(x || '').trim().toLowerCase();
+    const byName = new Map(contacts.map(c => [lc(c.name), c]));
+    const merges = [];
+    let fresh;
+    if (kind === 'groups') {
+      // Grupo com o mesmo nome de um creator da pesquisa = comunidade do próprio
+      // creator: anexa o link ao contato dele em vez de criar outro.
+      const isCreator = (c) => c && (c.lead_meta?.channel === 'Pesquisa Rips · creators' || c.profile === 'tcg');
+      const already = new Set(contacts.flatMap(c => c.lead_meta?.communities || []).map(x => x.external_id));
+      fresh = [];
+      items.forEach(it => {
+        if (existingKeys.has(it.key) || already.has(it.key)) return;
+        const owner = byName.get(lc(it.payload.name));
+        if (isCreator(owner)) merges.push({ contact: owner, item: it });
+        else fresh.push(it);
+      });
+      // Nomes genéricos repetidos ("Pokémon TCG Pocket"…) ganham um complemento.
+      const taken = new Set(contacts.map(c => lc(c.name)));
+      const count = {}; fresh.forEach(it => { const k = lc(it.payload.name); count[k] = (count[k] || 0) + 1; });
+      fresh.forEach(it => {
+        const base = it.payload.name.trim();
+        if (count[lc(base)] < 2 && !taken.has(lc(base))) { taken.add(lc(base)); return; }
+        const m = it.payload.lead_meta;
+        const runBy = (m.run_by || '').replace(/\s*\(.*\)$/, '').trim();
+        const place = m.region && !/^BR\b/.test(m.region) ? m.region : '';
+        const extra = (runBy && lc(runBy) !== lc(base) && !base.toLowerCase().includes(lc(runBy))) ? runBy
+          : [GROUP_PLATFORMS[m.platform] || m.platform, place].filter(Boolean).join(' · ');
+        let name = `${base} (${extra})`, i = 2;
+        while (taken.has(lc(name))) name = `${base} (${extra} ${i++})`;
+        taken.add(lc(name));
+        it.payload.name = name;
+      });
+    } else {
+      fresh = items.filter(it => !existingKeys.has(it.key) && !byName.has(lc(it.payload.name)));
+    }
+    _research = { kind, items, fresh, merges };
+
+    const count = (fn) => { const m = {}; fresh.forEach(it => { const k = fn(it); m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+    const chips = (pairs) => pairs.map(([k, n]) => `<span class="ctc-tile-badge" style="margin:0 4px 4px 0">${_esc(k)} · ${n}</span>`).join('');
+    const tierDist = count(it => it.payload.tier ? 'Tier ' + it.payload.tier : 'Sem tier');
+    const tagDist = (() => { const m = {}; fresh.forEach(it => it.tags.forEach(t => { m[t] = (m[t] || 0) + 1; })); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 14); })();
+    const withEmail = fresh.filter(it => it.payload.email).length;
+    const withNet = fresh.filter(it => Object.keys(it.payload.social_links).length).length;
+    const sample = fresh.slice(0, 6).map(it => {
+      const nets = Object.keys(it.payload.social_links).map(n => SOCIAL_BY_ID[n]).filter(Boolean);
+      const reach = Object.values(it.payload.social_stats).reduce((s, x) => s + (x.followers || 0), 0);
+      return `<div class="ctc-import-row">
+        <strong>${_esc(it.payload.name)}</strong>
+        ${it.payload.tier ? `<span class="ctc-tile-tier" style="--tier-c:${TIER_BY_ID[it.payload.tier].color};position:relative;top:0;right:0;margin:0 4px">${it.payload.tier}</span>` : ''}
+        ${nets.map(n => _socialBadge(n)).join(' ')}
+        ${reach ? `<span>· ${_fmtFollowers(reach)}</span>` : ''}
+        <span style="color:var(--text3)">· ${_esc(it.tags[0] || '')}</span>
+      </div>`;
+    }).join('');
+
+    const body = `
+      <div style="font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:12px">
+        Arquivo <strong>${_esc(fileName)}</strong> reconhecido como planilha de
+        <strong>${kind === 'creators' ? 'creators' : 'grupos de WhatsApp/Telegram'}</strong> da pesquisa Rips.
+        Perfil: <strong>${kind === 'creators' ? 'TCG' : 'Comunidade'}</strong> · status Wishlist · origem Outbound.
+      </div>
+      <div class="ctc-import-stats">
+        <div class="ctc-import-stat"><div class="ctc-import-stat-v" style="color:var(--green)">${fresh.length}</div><div class="ctc-import-stat-k">Novos</div></div>
+        <div class="ctc-import-stat"><div class="ctc-import-stat-v" style="color:var(--amber)">${items.length - fresh.length - merges.length}</div><div class="ctc-import-stat-k">Já existem</div></div>
+        ${merges.length ? `<div class="ctc-import-stat"><div class="ctc-import-stat-v" style="color:var(--blue)">${merges.length}</div><div class="ctc-import-stat-k">Vinculados a creator</div></div>` : ''}
+        <div class="ctc-import-stat"><div class="ctc-import-stat-v">${withNet}</div><div class="ctc-import-stat-k">Com rede/link</div></div>
+        ${kind === 'creators' ? `<div class="ctc-import-stat"><div class="ctc-import-stat-v">${withEmail}</div><div class="ctc-import-stat-k">Com email</div></div>` : ''}
+      </div>
+      ${kind === 'creators' ? `<div style="font-size:11px;color:var(--text3);margin:12px 0 6px">Tier (da planilha; segmentos sem letra ficam sem tier):</div><div>${chips(tierDist)}</div>` : ''}
+      <div style="font-size:11px;color:var(--text3);margin:12px 0 6px">Etiquetas que serão aplicadas:</div><div>${chips(tagDist)}</div>
+      <div style="font-size:11px;color:var(--text3);margin:12px 0 4px">Prévia:</div>
+      <div class="ctc-import-list">${sample}${fresh.length > 6 ? `<div style="color:var(--text3);font-size:11px;text-align:center;padding:4px">+ ${fresh.length - 6} outros</div>` : ''}</div>
+      ${merges.length ? `<div style="font-size:11px;color:var(--text3);margin:12px 0 4px">Grupos do próprio creator (o link entra no contato dele): ${merges.map(m => _esc(m.contact.name)).join(', ')}</div>` : ''}
+      <div id="ctc-research-progress" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+    `;
+    openModal('Importar pesquisa Rips', body, `
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-theme" id="ctc-research-btn" onclick="window._ctcDoResearchImport()" ${fresh.length || merges.length ? '' : 'disabled'}>
+        <i data-lucide="upload"></i> Importar ${fresh.length}${merges.length ? ` + vincular ${merges.length}` : ''}
+      </button>
+    `);
+    if (window.lucide) lucide.createIcons();
+  }
+
+  window._ctcDoResearchImport = async () => {
+    if (!_research || (!_research.fresh.length && !_research.merges.length)) return;
+    const btn = document.getElementById('ctc-research-btn');
+    const prog = document.getElementById('ctc-research-progress');
+    const say = (m) => { if (prog) prog.textContent = m; };
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader"></i> Importando...'; if (window.lucide) lucide.createIcons(); }
+    const client = window.sb.schema('crm');
+    const TAG_COLOR = { creators: '#f59e0b', groups: '#0ea5e9' };
+    try {
+      // 1) Etiquetas que ainda não existem
+      const wanted = [...new Set([..._research.fresh, ..._research.merges.map(m => m.item)].flatMap(it => it.tags))];
+      STATE.crm.tags = STATE.crm.tags || [];
+      const byName = new Map(STATE.crm.tags.map(t => [t.name.toLowerCase(), t]));
+      const missing = wanted.filter(n => !byName.has(n.toLowerCase()));
+      if (missing.length) {
+        say(`Criando ${missing.length} etiquetas...`);
+        const { data, error } = await client.from('tags')
+          .insert(missing.map(name => ({ name, color: TAG_COLOR[_research.kind], category: 'niche' }))).select();
+        if (error) throw error;
+        (data || []).forEach(t => { STATE.crm.tags.push(t); byName.set(t.name.toLowerCase(), t); });
+      }
+      // 2) Contatos em lotes
+      const created = [];
+      const chunk = 100;
+      for (let i = 0; i < _research.fresh.length; i += chunk) {
+        const part = _research.fresh.slice(i, i + chunk);
+        say(`Importando contatos ${i + 1}–${i + part.length} de ${_research.fresh.length}...`);
+        const { data, error } = await client.from('contacts').insert(part.map(it => it.payload)).select();
+        if (error) throw error;
+        (data || []).forEach(c => created.push(c));
+      }
+      STATE.crm.contacts.unshift(...created);
+      // 3) Grupos do próprio creator: anexa link, membros e nota ao contato dele
+      for (const { contact, item } of _research.merges) {
+        say(`Vinculando comunidade de ${contact.name}...`);
+        const p = item.payload;
+        const patch = {
+          social_links: { ...(contact.social_links || {}), ...p.social_links },
+          social_stats: { ...(contact.social_stats || {}), ...p.social_stats },
+          notes: [contact.notes, '— Comunidade —\n' + p.notes].filter(Boolean).join('\n\n'),
+          lead_meta: { ...(contact.lead_meta || {}), communities: [...(contact.lead_meta?.communities || []), p.lead_meta] },
+        };
+        const { data, error } = await client.from('contacts').update(patch).eq('id', contact.id).select().single();
+        if (error) throw error;
+        Object.assign(contact, data || patch);
+      }
+      // 4) Vínculos contato ↔ etiqueta
+      const tagsByKey = new Map(_research.fresh.map(it => [it.key, it.tags]));
+      const links = [];
+      created.forEach(c => (tagsByKey.get(c.lead_meta?.external_id) || []).forEach(n => {
+        const t = byName.get(n.toLowerCase()); if (t) links.push({ contact_id: c.id, tag_id: t.id });
+      }));
+      const have = new Set((STATE.crm.contactTags || []).map(x => x.contact_id + '|' + x.tag_id));
+      _research.merges.forEach(({ contact, item }) => item.tags.forEach(n => {
+        const t = byName.get(n.toLowerCase());
+        if (t && !have.has(contact.id + '|' + t.id) && !links.some(l => l.contact_id === contact.id && l.tag_id === t.id)) links.push({ contact_id: contact.id, tag_id: t.id });
+      }));
+      for (let i = 0; i < links.length; i += 500) {
+        say(`Aplicando etiquetas ${Math.min(i + 500, links.length)} de ${links.length}...`);
+        const { error } = await client.from('contact_tags').insert(links.slice(i, i + 500));
+        if (error) throw error;
+      }
+      STATE.crm.contactTags = (STATE.crm.contactTags || []).concat(links);
+      closeModal();
+      _renderList();
+      toast(`${created.length} contatos importados${_research.merges.length ? `, ${_research.merges.length} comunidades vinculadas a creators` : ''} · ${links.length} etiquetas`, 's');
+      _research = null;
+    } catch (e) {
+      console.error('[research import]', e);
+      say('');
+      toast('Erro na importação: ' + (e.message || 'desconhecido') + '. O que já entrou foi mantido; reimportar pula os existentes.', 'e');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="upload"></i> Tentar de novo'; if (window.lucide) lucide.createIcons(); }
+    }
   };
 
   // Auto-detecta o tipo de cada célula (email, instagram, telefone, empresa)

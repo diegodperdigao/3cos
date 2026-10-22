@@ -56,15 +56,26 @@ CRM.loadAll = async () => {
   }
 
   const sb = window.sb.schema('crm');
+  // O Supabase devolve no máximo 1000 linhas por request: pagina até acabar.
+  const all = async (build) => {
+    const size = 1000; let from = 0; const out = [];
+    for (;;) {
+      const { data, error } = await build().range(from, from + size - 1);
+      if (error) return { data: out.length ? out : null, error };
+      out.push(...(data || []));
+      if (!data || data.length < size) return { data: out, error: null };
+      from += size;
+    }
+  };
   try {
     const [contacts, products, tags, stages, cards, tasks, contactTags] = await Promise.all([
-      sb.from('contacts').select('*').order('created_at', { ascending: false }),
+      all(() => sb.from('contacts').select('*').order('created_at', { ascending: false }).order('id')),
       sb.from('products').select('*').order('name'),
       sb.from('tags').select('*').order('name'),
       sb.from('pipeline_stages').select('*').order('position'),
-      sb.from('pipeline_cards').select('*').order('position'),
+      all(() => sb.from('pipeline_cards').select('*').order('position').order('id')),
       sb.from('tasks').select('*').order('due_date', { nullsFirst: false }),
-      sb.from('contact_tags').select('contact_id, tag_id'),
+      all(() => sb.from('contact_tags').select('contact_id, tag_id').order('contact_id').order('tag_id')),
     ]);
     const errors = [contacts, products, tags, stages, cards, tasks, contactTags].filter(r => r.error);
     if (errors.length) {

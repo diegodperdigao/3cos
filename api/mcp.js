@@ -174,7 +174,15 @@ async function callTool(name, args = {}) {
     }
     case 'get_summary': {
       const [contacts, cards, tasks, stages] = await Promise.all([
-        c.from('contacts').select('status, type, temperature'),
+        (async () => { // pagina: o PostgREST limita 1000 linhas por request
+          const out = [];
+          for (let from = 0; ; from += 1000) {
+            const r = await c.from('contacts').select('status, type, temperature').order('id').range(from, from + 999);
+            if (r.error) return r;
+            out.push(...(r.data || []));
+            if (!r.data || r.data.length < 1000) return { data: out, error: null };
+          }
+        })(),
         c.from('pipeline_cards').select('scope, stage_id, value, probability'),
         c.from('tasks').select('status, priority'),
         c.from('pipeline_stages').select('id, name, scope'),
