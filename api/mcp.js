@@ -90,7 +90,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        scope: { type: 'string', enum: ['b2b', 'b2c'], description: 'Scope do pipeline' },
+        scope: { type: 'string', enum: ['b2b', 'b2c', 'rips'], description: 'Scope do pipeline (rips = pipeline exclusiva do produto Rips)' },
         stage_id: { type: 'string', description: 'UUID da etapa (opcional)' },
         limit: { type: 'number', description: 'Máximo (padrão 30)' },
       },

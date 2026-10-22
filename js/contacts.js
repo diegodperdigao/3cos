@@ -25,13 +25,22 @@
   ];
   const PROFILE_BY_ID = Object.fromEntries(PROFILES.map(p => [p.id, p]));
 
-  // Tiers de prioridade (1 = top, 3 = base)
+  // Tiers de prioridade (S = elite, C = base)
   const TIERS = [
-    { id: 1, label: 'Tier 1', color: '#ec4899', desc: 'Top prioridade' },
-    { id: 2, label: 'Tier 2', color: '#f59e0b', desc: 'Média prioridade' },
-    { id: 3, label: 'Tier 3', color: '#64748b', desc: 'Base' },
+    { id: 'S', label: 'Tier S', color: '#a855f7', desc: 'Elite' },
+    { id: 'A', label: 'Tier A', color: '#ec4899', desc: 'Alta prioridade' },
+    { id: 'B', label: 'Tier B', color: '#f59e0b', desc: 'Média prioridade' },
+    { id: 'C', label: 'Tier C', color: '#64748b', desc: 'Base' },
   ];
   const TIER_BY_ID = Object.fromEntries(TIERS.map(t => [t.id, t]));
+  const TIER_ORDER = { S: 0, A: 1, B: 2, C: 3 };
+  // Aceita letra (S/A/B/C) ou o formato antigo (1/2/3) e devolve a letra.
+  const _tierOf = (v) => {
+    const s = String(v ?? '').trim().toUpperCase().replace(/^T(IER)?\s*/, '');
+    if (TIER_BY_ID[s]) return s;
+    return ({ '1': 'A', '2': 'B', '3': 'C', '4': 'C', '5': 'C' })[s] || null;
+  };
+  window._ctcTierById = (id) => TIER_BY_ID[id] || null;
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
   // Company values that are import placeholders, not real companies.
   // The CSV we import marks every row as "Prospect" in the company column.
@@ -43,6 +52,149 @@
   window._ctcCompanyOf = _companyOf;
   // Instagram glyph (Lucide no longer ships brand icons). Inherits currentColor.
   const IG_SVG = '<svg class="ig-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>';
+
+  // ── REDES SOCIAIS ─────────────────────────────────────────
+  // api:true = o /api/social-stats sabe buscar seguidores dessa rede.
+  // As demais ficam com valor manual até termos um provedor.
+  const SOCIALS = [
+    { id: 'instagram', label: 'Instagram', short: 'IG', color: '#E1306C', api: false, url: h => `https://instagram.com/${h}` },
+    { id: 'tiktok',    label: 'TikTok',    short: 'TT', color: '#111111', api: false, url: h => `https://tiktok.com/@${h}` },
+    { id: 'youtube',   label: 'YouTube',   short: 'YT', color: '#FF0033', api: true,  url: h => /^UC[\w-]{22}$/.test(h) ? `https://youtube.com/channel/${h}` : `https://youtube.com/@${h}` },
+    { id: 'twitch',    label: 'Twitch',    short: 'TW', color: '#9146FF', api: true,  url: h => `https://twitch.tv/${h}` },
+    { id: 'kick',      label: 'Kick',      short: 'KK', color: '#2BB80F', api: true,  url: h => `https://kick.com/${h}` },
+    { id: 'x',         label: 'X',         short: 'X',  color: '#000000', api: false, url: h => `https://x.com/${h}` },
+  ];
+  const SOCIAL_BY_ID = Object.fromEntries(SOCIALS.map(s => [s.id, s]));
+  const SOCIAL_STALE_MS = 24 * 3600 * 1000;
+
+  // "@user", "user" ou URL → "user". YouTube preserva channel id (UC…).
+  function _normHandle(net, raw) {
+    let s = String(raw || '').trim();
+    if (!s) return '';
+    if (net === 'youtube') { const m = s.match(/(UC[\w-]{22})/); if (m) return m[1]; }
+    s = s.replace(/^https?:\/\//i, '').replace(/^(www|m)\./i, '');
+    s = s.replace(/^(instagram\.com|instagr\.am|tiktok\.com|youtube\.com|youtu\.be|twitch\.tv|kick\.com|x\.com|twitter\.com)\//i, '');
+    s = s.split(/[/?#]/)[0].replace(/^@/, '');
+    return s;
+  }
+  const _fmtFollowers = (n) => (n == null || isNaN(n)) ? '—'
+    : new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(n));
+  const _socialBadge = (net) => `<span class="soc-badge" style="--soc-c:${net.color}">${net.short}</span>`;
+
+  // Soma de seguidores conhecidos (api ou manual).
+  function _totalReach(c) {
+    const st = c.social_stats || {};
+    let total = 0, known = 0;
+    SOCIALS.forEach(n => { const f = st[n.id]?.followers; if (c.social_links?.[n.id] && f != null) { total += Number(f); known++; } });
+    return known ? total : null;
+  }
+  window._ctcTotalReach = (c) => _totalReach(c);
+  window._ctcFmtFollowers = _fmtFollowers;
+
+  // Bloco "Redes sociais" usado no detalhe do contato e no detalhe do card.
+  function _socialBlockHTML(c) {
+    const links = c.social_links || {};
+    const st = c.social_stats || {};
+    const nets = SOCIALS.filter(n => links[n.id]);
+    if (!nets.length) return `<div class="soc-block" id="soc-block-${c.id}">
+      <div class="soc-empty">Nenhuma rede social cadastrada. <a class="ctc-pop-link" onclick="window._ctcOpenEdit('${c.id}')">Adicionar</a></div></div>`;
+    const reach = _totalReach(c);
+    const rows = nets.map(n => {
+      const h = links[n.id];
+      const s = st[n.id] || {};
+      const extra = [];
+      if (s.views) extra.push(`${_fmtFollowers(s.views)} views`);
+      if (s.posts) extra.push(`${_fmtFollowers(s.posts)} vídeos`);
+      if (s.live) extra.push(`<span class="soc-live">ao vivo${s.live_viewers != null ? ` · ${_fmtFollowers(s.live_viewers)}` : ''}</span>`);
+      const when = s.fetched_at ? new Date(s.fetched_at).toLocaleDateString('pt-BR') : '';
+      const src = s.source === 'api' ? `atualizado ${when}` : s.source === 'manual' ? `manual · ${when}` : (n.api ? 'ainda não buscado' : 'sem API — informe manualmente');
+      return `<div class="soc-row">
+        ${_socialBadge(n)}
+        <div class="soc-main">
+          <a href="${_esc(n.url(h))}" target="_blank" rel="noopener" class="soc-handle">@${_esc(h)}</a>
+          <div class="soc-meta">${extra.length ? extra.join(' · ') + ' · ' : ''}${src}</div>
+        </div>
+        <div class="soc-followers" title="Seguidores">${_fmtFollowers(s.followers)}</div>
+        <button class="soc-edit" title="Informar seguidores manualmente" onclick="event.stopPropagation();window._ctcSetManualFollowers('${c.id}','${n.id}')"><i data-lucide="pencil"></i></button>
+      </div>`;
+    }).join('');
+    const hasApi = nets.some(n => n.api);
+    return `<div class="soc-block" id="soc-block-${c.id}">
+      <div class="soc-head">
+        <span class="soc-title">Redes sociais</span>
+        <span class="soc-reach">${reach != null ? `Alcance: <strong>${_fmtFollowers(reach)}</strong>` : ''}</span>
+        ${hasApi ? `<button class="btn btn-ghost soc-refresh" onclick="event.stopPropagation();window._ctcRefreshSocial('${c.id}')"><i data-lucide="refresh-cw"></i> Atualizar</button>` : ''}
+      </div>
+      ${rows}
+    </div>`;
+  }
+  window._ctcSocialBlockHTML = (c) => _socialBlockHTML(c);
+
+  function _rerenderSocialBlock(contactId) {
+    const c = CRM.contactById(contactId);
+    const el = document.getElementById('soc-block-' + contactId);
+    if (!c || !el) return;
+    el.outerHTML = _socialBlockHTML(c);
+    if (window.lucide) lucide.createIcons();
+  }
+
+  // Busca seguidores no servidor. silent=true → sem toast (auto ao abrir).
+  window._ctcRefreshSocial = async (contactId, { silent = false } = {}) => {
+    const c = CRM.contactById(contactId);
+    if (!c) return;
+    const btn = document.querySelector(`#soc-block-${contactId} .soc-refresh`);
+    if (btn) { btn.disabled = true; btn.classList.add('is-loading'); }
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const resp = await fetch('/api/social-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ contact_id: contactId }),
+      });
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok || !body.ok) throw new Error(body.error || `HTTP ${resp.status}`);
+      c.social_stats = body.social_stats;
+      _rerenderSocialBlock(contactId);
+      if (!silent) {
+        const fails = Object.entries(body.report || {}).filter(([, v]) => v !== 'ok' && v !== 'manual');
+        if (fails.length) toast(fails.map(([k, v]) => `${SOCIAL_BY_ID[k]?.label || k}: ${v}`).join(' · '), 'w');
+        else toast('Dados das redes atualizados', 's');
+      }
+    } catch (e) {
+      if (!silent) toast('Erro ao buscar redes: ' + e.message, 'e');
+      if (btn) { btn.disabled = false; btn.classList.remove('is-loading'); }
+    }
+  };
+
+  // Atualiza sozinho quando há rede com API e o dado tem mais de 24h.
+  window._ctcMaybeAutoRefreshSocial = (contactId) => {
+    const c = CRM.contactById(contactId);
+    if (!c) return;
+    const st = c.social_stats || {};
+    const stale = SOCIALS.some(n => n.api && c.social_links?.[n.id] &&
+      (!st[n.id]?.fetched_at || st[n.id].source !== 'api' || Date.now() - new Date(st[n.id].fetched_at).getTime() > SOCIAL_STALE_MS));
+    if (stale) window._ctcRefreshSocial(contactId, { silent: true });
+  };
+
+  window._ctcSetManualFollowers = async (contactId, net) => {
+    const c = CRM.contactById(contactId);
+    if (!c) return;
+    const cur = c.social_stats?.[net]?.followers;
+    const raw = prompt(`Seguidores no ${SOCIAL_BY_ID[net]?.label || net} (ex.: 125000 ou 125 mil):`, cur != null ? String(cur) : '');
+    if (raw == null) return;
+    const txt = raw.trim().toLowerCase().replace(/\s+/g, '');
+    let n = parseFloat(txt.replace(/\./g, '').replace(',', '.'));
+    if (/mi(l?h?(ão|oes|ões)?)?$|m$/.test(txt) && !/mil$/.test(txt)) n *= 1e6;
+    else if (/mil$|k$/.test(txt)) n *= 1e3;
+    if (txt === '') n = null;
+    else if (isNaN(n) || n < 0) { toast('Número inválido', 'e'); return; }
+    const stats = { ...(c.social_stats || {}) };
+    stats[net] = { ...(stats[net] || {}), followers: n == null ? null : Math.round(n), source: 'manual', fetched_at: new Date().toISOString() };
+    try {
+      await CRM.contacts.update(contactId, { social_stats: stats });
+      _rerenderSocialBlock(contactId);
+    } catch (e) { toast('Erro ao salvar: ' + e.message, 'e'); }
+  };
   window._igSvg = () => IG_SVG;
 
   const SOURCE_LABEL = { inbound: 'Inbound', outbound: 'Outbound', referral: 'Indicação', event: 'Evento', social: 'Redes sociais', other: 'Outro' };
@@ -84,7 +236,7 @@
               <i data-lucide="award" style="width:11px;height:11px"></i> Tier: todos
             </button>
             ${TIERS.map(t => `<button class="ctc-fb-chip" data-v="${t.id}" onclick="window._ctcFilter(this)" style="--chip-c:${t.color}">
-              T${t.id}
+              ${t.id}
             </button>`).join('')}
           </div>
 
@@ -199,16 +351,23 @@
         ${_selectMode ? `<div class="ctc-tile-check ${checked ? 'on' : ''}">
           ${checked ? '<i data-lucide="check"></i>' : ''}
         </div>` : ''}
-        ${tier ? `<span class="ctc-tile-tier" style="--tier-c:${tier.color}" title="${tier.label} — ${tier.desc}">T${tier.id}</span>` : ''}
+        ${tier ? `<span class="ctc-tile-tier" style="--tier-c:${tier.color}" title="${tier.label} — ${tier.desc}">${tier.id}</span>` : ''}
         <div class="ctc-tile-head">
           ${avatar}
           <span class="ctc-tile-status status-${c.status}" title="${STATUS_LABEL[c.status] || c.status}"></span>
         </div>
         <div class="ctc-tile-body">
           <div class="ctc-tile-name">${_esc(c.name)}</div>
-          ${ig ? `<a class="ctc-tile-ig" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            ${IG_SVG}@${_esc(ig)}
-          </a>` : ''}
+          ${(() => {
+            const net = SOCIALS.find(n => c.social_links?.[n.id]);
+            if (!net) return '';
+            const h = c.social_links[net.id];
+            const others = SOCIALS.filter(n => n !== net && c.social_links?.[n.id]).length;
+            const reach = _totalReach(c);
+            return `<a class="ctc-tile-ig" href="${_esc(net.url(h))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${net.label}">
+              ${_socialBadge(net)}@${_esc(h)}${others ? `<span class="soc-more">+${others}</span>` : ''}
+            </a>${reach != null ? `<div class="ctc-tile-reach">${_fmtFollowers(reach)} seguidores</div>` : ''}`;
+          })()}
           ${sub ? `<div class="ctc-tile-sub" title="${sub.title}"><i data-lucide="${sub.icon}"></i>${_esc(sub.text)}</div>` : '<div class="ctc-tile-sub" style="opacity:0.4">—</div>'}
         </div>
         <div class="ctc-tile-foot">
@@ -299,7 +458,7 @@
     if (F.type) list = list.filter(c => c.type === F.type);
     if (F.profile === '__none__') list = list.filter(c => !c.profile);
     else if (F.profile) list = list.filter(c => c.profile === F.profile);
-    if (F.tier) list = list.filter(c => c.tier === Number(F.tier));
+    if (F.tier) list = list.filter(c => c.tier === F.tier);
     if (F.tag) {
       const withTag = new Set((STATE.crm.contactTags || []).filter(x => x.tag_id === F.tag).map(x => x.contact_id));
       list = list.filter(c => withTag.has(c.id));
@@ -312,7 +471,8 @@
         (c.name || '').toLowerCase().includes(term) ||
         (c.email || '').toLowerCase().includes(term) ||
         (c.company || '').toLowerCase().includes(term) ||
-        (c.phone || '').toLowerCase().includes(term)
+        (c.phone || '').toLowerCase().includes(term) ||
+        Object.values(c.social_links || {}).some(h => String(h).toLowerCase().includes(term.replace(/^@/, '')))
       );
     }
     return list;
@@ -393,20 +553,13 @@
           <div class="ff"><label>Email</label><input id="ctc-f-email" type="email" value="${_esc(c.email || '')}" placeholder="email@exemplo.com"></div>
           <div class="ff"><label>Telefone</label><input id="ctc-f-phone" type="text" value="${_esc(c.phone || '')}" placeholder="+55 11 99999-9999"></div>
         </div>
-        <div class="form-row">
-          <div class="ff"><label>Empresa</label><input id="ctc-f-company" type="text" value="${_esc(c.company || '')}" placeholder="Nome da empresa"></div>
-          <div class="ff"><label>Instagram</label>
-            <div class="ctc-ig-input">
-              <input id="ctc-f-instagram" type="text" value="${_esc(c.social_links?.instagram || '')}"
-                placeholder="@handle ou link"
-                oninput="window._ctcIgInputChanged(this)">
-              <button type="button" class="ctc-ig-open" id="ctc-ig-open-btn"
-                onclick="window._ctcOpenIgFromInput()"
-                ${!c.social_links?.instagram ? 'disabled' : ''}
-                title="Abrir perfil no Instagram">
-                <i data-lucide="external-link"></i>
-              </button>
-            </div>
+        <div class="ff"><label>Empresa</label><input id="ctc-f-company" type="text" value="${_esc(c.company || '')}" placeholder="Nome da empresa"></div>
+        <div class="ff"><label>Redes sociais <span style="font-weight:400;font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0;margin-left:6px">@handle ou link</span></label>
+          <div class="soc-form-grid">
+            ${SOCIALS.map(n => `<div class="soc-form-item">
+              ${_socialBadge(n)}
+              <input id="ctc-f-soc-${n.id}" type="text" value="${_esc(c.social_links?.[n.id] || '')}" placeholder="${n.label}">
+            </div>`).join('')}
           </div>
         </div>
         <div class="ff"><label>Foto do perfil (opcional)
@@ -430,7 +583,7 @@
           <div class="ff"><label>Tier</label>
             <select id="ctc-f-tier" class="fi">
               <option value="">—</option>
-              ${TIERS.map(t => `<option value="${t.id}" ${Number(c.tier) === t.id ? 'selected' : ''}>${t.label} — ${t.desc}</option>`).join('')}
+              ${TIERS.map(t => `<option value="${t.id}" ${c.tier === t.id ? 'selected' : ''}>${t.label} — ${t.desc}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -484,17 +637,21 @@
 
   function _formRead() {
     const get = (id) => document.getElementById(id)?.value || '';
-    const ig = _normalizeIgHandle(get('ctc-f-instagram'));
+    const social_links = {};
+    SOCIALS.forEach(n => {
+      const h = n.id === 'instagram' ? _normalizeIgHandle(get('ctc-f-soc-instagram')) : _normHandle(n.id, get('ctc-f-soc-' + n.id));
+      if (h) social_links[n.id] = h;
+    });
     return {
       name: get('ctc-f-name').trim(),
       email: get('ctc-f-email').trim() || null,
       phone: get('ctc-f-phone').trim() || null,
       company: get('ctc-f-company').trim() || null,
       avatar_url: get('ctc-f-avatar').trim() || null,
-      social_links: ig ? { instagram: ig } : {},
+      social_links,
       type: get('ctc-f-type'),
       profile: get('ctc-f-profile') || null,
-      tier: get('ctc-f-tier') ? Number(get('ctc-f-tier')) : null,
+      tier: get('ctc-f-tier') || null,
       status: get('ctc-f-status'),
       source: get('ctc-f-source') || null,
       notes: get('ctc-f-notes').trim() || null,
@@ -566,7 +723,11 @@
     const rows = [
       c.phone ? row('phone', `${_esc(c.phone)}${wa ? ` <a href="${wa}" target="_blank" rel="noopener" class="ctc-pop-link">WhatsApp</a>` : ''}`, 'Telefone') : '',
       c.email ? row('mail', `<a href="mailto:${_esc(c.email)}" class="ctc-pop-link">${_esc(c.email)}</a>`, 'Email') : '',
-      ig ? `<div class="ctc-pop-row" title="Instagram">${IG_SVG}<span><a href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener" class="ctc-pop-link">@${_esc(ig)}</a></span></div>` : '',
+      ...SOCIALS.filter(n => c.social_links?.[n.id]).map(n => {
+        const h = c.social_links[n.id];
+        const f = c.social_stats?.[n.id]?.followers;
+        return `<div class="ctc-pop-row" title="${n.label}">${_socialBadge(n)}<span><a href="${_esc(n.url(h))}" target="_blank" rel="noopener" class="ctc-pop-link">@${_esc(h)}</a>${f != null ? ` · ${_fmtFollowers(f)}` : ''}</span></div>`;
+      }),
       company ? row('building-2', _esc(company), 'Empresa') : '',
       c.lead_meta?.channel ? row('globe', `Landing page · ${_esc(c.lead_meta.channel)}`, 'Origem') : (c.source ? row('compass', SOURCE_LABEL[c.source] || _esc(c.source), 'Origem') : ''),
     ].filter(Boolean).join('');
@@ -626,20 +787,15 @@
           ${prof ? `<span class="ctc-tile-badge profile-badge" style="--prof-c:${prof.color}">
             <i data-lucide="${prof.icon}" style="width:10px;height:10px"></i>${prof.label}
           </span>` : ''}
+          ${TIER_BY_ID[c.tier] ? `<span class="ctc-tile-badge" style="color:${TIER_BY_ID[c.tier].color};border-color:${TIER_BY_ID[c.tier].color}55">${TIER_BY_ID[c.tier].label}</span>` : ''}
         </div>
         <div style="color:var(--text2);font-size:12px;margin-top:4px">
           ${_companyOf(c) || '—'} · ${TYPE_LABEL[c.type] || c.type} · ${STATUS_LABEL[c.status] || c.status}
         </div>
         ${CRM.tagsForContact(c.id).length ? `<div class="crm-tag-row">${CRM.tagsForContact(c.id).map(t => CRM.tagChip(t)).join('')}</div>` : ''}
       </div>
-      ${ig ? `<a class="ctc-ig-cta" href="https://instagram.com/${_esc(ig)}" target="_blank" rel="noopener">
-        <span class="ctc-ig-cta-ico">${IG_SVG}</span>
-        <span class="ctc-ig-cta-info">
-          <span class="ctc-ig-cta-k">Instagram</span>
-          <span class="ctc-ig-cta-handle">@${_esc(ig)}</span>
-        </span>
-        <span class="ctc-ig-cta-arrow"><i data-lucide="external-link"></i></span>
-      </a>` : ''}
+      ${_socialBlockHTML(c)}
+      ${_dealsBlockHTML(c)}
       <div class="ctc-detail-grid">
         ${c.email ? `<div><span class="ctc-dt-k">Email</span><span>${_esc(c.email)}</span></div>` : ''}
         ${c.phone ? `<div><span class="ctc-dt-k">Telefone</span><span>${_esc(c.phone)}</span></div>` : ''}
@@ -657,7 +813,25 @@
 
     openModal(c.name, body, footer);
     lucide.createIcons();
+    window._ctcMaybeAutoRefreshSocial(c.id);
   };
+
+  // Negociações abertas deste contato em cada pipeline, com o responsável.
+  function _dealsBlockHTML(c) {
+    const cards = (STATE.crm?.cards || []).filter(x => x.contact_id === c.id);
+    if (!cards.length) return '';
+    const SCOPE_LABEL = { b2b: 'B2B', b2c: 'B2C', rips: 'Rips' };
+    const rows = cards.map(x => {
+      const st = CRM.stageById(x.stage_id);
+      const owner = (STATE.users || []).find(u => u.id === x.owner);
+      return `<a class="soc-deal" onclick="closeModal();openMod('pipeline');setTimeout(()=>{window._pcrmSwitchTab&&_pcrmSwitchTab('${x.scope}');window._pcrmOpenCard&&_pcrmOpenCard('${x.id}')},350)">
+        <span class="soc-deal-scope">${SCOPE_LABEL[x.scope] || x.scope}</span>
+        <span class="soc-deal-stage">${_esc(st?.name || '—')}</span>
+        <span class="soc-deal-owner">${owner ? _esc(owner.name.split(' ')[0]) : 'sem responsável'}</span>
+      </a>`;
+    }).join('');
+    return `<div class="soc-block"><div class="soc-head"><span class="soc-title">Negociações</span></div>${rows}</div>`;
+  }
 
   window._ctcOpenEdit = (id) => {
     const c = CRM.contactById(id);
@@ -1095,8 +1269,8 @@
           if (!field || field === '_skip' || !val) return;
           if (field === 'instagram') row.instagram = _normalizeIgHandle(val);
           else if (field === 'tier') {
-            const n = parseInt(val, 10);
-            if (n >= 1 && n <= 5) row.tier = n;
+            const t = _tierOf(val);
+            if (t) row.tier = t;
           }
           else if (field === 'profile') {
             // tenta casar com perfis conhecidos
@@ -1113,8 +1287,8 @@
         for (let i = 1; i < parts.length; i++) {
           const val = parts[i];
           if (!val) continue;
-          // Tier isolado: dígito único 1-5
-          if (/^[1-5]$/.test(val) && !row.tier) { row.tier = Number(val); continue; }
+          // Tier isolado: S/A/B/C (ou 1-5 do formato antigo)
+          if (/^(t(ier)?\s*)?([sabc]|[1-5])$/i.test(val) && !row.tier) { row.tier = _tierOf(val); continue; }
           const det = _detectCellType(val);
           if (det.type === 'empty') continue;
           if (det.type === 'instagram' && !row.instagram) row.instagram = det.value;
@@ -1181,7 +1355,7 @@
           ${results.slice(0, 5).map(r => `
             <div class="ctc-import-row">
               <strong>${_esc(r.name)}</strong>
-              ${r.tier ? `<span class="ctc-tile-tier" style="--tier-c:${TIER_BY_ID[r.tier]?.color || '#64748b'};position:relative;top:0;right:0;margin:0 2px 0 4px">T${r.tier}</span>` : ''}
+              ${r.tier ? `<span class="ctc-tile-tier" style="--tier-c:${TIER_BY_ID[r.tier]?.color || '#64748b'};position:relative;top:0;right:0;margin:0 2px 0 4px">${r.tier}</span>` : ''}
               ${r.instagram ? `<span class="ctc-import-ig">@${_esc(r.instagram)}</span>` : ''}
               ${r.email ? `<span>· ${_esc(r.email)}</span>` : ''}
               ${r.company ? `<span>· ${_esc(r.company)}</span>` : ''}
@@ -1540,7 +1714,6 @@
     }
 
     // ── RIGHT COLUMN ───────────────────────────────────────────
-    const tierId = [1, 2, 3].includes(Number(c.tier)) ? Number(c.tier) : 0;
     const rightStack = [];
 
     // Classificação block ("Proposta" slot in the reference)
@@ -1552,7 +1725,7 @@
       margin: [0, 6, 0, 0],
     });
     const classBits = [];
-    if (tierId > 0) classBits.push('Tier ' + tierId);
+    if (TIER_BY_ID[c.tier]) classBits.push('Tier ' + c.tier);
     if (c.status && STATUS_LABEL[c.status]) classBits.push(STATUS_LABEL[c.status]);
     const profileLabel = c.profile ? (PROFILE_BY_ID[c.profile]?.label || c.profile) : null;
     if (profileLabel) classBits.push(profileLabel);
@@ -2026,9 +2199,8 @@
 
     // Classification: TYPE_LABEL is the amount-like hero; tier · status · profile is the amount-desc
     const typeDisplay = c.type && TYPE_LABEL[c.type] ? TYPE_LABEL[c.type] : '—';
-    const tierId = [1, 2, 3].includes(Number(c.tier)) ? Number(c.tier) : 0;
     const descBits = [];
-    if (tierId > 0) descBits.push('Tier ' + tierId);
+    if (TIER_BY_ID[c.tier]) descBits.push('Tier ' + c.tier);
     if (c.status && STATUS_LABEL[c.status]) descBits.push(STATUS_LABEL[c.status]);
     const profileLabel = c.profile ? (PROFILE_BY_ID[c.profile]?.label || c.profile) : null;
     if (profileLabel) descBits.push(profileLabel);
@@ -2079,7 +2251,7 @@
       if (F.type) bits.push('Tipo: ' + (TYPE_LABEL[F.type] || F.type));
       if (F.profile === '__none__') bits.push('Perfil: sem perfil');
       else if (F.profile) bits.push('Perfil: ' + (PROFILE_BY_ID[F.profile]?.label || F.profile));
-      if (F.tier) bits.push('Tier: T' + F.tier);
+      if (F.tier) bits.push('Tier: ' + F.tier);
       if (F.status) bits.push('Status: ' + (STATUS_LABEL[F.status] || F.status));
       if (F.search) bits.push(`Busca: "${F.search}"`);
       const filtersSummary = bits.length
@@ -2093,8 +2265,8 @@
 
       // Order: tier (1→3→sem), then name
       const ordered = [...list].sort((a, b) => {
-        const ta = [1, 2, 3].includes(Number(a.tier)) ? Number(a.tier) : 99;
-        const tb = [1, 2, 3].includes(Number(b.tier)) ? Number(b.tier) : 99;
+        const ta = TIER_ORDER[a.tier] ?? 99;
+        const tb = TIER_ORDER[b.tier] ?? 99;
         if (ta !== tb) return ta - tb;
         return (a.name || '').localeCompare(b.name || '', 'pt-BR');
       });

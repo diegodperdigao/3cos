@@ -6405,3 +6405,49 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   border-color: var(--green); color: var(--green); font-weight: 600;
 }
 .pcrm-deal-type-opt span { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ── Redes sociais (contato + card) ───────────────────────── */
+.soc-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;padding:0 4px;border-radius:4px;background:var(--soc-c);color:#fff;font-size:9px;font-weight:700;letter-spacing:.02em;flex-shrink:0;line-height:1;}
+.soc-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.soc-form-item{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--gb);border-radius:8px;padding:0 0 0 8px;}
+.soc-form-item input{flex:1;min-width:0;border:0 !important;background:transparent !important;box-shadow:none !important;padding:9px 10px 9px 0 !important;}
+@media (max-width:560px){.soc-form-grid{grid-template-columns:1fr;}}
+.soc-block{margin-top:14px;border:1px solid var(--gb);border-radius:10px;padding:10px 12px;background:var(--bg3);}
+.soc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.soc-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);}
+.soc-reach{font-size:12px;color:var(--text2);margin-left:auto;}
+.soc-reach strong{color:var(--text);font-variant-numeric:tabular-nums;}
+.soc-refresh{padding:3px 8px !important;font-size:11px !important;}
+.soc-refresh svg{width:12px;height:12px;}
+.soc-refresh.is-loading svg{animation:spin 1s linear infinite;}
+.soc-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--gb);}
+.soc-row:first-of-type{border-top:0;}
+.soc-main{flex:1;min-width:0;}
+.soc-handle{font-size:13px;font-weight:600;color:var(--text);text-decoration:none;}
+.soc-handle:hover{text-decoration:underline;}
+.soc-meta{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.soc-live{color:var(--red);font-weight:600;}
+.soc-followers{font-size:15px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;min-width:52px;text-align:right;}
+.soc-edit{background:transparent;border:0;color:var(--text3);cursor:pointer;padding:4px;border-radius:4px;display:inline-flex;}
+.soc-edit:hover{background:var(--bg2);color:var(--text);}
+.soc-edit svg{width:12px;height:12px;}
+.soc-empty{font-size:12px;color:var(--text3);}
+.soc-more{margin-left:4px;font-size:10px;color:var(--text3);font-weight:600;}
+.soc-deal{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--gb);cursor:pointer;font-size:12.5px;color:var(--text);}
+.soc-deal:first-of-type{border-top:0;}
+.soc-deal:hover .soc-deal-stage{text-decoration:underline;}
+.soc-deal-scope{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--bg2);border:1px solid var(--gb);color:var(--text2);}
+.soc-deal-stage{flex:1;}
+.soc-deal-owner{font-size:11px;color:var(--text3);}
+.ctc-tile-ig .soc-badge{margin-right:5px;}
+.ctc-tile-reach{font-size:11px;color:var(--text2);margin-top:2px;font-variant-numeric:tabular-nums;}
+
+/* ── Pipeline: responsável, alcance, anti-duplicidade ─────── */
+.kan-card-reach{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums;}
+.kan-card-owner{margin-left:auto;width:22px;height:22px;border-radius:50%;background:var(--text);color:var(--bg);font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.kan-card-owner.is-empty{background:var(--bg3);color:var(--text3);border:1px dashed var(--gb2);}
+.pcrm-dup-warning{display:flex;gap:8px;align-items:flex-start;margin-top:8px;padding:9px 11px;border-radius:8px;font-size:12px;line-height:1.45;color:var(--text);background:color-mix(in srgb,var(--amber) 12%,transparent);border:1px solid color-mix(in srgb,var(--amber) 35%,transparent);}
+.pcrm-dup-warning svg{width:14px;height:14px;color:var(--amber);flex-shrink:0;margin-top:1px;}
+.pcrm-owner-select{padding:4px 8px !important;font-size:12px !important;min-width:160px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.kan-card-foot{justify-content:flex-start !important;}

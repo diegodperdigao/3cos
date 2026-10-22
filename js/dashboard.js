@@ -56,7 +56,8 @@
           <div class="pipe-filter-group">
             <label>Funil</label>
             <select class="fi pipe-filter-select" onchange="window._dashSetScope(this.value)">
-              <option value="all">B2C + B2B</option>
+              <option value="all">Todos os funis</option>
+              <option value="rips">Apenas Rips</option>
               <option value="b2c">Apenas B2C</option>
               <option value="b2b">Apenas B2B</option>
             </select>
@@ -249,7 +250,7 @@
     const k = _computeFunnel();
     const el = document.getElementById('dash-kpis');
     const sub = document.getElementById('dash-funnel-sub');
-    if (sub) sub.textContent = `${k.total} negociaç${k.total === 1 ? 'ão' : 'ões'} · ${F.scope === 'all' ? 'B2C + B2B' : F.scope.toUpperCase()}`;
+    if (sub) sub.textContent = `${k.total} negociaç${k.total === 1 ? 'ão' : 'ões'} · ${F.scope === 'all' ? 'todos os funis' : (F.scope === 'rips' ? 'Rips' : F.scope.toUpperCase())}`;
     if (!el) return;
     el.innerHTML = `
       <div class="dash-kpi" style="--kpi-accent:#10b981">
@@ -365,7 +366,7 @@
     el.innerHTML = cards.map(c => {
       const contact = (STATE.crm.contacts || []).find(x => x.id === c.contact_id);
       const stage = (STATE.crm.stages || []).find(x => x.id === c.stage_id);
-      const scopeCol = c.scope === 'b2b' ? 'var(--blue)' : 'var(--theme)';
+      const scopeCol = c.scope === 'b2b' ? 'var(--blue)' : c.scope === 'rips' ? '#3d3fbd' : 'var(--theme)';
       const days = _daysSince(c.updated_at);
       return `<div class="dash-list-item" onclick="openMod('pipeline')">
         <span class="dash-list-dot" style="background:${scopeCol}"></span>

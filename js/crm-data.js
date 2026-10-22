@@ -186,7 +186,13 @@ CRM.cards = {
       contact_id: contactId,
       title: extraFields.title || `${contact.name}${contact.company ? ' · ' + contact.company : ''}`,
       notes: extraFields.notes || '',
+      owner: STATE.user?.id || null,
     };
+    // Pipeline exclusiva de produto: o card já nasce com o produto.
+    if (scope === 'rips') {
+      const rips = (STATE.crm.products || []).find(p => (p.name || '').toLowerCase() === 'rips');
+      if (rips) payload.product_id = rips.id;
+    }
     const card = await CRM.cards.create(payload);
     // Atualiza status do contato pra in_pipeline
     await CRM.contacts.update(contactId, { status: 'in_pipeline' });

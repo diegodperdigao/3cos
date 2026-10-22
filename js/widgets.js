@@ -201,6 +201,7 @@ function _wHealthCheck() {
   }
 
   const scopes = [
+    { key: 'rips', label: 'Rips', color: '#3d3fbd' },
     { key: 'b2c', label: 'B2C', color: 'var(--theme)' },
     { key: 'b2b', label: 'B2B', color: 'var(--blue)' },
   ];

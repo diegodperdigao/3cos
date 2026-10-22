@@ -9,17 +9,27 @@
 
 (function () {
   // Scope ativo (persistido na sessão)
-  let _scope = sessionStorage.getItem('pcrm_scope') || 'b2c';
+  let _scope = sessionStorage.getItem('pcrm_scope') || 'rips';
+  if (!['b2b', 'b2c', 'rips'].includes(_scope)) _scope = 'rips';
 
   // Filtros independentes por scope
   const F = {
     b2b: { search: '', owner: 'all' },
     b2c: { search: '', owner: 'all' },
+    rips: { search: '', owner: 'all' },
   };
 
   const SCOPE_META = {
     b2b: { label: 'B2B', title: 'B2B — Marcas', sub: 'Negociações com marcas e empresas', icon: 'briefcase', color: 'var(--blue)' },
     b2c: { label: 'B2C', title: 'B2C — Influencers', sub: 'Negociações com influencers e afiliados', icon: 'megaphone', color: 'var(--theme)' },
+    rips: { label: 'Rips', title: 'Rips — Influencers & Afiliados', sub: 'Aquisição do Rips', icon: 'rocket', color: '#3d3fbd', product: 'Rips' },
+  };
+  const SCOPE_ORDER = ['rips', 'b2c', 'b2b'];
+  // Pipeline exclusiva de produto (ex.: Rips) → id do produto fixo.
+  const _scopeProductId = (scope) => {
+    const name = SCOPE_META[scope]?.product;
+    if (!name) return null;
+    return (STATE.crm?.products || []).find(p => (p.name || '').toLowerCase() === name.toLowerCase())?.id || null;
   };
 
   function _setScope(scope) {
@@ -33,21 +43,16 @@
       `<option value="${u.id}">${_esc(u.name)}</option>`
     ).join('');
 
-    el.innerHTML = modHdr('Pipeline — B2B & B2C') + `<div class="mod-body">
-      ${heroHTML('pipeline-crm', 'CRM Comercial', 'Pipeline', 'Funil de negociações B2B e B2C')}
+    el.innerHTML = modHdr('Pipeline') + `<div class="mod-body">
+      ${heroHTML('pipeline-crm', 'CRM Comercial', 'Pipeline', 'Funil de negociações por produto e canal')}
       <div class="mod-main">
         <!-- Abas de scope -->
         <div class="pcrm-tabs">
-          <button class="pcrm-tab ${_scope === 'b2c' ? 'on' : ''}" data-scope="b2c" onclick="window._pcrmSwitchTab('b2c')">
-            <i data-lucide="megaphone"></i>
-            <span>B2C — Influencers</span>
-            <span class="pcrm-tab-count" id="pcrm-count-b2c"></span>
-          </button>
-          <button class="pcrm-tab ${_scope === 'b2b' ? 'on' : ''}" data-scope="b2b" onclick="window._pcrmSwitchTab('b2b')">
-            <i data-lucide="briefcase"></i>
-            <span>B2B — Marcas</span>
-            <span class="pcrm-tab-count" id="pcrm-count-b2b"></span>
-          </button>
+          ${SCOPE_ORDER.map(sc => `<button class="pcrm-tab ${_scope === sc ? 'on' : ''}" data-scope="${sc}" onclick="window._pcrmSwitchTab('${sc}')">
+            <i data-lucide="${SCOPE_META[sc].icon}"></i>
+            <span>${SCOPE_META[sc].title}</span>
+            <span class="pcrm-tab-count" id="pcrm-count-${sc}"></span>
+          </button>`).join('')}
         </div>
 
         <div class="sec-hdr" style="margin-top:16px">
@@ -119,12 +124,10 @@
   };
 
   function _renderTabCounts() {
-    const b2b = (STATE.crm.cards || []).filter(c => c.scope === 'b2b').length;
-    const b2c = (STATE.crm.cards || []).filter(c => c.scope === 'b2c').length;
-    const el1 = document.getElementById('pcrm-count-b2b');
-    const el2 = document.getElementById('pcrm-count-b2c');
-    if (el1) el1.textContent = b2b;
-    if (el2) el2.textContent = b2c;
+    SCOPE_ORDER.forEach(sc => {
+      const el = document.getElementById('pcrm-count-' + sc);
+      if (el) el.textContent = (STATE.crm.cards || []).filter(c => c.scope === sc).length;
+    });
   }
 
   // ── RENDER ────────────────────────────────────────────────
@@ -255,7 +258,12 @@
       </div>` : ''}
       <div class="kan-card-foot">
         <span class="kan-card-age${ageClass}"><i data-lucide="clock" style="width:11px;height:11px"></i>${_ageLabel(days)}</span>
-        ${contact?.company ? `<span class="kan-card-company">${_esc(contact.company)}</span>` : ''}
+        ${(() => { const r = contact && window._ctcTotalReach ? _ctcTotalReach(contact) : null;
+          return r != null ? `<span class="kan-card-reach" title="Seguidores somando todas as redes"><i data-lucide="users" style="width:11px;height:11px"></i>${_ctcFmtFollowers(r)}</span>` : ''; })()}
+        ${(() => { const o = (STATE.users || []).find(u => u.id === card.owner);
+          if (!o) return `<span class="kan-card-owner is-empty" title="Sem responsável">—</span>`;
+          const ini = (o.name || '?').split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
+          return `<span class="kan-card-owner" title="Responsável: ${_esc(o.name)}">${ini}</span>`; })()}
       </div>
     </div>`;
   }
@@ -558,7 +566,7 @@
         <div class="ff"><label>Contato *</label>
           <div class="pcrm-contact-picker">
             <input id="pcrm-f-contact-search" class="fi" type="text" autocomplete="off"
-              placeholder="Digite o nome, empresa ou @instagram..."
+              placeholder="Digite o nome, empresa ou @ de alguma rede..."
               oninput="window._pcrmContactSearch(this.value)"
               onfocus="window._pcrmContactSearch(this.value)"
               onblur="setTimeout(()=>{const r=document.getElementById('pcrm-contact-results');if(r)r.style.display='none'},200)">
@@ -566,15 +574,16 @@
             <div id="pcrm-f-contact-selected" class="pcrm-contact-selected" style="display:none"></div>
             <div id="pcrm-contact-results" class="pcrm-contact-results" style="display:none"></div>
           </div>
+          <div id="pcrm-dup-warning" class="pcrm-dup-warning" style="display:none"></div>
         </div>
         <div class="ff"><label>Título da negociação *</label>
           <input id="pcrm-f-title" class="fi" type="text" placeholder="Ex: Parceria Q1 2027">
         </div>
         <div class="form-row">
           <div class="ff"><label>Produto</label>
-            <select id="pcrm-f-product" class="fi">
+            <select id="pcrm-f-product" class="fi" ${_scopeProductId(scope) ? 'disabled title="Pipeline exclusiva deste produto"' : ''}>
               <option value="">—</option>
-              ${products.map(p => `<option value="${p.id}">${_esc(p.name)}</option>`).join('')}
+              ${products.map(p => `<option value="${p.id}" ${p.id === _scopeProductId(scope) ? 'selected' : ''}>${_esc(p.name)}</option>`).join('')}
             </select>
           </div>
           <div class="ff"><label>Etapa inicial</label>
@@ -673,7 +682,7 @@
         (c.name || '').toLowerCase().includes(term)
         || (c.company || '').toLowerCase().includes(term)
         || (c.email || '').toLowerCase().includes(term)
-        || (c.social_links?.instagram || '').toLowerCase().includes(term)
+        || Object.values(c.social_links || {}).some(h => String(h).toLowerCase().includes(term.replace(/^@/, '')))
       );
     }
     list = list.slice(0, 8);
@@ -704,6 +713,28 @@
     if (window.lucide) lucide.createIcons();
   };
 
+  // Negociação já existente com este contato no mesmo pipeline (anti-duplicidade).
+  function _existingCard(scope, contactId) {
+    return (STATE.crm?.cards || []).find(x => x.scope === scope && x.contact_id === contactId) || null;
+  }
+  function _ownerName(uid) {
+    const u = (STATE.users || []).find(x => x.id === uid);
+    return u ? u.name : 'sem responsável';
+  }
+  function _renderDupWarning(contactId) {
+    const box = document.getElementById('pcrm-dup-warning');
+    if (!box) return null;
+    const ex = contactId ? _existingCard(_newCardScope, contactId) : null;
+    if (!ex) { box.style.display = 'none'; box.innerHTML = ''; return null; }
+    const st = CRM.stageById(ex.stage_id);
+    box.innerHTML = `<i data-lucide="alert-triangle"></i>
+      <span>Já existe negociação com este contato neste pipeline — <strong>${_esc(_ownerName(ex.owner))}</strong> · ${_esc(st?.name || '—')}.
+      <a class="ctc-pop-link" onclick="closeModal();setTimeout(()=>window._pcrmOpenCard('${ex.id}'),150)">Abrir negociação</a></span>`;
+    box.style.display = 'flex';
+    if (window.lucide) lucide.createIcons();
+    return ex;
+  }
+
   window._pcrmPickContact = (id) => {
     const c = (STATE.crm?.contacts || []).find(x => x.id === id);
     if (!c) return;
@@ -727,6 +758,7 @@
     `;
     selected.style.display = 'flex';
 
+    _renderDupWarning(id);
     // Auto-sugere o título com nome do contato (user pode editar)
     const titleInput = document.getElementById('pcrm-f-title');
     if (titleInput && !titleInput.value) {
@@ -737,6 +769,7 @@
 
   window._pcrmClearContact = () => {
     document.getElementById('pcrm-f-contact').value = '';
+    _renderDupWarning(null);
     document.getElementById('pcrm-f-contact-selected').style.display = 'none';
     const search = document.getElementById('pcrm-f-contact-search');
     search.value = '';
@@ -795,7 +828,7 @@
         (c.name || '').toLowerCase().includes(term)
         || (c.company || '').toLowerCase().includes(term)
         || (c.email || '').toLowerCase().includes(term)
-        || (c.social_links?.instagram || '').toLowerCase().includes(term)
+        || Object.values(c.social_links || {}).some(h => String(h).toLowerCase().includes(term.replace(/^@/, '')))
       );
     }
     list = list.slice(0, 8);
@@ -923,6 +956,9 @@
     };
     if (!payload.contact_id || !payload.title) { toast('Contato e título são obrigatórios', 'e'); return; }
     if (role === 'sub' && !payload.master_contact_id) { toast('Selecione o master responsável', 'e'); return; }
+    if (_scopeProductId(scope)) payload.product_id = _scopeProductId(scope);
+    const dup = _existingCard(scope, payload.contact_id);
+    if (dup) { toast(`Já existe negociação com este contato neste pipeline (responsável: ${_ownerName(dup.owner)})`, 'e'); _renderDupWarning(payload.contact_id); return; }
     try {
       await CRM.cards.create(payload);
       // marca o contato como in_pipeline
@@ -936,7 +972,7 @@
   };
 
   window._pcrmFromContact = (scope) => {
-    const contacts = (STATE.crm.contacts || []).filter(c => c.status === 'wishlist');
+    const contacts = (STATE.crm.contacts || []).filter(c => c.status === 'wishlist' && !_existingCard(scope, c.id));
     if (!contacts.length) { toast('Nenhum contato na wishlist. Vá em Contatos primeiro.', 'w'); return; }
     const body = `
       <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Escolha um contato da wishlist para promover ao pipeline ${scope.toUpperCase()}.</div>
@@ -1118,7 +1154,15 @@
           ${contact.company ? `<div><span class="ctc-dt-k">Empresa</span><span>${_esc(contact.company)}</span></div>` : ''}
           ${contact.email ? `<div><span class="ctc-dt-k">Email</span><span>${_esc(contact.email)}</span></div>` : ''}
           ${product ? `<div><span class="ctc-dt-k">Produto</span><span>${_esc(product.name)}</span></div>` : ''}
+          <div><span class="ctc-dt-k">Responsável</span><span>${(() => {
+            const canEdit = STATE.user?.role === 'admin' || STATE.user?.id === card.owner || !card.owner;
+            if (!canEdit) return _esc(_ownerName(card.owner));
+            return `<select class="fi pcrm-owner-select" onchange="window._pcrmSetOwner('${card.id}', this.value)">
+              ${!card.owner ? '<option value="">— sem responsável</option>' : ''}
+              ${(STATE.users || []).filter(u => u.status !== 'inativo').map(u => `<option value="${u.id}" ${u.id === card.owner ? 'selected' : ''}>${_esc(u.name)}</option>`).join('')}
+            </select>`; })()}</span></div>
         </div>` : ''}
+        ${contact && window._ctcSocialBlockHTML ? _ctcSocialBlockHTML(contact) : ''}
         <div style="margin-top:14px">
           <label class="ctc-dt-k" style="display:block;margin-bottom:6px">Mover para etapa</label>
           <select id="pcrm-move-stage" class="fi" onchange="window._pcrmQuickMove('${card.id}', this.value)">
@@ -1143,6 +1187,20 @@
 
     openModal(card.title, body, footer);
     lucide.createIcons();
+    if (contact && window._ctcMaybeAutoRefreshSocial) _ctcMaybeAutoRefreshSocial(contact.id);
+  };
+
+  // Troca o responsável (admin, dono atual, ou card sem dono).
+  window._pcrmSetOwner = async (cardId, uid) => {
+    const card = STATE.crm.cards.find(c => c.id === cardId);
+    if (!card || !uid) return;
+    try {
+      await CRM.cards.update(cardId, { owner: uid });
+      _renderBoard(card.scope);
+      toast(`Responsável: ${_ownerName(uid)}`, 's');
+    } catch (e) {
+      toast('Erro ao trocar responsável: ' + (e.message || 'desconhecido'), 'e');
+    }
   };
 
   // Open a quick modal to classify/edit the deal's affiliate role.
