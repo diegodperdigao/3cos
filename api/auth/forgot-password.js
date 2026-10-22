@@ -12,7 +12,10 @@
 // Env vars required (Vercel → Settings → Environment Variables):
 //   SUPABASE_URL          — same as the client
 //   SUPABASE_SERVICE_KEY  — service_role (admin on auth + the tokens table)
-//   RESEND_API_KEY        — https://resend.com/api-keys
+// Envio: Gmail (mais simples, sem mexer em DNS) ou Resend.
+//   GMAIL_USER            — conta Gmail que envia (ex.: 3cos.sistema@gmail.com)
+//   GMAIL_APP_PASSWORD    — "senha de app" dessa conta (16 letras)
+//   RESEND_API_KEY        — https://resend.com/api-keys (usado se não houver Gmail)
 //   RESEND_FROM           — e.g. "3cos <no-reply@yourdomain.com>" (optional;
 //                           defaults to the Resend sandbox sender, which
 //                           only delivers to the Resend account owner's
@@ -24,7 +27,10 @@
 const crypto = require('crypto');
 const { admin } = require('../_lib/supabase-admin');
 
+const GMAIL_USER = process.env.GMAIL_USER || '';
+const GMAIL_APP_PASSWORD = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const MAIL_PROVIDER = GMAIL_USER && GMAIL_APP_PASSWORD ? 'gmail' : RESEND_API_KEY ? 'resend' : null;
 const RESEND_FROM = process.env.RESEND_FROM || 'onboarding@resend.dev';
 const APP_URL = process.env.APP_URL || '';
 
@@ -73,6 +79,11 @@ function emailHTML({ name, link }) {
 }
 
 async function sendMail({ to, subject, html }) {
+  if (MAIL_PROVIDER === 'gmail') {
+    const nodemailer = require('nodemailer');
+    const tx = nodemailer.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD } });
+    return tx.sendMail({ from: `3cos <${GMAIL_USER}>`, to, subject, html });
+  }
   const resp = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -93,9 +104,9 @@ module.exports = async (req, res) => {
   // depois de mexer nas variáveis do Vercel.
   if (req.method === 'GET') {
     res.status(200).json({
-      resend_key: !!RESEND_API_KEY,
-      from: RESEND_FROM.replace(/<.*>/, '').trim() || RESEND_FROM.split('@')[1],
-      sandbox_sender: /@resend\.dev>?$/.test(RESEND_FROM),
+      provider: MAIL_PROVIDER,
+      from: MAIL_PROVIDER === 'gmail' ? GMAIL_USER : MAIL_PROVIDER === 'resend' ? RESEND_FROM : null,
+      sandbox_sender: MAIL_PROVIDER === 'resend' && /@resend\.dev>?$/.test(RESEND_FROM),
       app_url: APP_URL || null,
     });
     return;
@@ -103,8 +114,8 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
   try {
-    if (!RESEND_API_KEY) {
-      console.error('[forgot-password] RESEND_API_KEY not configured');
+    if (!MAIL_PROVIDER) {
+      console.error('[forgot-password] no mail provider (GMAIL_USER/GMAIL_APP_PASSWORD or RESEND_API_KEY)');
       // Avisa de verdade: antes respondia "ok" e a pessoa ficava esperando um email que nunca saía.
       res.status(503).json({ error: 'O envio de email ainda não está configurado. Fale com um admin.' });
       return;
@@ -182,7 +193,7 @@ module.exports = async (req, res) => {
         html: emailHTML({ name: (userRow.name || '').split(' ')[0], link }),
       });
     } catch (e) {
-      console.error('[forgot-password] resend send:', e.message);
+      console.error('[forgot-password] send (' + MAIL_PROVIDER + '):', e.message);
       res.status(500).json({ error: 'Falha ao enviar email: ' + e.message });
       return;
     }
