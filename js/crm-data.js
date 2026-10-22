@@ -38,12 +38,20 @@ function _crmClient() {
 
 window.CRM = window.CRM || {};
 
-CRM.loadAll = async () => {
+// Chamadas simultâneas (hub + módulo abertos ao mesmo tempo) compartilham
+// o mesmo carregamento em vez de a segunda falhar.
+let _crmLoadPromise = null;
+CRM.loadAll = () => {
   if (!window.sb) {
     console.warn('[CRM Data] sb não inicializado');
-    return false;
+    return Promise.resolve(false);
   }
-  if (STATE.crm.loading) return false;
+  if (_crmLoadPromise) return _crmLoadPromise;
+  _crmLoadPromise = _crmLoadAll().finally(() => { _crmLoadPromise = null; });
+  return _crmLoadPromise;
+};
+
+async function _crmLoadAll() {
   STATE.crm.loading = true;
 
   // Log diagnóstico: estado da sessão (RLS exige authenticated)
@@ -98,7 +106,7 @@ CRM.loadAll = async () => {
   } finally {
     STATE.crm.loading = false;
   }
-};
+}
 
 // ── CONTACTS CRUD ──────────────────────────────────────────
 

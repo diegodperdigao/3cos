@@ -154,8 +154,15 @@ const DEFAULT_STATE={
 const STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
 let _saveTimeout = null;
 
+// Cópia local do estado, sem o CRM: contatos/pipeline vêm sempre do
+// Supabase e são grandes demais para o localStorage (limite ~5 MB).
+const _localSnapshot = () => JSON.stringify(STATE, (k, v) => (k === 'crm' ? undefined : v));
+const _writeLocal = () => {
+  try { localStorage.setItem('3C_OS_DATA', _localSnapshot()); }
+  catch (e) { console.warn('[saveToLocal] não foi possível salvar cópia local:', e.name); }
+};
 const saveToLocal = () => {
-  localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
+  _writeLocal();
   clearTimeout(_saveTimeout);
   _saveTimeout = setTimeout(saveToCloud, 2000);
 };
@@ -178,7 +185,7 @@ const loadFromCloud = async () => {
       const ok = await Data.loadAll();
       if (ok) {
         if (typeof Data.subscribeAll === 'function') Data.subscribeAll();
-        localStorage.setItem('3C_OS_DATA', JSON.stringify(STATE));
+        _writeLocal();
         console.log('[loadFromCloud] Supabase load successful');
         return;
       }
@@ -225,6 +232,8 @@ const loadFromLocal = () => {
   const data = localStorage.getItem('3C_OS_DATA');
   if (data) {
     const parsed = JSON.parse(data);
+    // Versões antigas guardavam o CRM (inclusive a flag "loading"): descarta.
+    delete parsed.crm;
     Object.assign(STATE, parsed);
     fixBrandLogos();
   }
