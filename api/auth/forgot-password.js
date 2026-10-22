@@ -89,13 +89,24 @@ async function sendMail({ to, subject, html }) {
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+  // GET = diagnóstico da configuração (sem expor valores), pra conferir
+  // depois de mexer nas variáveis do Vercel.
+  if (req.method === 'GET') {
+    res.status(200).json({
+      resend_key: !!RESEND_API_KEY,
+      from: RESEND_FROM.replace(/<.*>/, '').trim() || RESEND_FROM.split('@')[1],
+      sandbox_sender: /@resend\.dev>?$/.test(RESEND_FROM),
+      app_url: APP_URL || null,
+    });
+    return;
+  }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
   try {
     if (!RESEND_API_KEY) {
       console.error('[forgot-password] RESEND_API_KEY not configured');
-      // Still answer OK so we don't leak server state to the client
-      res.status(200).json({ ok: true });
+      // Avisa de verdade: antes respondia "ok" e a pessoa ficava esperando um email que nunca saía.
+      res.status(503).json({ error: 'O envio de email ainda não está configurado. Fale com um admin.' });
       return;
     }
 

@@ -1659,7 +1659,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
         email,
         type: 'b2c',
         profile: RESEARCH_PROFILE[r.tier] || 'tcg',
-        tier: TIER_BY_ID[r.tier] ? r.tier : null,
+        tier: null, // o A/B/C da planilha é o segmento, que já vira o perfil
         status: 'wishlist',
         source: 'outbound',
         social_links: links,
@@ -1797,7 +1797,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
         <div class="ctc-import-stat"><div class="ctc-import-stat-v">${withNet}</div><div class="ctc-import-stat-k">Com rede/link</div></div>
         ${kind === 'creators' ? `<div class="ctc-import-stat"><div class="ctc-import-stat-v">${withEmail}</div><div class="ctc-import-stat-k">Com email</div></div>` : ''}
       </div>
-      ${kind === 'creators' ? `<div style="font-size:11px;color:var(--text3);margin:12px 0 6px">Tier (da planilha; segmentos sem letra ficam sem tier):</div><div>${chips(tierDist)}</div>` : ''}
+      ${kind === 'creators' ? `<div style="font-size:11px;color:var(--text3);margin:12px 0 6px">Segmento da planilha (vira o perfil; o tier fica em branco):</div><div>${chips(tierDist)}</div>` : ''}
       <div style="font-size:11px;color:var(--text3);margin:12px 0 6px">Etiquetas que serão aplicadas:</div><div>${chips(tagDist)}</div>
       <div style="font-size:11px;color:var(--text3);margin:12px 0 4px">Prévia:</div>
       <div class="ctc-import-list">${sample}${fresh.length > 6 ? `<div style="color:var(--text3);font-size:11px;text-align:center;padding:4px">+ ${fresh.length - 6} outros</div>` : ''}</div>

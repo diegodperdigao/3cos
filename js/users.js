@@ -17,6 +17,7 @@ function _renderUserGrid(filter){
       <div class="user-actions">
         <button class="btn btn-outline user-action-btn" onclick="openEditUser('${u.id}')" title="Editar usuário"><i data-lucide="pencil"></i><span>Editar</span></button>
         ${isSelf?'':`<button class="btn btn-outline user-action-btn ${u.status==='ativo'?'is-warn':'is-ok'}" onclick="toggleUserStatus('${u.id}')" title="${blockLbl}"><i data-lucide="${blockIcon}"></i><span>${blockLbl}</span></button>
+        <button class="btn btn-outline user-action-btn" onclick="resetUserPassword('${u.id}')" title="Gerar uma senha nova"><i data-lucide="key-round"></i><span>Nova senha</span></button>
         <button class="btn btn-outline user-action-btn is-danger" onclick="confirmDeleteUser('${u.id}')" title="Excluir usuário"><i data-lucide="trash"></i><span>Excluir</span></button>`}
       </div>
     </div>`;
@@ -40,6 +41,29 @@ function bUsers(el){
 }
 let _userSearchTimer=null;
 window.filterUsers=q=>{clearTimeout(_userSearchTimer);_userSearchTimer=setTimeout(()=>{const g=document.getElementById('user-grid');if(g){g.innerHTML=_renderUserGrid(q);lucide.createIcons();}},150);};
+// Substitui o "Esqueci minha senha": o admin gera uma senha nova e repassa.
+window.resetUserPassword = async (id) => {
+  const u = (STATE.users || []).find(x => x.id === id);
+  if (!u) return;
+  if (!confirm(`Gerar uma senha nova para ${u.name}? A senha atual deixa de funcionar.`)) return;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+    if (!token) { toast('Sessão expirada. Faça login novamente.', 'e'); return; }
+    const resp = await fetch('/api/admin/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ id }),
+    });
+    let body = {};
+    try { body = await resp.json(); } catch (_) {}
+    if (!resp.ok || !body.ok) { toast('Erro: ' + (body.error || `HTTP ${resp.status}`), 'e'); return; }
+    if (typeof logAction === 'function') logAction('Senha redefinida', u.name);
+    _showCredentialsModal({ name: u.name, email: u.email, password: body.password, reset: true });
+  } catch (e) {
+    toast('Erro ao redefinir: ' + (e.message || 'rede'), 'e');
+  }
+};
 window.confirmDeleteUser=(id)=>{
   const u=STATE.users.find(x=>x.id===id);if(!u)return;
   if(u.id===STATE.user?.id)return toast('Não é possível excluir o próprio usuário','e');
@@ -222,12 +246,12 @@ window._userGenPwd = () => {
   el.select();
 };
 
-function _showCredentialsModal({ name, email, password }) {
+function _showCredentialsModal({ name, email, password, reset = false }) {
   const safeName = _escH(name);
   const safeEmail = _escH(email);
   const safePwd = _escH(password);
   openModal(
-    `Credenciais de ${safeName}`,
+    reset ? `Nova senha de ${safeName}` : `Credenciais de ${safeName}`,
     `
     <div style="display:flex;flex-direction:column;gap:14px">
       <div style="padding:12px 14px;background:color-mix(in srgb, var(--amber) 12%, transparent);border:1px solid color-mix(in srgb, var(--amber) 35%, transparent);border-radius:10px;font-size:12.5px;color:var(--text2);line-height:1.5">
@@ -241,7 +265,7 @@ function _showCredentialsModal({ name, email, password }) {
         </div>
       </div>
       <div class="ff">
-        <label>Senha inicial</label>
+        <label>${reset ? 'Nova senha' : 'Senha inicial'}</label>
         <div style="display:flex;gap:8px;align-items:stretch">
           <input id="cred-pwd" class="fi" type="text" value="${safePwd}" readonly style="flex:1;font-family:monospace;letter-spacing:0.5px">
           <button class="btn btn-outline" onclick="window._copyCred('cred-pwd', this)" style="white-space:nowrap"><i data-lucide="copy" style="width:14px;height:14px"></i> Copiar</button>
@@ -249,12 +273,12 @@ function _showCredentialsModal({ name, email, password }) {
       </div>
       <div class="ff">
         <label>Mensagem pronta (copie e envie)</label>
-        <textarea id="cred-msg" class="fi" readonly rows="4" style="resize:none;font-family:monospace;font-size:12px">Oi ${name}! Seu acesso ao 3cos está pronto.
+        <textarea id="cred-msg" class="fi" readonly rows="4" style="resize:none;font-family:monospace;font-size:12px">Oi ${name}! ${reset ? 'Sua senha do 3cos foi redefinida.' : 'Seu acesso ao 3cos está pronto.'}
 
 Email: ${email}
 Senha: ${password}
 
-Entre em ${window.location.origin} e troque a senha em Configurações no primeiro login.</textarea>
+Entre em ${window.location.origin} e troque a senha em Configurações${reset ? '' : ' no primeiro login'}.</textarea>
         <button class="btn btn-outline" onclick="window._copyCred('cred-msg', this)" style="margin-top:6px;width:100%"><i data-lucide="copy" style="width:14px;height:14px"></i> Copiar mensagem completa</button>
       </div>
     </div>
