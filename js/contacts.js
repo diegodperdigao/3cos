@@ -27,7 +27,7 @@
     // Segmentos da pesquisa Rips
     { id: 'youtuber',     label: 'YouTuber',          icon: 'youtube',       color: '#ef4444' },
     { id: 'youtuber_tcg', label: 'YouTuber TCG',      icon: 'clapperboard',  color: '#dc2626' },
-    { id: 'tiktoker',     label: 'TikToker',          icon: 'music-2',       color: '#111827' },
+    { id: 'tiktoker',     label: 'TikToker',          icon: 'music-2',       color: '#06b6d4' },
     { id: 'swarm',        label: 'Swarm',             icon: 'sparkles',      color: '#14b8a6' },
     { id: 'tiktok_live',  label: 'Loja TikTok LIVE',  icon: 'shopping-bag',  color: '#f43f5e' },
     { id: 'celebridade',  label: 'Celebridade',       icon: 'crown',         color: '#eab308' },
@@ -446,10 +446,6 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
         <div class="ctc-filterbar">
           <div class="ctc-fb-chip ctc-fb-count" id="ctc-counts">0 contatos</div>
 
-          <label class="ctc-fb-select-wrap" title="Filtrar por perfil">
-            <i data-lucide="layers"></i>
-            <select id="ctc-fsel-profile" class="ctc-fb-select" onchange="window._ctcFilterSelect('profile', this.value)"></select>
-          </label>
           <label class="ctc-fb-select-wrap" title="Filtrar por etiqueta">
             <i data-lucide="tag"></i>
             <select id="ctc-fsel-tag" class="ctc-fb-select" onchange="window._ctcFilterSelect('tag', this.value)"></select>
@@ -468,26 +464,6 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
 
           <div class="ctc-fb-divider"></div>
 
-          <div class="ctc-fb-seg" data-f="status">
-            <button class="ctc-fb-chip on" data-v="" onclick="window._ctcFilter(this)">
-              <i data-lucide="circle" style="width:9px;height:9px"></i>Status: todos
-            </button>
-            <button class="ctc-fb-chip" data-v="wishlist" onclick="window._ctcFilter(this)" style="--chip-c:#94a3b8">
-              <span class="ctc-fb-dot" style="background:#94a3b8"></span>Wishlist
-            </button>
-            <button class="ctc-fb-chip" data-v="in_pipeline" onclick="window._ctcFilter(this)" style="--chip-c:#f59e0b">
-              <span class="ctc-fb-dot" style="background:#f59e0b"></span>No pipeline
-            </button>
-            <button class="ctc-fb-chip" data-v="customer" onclick="window._ctcFilter(this)" style="--chip-c:#10b981">
-              <span class="ctc-fb-dot" style="background:#10b981"></span>Clientes
-            </button>
-            <button class="ctc-fb-chip" data-v="churned" onclick="window._ctcFilter(this)" style="--chip-c:#ef4444">
-              <span class="ctc-fb-dot" style="background:#ef4444"></span>Perdidos
-            </button>
-          </div>
-
-          <div class="ctc-fb-divider"></div>
-
           <div class="ctc-fb-seg" data-f="type">
             <button class="ctc-fb-chip on" data-v="" onclick="window._ctcFilter(this)">
               <i data-lucide="users" style="width:11px;height:11px"></i>Tipo: todos
@@ -500,6 +476,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
           <button class="ctc-fb-clear" id="ctc-fb-clear" onclick="window._ctcClearFilters()" style="display:none">
             <i data-lucide="x" style="width:11px;height:11px"></i> Limpar
           </button>
+          <div class="ctc-fb-profiles" id="ctc-fb-profiles"></div>
         </div>
 
         <div class="ctc-list" id="ctc-list"></div>
@@ -663,6 +640,18 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
     _updateClearBtn();
   };
 
+  // Perfis: múltipla escolha. null = todos.
+  window._ctcToggleProfile = (id) => {
+    if (id == null) F.profile = null;
+    else {
+      const sel = new Set(F.profile || []);
+      sel.has(id) ? sel.delete(id) : sel.add(id);
+      F.profile = sel.size ? [...sel] : null;
+    }
+    _renderList();
+    _updateClearBtn();
+  };
+
   window._ctcFilterSelect = (key, val) => {
     F[key] = val || null;
     _renderList();
@@ -672,15 +661,18 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
   // Seletores de perfil e etiqueta com contagem (só opções com contatos).
   function _renderFilterSelects() {
     const all = STATE.crm?.contacts || [];
-    const ps = document.getElementById('ctc-fsel-profile');
-    if (ps) {
+    const pr = document.getElementById('ctc-fb-profiles');
+    if (pr) {
       const cnt = {}; let none = 0;
       all.forEach(c => { if (c.profile) cnt[c.profile] = (cnt[c.profile] || 0) + 1; else none++; });
-      const opts = PROFILES.filter(p => cnt[p.id] || F.profile === p.id)
-        .sort((a, b) => (cnt[b.id] || 0) - (cnt[a.id] || 0))
-        .map(p => `<option value="${p.id}" ${F.profile === p.id ? 'selected' : ''}>${p.label} (${cnt[p.id] || 0})</option>`).join('');
-      ps.innerHTML = `<option value="">Perfil: todos</option>${opts}${none ? `<option value="__none__" ${F.profile === '__none__' ? 'selected' : ''}>Sem perfil (${none})</option>` : ''}`;
-      ps.classList.toggle('on', !!F.profile);
+      const sel = new Set(F.profile || []);
+      const chip = (id, label, icon, color, n) => `<button class="ctc-pf-chip ${sel.has(id) ? 'on' : ''}" style="--chip-c:${color}" onclick="window._ctcToggleProfile('${id}')">
+        ${icon ? `<i data-lucide="${icon}"></i>` : ''}${label}<span>${n}</span></button>`;
+      pr.innerHTML = `<span class="ctc-pf-lbl">Perfil</span>
+        <button class="ctc-pf-chip ${sel.size ? '' : 'on'}" onclick="window._ctcToggleProfile(null)">Todos<span>${all.length}</span></button>
+        ${PROFILES.filter(p => cnt[p.id] || sel.has(p.id)).sort((a, b) => (cnt[b.id] || 0) - (cnt[a.id] || 0))
+          .map(p => chip(p.id, p.label, p.icon, p.color, cnt[p.id] || 0)).join('')}
+        ${none || sel.has('__none__') ? chip('__none__', 'Sem perfil', null, '#94a3b8', none) : ''}`;
     }
     const ts = document.getElementById('ctc-fsel-tag');
     if (ts) {
@@ -709,7 +701,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
   function _updateClearBtn() {
     const btn = document.getElementById('ctc-fb-clear');
     if (!btn) return;
-    const anyActive = F.status || F.type || F.profile || F.tier || F.tag || F.product;
+    const anyActive = F.status || F.type || F.profile?.length || F.tier || F.tag || F.product;
     btn.style.display = anyActive ? 'inline-flex' : 'none';
   }
 
@@ -718,8 +710,10 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
     let list = STATE.crm.contacts || [];
     if (F.status) list = list.filter(c => c.status === F.status);
     if (F.type) list = list.filter(c => c.type === F.type);
-    if (F.profile === '__none__') list = list.filter(c => !c.profile);
-    else if (F.profile) list = list.filter(c => c.profile === F.profile);
+    if (F.profile?.length) {
+      const sel = new Set(F.profile);
+      list = list.filter(c => sel.has(c.profile || '__none__'));
+    }
     if (F.tier) list = list.filter(c => c.tier === F.tier);
     if (F.tag) {
       const withTag = new Set((STATE.crm.contactTags || []).filter(x => x.tag_id === F.tag).map(x => x.contact_id));
@@ -2837,8 +2831,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
       // Filter summary → the subtitle under the cover title
       const bits = [];
       if (F.type) bits.push('Tipo: ' + (TYPE_LABEL[F.type] || F.type));
-      if (F.profile === '__none__') bits.push('Perfil: sem perfil');
-      else if (F.profile) bits.push('Perfil: ' + (PROFILE_BY_ID[F.profile]?.label || F.profile));
+      if (F.profile?.length) bits.push('Perfil: ' + F.profile.map(id => id === '__none__' ? 'sem perfil' : (PROFILE_BY_ID[id]?.label || id)).join(', '));
       if (F.tier) bits.push('Tier: ' + F.tier);
       if (F.status) bits.push('Status: ' + (STATUS_LABEL[F.status] || F.status));
       if (F.search) bits.push(`Busca: "${F.search}"`);

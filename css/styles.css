@@ -6489,3 +6489,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .ctc-fb-select.on{color:var(--text);}
 .ctc-fb-select-wrap:has(.ctc-fb-select.on){border-color:var(--text);}
 .ctc-fb-select option{color:#111;background:#fff;}
+
+/* Fileira de perfis (múltipla escolha) */
+.ctc-fb-profiles{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-top:10px;margin-top:2px;border-top:1px solid var(--gb);}
+.ctc-pf-lbl{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-right:4px;}
+.ctc-pf-chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--gb);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:border-color .12s,background .12s,color .12s;}
+.ctc-pf-chip svg{width:12px;height:12px;color:var(--chip-c,var(--text3));}
+.ctc-pf-chip span{font-size:10.5px;font-weight:600;color:var(--text3);font-variant-numeric:tabular-nums;}
+.ctc-pf-chip:hover{border-color:var(--gb3);color:var(--text);}
+.ctc-pf-chip.on{color:var(--text);border-color:var(--chip-c,var(--text));background:color-mix(in srgb,var(--chip-c,var(--text)) 12%,transparent);}
+.ctc-pf-chip.on span{color:var(--text2);}
