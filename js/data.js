@@ -196,16 +196,8 @@ window.Data = (function () {
         };
       }
 
-      // EmailJS config (singleton)
-      const { data: ejs } = await sb().from('emailjs_config').select('*').eq('id', 1).single();
-      if (ejs) {
-        STATE.emailjs = {
-          publicKey: ejs.public_key || '',
-          serviceId: ejs.service_id || '',
-          templateId: ejs.template_id || '',
-          financeEmail: ejs.finance_email || '',
-        };
-      }
+      // EmailJS desativado: não carregamos credenciais.
+      STATE.emailjs = {};
 
       // Available tags
       const { data: tags } = await sb().from('available_tags').select('*');
@@ -485,19 +477,9 @@ window.Data = (function () {
     return !error;
   }
 
-  async function saveEmailJS() {
-    if (!sb()) return false;
-    const ej = STATE.emailjs || {};
-    const { error } = await sb().from('emailjs_config').upsert({
-      id: 1,
-      public_key: ej.publicKey || '',
-      service_id: ej.serviceId || '',
-      template_id: ej.templateId || '',
-      finance_email: ej.financeEmail || '',
-    });
-    if (error) console.error('[Data.saveEmailJS]', error);
-    return !error;
-  }
+  // EmailJS desativado: nunca regrava credenciais (o cache local poderia
+  // ressuscitar as chaves apagadas do banco).
+  async function saveEmailJS() { return true; }
 
   // ── AUDIT LOG ───────────────────────────────────────────
   async function logAction(action, detail) {
