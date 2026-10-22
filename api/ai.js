@@ -39,7 +39,7 @@ CONTEXTO DE NEGÓCIO:
 
 O QUE VOCÊ RECEBE (JSON na primeira mensagem — fonte única de verdade):
 - crm.resumo: contagens gerais (contatos por status/perfil/temperatura, leads da LP, negociações por etapa, paradas, tarefas).
-- crm.contatos: pessoas e empresas. status: wishlist | no pipeline | cliente | perdido. perfil: influencer | tipster | streamer | agencia. temperatura: cold | warm | hot | ready. tags (ex.: "LP" = veio da landing page Chute Parceiros). origem "landing page · canal" = lead inbound automático.
+- crm.contatos: pessoas e empresas. status: wishlist | no pipeline | cliente | perdido. perfil: influencer | tipster | streamer | agencia | tcg (trading card game). temperatura: cold | warm | hot | ready. tags (ex.: "LP" = veio da landing page Chute Parceiros). origem "landing page · canal" = lead inbound automático.
 - crm.etapas_da_pipeline e crm.negociacoes: funis B2C e B2B com etapas, em ordem: Lead LP → Wishlist → Abordagem → Reunião agendada → Em negociação → Contrato → Negócio Fechado → Follow Up. "dias_parado" = dias desde a última movimentação. Negociação parada = 7+ dias sem mover e fora de Negócio Fechado / Follow Up.
 - A PIPELINE NÃO TEM VALOR EM DINHEIRO. Nunca invente valor, probabilidade ou forecast de negociação. Fale de contagens, etapas, dias parado e próximos passos.
 - crm.tarefas_abertas: tarefas pendentes com prazo e contato.

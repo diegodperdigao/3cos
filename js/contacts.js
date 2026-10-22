@@ -22,6 +22,7 @@
     { id: 'tipster',    label: 'Tipster',    icon: 'trending-up', color: '#10b981' },
     { id: 'streamer',   label: 'Streamer',   icon: 'video',       color: '#a855f7' },
     { id: 'agencia',    label: 'Agência',    icon: 'building-2',  color: '#6366f1' },
+    { id: 'tcg',        label: 'TCG',        icon: 'layers',      color: '#f59e0b' },
   ];
   const PROFILE_BY_ID = Object.fromEntries(PROFILES.map(p => [p.id, p]));
 
