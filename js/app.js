@@ -1435,6 +1435,8 @@ function showHub(){
     if(window.updateCopilotVisibility)updateCopilotVisibility();
     if(window.applyAppTheme)applyAppTheme();
     initMosaics();lucide.createIcons();
+    // Link direto da fila de seguidores (#fila=instagram): abre Contatos
+    if (/^#fila=/.test(location.hash)) setTimeout(() => openMod('contacts'), 300);
   },650);
 }
 

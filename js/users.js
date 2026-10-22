@@ -805,7 +805,7 @@ window.toggleTheme = _wrapToggleTheme;
         else if (typeof applyBetaEdition === 'function') applyBetaEdition();
         if (typeof updateCopilotVisibility === 'function') updateCopilotVisibility();
         // Restore active module (openMod has try/catch safety net)
-        const savedMod=sessionStorage.getItem('3cos_activeMod');
+        const savedMod=/^#fila=/.test(location.hash) ? 'contacts' : sessionStorage.getItem('3cos_activeMod');
         if(savedMod && typeof openMod === 'function'){
           setTimeout(()=>{ try{openMod(savedMod);}catch(e){console.error('[boot] module restore failed:',e);} },200);
         }

@@ -119,7 +119,10 @@
       if (s.posts) extra.push(`${_fmtFollowers(s.posts)} vídeos`);
       if (s.live) extra.push(`<span class="soc-live">ao vivo${s.live_viewers != null ? ` · ${_fmtFollowers(s.live_viewers)}` : ''}</span>`);
       const when = s.fetched_at ? new Date(s.fetched_at).toLocaleDateString('pt-BR') : '';
-      const src = s.source === 'api' ? `atualizado ${when}` : s.source === 'manual' ? `manual · ${when}` : s.source === 'import' ? `planilha · ${when}` : (n.api ? 'ainda não buscado' : 'sem API — informe manualmente');
+      const src = s.status === 'not_found' ? `perfil não encontrado · ${when}`
+        : s.source === 'api' ? `atualizado ${when}` : s.source === 'manual' ? `manual · ${when}`
+        : s.source === 'fila' ? `conferido · ${when}` : s.source === 'import' ? `planilha · ${when}`
+        : (n.api ? 'ainda não buscado' : 'sem dado — use a fila de seguidores');
       return `<div class="soc-row">
         ${_socialBadge(n)}
         <div class="soc-main">
@@ -188,18 +191,35 @@
     if (stale) window._ctcRefreshSocial(contactId, { silent: true });
   };
 
+  // "12,3 mil" · "1,2 mi" · "1.2M" · "12.345" · "12345 seguidores" → número (NaN se inválido)
+  function _parseFollowersText(raw) {
+    let t = String(raw || '').toLowerCase().replace(/seguidores|followers|inscritos|subscribers/g, '').replace(/\s+/g, '');
+    if (!t) return NaN;
+    let mult = 1;
+    const suf = t.match(/(bilh(ão|ões|oes)|bi|b|milh(ão|ões|oes)|mi|m|mil|k)$/);
+    if (suf) {
+      const k = suf[1];
+      mult = /^b/.test(k) ? 1e9 : (k === 'mil' || k === 'k') ? 1e3 : 1e6;
+      t = t.slice(0, -k.length);
+      t = t.replace(',', '.');                       // com sufixo: separador é decimal
+      if ((t.match(/\./g) || []).length > 1) return NaN;
+    } else {
+      t = t.replace(/[.,](?=\d{3}(\D|$))/g, '');     // sem sufixo: . e , são milhar
+      t = t.replace(',', '.');
+    }
+    if (!/^\d+(\.\d+)?$/.test(t)) return NaN;
+    return Math.round(parseFloat(t) * mult);
+  }
+  window._ctcParseFollowers = _parseFollowersText;
+
   window._ctcSetManualFollowers = async (contactId, net) => {
     const c = CRM.contactById(contactId);
     if (!c) return;
     const cur = c.social_stats?.[net]?.followers;
     const raw = prompt(`Seguidores no ${SOCIAL_BY_ID[net]?.label || net} (ex.: 125000 ou 125 mil):`, cur != null ? String(cur) : '');
     if (raw == null) return;
-    const txt = raw.trim().toLowerCase().replace(/\s+/g, '');
-    let n = parseFloat(txt.replace(/\./g, '').replace(',', '.'));
-    if (/mi(l?h?(ão|oes|ões)?)?$|m$/.test(txt) && !/mil$/.test(txt)) n *= 1e6;
-    else if (/mil$|k$/.test(txt)) n *= 1e3;
-    if (txt === '') n = null;
-    else if (isNaN(n) || n < 0) { toast('Número inválido', 'e'); return; }
+    const n = raw.trim() === '' ? null : _parseFollowersText(raw);
+    if (n !== null && isNaN(n)) { toast('Número inválido', 'e'); return; }
     const stats = { ...(c.social_stats || {}) };
     stats[net] = { ...(stats[net] || {}), followers: n == null ? null : Math.round(n), source: 'manual', fetched_at: new Date().toISOString() };
     try {
@@ -208,6 +228,161 @@
     } catch (e) { toast('Erro ao salvar: ' + e.message, 'e'); }
   };
   window._igSvg = () => IG_SVG;
+
+  // ── FILA DE SEGUIDORES ────────────────────────────────────
+  // Um contato por vez: abre o perfil, lê o número, digita, salva, próximo.
+  // Feita pra uma pessoa ou um agente no navegador (Claude no Chrome) usar.
+  // Os ids fixos (#fq-*) são o "contrato" com as instruções do agente.
+  const FQ_STALE_DAYS = 30;
+  let _fq = null; // { net, stale, ids, i, saved, notFound, skipped }
+
+  function _fqBuild(net, stale) {
+    const cutoff = Date.now() - FQ_STALE_DAYS * 864e5;
+    return (STATE.crm?.contacts || []).filter(c => {
+      if (!c.social_links?.[net]) return false;
+      const s = c.social_stats?.[net];
+      if (!s || (s.followers == null && s.status !== 'not_found')) return true;
+      return stale && s.fetched_at && new Date(s.fetched_at).getTime() < cutoff;
+    }).sort((a, b) => (TIER_ORDER[a.tier] ?? 9) - (TIER_ORDER[b.tier] ?? 9) || (a.name || '').localeCompare(b.name || '', 'pt-BR'))
+      .map(c => c.id);
+  }
+
+  window._ctcOpenFollowerQueue = (net, stale) => {
+    const nets = SOCIALS.filter(n => !n.link);
+    net = SOCIAL_BY_ID[net] && !SOCIAL_BY_ID[net].link ? net : (_fq?.net || 'instagram');
+    stale = stale ?? _fq?.stale ?? false;
+    _fq = { net, stale, ids: _fqBuild(net, stale), i: 0, saved: 0, notFound: 0, skipped: 0 };
+    const counts = Object.fromEntries(nets.map(n => [n.id, _fqBuild(n.id, stale).length]));
+    const body = `
+      <div class="fq">
+        <div class="fq-top">
+          <div class="fq-nets">
+            ${nets.map(n => `<button class="fq-net ${n.id === net ? 'on' : ''}" onclick="window._ctcOpenFollowerQueue('${n.id}')" title="${n.label}">
+              ${_socialBadge(n)}<span id="fq-n-${n.id}">${counts[n.id]}</span></button>`).join('')}
+          </div>
+          <label class="fq-stale"><input type="checkbox" ${stale ? 'checked' : ''} onchange="window._ctcOpenFollowerQueue('${net}', this.checked)"> incluir dados com mais de ${FQ_STALE_DAYS} dias</label>
+        </div>
+        <div id="fq-body"></div>
+        <div class="fq-foot">
+          <button class="btn btn-ghost" onclick="window._fqCopyAgentPrompt()"><i data-lucide="bot"></i> Copiar instruções para o agente</button>
+        </div>
+      </div>`;
+    openModal('Fila de seguidores', body, `<button class="btn btn-ghost" onclick="window._fqClose()">Fechar</button>`);
+    _fqRender();
+  };
+
+  function _fqRender() {
+    const el = document.getElementById('fq-body');
+    if (!el || !_fq) return;
+    const net = SOCIAL_BY_ID[_fq.net];
+    const total = _fq.ids.length;
+    SOCIALS.filter(n => !n.link).forEach(n => {
+      const el2 = document.getElementById('fq-n-' + n.id);
+      if (el2) el2.textContent = _fqBuild(n.id, _fq.stale).length;
+    });
+    if (_fq.i >= total) {
+      el.innerHTML = `<div class="fq-done" id="fq-done">
+        <strong>Fila concluída</strong>
+        <span>${_fq.saved} salvos · ${_fq.notFound} não encontrados · ${_fq.skipped} pulados${total === 0 ? ' · nenhum contato pendente nessa rede' : ''}</span>
+      </div>`;
+      if (window.lucide) lucide.createIcons();
+      _renderList();
+      return;
+    }
+    const c = CRM.contactById(_fq.ids[_fq.i]);
+    if (!c) { _fq.i++; return _fqRender(); }
+    const h = c.social_links[_fq.net];
+    const tier = TIER_BY_ID[c.tier];
+    const prof = PROFILE_BY_ID[c.profile];
+    const prev = c.social_stats?.[_fq.net];
+    const pct = Math.round((_fq.i / total) * 100);
+    el.innerHTML = `
+      <div class="fq-progress"><div style="width:${pct}%"></div></div>
+      <div class="fq-count">${_fq.i + 1} de ${total} · ${_fq.saved} salvos</div>
+      <div class="fq-card">
+        <div class="fq-name">${_esc(c.name)}
+          ${tier ? `<span class="ctc-tile-badge" style="color:${tier.color};border-color:${tier.color}55">${tier.label}</span>` : ''}
+          ${prof ? `<span class="ctc-tile-badge">${prof.label}</span>` : ''}
+        </div>
+        <a id="fq-handle-link" class="fq-open" href="${_esc(net.url(h))}" target="_blank" rel="noopener">
+          ${_socialBadge(net)} Abrir <strong>@<span id="fq-handle">${_esc(h)}</span></strong> no ${net.label} <i data-lucide="external-link"></i>
+        </a>
+        ${prev?.followers != null ? `<div class="fq-prev">Último valor: ${_fmtFollowers(prev.followers)} (${prev.fetched_at ? new Date(prev.fetched_at).toLocaleDateString('pt-BR') : 's/ data'})</div>` : ''}
+        <label class="fq-label" for="fq-followers">Seguidores</label>
+        <input id="fq-followers" class="fi" type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: 12,3 mil · 1,2 mi · 12.345"
+          oninput="window._fqPreview(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();window._fqSave()}">
+        <div id="fq-preview" class="fq-preview"></div>
+        <div class="fq-actions">
+          <button id="fq-save" class="btn btn-theme" onclick="window._fqSave()"><i data-lucide="check"></i> Salvar e próximo</button>
+          <button id="fq-skip" class="btn btn-outline" onclick="window._fqSkip()">Pular</button>
+          <button id="fq-notfound" class="btn btn-outline" onclick="window._fqNotFound()">Perfil não encontrado</button>
+        </div>
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+    setTimeout(() => document.getElementById('fq-followers')?.focus(), 30);
+  }
+
+  window._fqPreview = (v) => {
+    const el = document.getElementById('fq-preview');
+    if (!el) return;
+    if (!v.trim()) { el.textContent = ''; return; }
+    const n = _parseFollowersText(v);
+    el.textContent = isNaN(n) ? 'Não entendi esse número' : `= ${n.toLocaleString('pt-BR')} seguidores`;
+    el.classList.toggle('is-err', isNaN(n));
+  };
+
+  async function _fqWrite(patch) {
+    const c = CRM.contactById(_fq.ids[_fq.i]);
+    const stats = { ...(c.social_stats || {}) };
+    stats[_fq.net] = { ...(stats[_fq.net] || {}), ...patch, fetched_at: new Date().toISOString() };
+    await CRM.contacts.update(c.id, { social_stats: stats });
+  }
+
+  window._fqSave = async () => {
+    const v = document.getElementById('fq-followers')?.value || '';
+    const n = _parseFollowersText(v);
+    if (isNaN(n)) { toast('Digite o número de seguidores (ex.: 12,3 mil)', 'w'); return; }
+    const btn = document.getElementById('fq-save');
+    if (btn) btn.disabled = true;
+    try {
+      await _fqWrite({ followers: n, source: 'fila', status: null });
+      _fq.saved++; _fq.i++; _fqRender();
+    } catch (e) { toast('Erro ao salvar: ' + e.message, 'e'); if (btn) btn.disabled = false; }
+  };
+  window._fqNotFound = async () => {
+    try {
+      await _fqWrite({ followers: null, source: 'fila', status: 'not_found' });
+      _fq.notFound++; _fq.i++; _fqRender();
+    } catch (e) { toast('Erro ao salvar: ' + e.message, 'e'); }
+  };
+  window._fqSkip = () => { _fq.skipped++; _fq.i++; _fqRender(); };
+  window._fqClose = () => {
+    closeModal();
+    if (/^#fila=/.test(location.hash)) history.replaceState(null, '', location.pathname);
+    _renderList();
+  };
+
+  window._fqCopyAgentPrompt = async () => {
+    const net = SOCIAL_BY_ID[_fq?.net || 'instagram'];
+    const url = `${location.origin}/#fila=${net.id}`;
+    const txt = `Você vai preencher o número de seguidores do ${net.label} no CRM 3cos, um contato por vez.
+No ${net.label}, só leia: não siga, não curta, não comente e não mande mensagem.
+
+1. Abra ${url} (já estou logado). Abre a janela "Fila de seguidores" mostrando um contato.
+2. Clique no link "Abrir @… no ${net.label}" (id fq-handle-link). O perfil abre em outra aba.
+3. No perfil, leia o número de seguidores no topo da página, exatamente como aparece (ex.: "12,3 mil", "1,2 mi", "845").
+   - Se aparecer "Esta página não está disponível", "Usuário não encontrado" ou equivalente: volte ao 3cos e clique em "Perfil não encontrado" (id fq-notfound).
+   - Conta privada mostra o número mesmo assim: anote normalmente.
+   - Se o ${net.label} pedir login, verificação, captcha ou disser "Tente novamente mais tarde": pare e me avise.
+4. Feche a aba do perfil, volte ao 3cos, digite o número no campo "Seguidores" (id fq-followers) e clique em "Salvar e próximo" (id fq-save).
+   Abaixo do campo aparece a conversão (ex.: "= 12.300 seguidores"); confira antes de salvar.
+5. Espere uns 5 segundos e repita do passo 2 até aparecer "Fila concluída" (id fq-done).
+6. A cada 40 perfis, faça uma pausa de 2 minutos.
+
+No final, me diga quantos foram salvos, quantos não encontrados e se houve algum problema.`;
+    try { await navigator.clipboard.writeText(txt); toast('Instruções copiadas. Cole no Claude no Chrome.', 's'); }
+    catch (_) { prompt('Copie as instruções:', txt); }
+  };
 
   const SOURCE_LABEL = { inbound: 'Inbound', outbound: 'Outbound', referral: 'Indicação', event: 'Evento', social: 'Redes sociais', other: 'Outro' };
 
@@ -223,6 +398,7 @@
             <button class="btn btn-outline" onclick="window._ctcToggleSelect()"><i data-lucide="check-square"></i> Selecionar</button>
             <button class="btn btn-outline" onclick="window._ctcOpenImports()"><i data-lucide="list"></i> Lançamentos</button>
             <button class="btn btn-outline" onclick="window._ctcManageTags()"><i data-lucide="tags"></i> Tags</button>
+            <button class="btn btn-outline" onclick="window._ctcOpenFollowerQueue()" title="Preencher seguidores perfil a perfil (manual ou agente)"><i data-lucide="users"></i> Seguidores</button>
             <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
             <button class="btn btn-outline" onclick="window._ctcExportPDF()" title="Exporta a lista atual (respeita filtros ativos) em um PDF interativo"><i data-lucide="file-text"></i> PDF</button>
             <button class="btn btn-theme" onclick="window._ctcOpenNew()"><i data-lucide="plus"></i> Novo contato</button>
@@ -305,6 +481,9 @@
     _renderProductFilter();
     _renderList();
     lucide.createIcons();
+    // Link direto da fila (usado pelo agente): #fila=instagram
+    const m = (location.hash || '').match(/^#fila=(\w+)/);
+    if (m) setTimeout(() => window._ctcOpenFollowerQueue(m[1]), 300);
   }
   window.bContacts = bContacts;
 
@@ -1013,7 +1192,8 @@
         <button class="btn btn-outline" onclick="window._ctcToggleSelect()"><i data-lucide="check-square"></i> Selecionar</button>
         <button class="btn btn-outline" onclick="window._ctcOpenImports()"><i data-lucide="list"></i> Lançamentos</button>
         <button class="btn btn-outline" onclick="window._ctcManageTags()"><i data-lucide="tags"></i> Tags</button>
-        <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
+        <button class="btn btn-outline" onclick="window._ctcOpenFollowerQueue()" title="Preencher seguidores perfil a perfil (manual ou agente)"><i data-lucide="users"></i> Seguidores</button>
+            <button class="btn btn-outline" onclick="window._ctcOpenImport()"><i data-lucide="upload"></i> Importar</button>
         <button class="btn btn-outline" onclick="window._ctcExportPDF()" title="Exporta a lista atual (respeita filtros ativos) em um PDF interativo"><i data-lucide="file-text"></i> PDF</button>
         <button class="btn btn-theme" onclick="window._ctcOpenNew()"><i data-lucide="plus"></i> Novo contato</button>
       `;
