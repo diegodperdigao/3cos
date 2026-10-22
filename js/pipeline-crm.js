@@ -965,7 +965,9 @@
       await CRM.contacts.update(payload.contact_id, { status: 'in_pipeline' });
       closeModal();
       _renderBoard(scope);
+      _renderTabCounts();
       toast('Negociação criada', 's');
+      if (window._ctcAfterDealCreated) window._ctcAfterDealCreated(payload.contact_id);
     } catch (e) {
       toast('Erro ao criar: ' + (e.message || 'desconhecido'), 'e');
     }

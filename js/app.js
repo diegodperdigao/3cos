@@ -825,7 +825,9 @@ window.toggleSecretField = (inputId, btn) => {
   }
 };
 
-function openModal(title,body,ftr=''){
+function openModal(title,body,ftr='',opts={}){
+  const box=document.querySelector('#modal-ov .modal');
+  if(box)box.classList.toggle('modal-wide',!!opts.wide);
   document.getElementById('mttl').textContent=title;
   document.getElementById('mbd').innerHTML=body;
   document.getElementById('mft').innerHTML=ftr;

@@ -25,9 +25,9 @@
     { id: 'tcg',        label: 'TCG',        icon: 'layers',      color: '#f59e0b' },
     { id: 'comunidade', label: 'Comunidade', icon: 'users',       color: '#0ea5e9' },
     // Segmentos da pesquisa Rips
-    { id: 'youtuber',     label: 'YouTuber',          icon: 'youtube',       color: '#ef4444' },
+    { id: 'youtuber',     label: 'YouTuber',          icon: 'monitor-play',       color: '#ef4444' },
     { id: 'youtuber_tcg', label: 'YouTuber TCG',      icon: 'clapperboard',  color: '#dc2626' },
-    { id: 'tiktoker',     label: 'TikToker',          icon: 'music-2',       color: '#06b6d4' },
+    { id: 'tiktoker',     label: 'TikToker',          icon: 'music',       color: '#06b6d4' },
     { id: 'swarm',        label: 'Swarm',             icon: 'sparkles',      color: '#14b8a6' },
     { id: 'tiktok_live',  label: 'Loja TikTok LIVE',  icon: 'shopping-bag',  color: '#f43f5e' },
     { id: 'celebridade',  label: 'Celebridade',       icon: 'crown',         color: '#eab308' },
@@ -61,6 +61,12 @@
   };
   window._ctcCompanyOf = _companyOf;
   // Instagram glyph (Lucide no longer ships brand icons). Inherits currentColor.
+  // Iniciais ignorando emoji e símbolos ("🔥POKÉLAND-TCG" → "PO").
+  const _initials = (name) => {
+    const words = String(name || '').split(/\s+/).map(w => Array.from(w).filter(ch => /[\p{L}\p{N}]/u.test(ch)).join('')).filter(Boolean);
+    if (!words.length) return '?';
+    return (words.length === 1 ? words[0].slice(0, 2) : words[0][0] + words[1][0]).toUpperCase();
+  };
   const IG_SVG = '<svg class="ig-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>';
 
   // ── REDES SOCIAIS ─────────────────────────────────────────
@@ -135,10 +141,10 @@
       return `<div class="soc-row">
         ${_socialBadge(n)}
         <div class="soc-main">
-          <a href="${_esc(n.url(h))}" target="_blank" rel="noopener" class="soc-handle">${n.link ? 'Abrir link' : '@' + _esc(h)}</a>
+          <a href="${_esc(n.url(h))}" target="_blank" rel="noopener" class="soc-handle">${n.link ? `${n.label} <span class="soc-host">${_esc((h.match(/^https?:\/\/([^/]+)/) || [])[1] || 'link')}</span>` : '@' + _esc(h)}</a>
           <div class="soc-meta">${extra.length ? extra.join(' · ') + ' · ' : ''}${src}</div>
         </div>
-        <div class="soc-followers" title="Seguidores">${_fmtFollowers(s.followers)}</div>
+        <div class="soc-followers ${s.followers == null ? 'is-empty' : ''}" title="Seguidores">${_fmtFollowers(s.followers)}</div>
         <button class="soc-edit" title="Informar seguidores manualmente" onclick="event.stopPropagation();window._ctcSetManualFollowers('${c.id}','${n.id}')"><i data-lucide="pencil"></i></button>
       </div>`;
     }).join('');
@@ -535,7 +541,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
 
     el.className = 'ctc-grid' + (_selectMode ? ' select-mode' : '');
     el.innerHTML = list.map(c => {
-      const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+      const initials = _initials(c.name);
       let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
       const avatarBg = `hsl(${hue},30%,46%)`;
@@ -967,7 +973,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
     const ig = _normalizeIgHandle(c.social_links?.instagram);
     const prof = PROFILE_BY_ID[c.profile];
     const tier = TIER_BY_ID[c.tier];
-    const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+    const initials = _initials(c.name);
     let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
     const hue = Math.abs(h) % 360;
     const phoneDigits = String(c.phone || '').replace(/\D/g, '');
@@ -1033,44 +1039,158 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
   window._ctcOpenDetail = (id) => {
     const c = CRM.contactById(id);
     if (!c) return;
-    const ig = _normalizeIgHandle(c.social_links?.instagram);
     const prof = PROFILE_BY_ID[c.profile];
+    const tier = TIER_BY_ID[c.tier];
+    const company = _companyOf(c);
+    let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
+    const hue = Math.abs(h) % 360;
+    const initials = _initials(c.name);
+    const phoneDigits = String(c.phone || '').replace(/\D/g, '');
+    const wa = phoneDigits ? `https://wa.me/${phoneDigits.length <= 11 ? '55' + phoneDigits : phoneDigits}` : '';
+    const tags = CRM.tagsForContact(c.id);
+    const lm = c.lead_meta || {};
+    const origem = lm.channel
+      ? (lm.consent_lgpd ? `Landing page · ${lm.channel}` : lm.channel)
+      : (c.source ? (SOURCE_LABEL[c.source] || c.source) : '');
+    const owners = [...new Set((STATE.crm?.cards || []).filter(x => x.contact_id === c.id).map(x => x.owner).filter(Boolean))]
+      .map(uid => (STATE.users || []).find(u => u.id === uid)?.name).filter(Boolean);
 
+    const detail = (k, v) => v ? `<div class="cd-row"><span class="cd-k">${k}</span><span class="cd-v">${v}</span></div>` : '';
     const body = `
-      <div class="ctc-detail-head">
-        <div style="display:flex;align-items:center;gap:10px">
-          <strong style="font-size:18px">${_esc(c.name)}</strong>
-          ${prof ? `<span class="ctc-tile-badge profile-badge" style="--prof-c:${prof.color}">
-            <i data-lucide="${prof.icon}" style="width:10px;height:10px"></i>${prof.label}
-          </span>` : ''}
-          ${TIER_BY_ID[c.tier] ? `<span class="ctc-tile-badge" style="color:${TIER_BY_ID[c.tier].color};border-color:${TIER_BY_ID[c.tier].color}55">${TIER_BY_ID[c.tier].label}</span>` : ''}
+      <div class="cd">
+        <div class="cd-head">
+          ${_avatarHTML(c, hue, initials).replace('ctc-tile-av', 'ctc-tile-av cd-av')}
+          <div class="cd-id">
+            <div class="cd-name">${_esc(c.name)}</div>
+            <div class="cd-badges">
+              ${prof ? `<span class="ctc-tile-badge profile-badge" style="--prof-c:${prof.color}"><i data-lucide="${prof.icon}" style="width:10px;height:10px"></i>${prof.label}</span>` : ''}
+              ${tier ? `<span class="ctc-tile-badge" style="color:${tier.color};border-color:${tier.color}55">${tier.label}</span>` : ''}
+              <span class="ctc-tile-badge">${TYPE_LABEL[c.type] || c.type}</span>
+              <span class="ctc-tile-badge status-${c.status}">${STATUS_LABEL[c.status] || c.status}</span>
+            </div>
+            ${company ? `<div class="cd-company"><i data-lucide="building-2"></i>${_esc(company)}</div>` : ''}
+          </div>
         </div>
-        <div style="color:var(--text2);font-size:12px;margin-top:4px">
-          ${_companyOf(c) || '—'} · ${TYPE_LABEL[c.type] || c.type} · ${STATUS_LABEL[c.status] || c.status}
+
+        <div class="cd-actions">
+          <div class="cd-deal-wrap">
+            <button class="btn btn-theme" onclick="event.stopPropagation();window._ctcToggleDealMenu()"><i data-lucide="plus"></i> Negociação <i data-lucide="chevron-down"></i></button>
+            <div class="cd-deal-menu" id="cd-deal-menu">${_dealMenuHTML(c)}</div>
+          </div>
+          ${wa ? `<a class="btn btn-outline" href="${wa}" target="_blank" rel="noopener"><i data-lucide="message-circle"></i> WhatsApp</a>` : ''}
+          ${c.email ? `<a class="btn btn-outline" href="mailto:${_esc(c.email)}"><i data-lucide="mail"></i> Email</a>` : ''}
+          <button class="btn btn-ghost" onclick="window._ctcOpenEdit('${c.id}')"><i data-lucide="pencil"></i> Editar</button>
         </div>
-        ${CRM.tagsForContact(c.id).length ? `<div class="crm-tag-row">${CRM.tagsForContact(c.id).map(t => CRM.tagChip(t)).join('')}</div>` : ''}
+
+        <div class="cd-grid">
+          <div class="cd-col">
+            ${_socialBlockHTML(c)}
+            ${_dealsBlockHTML(c)}
+          </div>
+          <div class="cd-col">
+            <div class="soc-block">
+              <div class="soc-head"><span class="soc-title">Detalhes</span></div>
+              ${detail('Origem', _esc(origem))}
+              ${detail('Email', c.email ? `<a class="ctc-pop-link" href="mailto:${_esc(c.email)}">${_esc(c.email)}</a>` : '')}
+              ${detail('Telefone', c.phone ? _esc(c.phone) : '')}
+              ${detail('Responsável', owners.length ? _esc(owners.join(', ')) : '')}
+              ${detail('Criado em', new Date(c.created_at).toLocaleDateString('pt-BR'))}
+            </div>
+            ${tags.length ? `<div class="soc-block"><div class="soc-head"><span class="soc-title">Etiquetas</span></div><div class="crm-tag-row" style="margin:2px 0 4px">${tags.map(t => CRM.tagChip(t)).join('')}</div></div>` : ''}
+          </div>
+        </div>
+
+        ${c.notes ? _notesHTML(c.notes) : ''}
       </div>
-      ${_socialBlockHTML(c)}
-      ${_dealsBlockHTML(c)}
-      <div class="ctc-detail-grid">
-        ${c.email ? `<div><span class="ctc-dt-k">Email</span><span>${_esc(c.email)}</span></div>` : ''}
-        ${c.phone ? `<div><span class="ctc-dt-k">Telefone</span><span>${_esc(c.phone)}</span></div>` : ''}
-        ${c.lead_meta?.channel ? `<div><span class="ctc-dt-k">Origem</span><span>Landing page · ${_esc(c.lead_meta.channel)}</span></div>` : c.source ? `<div><span class="ctc-dt-k">Origem</span><span>${SOURCE_LABEL[c.source] || c.source}</span></div>` : ''}
-        <div><span class="ctc-dt-k">Criado em</span><span>${new Date(c.created_at).toLocaleDateString('pt-BR')}</span></div>
-      </div>
-      ${c.notes ? `<div style="margin-top:14px"><div class="ctc-dt-k" style="margin-bottom:6px">Notas</div><div style="font-size:13px;color:var(--text);white-space:pre-wrap">${_esc(c.notes)}</div></div>` : ''}
     `;
 
     const footer = `
       <button class="btn btn-danger" onclick="window._ctcDelete('${c.id}')"><i data-lucide="trash"></i> Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
-      <button class="btn btn-theme" onclick="window._ctcOpenEdit('${c.id}')"><i data-lucide="pencil"></i> Editar</button>
     `;
 
-    openModal(c.name, body, footer);
+    openModal('Contato', body, footer, { wide: true });
     lucide.createIcons();
     window._ctcMaybeAutoRefreshSocial(c.id);
   };
+
+  // Menu "Negociação": um item por pipeline. Se já existe negociação com o
+  // contato naquele pipeline, abre ela; senão cria uma nova com o contato.
+  const DEAL_SCOPES = [
+    { id: 'rips', label: 'Rips', sub: 'Influencers & afiliados' },
+    { id: 'b2c', label: 'B2C', sub: 'Influencers' },
+    { id: 'b2b', label: 'B2B', sub: 'Marcas' },
+  ];
+  function _dealMenuHTML(c) {
+    return DEAL_SCOPES.map(sc => {
+      const ex = (STATE.crm?.cards || []).find(x => x.scope === sc.id && x.contact_id === c.id);
+      if (ex) {
+        const st = CRM.stageById(ex.stage_id);
+        const owner = (STATE.users || []).find(u => u.id === ex.owner);
+        return `<button class="cd-deal-item" onclick="window._ctcGoToDeal('${ex.id}','${sc.id}')">
+          <span class="cd-deal-scope">${sc.label}</span>
+          <span class="cd-deal-txt">Ver negociação<small>${_esc(st?.name || '—')}${owner ? ' · ' + _esc(owner.name.split(' ')[0]) : ''}</small></span>
+          <i data-lucide="arrow-right"></i>
+        </button>`;
+      }
+      return `<button class="cd-deal-item" onclick="window._ctcNewDeal('${c.id}','${sc.id}')">
+        <span class="cd-deal-scope">${sc.label}</span>
+        <span class="cd-deal-txt">Nova negociação<small>${sc.sub}</small></span>
+        <i data-lucide="plus"></i>
+      </button>`;
+    }).join('');
+  }
+  window._ctcToggleDealMenu = () => {
+    const m = document.getElementById('cd-deal-menu');
+    if (!m) return;
+    m.classList.toggle('open');
+    if (m.classList.contains('open')) {
+      setTimeout(() => document.addEventListener('click', function close(e) {
+        if (!m.contains(e.target)) { m.classList.remove('open'); document.removeEventListener('click', close); }
+      }), 0);
+    }
+  };
+  window._ctcNewDeal = (contactId, scope) => {
+    if (typeof window._pcrmOpenNewCard !== 'function') { toast('Pipeline não carregada', 'e'); return; }
+    window.__ctcReturnTo = { id: contactId, at: Date.now() };
+    window._pcrmOpenNewCard(scope, { contact_id: contactId });
+  };
+  // Chamado pela pipeline depois de criar a negociação.
+  window._ctcAfterDealCreated = (contactId) => {
+    _renderList && document.getElementById('ctc-list') && _renderList();
+    const r = window.__ctcReturnTo;
+    window.__ctcReturnTo = null;
+    if (r && r.id === contactId && Date.now() - r.at < 15 * 60 * 1000) setTimeout(() => window._ctcOpenDetail(contactId), 150);
+  };
+  window._ctcGoToDeal = (cardId, scope) => {
+    closeModal();
+    openMod('pipeline');
+    setTimeout(() => { window._pcrmSwitchTab && _pcrmSwitchTab(scope); window._pcrmOpenCard && _pcrmOpenCard(cardId); }, 450);
+  };
+  window._ctcRefreshList = () => { if (document.getElementById('ctc-list')) _renderList(); };
+
+  // Notas: linhas "Rótulo: valor" viram lista; o resto, parágrafos.
+  // Texto longo vem recolhido com "Mostrar tudo".
+  function _notesHTML(notes) {
+    const items = [];
+    String(notes).split('\n').forEach(l => {
+      const t = l.trim();
+      if (!t) return;
+      const m = t.match(/^([^:]{2,32}):\s+(.+)$/);
+      if (m && /^[\p{L}0-9º°]/u.test(m[1]) && !/^https?$/i.test(m[1]) && !/[.!?'"“”]/.test(m[1])) items.push({ k: m[1], v: m[2] });
+      else items.push({ p: t });
+    });
+    const rows = items.filter(x => x.k), paras = items.filter(x => x.p);
+    const linkify = (x) => _esc(x).replace(/(https?:\/\/[^\s)]+)/g, '<a class="ctc-pop-link" href="$1" target="_blank" rel="noopener">$1</a>');
+    const long = rows.length + paras.length > 6 || String(notes).length > 600;
+    return `<div class="soc-block cd-notes ${long ? 'is-collapsed' : ''}" id="cd-notes">
+      <div class="soc-head"><span class="soc-title">Notas</span></div>
+      ${items.map(x => x.k
+        ? `<div class="cd-row"><span class="cd-k">${_esc(x.k)}</span><span class="cd-v">${linkify(x.v)}</span></div>`
+        : `<p class="cd-p">${linkify(x.p)}</p>`).join('')}
+      ${long ? `<button class="cd-more" onclick="document.getElementById('cd-notes').classList.remove('is-collapsed');this.remove()">Mostrar tudo</button>` : ''}
+    </div>`;
+  }
 
   // Negociações abertas deste contato em cada pipeline, com o responsável.
   function _dealsBlockHTML(c) {
