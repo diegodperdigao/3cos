@@ -581,12 +581,26 @@ const medal=i=>{
   return `<span class="rank-badge${tier?' rank-'+tier:''}">${n}</span>`;
 };
 
+// Nomes com emoji e letras "estilizadas" (comuns em grupos de WhatsApp).
+// nameFold: minúsculo, sem acento e sem estilo (𝙊→o, É→e) — para busca.
+// nameInitials: iniciais só com letras/números ("🔥POKÉLAND-TCG" → "PO").
+// nameSortKey: ordena ignorando emoji/símbolos do começo.
+window.nameFold=s=>String(s||'').normalize('NFKD').replace(/\p{M}/gu,'').toLowerCase();
+window.nameInitials=name=>{
+  const words=String(name||'').normalize('NFKC').split(/[\s\-–—_|/·.]+/)
+    .map(w=>Array.from(w).filter(ch=>/[\p{L}\p{N}]/u.test(ch)).join('')).filter(Boolean);
+  if(!words.length)return '?';
+  const first=w=>Array.from(w)[0];
+  return (words.length===1?Array.from(words[0]).slice(0,2).join(''):first(words[0])+first(words[1])).toUpperCase();
+};
+window.nameSortKey=s=>nameFold(s).replace(/[^\p{L}\p{N}\s]/gu,'').replace(/\s+/g,' ').trim();
+
 // User avatar helper: returns img if URL, else colored initials circle
 window.userAvatar=(nameOrUser,size=28)=>{
   const u=typeof nameOrUser==='object'?nameOrUser:(STATE.users||[]).find(x=>x.name===nameOrUser||x.id===nameOrUser);
   const name=(u?.name)||(typeof nameOrUser==='string'?nameOrUser:'?');
   const avatar=u?.avatar||'';
-  const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(s=>s[0]).join('').toUpperCase();
+  const initials=nameInitials(name);
   // deterministic color from name (used as a CSS var so themes can override)
   let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))|0;
   const hue=Math.abs(h)%360;

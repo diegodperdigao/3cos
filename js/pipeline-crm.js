@@ -142,12 +142,12 @@
     if (f.owner === 'mine' && STATE.user?.id) cards = cards.filter(c => c.owner === STATE.user.id);
     else if (f.owner && f.owner !== 'all') cards = cards.filter(c => c.owner === f.owner);
     if (f.search) {
-      const q = f.search.toLowerCase();
+      const q = nameFold(f.search);
       cards = cards.filter(c => {
         const contact = CRM.contactById(c.contact_id);
-        return (c.title || '').toLowerCase().includes(q)
-          || (contact?.name || '').toLowerCase().includes(q)
-          || (contact?.company || '').toLowerCase().includes(q);
+        return nameFold(c.title).includes(q)
+          || nameFold(contact?.name).includes(q)
+          || nameFold(contact?.company).includes(q);
       });
     }
 
@@ -216,7 +216,7 @@
     if (contact) {
       let h = 0; for (let i = 0; i < (contact.name || '').length; i++) h = (h * 31 + contact.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
-      const initials = (contact.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+      const initials = nameInitials(contact.name);
       const fallback = `hsl(${hue},30%,46%)`;
       if (contact.avatar_url) {
         avatarHTML = `<img class="kan-card-av" src="${contact.avatar_url}" alt=""
@@ -254,7 +254,9 @@
           onmouseleave="window._ctcHideHoverCard && _ctcHideHoverCard()">
         ${avatarHTML}
         <span class="kan-card-contact-name" title="Ver perfil de ${_esc(contact.name)}"
-          onclick="event.stopPropagation();window._ctcHideHoverCard && _ctcHideHoverCard(0);window._ctcOpenDetail && _ctcOpenDetail('${contact.id}')">${_esc(contact.name)}</span>
+          onclick="event.stopPropagation();window._ctcHideHoverCard && _ctcHideHoverCard(0);window._ctcOpenDetail && _ctcOpenDetail('${contact.id}')">${nameFold(contact.name).trim() === nameFold(card.title).trim()
+            ? (window._ctcProfileById?.(contact.profile)?.label || 'Ver perfil')
+            : _esc(contact.name)}</span>
       </div>` : ''}
       <div class="kan-card-foot">
         <span class="kan-card-age${ageClass}"><i data-lucide="clock" style="width:11px;height:11px"></i>${_ageLabel(days)}</span>
@@ -262,7 +264,7 @@
           return r != null ? `<span class="kan-card-reach" title="Seguidores somando todas as redes"><i data-lucide="users" style="width:11px;height:11px"></i>${_ctcFmtFollowers(r)}</span>` : ''; })()}
         ${(() => { const o = (STATE.users || []).find(u => u.id === card.owner);
           if (!o) return `<span class="kan-card-owner is-empty" title="Sem responsável">—</span>`;
-          const ini = (o.name || '?').split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
+          const ini = nameInitials(o.name);
           return `<span class="kan-card-owner" title="Responsável: ${_esc(o.name)}">${ini}</span>`; })()}
       </div>
     </div>`;
@@ -675,12 +677,12 @@
   window._pcrmContactSearch = (q) => {
     const results = document.getElementById('pcrm-contact-results');
     if (!results) return;
-    const term = q.trim().toLowerCase();
+    const term = nameFold(q.trim());
     let list = STATE.crm?.contacts || [];
     if (term) {
       list = list.filter(c =>
-        (c.name || '').toLowerCase().includes(term)
-        || (c.company || '').toLowerCase().includes(term)
+        nameFold(c.name).includes(term)
+        || nameFold(c.company).includes(term)
         || (c.email || '').toLowerCase().includes(term)
         || Object.values(c.social_links || {}).some(h => String(h).toLowerCase().includes(term.replace(/^@/, '')))
       );
@@ -697,7 +699,7 @@
       return;
     }
     results.innerHTML = list.map(c => {
-      const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+      const initials = nameInitials(c.name);
       let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
       const ig = c.social_links?.instagram;
@@ -743,7 +745,7 @@
     document.getElementById('pcrm-contact-results').style.display = 'none';
 
     const selected = document.getElementById('pcrm-f-contact-selected');
-    const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+    const initials = nameInitials(c.name);
     let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
     const hue = Math.abs(h) % 360;
     selected.innerHTML = `
@@ -800,7 +802,7 @@
     </div>`;
   }
   function _masterSelectedInner(c) {
-    const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+    const initials = nameInitials(c.name);
     let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
     const hue = Math.abs(h) % 360;
     const sub = c.company ? _esc(c.company) : c.social_links?.instagram ? '@' + _esc(c.social_links.instagram) : c.email ? _esc(c.email) : '—';
@@ -819,14 +821,14 @@
   window._pcrmMasterSearch = (hiddenId, q) => {
     const results = document.getElementById(hiddenId + '-results');
     if (!results) return;
-    const term = (q || '').trim().toLowerCase();
+    const term = nameFold((q || '').trim());
     const wrap = results.closest('[data-master-picker]');
     const excludeId = wrap?.dataset.exclude || '';
     let list = (STATE.crm?.contacts || []).filter(c => c.id !== excludeId);
     if (term) {
       list = list.filter(c =>
-        (c.name || '').toLowerCase().includes(term)
-        || (c.company || '').toLowerCase().includes(term)
+        nameFold(c.name).includes(term)
+        || nameFold(c.company).includes(term)
         || (c.email || '').toLowerCase().includes(term)
         || Object.values(c.social_links || {}).some(h => String(h).toLowerCase().includes(term.replace(/^@/, '')))
       );
@@ -843,7 +845,7 @@
       return;
     }
     results.innerHTML = list.map(c => {
-      const initials = (c.name || '?').split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+      const initials = nameInitials(c.name);
       let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
       const hue = Math.abs(h) % 360;
       const ig = c.social_links?.instagram;
@@ -1018,7 +1020,7 @@
     const isLost = !!(stage && stage.is_lost);
 
     const lostBlock = isLost ? `
-      <div style="margin-top:14px;padding:12px 14px;background:color-mix(in srgb, var(--red) 8%, transparent);border:1px solid color-mix(in srgb, var(--red) 25%, transparent);border-radius:8px">
+      <div style="padding:12px 14px;background:color-mix(in srgb, var(--red) 8%, transparent);border:1px solid color-mix(in srgb, var(--red) 25%, transparent);border-radius:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <span style="font-size:11px;color:var(--red);font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
             <i data-lucide="x-circle" style="width:12px;height:12px;vertical-align:-2px"></i> Motivo da perda
@@ -1064,7 +1066,7 @@
         dealBody = `<div style="font-size:12.5px;color:var(--text3);font-style:italic">Termos não registrados.</div>`;
       }
       wonBlock = `
-        <div style="margin-top:14px;padding:12px 14px;background:color-mix(in srgb, var(--green) 8%, transparent);border:1px solid color-mix(in srgb, var(--green) 25%, transparent);border-radius:8px">
+        <div style="padding:12px 14px;background:color-mix(in srgb, var(--green) 8%, transparent);border:1px solid color-mix(in srgb, var(--green) 25%, transparent);border-radius:8px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <span style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
               <i data-lucide="check-circle" style="width:12px;height:12px;vertical-align:-2px"></i> Negócio fechado
@@ -1121,7 +1123,7 @@
         </div>`;
       }
       hierarchyBlock = `
-        <div style="margin-top:14px;padding:12px 14px;background:var(--bg3);border:1px solid var(--gb);border-radius:8px">
+        <div style="padding:2px 0 4px">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;background:${color}22;color:${color};border:1px solid ${color}44;border-radius:4px;font-size:11px;font-weight:600">
               <i data-lucide="network" style="width:11px;height:11px"></i> ${label}
@@ -1136,58 +1138,93 @@
       `;
     } else {
       hierarchyBlock = `
-        <div style="margin-top:14px">
+        <div style="padding:2px 0 4px">
           <button class="btn btn-outline" style="width:100%;padding:8px;font-size:12px" onclick="window._pcrmEditAffiliate('${card.id}')">
-            <i data-lucide="network" style="width:12px;height:12px"></i> Classificar como Master / Direto / Sub
+            <i data-lucide="network" style="width:12px;height:12px"></i> Master / Direto / Sub
           </button>
         </div>
       `;
     }
 
+    const SCOPE_LABEL = { rips: 'Rips', b2c: 'B2C', b2b: 'B2B' };
+    const prof = contact && window._ctcProfileById ? _ctcProfileById(contact.profile) : null;
+    const company = contact && window._ctcCompanyOf ? _ctcCompanyOf(contact) : '';
+    const phoneDigits = String(contact?.phone || '').replace(/\D/g, '');
+    const wa = phoneDigits ? `https://wa.me/${phoneDigits.length <= 11 ? '55' + phoneDigits : phoneDigits}` : '';
+    const sameName = contact && nameFold(contact.name).trim() === nameFold(card.title).trim();
+    const canEditOwner = STATE.user?.role === 'admin' || STATE.user?.id === card.owner || !card.owner;
+    const ownerField = canEditOwner
+      ? `<select class="fi pcrm-owner-select" onchange="window._pcrmSetOwner('${card.id}', this.value)">
+          ${!card.owner ? '<option value="">— sem responsável</option>' : ''}
+          ${(STATE.users || []).filter(u => u.status !== 'inativo').map(u => `<option value="${u.id}" ${u.id === card.owner ? 'selected' : ''}>${_esc(u.name)}</option>`).join('')}
+        </select>`
+      : _esc(_ownerName(card.owner));
+    const detail = (k, v) => v ? `<div class="cd-row"><span class="cd-k">${k}</span><span class="cd-v">${v}</span></div>` : '';
+    const avatar = contact && window._ctcAvatar
+      ? _ctcAvatar(contact, 'cd-av')
+      : `<div class="ctc-tile-av cd-av" style="background:var(--bg3);color:var(--text2)">${nameInitials(card.title)}</div>`;
+
     const body = `
-      <div class="pcrm-detail">
-        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">${_esc(card.title)}</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">
-          ${stage ? `<span style="background:${stage.color}2a;color:${stage.color};padding:2px 8px;border-radius:4px;font-weight:600">${_esc(stage.name)}</span>` : ''}
-          · ${_ageLabel(_daysSince(card.updated_at))} · criado em ${new Date(card.created_at).toLocaleDateString('pt-BR')}
+      <div class="cd pcrm-detail">
+        <div class="cd-head">
+          ${avatar}
+          <div class="cd-id">
+            <div class="cd-name">${_esc(card.title)}</div>
+            <div class="cd-badges">
+              <span class="ctc-tile-badge">${SCOPE_LABEL[scope] || scope}</span>
+              ${stage ? `<span class="ctc-tile-badge" style="color:${stage.color};border-color:${stage.color}55;background:${stage.color}1a">${_esc(stage.name)}</span>` : ''}
+              ${product && nameFold(product.name) !== scope ? `<span class="ctc-tile-badge" style="color:${product.color || 'var(--text2)'};border-color:${product.color || 'var(--gb2)'}55"><i data-lucide="package" style="width:10px;height:10px"></i>${_esc(product.name)}</span>` : ''}
+              ${prof ? `<span class="ctc-tile-badge profile-badge" style="--prof-c:${prof.color}"><i data-lucide="${prof.icon}" style="width:10px;height:10px"></i>${prof.label}</span>` : ''}
+            </div>
+            <div class="cd-company"><i data-lucide="clock"></i>${_ageLabel(_daysSince(card.updated_at))}${contact && !sameName ? ` · <a href="#" class="ctc-pop-link" onclick="event.preventDefault();window._ctcOpenDetail('${contact.id}')">${_esc(contact.name)}</a>` : ''}${company ? ` · ${_esc(company)}` : ''}</div>
+          </div>
         </div>
-        ${contact ? `<div class="ctc-detail-grid">
-          <div><span class="ctc-dt-k">Contato</span><span>${_esc(contact.name)}</span></div>
-          ${contact.company ? `<div><span class="ctc-dt-k">Empresa</span><span>${_esc(contact.company)}</span></div>` : ''}
-          ${contact.email ? `<div><span class="ctc-dt-k">Email</span><span>${_esc(contact.email)}</span></div>` : ''}
-          ${product ? `<div><span class="ctc-dt-k">Produto</span><span>${_esc(product.name)}</span></div>` : ''}
-          <div><span class="ctc-dt-k">Responsável</span><span>${(() => {
-            const canEdit = STATE.user?.role === 'admin' || STATE.user?.id === card.owner || !card.owner;
-            if (!canEdit) return _esc(_ownerName(card.owner));
-            return `<select class="fi pcrm-owner-select" onchange="window._pcrmSetOwner('${card.id}', this.value)">
-              ${!card.owner ? '<option value="">— sem responsável</option>' : ''}
-              ${(STATE.users || []).filter(u => u.status !== 'inativo').map(u => `<option value="${u.id}" ${u.id === card.owner ? 'selected' : ''}>${_esc(u.name)}</option>`).join('')}
-            </select>`; })()}</span></div>
-        </div>` : ''}
-        ${contact && window._ctcSocialBlockHTML ? _ctcSocialBlockHTML(contact) : ''}
-        <div style="margin-top:14px">
-          <label class="ctc-dt-k" style="display:block;margin-bottom:6px">Mover para etapa</label>
-          <select id="pcrm-move-stage" class="fi" onchange="window._pcrmQuickMove('${card.id}', this.value)">
-            ${stages.map(s => `<option value="${s.id}" ${s.id === card.stage_id ? 'selected' : ''}>${_esc(s.name)}${s.is_lost ? ' (perdido)' : ''}</option>`).join('')}
-          </select>
+
+        <div class="cd-actions">
+          <div class="cd-stage">
+            <i data-lucide="git-branch"></i>
+            <select id="pcrm-move-stage" class="fi" onchange="window._pcrmQuickMove('${card.id}', this.value)">
+              ${stages.map(s => `<option value="${s.id}" ${s.id === card.stage_id ? 'selected' : ''}>${_esc(s.name)}${s.is_lost ? ' (perdido)' : ''}</option>`).join('')}
+            </select>
+          </div>
+          ${contact ? `<button class="btn btn-outline" onclick="window._ctcOpenDetail('${contact.id}')"><i data-lucide="user"></i> Ver perfil</button>` : ''}
+          ${wa ? `<a class="btn btn-outline" href="${wa}" target="_blank" rel="noopener"><i data-lucide="message-circle"></i> WhatsApp</a>` : ''}
+          ${contact?.email ? `<a class="btn btn-outline" href="mailto:${_esc(contact.email)}"><i data-lucide="mail"></i> Email</a>` : ''}
         </div>
-        ${lostBlock}
-        ${hierarchyBlock}
-        ${wonBlock}
-        ${card.notes ? `<div style="margin-top:14px">
-          <label class="ctc-dt-k" style="display:block;margin-bottom:6px">Notas</label>
-          <div style="font-size:13px;color:var(--text);white-space:pre-wrap">${_esc(card.notes)}</div>
-        </div>` : ''}
+
+        ${lostBlock || wonBlock ? `<div class="cd-status">${lostBlock}${wonBlock}</div>` : ''}
+
+        <div class="cd-grid">
+          <div class="cd-col">
+            ${contact && window._ctcSocialBlockHTML ? _ctcSocialBlockHTML(contact) : ''}
+            ${card.notes ? `<div class="soc-block"><div class="soc-head"><span class="soc-title">Notas da negociação</span></div><p class="cd-p" style="white-space:pre-wrap;margin-top:2px">${_esc(card.notes)}</p></div>` : ''}
+          </div>
+          <div class="cd-col">
+            <div class="soc-block">
+              <div class="soc-head"><span class="soc-title">Detalhes</span></div>
+              ${detail('Responsável', ownerField)}
+              ${detail('Produto', product ? _esc(product.name) : '')}
+              ${detail('Contato', contact && !sameName ? _esc(contact.name) : '')}
+              ${detail('Email', contact?.email ? `<a class="ctc-pop-link" href="mailto:${_esc(contact.email)}">${_esc(contact.email)}</a>` : '')}
+              ${detail('Telefone', contact?.phone ? _esc(contact.phone) : '')}
+              ${detail('Criado em', new Date(card.created_at).toLocaleDateString('pt-BR'))}
+              ${detail('Atualizado', new Date(card.updated_at).toLocaleDateString('pt-BR'))}
+            </div>
+            <div class="soc-block">
+              <div class="soc-head"><span class="soc-title">Classificação</span></div>
+              ${hierarchyBlock}
+            </div>
+          </div>
+        </div>
       </div>
     `;
 
     const footer = `
       <button class="btn btn-danger" onclick="window._pcrmDeleteCard('${card.id}')"><i data-lucide="trash"></i> Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
-      ${contact ? `<button class="btn btn-outline" onclick="window._ctcOpenDetail('${contact.id}')"><i data-lucide="user"></i> Ver contato</button>` : ''}
     `;
 
-    openModal(card.title, body, footer);
+    openModal('Negociação', body, footer, { wide: true });
     lucide.createIcons();
     if (contact && window._ctcMaybeAutoRefreshSocial) _ctcMaybeAutoRefreshSocial(contact.id);
   };

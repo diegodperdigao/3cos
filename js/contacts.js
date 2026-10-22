@@ -51,6 +51,12 @@
     return ({ '1': 'S', '2': 'A', '3': 'B', '4': 'C', '5': 'C' })[s] || null;
   };
   window._ctcTierById = (id) => TIER_BY_ID[id] || null;
+  window._ctcProfileById = (id) => PROFILE_BY_ID[id] || null;
+  // Avatar do contato (foto ou iniciais) — usado também no detalhe da negociação.
+  window._ctcAvatar = (c, cls = '') => {
+    let h = 0; for (let i = 0; i < (c.name || '').length; i++) h = (h * 31 + c.name.charCodeAt(i)) | 0;
+    return _avatarHTML(c, Math.abs(h) % 360, _initials(c.name)).replace('ctc-tile-av', 'ctc-tile-av ' + cls);
+  };
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
   // Company values that are import placeholders, not real companies.
   // The CSV we import marks every row as "Prospect" in the company column.
@@ -62,11 +68,7 @@
   window._ctcCompanyOf = _companyOf;
   // Instagram glyph (Lucide no longer ships brand icons). Inherits currentColor.
   // Iniciais ignorando emoji e símbolos ("🔥POKÉLAND-TCG" → "PO").
-  const _initials = (name) => {
-    const words = String(name || '').split(/\s+/).map(w => Array.from(w).filter(ch => /[\p{L}\p{N}]/u.test(ch)).join('')).filter(Boolean);
-    if (!words.length) return '?';
-    return (words.length === 1 ? words[0].slice(0, 2) : words[0][0] + words[1][0]).toUpperCase();
-  };
+  const _initials = (name) => window.nameInitials(name);
   const IG_SVG = '<svg class="ig-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>';
 
   // ── REDES SOCIAIS ─────────────────────────────────────────
@@ -258,7 +260,7 @@
       const s = c.social_stats?.[net];
       if (!s || (s.followers == null && s.status !== 'not_found' && s.status !== 'no_count')) return true;
       return stale && s.fetched_at && new Date(s.fetched_at).getTime() < cutoff;
-    }).sort((a, b) => (TIER_ORDER[a.tier] ?? 9) - (TIER_ORDER[b.tier] ?? 9) || (a.name || '').localeCompare(b.name || '', 'pt-BR'))
+    }).sort((a, b) => (TIER_ORDER[a.tier] ?? 9) - (TIER_ORDER[b.tier] ?? 9) || nameSortKey(a.name).localeCompare(nameSortKey(b.name), 'pt-BR'))
       .map(c => c.id);
   }
 
@@ -631,7 +633,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
 
   // ── FILTROS ────────────────────────────────────────────────
   window._ctcSearch = (v) => {
-    F.search = v.trim().toLowerCase();
+    F.search = nameFold(v.trim());
     _renderList();
   };
 
@@ -730,9 +732,9 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
     }
     if (term) {
       list = list.filter(c =>
-        (c.name || '').toLowerCase().includes(term) ||
+        nameFold(c.name).includes(term) ||
         (c.email || '').toLowerCase().includes(term) ||
-        (c.company || '').toLowerCase().includes(term) ||
+        nameFold(c.company).includes(term) ||
         (c.phone || '').toLowerCase().includes(term) ||
         Object.values(c.social_links || {}).some(h => String(h).toLowerCase().includes(term.replace(/^@/, '')))
       );
@@ -1745,6 +1747,8 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
       const taken = new Set(contacts.map(c => lc(c.name)));
       const count = {}; fresh.forEach(it => { const k = lc(it.payload.name); count[k] = (count[k] || 0) + 1; });
       fresh.forEach(it => {
+        // A pesquisa marca grupos sem nome visível; o rótulo não é parte do nome.
+        it.payload.name = it.payload.name.replace(/\s*\(name not visible\)/gi, '').trim();
         const base = it.payload.name.trim();
         if (count[lc(base)] < 2 && !taken.has(lc(base))) { taken.add(lc(base)); return; }
         const m = it.payload.lead_meta;
@@ -2185,12 +2189,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
     return _pdfmakePromise;
   }
 
-  function _initialsFor(name) {
-    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
-    if (!parts.length) return '?';
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
+  const _initialsFor = (name) => window.nameInitials(name);
   function _hueFor(s) {
     let h = 0;
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xffffff;
@@ -2244,7 +2243,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
       if (t === 1 || t === 2 || t === 3) buckets[t].push(c);
       else buckets[0].push(c);
     });
-    Object.values(buckets).forEach(arr => arr.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR')));
+    Object.values(buckets).forEach(arr => arr.sort((a, b) => nameSortKey(a.name).localeCompare(nameSortKey(b.name), 'pt-BR')));
     return buckets;
   }
 
@@ -2870,12 +2869,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
 
   function _creatorSectionHTML(c, idx) {
     const name = _esc(c.name || '(sem nome)');
-    const initials = (function () {
-      const parts = String(c.name || '').trim().split(/\s+/).filter(Boolean);
-      if (!parts.length) return '?';
-      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    })();
+    const initials = window.nameInitials(c.name);
     // Deterministic hue → same gradient as the app's contact tiles,
     // so the printed sheet feels like the live UI.
     const hue = _hueFor(c.name || '');
@@ -2969,7 +2963,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
         const ta = TIER_ORDER[a.tier] ?? 99;
         const tb = TIER_ORDER[b.tier] ?? 99;
         if (ta !== tb) return ta - tb;
-        return (a.name || '').localeCompare(b.name || '', 'pt-BR');
+        return nameSortKey(a.name).localeCompare(nameSortKey(b.name), 'pt-BR');
       });
 
       const html = _printableHTML(ordered, { filtersSummary, userName, dateStr, docCode });
