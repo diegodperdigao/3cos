@@ -6407,7 +6407,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .pcrm-deal-type-opt span { display: inline-flex; align-items: center; gap: 8px; }
 
 /* ── Redes sociais (contato + card) ───────────────────────── */
-.soc-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;padding:0 4px;border-radius:4px;background:var(--soc-c);color:#fff;font-size:9px;font-weight:700;letter-spacing:.02em;flex-shrink:0;line-height:1;}
+.soc-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:var(--soc-c);color:var(--soc-fg,#fff);font-size:9px;font-weight:700;letter-spacing:.02em;flex-shrink:0;line-height:1;}
+.soc-badge svg{width:12px;height:12px;fill:currentColor;display:block;}
 .soc-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .soc-form-item{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--gb);border-radius:8px;padding:0 0 0 8px;}
 .soc-form-item input{flex:1;min-width:0;border:0 !important;background:transparent !important;box-shadow:none !important;padding:9px 10px 9px 0 !important;}
@@ -6451,4 +6452,4 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .pcrm-owner-select{padding:4px 8px !important;font-size:12px !important;min-width:160px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .kan-card-foot{justify-content:flex-start !important;}
-.ctc-import-row .soc-badge{color:#fff !important;}
+.ctc-import-row .soc-badge{color:var(--soc-fg,#fff) !important;}
