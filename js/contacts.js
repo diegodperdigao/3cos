@@ -26,9 +26,9 @@
   ];
   const PROFILE_BY_ID = Object.fromEntries(PROFILES.map(p => [p.id, p]));
 
-  // Tiers de prioridade (S = elite, C = base)
+  // Tiers de prioridade (S = topo; o antigo T1 virou S, T2→A, T3→B)
   const TIERS = [
-    { id: 'S', label: 'Tier S', color: '#a855f7', desc: 'Elite' },
+    { id: 'S', label: 'Tier S', color: '#a855f7', desc: 'Top prioridade' },
     { id: 'A', label: 'Tier A', color: '#ec4899', desc: 'Alta prioridade' },
     { id: 'B', label: 'Tier B', color: '#f59e0b', desc: 'Média prioridade' },
     { id: 'C', label: 'Tier C', color: '#64748b', desc: 'Base' },
@@ -39,7 +39,7 @@
   const _tierOf = (v) => {
     const s = String(v ?? '').trim().toUpperCase().replace(/^T(IER)?\s*/, '');
     if (TIER_BY_ID[s]) return s;
-    return ({ '1': 'A', '2': 'B', '3': 'C', '4': 'C', '5': 'C' })[s] || null;
+    return ({ '1': 'S', '2': 'A', '3': 'B', '4': 'C', '5': 'C' })[s] || null;
   };
   window._ctcTierById = (id) => TIER_BY_ID[id] || null;
   const TYPE_LABEL = { b2b: 'B2B', b2c: 'B2C', both: 'B2B+B2C' };
