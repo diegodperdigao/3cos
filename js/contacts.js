@@ -119,7 +119,8 @@
       if (s.posts) extra.push(`${_fmtFollowers(s.posts)} vídeos`);
       if (s.live) extra.push(`<span class="soc-live">ao vivo${s.live_viewers != null ? ` · ${_fmtFollowers(s.live_viewers)}` : ''}</span>`);
       const when = s.fetched_at ? new Date(s.fetched_at).toLocaleDateString('pt-BR') : '';
-      const src = s.status === 'not_found' ? `perfil não encontrado · ${when}`
+      const src = s.status === 'not_found' ? `${n.link ? 'link inválido' : 'perfil não encontrado'} · ${when}`
+        : s.status === 'no_count' ? `sem número visível · ${when}`
         : s.source === 'api' ? `atualizado ${when}` : s.source === 'manual' ? `manual · ${when}`
         : s.source === 'fila' ? `conferido · ${when}` : s.source === 'import' ? `planilha · ${when}`
         : (n.api ? 'ainda não buscado' : 'sem dado — use a fila de seguidores');
@@ -241,17 +242,17 @@
     return (STATE.crm?.contacts || []).filter(c => {
       if (!c.social_links?.[net]) return false;
       const s = c.social_stats?.[net];
-      if (!s || (s.followers == null && s.status !== 'not_found')) return true;
+      if (!s || (s.followers == null && s.status !== 'not_found' && s.status !== 'no_count')) return true;
       return stale && s.fetched_at && new Date(s.fetched_at).getTime() < cutoff;
     }).sort((a, b) => (TIER_ORDER[a.tier] ?? 9) - (TIER_ORDER[b.tier] ?? 9) || (a.name || '').localeCompare(b.name || '', 'pt-BR'))
       .map(c => c.id);
   }
 
   window._ctcOpenFollowerQueue = (net, stale) => {
-    const nets = SOCIALS.filter(n => !n.link);
-    net = SOCIAL_BY_ID[net] && !SOCIAL_BY_ID[net].link ? net : (_fq?.net || 'instagram');
+    const nets = SOCIALS;
+    net = SOCIAL_BY_ID[net] ? net : (_fq?.net || 'instagram');
     stale = stale ?? _fq?.stale ?? false;
-    _fq = { net, stale, ids: _fqBuild(net, stale), i: 0, saved: 0, notFound: 0, skipped: 0 };
+    _fq = { net, stale, ids: _fqBuild(net, stale), i: 0, saved: 0, notFound: 0, noCount: 0, skipped: 0 };
     const counts = Object.fromEntries(nets.map(n => [n.id, _fqBuild(n.id, stale).length]));
     const body = `
       <div class="fq">
@@ -276,14 +277,14 @@
     if (!el || !_fq) return;
     const net = SOCIAL_BY_ID[_fq.net];
     const total = _fq.ids.length;
-    SOCIALS.filter(n => !n.link).forEach(n => {
+    SOCIALS.forEach(n => {
       const el2 = document.getElementById('fq-n-' + n.id);
       if (el2) el2.textContent = _fqBuild(n.id, _fq.stale).length;
     });
     if (_fq.i >= total) {
       el.innerHTML = `<div class="fq-done" id="fq-done">
         <strong>Fila concluída</strong>
-        <span>${_fq.saved} salvos · ${_fq.notFound} não encontrados · ${_fq.skipped} pulados${total === 0 ? ' · nenhum contato pendente nessa rede' : ''}</span>
+        <span>${_fq.saved} salvos · ${_fq.notFound} não encontrados${_fq.noCount ? ` · ${_fq.noCount} sem número visível` : ''} · ${_fq.skipped} pulados${total === 0 ? ' · nenhum contato pendente nessa rede' : ''}</span>
       </div>`;
       if (window.lucide) lucide.createIcons();
       _renderList();
@@ -305,17 +306,20 @@
           ${prof ? `<span class="ctc-tile-badge">${prof.label}</span>` : ''}
         </div>
         <a id="fq-handle-link" class="fq-open" href="${_esc(net.url(h))}" target="_blank" rel="noopener">
-          ${_socialBadge(net)} Abrir <strong>@<span id="fq-handle">${_esc(h)}</span></strong> no ${net.label} <i data-lucide="external-link"></i>
+          ${net.link
+            ? `${_socialBadge(net)} Abrir link no ${net.label}: <strong id="fq-handle">${_esc(h.replace(/^https?:\/\//, ''))}</strong>`
+            : `${_socialBadge(net)} Abrir <strong>@<span id="fq-handle">${_esc(h)}</span></strong> no ${net.label}`} <i data-lucide="external-link"></i>
         </a>
         ${prev?.followers != null ? `<div class="fq-prev">Último valor: ${_fmtFollowers(prev.followers)} (${prev.fetched_at ? new Date(prev.fetched_at).toLocaleDateString('pt-BR') : 's/ data'})</div>` : ''}
-        <label class="fq-label" for="fq-followers">Seguidores</label>
+        <label class="fq-label" for="fq-followers">${net.link ? 'Membros / seguidores' : 'Seguidores'}</label>
         <input id="fq-followers" class="fi" type="text" inputmode="decimal" autocomplete="off" placeholder="ex.: 12,3 mil · 1,2 mi · 12.345"
           oninput="window._fqPreview(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();window._fqSave()}">
         <div id="fq-preview" class="fq-preview"></div>
         <div class="fq-actions">
           <button id="fq-save" class="btn btn-theme" onclick="window._fqSave()"><i data-lucide="check"></i> Salvar e próximo</button>
           <button id="fq-skip" class="btn btn-outline" onclick="window._fqSkip()">Pular</button>
-          <button id="fq-notfound" class="btn btn-outline" onclick="window._fqNotFound()">Perfil não encontrado</button>
+          <button id="fq-notfound" class="btn btn-outline" onclick="window._fqNotFound()">${net.link ? 'Link inválido ou expirado' : 'Perfil não encontrado'}</button>
+          ${net.link ? `<button id="fq-nocount" class="btn btn-outline" onclick="window._fqNoCount()">Sem número visível</button>` : ''}
         </div>
       </div>`;
     if (window.lucide) lucide.createIcons();
@@ -355,6 +359,12 @@
       _fq.notFound++; _fq.i++; _fqRender();
     } catch (e) { toast('Erro ao salvar: ' + e.message, 'e'); }
   };
+  window._fqNoCount = async () => {
+    try {
+      await _fqWrite({ followers: null, source: 'fila', status: 'no_count' });
+      _fq.noCount++; _fq.i++; _fqRender();
+    } catch (e) { toast('Erro ao salvar: ' + e.message, 'e'); }
+  };
   window._fqSkip = () => { _fq.skipped++; _fq.i++; _fqRender(); };
   window._fqClose = () => {
     closeModal();
@@ -365,7 +375,27 @@
   window._fqCopyAgentPrompt = async () => {
     const net = SOCIAL_BY_ID[_fq?.net || 'instagram'];
     const url = `${location.origin}/#fila=${net.id}`;
-    const txt = `Você vai preencher o número de seguidores do ${net.label} no CRM 3cos, um contato por vez.
+    const linkTxt = `Você vai preencher o número de membros/seguidores de grupos e canais de ${net.label} no CRM 3cos, um por vez.
+Regra principal: NUNCA entre, participe, siga ou mande mensagem em nenhum grupo ou canal. Só leia a página do link.
+
+1. Abra ${url} (já estou logado). Abre a janela "Fila de seguidores" mostrando um grupo/canal.
+2. Clique no link "Abrir link no ${net.label}" (id fq-handle-link). A página abre em outra aba.
+   - Se o navegador perguntar se quer abrir o aplicativo do ${net.label}, recuse e fique na página web.
+3. Leia o número na página:
+${net.id === 'telegram'
+  ? `   - Canal: aparece "X subscribers" (ou "X inscritos"). Grupo: aparece "X members" (às vezes com "Y online"); use o número de members.`
+  : `   - Canal de WhatsApp: aparece "X seguidores" (ou "X followers").
+   - Grupo por convite (chat.whatsapp.com): normalmente a página mostra só o nome e o botão de entrar, sem número. Não clique para entrar.
+   - Página de diretório de grupos (outro site listando o grupo): use o número de membros se ele aparecer na página.`}
+   - Página dizendo que o link é inválido, expirou, foi revogado ou não existe: volte e clique em "Link inválido ou expirado" (id fq-notfound).
+   - Página válida, mas sem número de membros/seguidores visível: volte e clique em "Sem número visível" (id fq-nocount).
+4. Com número: feche a aba, volte ao 3cos, digite o número no campo "Membros / seguidores" (id fq-followers) exatamente como aparece e clique em "Salvar e próximo" (id fq-save).
+   Abaixo do campo aparece a conversão (ex.: "= 1.200 seguidores"); confira antes de salvar.
+5. Espere uns 5 segundos e repita do passo 2 até aparecer "Fila concluída" (id fq-done).
+6. A cada 40 links, faça uma pausa de 2 minutos. Se aparecer captcha, verificação ou bloqueio, pare e me avise.
+
+No final, me diga quantos foram salvos, quantos estavam inválidos, quantos sem número visível e se houve algum problema.`;
+    const txt = net.link ? linkTxt : `Você vai preencher o número de seguidores do ${net.label} no CRM 3cos, um contato por vez.
 No ${net.label}, só leia: não siga, não curta, não comente e não mande mensagem.
 
 1. Abra ${url} (já estou logado). Abre a janela "Fila de seguidores" mostrando um contato.
