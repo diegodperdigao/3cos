@@ -496,7 +496,9 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
       if (!STATE.crm.loaded || !STATE.crm.contacts?.length) _renderLoading();
       const ok = await CRM.loadAll();
       if (!ok) {
-        _renderError('Não foi possível carregar os contatos. Faça logout e login novamente, ou verifique se o schema `crm` está exposto na API do Supabase.');
+        const el = document.getElementById('ctc-list');
+        if (el) { el.className = 'ctc-list'; el.innerHTML = CRM.loadErrorHTML("openMod('contacts')"); }
+        lucide.createIcons();
         return;
       }
     }
@@ -622,12 +624,6 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
   function _renderLoading() {
     const el = document.getElementById('ctc-list');
     if (el) el.innerHTML = '<div class="empty"><i data-lucide="loader"></i><p>Carregando contatos...</p></div>';
-    lucide.createIcons();
-  }
-
-  function _renderError(msg) {
-    const el = document.getElementById('ctc-list');
-    if (el) el.innerHTML = `<div class="empty"><i data-lucide="alert-triangle" style="color:var(--amber)"></i><p>${_esc(msg)}</p></div>`;
     lucide.createIcons();
   }
 

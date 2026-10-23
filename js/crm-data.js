@@ -41,6 +41,14 @@ window.CRM = window.CRM || {};
 // Chamadas simultâneas (hub + módulo abertos ao mesmo tempo) compartilham
 // o mesmo carregamento em vez de a segunda falhar.
 let _crmLoadPromise = null;
+// Aviso de falha de carregamento com "Tentar de novo" (usado por Contatos e Pipeline).
+CRM.loadErrorHTML = (retry) => `<div class="empty crm-load-err" style="grid-column:1/-1">
+  <i data-lucide="cloud-off" style="color:var(--amber)"></i>
+  <p><strong>Não foi possível carregar os dados.</strong> ${_crmEsc(STATE.crm.loadError || '')}<br>
+  <span style="color:var(--text3)">Seus dados continuam salvos — isso é só a tela.</span></p>
+  <button class="btn btn-theme" onclick="${retry}"><i data-lucide="refresh-cw"></i> Tentar de novo</button>
+</div>`;
+function _crmEsc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
 CRM.loadAll = () => {
   if (!window.sb) {
     console.warn('[CRM Data] sb não inicializado');
@@ -54,11 +62,17 @@ CRM.loadAll = () => {
 async function _crmLoadAll() {
   STATE.crm.loading = true;
 
-  // Log diagnóstico: estado da sessão (RLS exige authenticated)
+  STATE.crm.loadError = null;
+  // Sem sessão o RLS devolve tudo vazio: não carrega nada (não é base zerada).
   try {
     const { data: { session } } = await window.sb.auth.getSession();
-    console.log('[CRM Data] session?', !!session, 'user:', session?.user?.email || '(anonymous)');
-    if (!session) console.warn('[CRM Data] sem sessão — SELECTs vão retornar vazio por RLS');
+    if (!session) {
+      console.warn('[CRM Data] sem sessão — não carrega');
+      STATE.crm.loadError = 'Sua sessão expirou.';
+      STATE.crm.loading = false;
+      if (typeof window._forceRelogin === 'function' && STATE.user) window._forceRelogin('Sua sessão expirou. Entre de novo para ver os dados.');
+      return false;
+    }
   } catch (e) {
     console.warn('[CRM Data] getSession falhou:', e);
   }
@@ -88,7 +102,20 @@ async function _crmLoadAll() {
     const errors = [contacts, products, tags, stages, cards, tasks, contactTags].filter(r => r.error);
     if (errors.length) {
       console.error('[CRM Data] erros ao carregar:', errors.map(e => e.error));
+      // Falhou alguma parte: mantém o que já estava na tela em vez de zerar.
+      STATE.crm.loadError = 'O banco não respondeu direito.';
+      return false;
     }
+    // Base que já teve centenas de contatos não volta vazia do nada: trata
+    // como falha de carregamento e avisa, em vez de mostrar a lista zerada.
+    let lastCount = 0;
+    try { lastCount = Number(localStorage.getItem('3cos_crm_last_contacts')) || 0; } catch (_) {}
+    if (!(contacts.data || []).length && lastCount >= 50) {
+      console.error('[CRM Data] contatos vieram vazios; última carga tinha', lastCount);
+      STATE.crm.loadError = `A base veio vazia (da última vez eram ${lastCount} contatos).`;
+      return false;
+    }
+    try { localStorage.setItem('3cos_crm_last_contacts', String((contacts.data || []).length)); } catch (_) {}
     STATE.crm.contacts = contacts.data || [];
     STATE.crm.products = products.data || [];
     STATE.crm.tags = tags.data || [];
@@ -102,6 +129,7 @@ async function _crmLoadAll() {
     return true;
   } catch (e) {
     console.error('[CRM Data] loadAll falhou:', e);
+    STATE.crm.loadError = 'Sem conexão com o banco.';
     return false;
   } finally {
     STATE.crm.loading = false;

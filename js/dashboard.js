@@ -117,7 +117,8 @@
 
     // Load CRM se necessário
     if (!STATE.crm?.loaded && window.CRM?.loadAll) {
-      await CRM.loadAll();
+      const ok = await CRM.loadAll();
+      if (!ok && STATE.user) toast('Não foi possível carregar os dados do CRM — os números abaixo podem estar zerados. Recarregue a página.', 'e');
     }
     _renderAll();
     lucide.createIcons();

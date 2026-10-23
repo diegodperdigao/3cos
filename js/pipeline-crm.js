@@ -92,11 +92,13 @@
         _renderBoard(_scope); _renderTabCounts(); // mostra o que já temos enquanto atualiza
       }
       const ok = await CRM.loadAll();
-      if (!ok && !STATE.crm.loaded) {
-        document.getElementById('pcrm-board').innerHTML =
-          '<div class="empty" style="grid-column:1/-1"><i data-lucide="alert-triangle" style="color:var(--amber)"></i><p>Erro ao carregar. Verifique se o schema `crm` está exposto na API do Supabase.</p></div>';
-        lucide.createIcons();
-        return;
+      if (!ok) {
+        if (!STATE.crm.loaded || !(STATE.crm.cards || []).length) {
+          document.getElementById('pcrm-board').innerHTML = CRM.loadErrorHTML("openMod('pipeline')");
+          lucide.createIcons();
+          return;
+        }
+        toast('Não foi possível atualizar a pipeline — mostrando a última versão carregada.', 'e');
       }
     }
     _renderBoard(_scope);
