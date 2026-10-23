@@ -886,12 +886,39 @@ async function _validateSession() {
         setTimeout(() => { if (typeof runPaymentWatchdog === 'function') runPaymentWatchdog(); }, 2000);
         return true; // Session is valid, do not fall through to Firebase
       }
+      // Sem sessão no Supabase: a cópia local do login (3cos_sess) não basta —
+      // o banco devolve tudo vazio e parece que os dados sumiram. Volta pro login.
+      if (STATE.user) _forceRelogin('Sua sessão expirou. Entre de novo para ver os dados.');
+      return false;
     } catch (e) {
       console.warn('[validateSession] Supabase check failed:', e);
       // Fall through to Firebase
     }
   }
   return false;
+}
+
+function _forceRelogin(msg) {
+  STATE.user = null;
+  localStorage.removeItem('3cos_sess');
+  sessionStorage.removeItem('3cos_activeMod');
+  document.querySelectorAll('.mod').forEach(m => { m.classList.remove('active'); m.style.display = 'none'; m.style.opacity = '0'; });
+  if (typeof closeModal === 'function') try { closeModal(); } catch (_) {}
+  const hub = document.getElementById('hub');
+  if (hub) { hub.style.display = 'none'; hub.style.opacity = '0'; }
+  document.documentElement.removeAttribute('data-edition');
+  const lock = document.getElementById('lock');
+  if (lock) { lock.style.display = 'flex'; lock.style.opacity = '1'; }
+  const err = document.getElementById('lerr');
+  if (err && msg) { err.textContent = msg; err.style.display = 'block'; }
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Se a sessão cair com o app aberto (token não renova), também volta pro login.
+if (window.sb?.auth?.onAuthStateChange) {
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT' && STATE.user && !window.__3cosLoggingOut) _forceRelogin('Sua sessão expirou. Entre de novo.');
+  });
 }
 
 // Run Supabase validation immediately on boot (in parallel with Firebase listener)
