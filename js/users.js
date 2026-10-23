@@ -425,6 +425,45 @@ function _escH(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// Backups automáticos (crm.backups, gerados por pg_cron no banco).
+async function _bkLoadList() {
+  const el = document.getElementById('bk-auto');
+  if (!el || !window.sb) return;
+  const { data, error } = await sb.schema('crm').from('backups').select('id, taken_at, kind, counts').order('taken_at', { ascending: false }).limit(40);
+  if (error) { el.innerHTML = `<div style="font-size:12px;color:var(--red)">Não foi possível listar os backups: ${_escH(error.message)}</div>`; return; }
+  if (!data.length) { el.innerHTML = `<div style="font-size:12px;color:var(--text3)">${STATE.user?.role === 'admin' ? 'Nenhum backup ainda.' : 'Só admins veem os backups.'}</div>`; return; }
+  el.innerHTML = data.map(b => {
+    const c = b.counts || {};
+    return `<div class="bk-row">
+      <i data-lucide="${b.kind === 'auto' ? 'clock' : 'save'}"></i>
+      <div class="bk-row-main"><strong>${new Date(b.taken_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</strong>
+        <span>${b.kind === 'auto' ? 'automático' : 'manual'} · ${c['crm.contacts'] ?? 0} contatos · ${c['crm.pipeline_cards'] ?? 0} negociações · ${c['public.affiliates'] ?? 0} afiliados</span></div>
+      <button class="btn btn-ghost" onclick="window._bkDownload(${b.id}, this)"><i data-lucide="download"></i> Baixar</button>
+    </div>`;
+  }).join('');
+  lucide.createIcons();
+}
+window._bkTakeNow = async (btn) => {
+  if (btn) btn.disabled = true;
+  const { error } = await sb.schema('crm').rpc('take_backup', { p_kind: 'manual' });
+  if (btn) btn.disabled = false;
+  if (error) { toast('Erro no backup: ' + error.message, 'e'); return; }
+  toast('Backup feito', 's');
+  _bkLoadList();
+};
+window._bkDownload = async (id, btn) => {
+  if (btn) btn.disabled = true;
+  const { data, error } = await sb.schema('crm').from('backups').select('taken_at, counts, data').eq('id', id).single();
+  if (btn) btn.disabled = false;
+  if (error) { toast('Erro ao baixar: ' + error.message, 'e'); return; }
+  const blob = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `3cos-backup-${data.taken_at.slice(0, 16).replace(/[:T]/g, '-')}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
 // ══════════════════════════════════════════════════════════
 // BACKUP & NUVEM (módulo separado)
 // ══════════════════════════════════════════════════════════
@@ -454,6 +493,12 @@ function bBackup(el){
         <div class="kpi"><div class="kpi-icon-row"><i data-lucide="download"></i><span class="kpi-lbl">Último export</span></div>
           <div class="kpi-val sm" style="font-size:13px">${lastExport}</div></div>
       </div>
+
+      <div class="sec-hdr"><div class="sec-lbl">Backups automáticos do banco</div>
+        <div class="sec-actions"><button class="btn btn-outline" onclick="window._bkTakeNow(this)"><i data-lucide="save"></i> Fazer backup agora</button></div>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin:-4px 0 10px">Todo dia às 3h o banco guarda uma cópia de contatos, negociações, etiquetas e dados do app. Ficam os últimos 30 dias. Se algo for apagado por engano, é daqui que recuperamos.</div>
+      <div id="bk-auto" class="bk-list" style="margin-bottom:22px"><div style="font-size:12px;color:var(--text3)">Carregando…</div></div>
 
       <div class="sec-hdr"><div class="sec-lbl">Sincronização</div></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:22px">
@@ -531,6 +576,7 @@ function bBackup(el){
       </div>
     </div></div>`;
   lucide.createIcons();
+  _bkLoadList();
 }
 
 window.saveEmailJSConfig=()=>{

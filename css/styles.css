@@ -6543,3 +6543,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .cd-status{display:flex;flex-direction:column;gap:10px;}
 .cd-v .pcrm-owner-select{padding:4px 8px;font-size:12.5px;width:100%;}
 .cd-company a{color:var(--text);}
+/* Lista de backups automáticos */
+.bk-list{display:flex;flex-direction:column;border:1px solid var(--gb);border-radius:var(--radius);overflow:hidden;}
+.bk-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--gb);background:var(--bg2);}
+.bk-row:first-child{border-top:0;}
+.bk-row > svg{width:15px;height:15px;color:var(--text3);flex-shrink:0;}
+.bk-row-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;font-size:12.5px;color:var(--text);}
+.bk-row-main span{font-size:11.5px;color:var(--text3);}
+.bk-row .btn svg{width:13px;height:13px;}
