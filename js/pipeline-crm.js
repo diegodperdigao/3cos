@@ -106,6 +106,11 @@
     lucide.createIcons();
   }
   window.bPipelineCRM = bPipelineCRM;
+  // Chamado pelo tempo real (crm-data.js) quando algo muda no banco.
+  window._pcrmRefresh = () => {
+    if (!document.querySelector('#mod-pipeline.active #pcrm-board')) return;
+    _renderBoard(_scope); _renderTabCounts(); lucide.createIcons();
+  };
   window._pcrmGetScope = () => _scope;
 
   // Troca de aba B2B ⇄ B2C

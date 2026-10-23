@@ -59,6 +59,73 @@ CRM.loadAll = () => {
   return _crmLoadPromise;
 };
 
+// ── TEMPO REAL ─────────────────────────────────────────────
+// Mudanças feitas por outras pessoas (ou pela API de leads) chegam pelo
+// Realtime do Supabase, entram no STATE e a tela aberta é redesenhada.
+// Se a aba ficou escondida um tempo (websocket pode ter caído), recarrega tudo
+// ao voltar.
+const RT_TABLES = {
+  contacts: { key: 'contacts', pk: ['id'], prepend: true },
+  pipeline_cards: { key: 'cards', pk: ['id'] },
+  pipeline_stages: { key: 'stages', pk: ['id'], sort: (a, b) => a.position - b.position },
+  products: { key: 'products', pk: ['id'] },
+  tags: { key: 'tags', pk: ['id'] },
+  contact_tags: { key: 'contactTags', pk: ['contact_id', 'tag_id'] },
+  tasks: { key: 'tasks', pk: ['id'] },
+};
+let _rtChannel = null, _rtTimer = null, _hiddenAt = 0;
+function _rtApply(table, p) {
+  const cfg = RT_TABLES[table];
+  if (!cfg) return;
+  const list = STATE.crm[cfg.key] = STATE.crm[cfg.key] || [];
+  const row = p.eventType === 'DELETE' ? p.old : p.new;
+  const same = (x) => cfg.pk.every(k => x[k] === row[k]);
+  const i = list.findIndex(same);
+  if (p.eventType === 'DELETE') { if (i >= 0) list.splice(i, 1); }
+  else if (i >= 0) list[i] = { ...list[i], ...p.new };
+  else cfg.prepend ? list.unshift(p.new) : list.push(p.new);
+  if (cfg.sort) list.sort(cfg.sort);
+}
+// Redesenha só o que está aberto; espera um pouco para juntar rajadas (importações).
+function _rtRerender() {
+  clearTimeout(_rtTimer);
+  _rtTimer = setTimeout(() => {
+    // Não redesenha no meio de um arrastar-e-soltar.
+    if (document.querySelector('.kan-card-drag')) return _rtRerender();
+    try {
+      window._pcrmRefresh && window._pcrmRefresh();
+      window._ctcRefreshList && window._ctcRefreshList();
+      window._dashRefresh && window._dashRefresh();
+      if (document.getElementById('hub')?.style.display === 'flex' && window.buildHubWidgets) buildHubWidgets();
+    } catch (e) { console.warn('[CRM realtime] rerender:', e); }
+  }, 800);
+}
+CRM.startRealtime = () => {
+  if (_rtChannel || !window.sb?.channel) return;
+  _rtChannel = window.sb.channel('crm-live');
+  Object.keys(RT_TABLES).forEach(table => {
+    _rtChannel.on('postgres_changes', { event: '*', schema: 'crm', table }, (p) => {
+      // INSERT feito por esta própria aba chega pelo realtime e pela resposta
+      // da API; espera a resposta entrar no STATE pra não duplicar.
+      const run = () => { try { _rtApply(table, p); _rtRerender(); } catch (e) { console.warn('[CRM realtime]', e); } };
+      p.eventType === 'INSERT' ? setTimeout(run, 2000) : run();
+    });
+  });
+  _rtChannel.subscribe((status) => {
+    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('[CRM realtime]', status);
+  });
+};
+CRM.stopRealtime = () => {
+  if (_rtChannel) { window.sb.removeChannel(_rtChannel); _rtChannel = null; }
+};
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { _hiddenAt = Date.now(); return; }
+  if (_hiddenAt && Date.now() - _hiddenAt > 60 * 1000 && STATE.user && STATE.crm?.loaded) {
+    CRM.loadAll().then(ok => { if (ok) _rtRerender(); });
+  }
+  _hiddenAt = 0;
+});
+
 async function _crmLoadAll() {
   STATE.crm.loading = true;
 
@@ -124,6 +191,7 @@ async function _crmLoadAll() {
     STATE.crm.tasks = tasks.data || [];
     STATE.crm.contactTags = contactTags.data || [];
     STATE.crm.loaded = true;
+    CRM.startRealtime();
     console.log('[CRM Data] loaded:',
       `${STATE.crm.contacts.length} contatos, ${STATE.crm.products.length} produtos, ${STATE.crm.cards.length} cards, ${STATE.crm.stages.length} stages`);
     return true;

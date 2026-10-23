@@ -1413,6 +1413,7 @@ if (window._isRecoveryBoot) {
 
 window.doLogout=async ()=>{
   window.__3cosLoggingOut=true;
+  if (window.CRM?.stopRealtime) CRM.stopRealtime();
   if (window.sb) {
     try { await sb.auth.signOut(); } catch (e) { console.warn('signOut:', e); }
   }

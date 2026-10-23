@@ -1165,7 +1165,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
     openMod('pipeline');
     setTimeout(() => { window._pcrmSwitchTab && _pcrmSwitchTab(scope); window._pcrmOpenCard && _pcrmOpenCard(cardId); }, 450);
   };
-  window._ctcRefreshList = () => { if (document.getElementById('ctc-list')) _renderList(); };
+  window._ctcRefreshList = () => { if (document.querySelector('#mod-contacts.active #ctc-list') && STATE.crm.loaded) _renderList(); };
 
   // Notas: linhas "Rótulo: valor" viram lista; o resto, parágrafos.
   // Texto longo vem recolhido com "Mostrar tudo".

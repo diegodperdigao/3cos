@@ -124,6 +124,7 @@
     lucide.createIcons();
   }
   window.bDash = bDash;
+  window._dashRefresh = () => { if (document.querySelector('#mod-dashboard.active')) { _renderAll(); lucide.createIcons(); } };
 
   // ── FILTROS ────────────────────────────────────────────────
   window._dashSetPeriod = (v) => { F.period = v; _renderAll(); };
