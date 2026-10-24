@@ -157,7 +157,7 @@ async function _crmLoadAll() {
     }
   };
   try {
-    const [contacts, products, tags, stages, cards, tasks, contactTags] = await Promise.all([
+    const [contacts, products, tags, stages, cards, tasks, contactTags, profiles] = await Promise.all([
       all(() => sb.from('contacts').select('*').order('created_at', { ascending: false }).order('id')),
       sb.from('products').select('*').order('name'),
       sb.from('tags').select('*').order('name'),
@@ -165,7 +165,17 @@ async function _crmLoadAll() {
       all(() => sb.from('pipeline_cards').select('*').order('position').order('id')),
       sb.from('tasks').select('*').order('due_date', { nullsFirst: false }),
       all(() => sb.from('contact_tags').select('contact_id, tag_id').order('contact_id').order('tag_id')),
+      // Equipe (responsáveis): sempre do banco, pra não depender de cópia local antiga.
+      window.sb.from('profiles').select('id, name, email, role, status, modules, created_at').order('name'),
     ]);
+    if (profiles?.data?.length) {
+      const prev = new Map((STATE.users || []).map(u => [u.id, u]));
+      STATE.users = profiles.data.map(p => ({
+        ...(prev.get(p.id) || {}),
+        id: p.id, name: p.name, email: p.email, role: p.role, status: p.status,
+        modules: p.modules || [], createdAt: p.created_at?.split('T')[0] || '',
+      }));
+    }
     const errors = [contacts, products, tags, stages, cards, tasks, contactTags].filter(r => r.error);
     if (errors.length) {
       console.error('[CRM Data] erros ao carregar:', errors.map(e => e.error));

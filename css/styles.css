@@ -6551,3 +6551,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .bk-row-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;font-size:12.5px;color:var(--text);}
 .bk-row-main span{font-size:11.5px;color:var(--text3);}
 .bk-row .btn svg{width:13px;height:13px;}
+/* Responsável no card do kanban: chip clicável + menu */
+button.kan-card-owner{border:0;padding:0;cursor:pointer;font-family:inherit;}
+button.kan-card-owner:hover{outline:2px solid var(--theme);outline-offset:1px;}
+.pcrm-owner-menu{position:fixed;z-index:1000;width:240px;max-height:320px;overflow:auto;background:var(--bg2);border:1px solid var(--gb2);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.22);padding:6px;}
+.pcrm-owner-menu-h{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:6px 8px 4px;}
+.pcrm-owner-menu button{width:100%;display:flex;align-items:center;gap:9px;padding:7px 8px;border:0;background:transparent;border-radius:7px;cursor:pointer;color:var(--text);font-size:13px;text-align:left;}
+.pcrm-owner-menu button:hover{background:var(--bg3);}
+.pcrm-owner-menu button.on{font-weight:700;}
+.pcrm-owner-menu .pom-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pcrm-owner-menu button svg{width:14px;height:14px;color:var(--theme);}
+.pcrm-owner-menu button > :first-child{flex-shrink:0;}

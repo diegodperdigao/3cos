@@ -270,9 +270,9 @@
         ${(() => { const r = contact && window._ctcTotalReach ? _ctcTotalReach(contact) : null;
           return r != null ? `<span class="kan-card-reach" title="Seguidores somando todas as redes"><i data-lucide="users" style="width:11px;height:11px"></i>${_ctcFmtFollowers(r)}</span>` : ''; })()}
         ${(() => { const o = (STATE.users || []).find(u => u.id === card.owner);
-          if (!o) return `<span class="kan-card-owner is-empty" title="Sem responsável">—</span>`;
-          const ini = nameInitials(o.name);
-          return `<span class="kan-card-owner" title="Responsável: ${_esc(o.name)}">${ini}</span>`; })()}
+          const click = `onclick="event.stopPropagation();window._pcrmOwnerMenu('${card.id}', this)"`;
+          if (!o) return `<button class="kan-card-owner is-empty" ${click} title="Sem responsável — clique para definir">—</button>`;
+          return `<button class="kan-card-owner" ${click} title="Responsável: ${_esc(o.name)} — clique para trocar">${nameInitials(o.name)}</button>`; })()}
       </div>
     </div>`;
   }
@@ -1159,13 +1159,10 @@
     const phoneDigits = String(contact?.phone || '').replace(/\D/g, '');
     const wa = phoneDigits ? `https://wa.me/${phoneDigits.length <= 11 ? '55' + phoneDigits : phoneDigits}` : '';
     const sameName = contact && nameFold(contact.name).trim() === nameFold(card.title).trim();
-    const canEditOwner = STATE.user?.role === 'admin' || STATE.user?.id === card.owner || !card.owner;
-    const ownerField = canEditOwner
-      ? `<select class="fi pcrm-owner-select" onchange="window._pcrmSetOwner('${card.id}', this.value)">
+    const ownerField = `<select class="fi pcrm-owner-select" onchange="window._pcrmSetOwner('${card.id}', this.value)">
           ${!card.owner ? '<option value="">— sem responsável</option>' : ''}
           ${(STATE.users || []).filter(u => u.status !== 'inativo').map(u => `<option value="${u.id}" ${u.id === card.owner ? 'selected' : ''}>${_esc(u.name)}</option>`).join('')}
-        </select>`
-      : _esc(_ownerName(card.owner));
+        </select>`;
     const detail = (k, v) => v ? `<div class="cd-row"><span class="cd-k">${k}</span><span class="cd-v">${v}</span></div>` : '';
     const avatar = contact && window._ctcAvatar
       ? _ctcAvatar(contact, 'cd-av')
@@ -1237,9 +1234,33 @@
   };
 
   // Troca o responsável (admin, dono atual, ou card sem dono).
+  // Menu de responsáveis aberto pelo chip de iniciais no card do kanban.
+  window._pcrmOwnerMenu = (cardId, anchor) => {
+    document.getElementById('pcrm-owner-menu')?.remove();
+    const card = STATE.crm.cards.find(c => c.id === cardId);
+    if (!card) return;
+    const users = (STATE.users || []).filter(u => u.status !== 'inativo');
+    const m = document.createElement('div');
+    m.id = 'pcrm-owner-menu';
+    m.className = 'pcrm-owner-menu';
+    m.innerHTML = `<div class="pcrm-owner-menu-h">Responsável</div>` + users.map(u => `
+      <button class="${u.id === card.owner ? 'on' : ''}" onclick="event.stopPropagation();document.getElementById('pcrm-owner-menu')?.remove();window._pcrmSetOwner('${card.id}','${u.id}')">
+        ${window.userAvatar ? userAvatar(u, 22) : ''}<span class="pom-name">${_esc(u.name)}</span>${u.id === card.owner ? '<i data-lucide="check"></i>' : ''}
+      </button>`).join('');
+    document.body.appendChild(m);
+    const r = anchor.getBoundingClientRect();
+    const w = 240, h = Math.min(m.offsetHeight, 320);
+    m.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
+    m.style.top = (r.bottom + h + 8 > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6) + 'px';
+    lucide.createIcons();
+    setTimeout(() => document.addEventListener('click', function close(e) {
+      if (!m.contains(e.target)) { m.remove(); document.removeEventListener('click', close); }
+    }), 0);
+  };
+
   window._pcrmSetOwner = async (cardId, uid) => {
     const card = STATE.crm.cards.find(c => c.id === cardId);
-    if (!card || !uid) return;
+    if (!card || !uid || uid === card.owner) return;
     try {
       await CRM.cards.update(cardId, { owner: uid });
       _renderBoard(card.scope);
