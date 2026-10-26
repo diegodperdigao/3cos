@@ -242,17 +242,21 @@
       <i data-lucide="network" style="width:9px;height:9px"></i> ${AFF_LABEL[card.affiliate_role]}
     </div>` : '';
 
+    const tier = contact?.tier && window._ctcTierById ? _ctcTierById(contact.tier) : null;
+    const tierChip = tier ? `<span class="kan-card-tier" style="--tier-c:${tier.color}" title="${tier.label} · ${tier.desc}">${tier.id}</span>` : '';
+
     return `<div class="kan-card${isLost ? ' is-lost' : ''}"
         draggable="true"
         ondragstart="event.dataTransfer.setData('text/plain', '${card.id}'); this.classList.add('kan-card-drag')"
         ondragend="this.classList.remove('kan-card-drag')"
         onclick="window._pcrmOpenCard('${card.id}')">
       ${lostOverlay}
-      ${(product || affChip) ? `<div class="kan-card-tag-row">
+      ${(product || affChip || tierChip) ? `<div class="kan-card-tag-row">
         ${product ? `<div class="kan-card-tag" style="background:${product.color || '#94a3b8'}22;color:${product.color || '#94a3b8'};border:1px solid ${product.color || '#94a3b8'}44">
           <i data-lucide="package" style="width:9px;height:9px"></i> ${_esc(product.name)}
         </div>` : ''}
         ${affChip}
+        ${tierChip}
       </div>` : ''}
       <div class="kan-card-title">${_esc(card.title)}</div>
       ${contact && CRM.tagsForContact ? CRM.tagsForContact(contact.id).map(t => CRM.tagChip(t, 'kan-card-tagchip')).join('') : ''}
