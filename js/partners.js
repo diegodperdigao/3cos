@@ -59,6 +59,7 @@
   let _month = _monthStart(new Date());
   let _detailId = null;      // parceiro aberto no modal
   let _detailMonth = null;   // mês mostrado dentro do modal
+  let _contractOpen = false; // seção "Contrato e dados" aberta no modal
 
   // ── Utilidades ──
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -141,36 +142,31 @@
     el.innerHTML = modHdr('Parceiros') + `<div class="mod-body">
       ${heroHTML('partners', 'Operação', 'Parceiros Ativos', 'Escopo, entregas e calendário das parcerias de valor fixo')}
       <div class="mod-main">
-        <div class="pcrm-tabs ptn-products" id="ptn-products"></div>
-        <div class="ptn-toolbar">
-          <div class="ptn-seg">
-            <button data-v="list" class="${_view === 'list' ? 'on' : ''}" onclick="window._ptnView('list')"><i data-lucide="layout-grid"></i> Parceiros</button>
-            <button data-v="calendar" class="${_view === 'calendar' ? 'on' : ''}" onclick="window._ptnView('calendar')"><i data-lucide="calendar-days"></i> Calendário</button>
-            <button data-v="results" class="${_view === 'results' ? 'on' : ''}" onclick="window._ptnView('results')"><i data-lucide="chart-no-axes-combined"></i> Resultados</button>
-          </div>
+        <div class="ptn-bar-top">
+          <div class="pcrm-tabs ptn-products" id="ptn-products" role="tablist" aria-label="Produto"></div>
           <div class="ptn-toolbar-r">
             <button class="btn btn-outline" id="ptn-import-btn" onclick="window._ptnImportOpen()" style="display:${_view === 'results' ? '' : 'none'}"><i data-lucide="upload"></i> Importar CSV</button>
             <button class="btn btn-theme" onclick="window._ptnNewPartner()"><i data-lucide="plus"></i> Parceiro</button>
           </div>
         </div>
-        <div class="pipe-filters ptn-filters">
-          <div class="pipe-filter-group">
-            <label>Busca</label>
-            <input class="fi pipe-filter-select" placeholder="Nome do parceiro..." value="${esc(_search)}" oninput="window._ptnSearch(this.value)">
+        <div class="ptn-toolbar">
+          <div class="ptn-seg" role="tablist" aria-label="Visão">
+            <button data-v="list" class="${_view === 'list' ? 'on' : ''}" onclick="window._ptnView('list')"><i data-lucide="layout-grid"></i> Parceiros</button>
+            <button data-v="calendar" class="${_view === 'calendar' ? 'on' : ''}" onclick="window._ptnView('calendar')"><i data-lucide="calendar-days"></i> Calendário</button>
+            <button data-v="results" class="${_view === 'results' ? 'on' : ''}" onclick="window._ptnView('results')"><i data-lucide="chart-no-axes-combined"></i> Resultados</button>
           </div>
-          <div class="pipe-filter-group">
-            <label>Situação</label>
-            <select class="fi pipe-filter-select" onchange="window._ptnStatus(this.value)">
-              <option value="live" ${_status === 'live' ? 'selected' : ''}>Em operação</option>
-              ${Object.entries(P_STATUS).map(([k, v]) => `<option value="${k}" ${_status === k ? 'selected' : ''}>${v.label}</option>`).join('')}
-              <option value="all" ${_status === 'all' ? 'selected' : ''}>Todos</option>
-            </select>
-          </div>
+          <label class="ptn-search"><i data-lucide="search"></i>
+            <input placeholder="Buscar parceiro" value="${esc(_search)}" oninput="window._ptnSearch(this.value)" aria-label="Buscar parceiro"></label>
+          <select class="ptn-ctl" onchange="window._ptnStatus(this.value)" aria-label="Situação">
+            <option value="live" ${_status === 'live' ? 'selected' : ''}>Em operação</option>
+            ${Object.entries(P_STATUS).map(([k, v]) => `<option value="${k}" ${_status === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+            <option value="all" ${_status === 'all' ? 'selected' : ''}>Todas as situações</option>
+          </select>
           <div class="ptn-month">
-            <button class="hdr-icon-btn" onclick="window._ptnMonth(-1)" title="Mês anterior"><i data-lucide="chevron-left"></i></button>
+            <button class="hdr-icon-btn" onclick="window._ptnMonth(-1)" title="Mês anterior" aria-label="Mês anterior"><i data-lucide="chevron-left"></i></button>
             <span id="ptn-month-label"></span>
-            <button class="hdr-icon-btn" onclick="window._ptnMonth(1)" title="Próximo mês"><i data-lucide="chevron-right"></i></button>
-            <button class="btn btn-ghost ptn-today" onclick="window._ptnMonth(0)">Hoje</button>
+            <button class="hdr-icon-btn" onclick="window._ptnMonth(1)" title="Próximo mês" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button>
+            <button class="ptn-today" id="ptn-today" onclick="window._ptnMonth(0)">Hoje</button>
           </div>
         </div>
         <div class="kpi-row" id="ptn-kpis"></div>
@@ -234,6 +230,8 @@
     }).join('');
     const ml = document.getElementById('ptn-month-label');
     if (ml) ml.textContent = _monthLabel(_month);
+    const tb = document.getElementById('ptn-today');
+    if (tb) tb.classList.toggle('on', _iso(_month) === _iso(_monthStart(new Date())));
 
     const list = _filtered();
     _renderKpis(list);
@@ -352,7 +350,7 @@
   // Importação substitui os números daquele parceiro naquele mês.
   window._ptnImportOpen = () => {
     const prod = productById(_product);
-    openModal(`Importar resultados · ${esc(prod?.name || '')}`, `
+    openModal(`Importar resultados · ${prod?.name || ''}`, `
       <div class="ptn-hint" style="margin-bottom:12px">
         Arquivo CSV com uma linha por parceiro e mês (ou por dia, que eu somo por mês). Colunas reconhecidas:
         <b>parceiro</b>, <b>mês</b> ou <b>data</b>, <b>cadastros</b>, <b>ftd</b>, <b>depósitos</b>, <b>receita</b> (ou ngr).
@@ -476,28 +474,32 @@
     const all = delivsOf(p.id);
     const late = all.filter(d => dStatus(d) === 'late').length;
     const next = all.filter(d => d.status === 'planned' && d.due_date >= _today()).sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
-    const prod = productById(p.product_id);
     const owner = userById(p.owner);
     const periodLbl = p.scope_mode === 'package' ? 'no pacote' : `em ${MONTHS[_month.getMonth()]}`;
-    return `<button class="ptn-card" onclick="window._ptnOpen('${p.id}')">
+    const money = Number(p.monthly_value) > 0 ? `${_brl(p.monthly_value)}/mês` : '';
+    const meta = [p.scope_mode === 'package' ? 'Pacote fechado' : 'Escopo mensal', money, p.end_date ? `até ${_fmt(p.end_date)}` : '']
+      .filter(Boolean).map(esc).join(' · ');
+    const initials = owner ? owner.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() : '';
+    const tone = late ? 'late' : pr.target && pr.done >= pr.target ? 'done' : '';
+    return `<button class="ptn-card ${tone}" style="--st:${st.color}" onclick="window._ptnOpen('${p.id}')">
       <div class="ptn-card-top">
-        <div class="ptn-card-name">${esc(p.name)}</div>
+        <div class="ptn-card-id">
+          <div class="ptn-card-name">${esc(p.name)}</div>
+          <div class="ptn-card-meta">${meta}</div>
+        </div>
         <span class="ptn-chip" style="--c:${st.color}">${st.label}</span>
       </div>
-      <div class="ptn-card-meta">
-        ${prod ? `<span>${esc(prod.name)}</span>` : ''}
-        <span>${p.scope_mode === 'package' ? 'Pacote' : 'Mensal'}</span>
-        ${p.deal_summary ? `<span>${esc(p.deal_summary)}</span>` : ''}
-        ${owner ? `<span>${esc(owner.name.split(' ')[0])}</span>` : ''}
-      </div>
       ${pr.target ? `
-        <div class="ptn-prog-lbl"><span>${pr.done} de ${pr.target} entregas ${periodLbl}</span><strong>${pct}%</strong></div>
-        <div class="ptn-bar"><i style="width:${pct}%"></i></div>
-        <div class="ptn-scope-mini">${pr.rows.map(r => `<span class="${r.done >= r.s.qty ? 'ok' : ''}">${esc(kindOf(r.s.kind).label)}${r.s.platform ? ' · ' + esc(r.s.platform) : ''} <b>${r.done}/${r.s.qty}</b></span>`).join('')}</div>`
-        : `<div class="ptn-noscope"><i data-lucide="list-plus"></i> Escopo ainda não definido</div>`}
+        <div>
+          <div class="ptn-prog-lbl"><span>${pr.done} de ${pr.target} entregas ${periodLbl}</span><strong>${pct}%</strong></div>
+          <div class="ptn-bar ${pct >= 100 ? 'full' : ''}"><i style="width:${pct}%"></i></div>
+        </div>
+        <div class="ptn-scope-mini">${pr.rows.map(r => `<span class="${r.done >= r.s.qty ? 'ok' : ''}"><i data-lucide="${kindOf(r.s.kind).icon}"></i>${esc(kindOf(r.s.kind).label)}${r.s.platform ? ' · ' + esc(r.s.platform) : ''} <b>${r.done}/${r.s.qty}</b></span>`).join('')}</div>`
+        : `<div class="ptn-noscope"><i data-lucide="list-plus"></i><span><b>Definir escopo</b>O que esse parceiro precisa entregar</span><i data-lucide="arrow-right"></i></div>`}
       <div class="ptn-card-foot">
         ${late ? `<span class="ptn-late"><i data-lucide="alarm-clock"></i> ${late} atrasada${late > 1 ? 's' : ''}</span>` : ''}
-        <span>${next ? `Próxima: ${_fmt(next.due_date)} · ${esc(kindOf(next.kind).label)}` : 'Sem próxima entrega marcada'}</span>
+        <span class="ptn-next"><i data-lucide="calendar-clock"></i>${next ? `Próxima ${_fmt(next.due_date)} · ${esc(kindOf(next.kind).label)}` : 'Nada marcado'}</span>
+        ${owner ? `<span class="ptn-owner" title="Responsável: ${esc(owner.name)}">${esc(initials)}</span>` : ''}
       </div>
     </button>`;
   }
@@ -525,7 +527,7 @@
       if (!day) return '<div class="ptn-cal-cell empty-cell"></div>';
       const key = _iso(day); const items = byDay[key] || [];
       return `<div class="ptn-cal-cell ${key === today ? 'today' : ''} ${key < today ? 'past' : ''}" onclick="window._ptnNewDelivery({due_date:'${key}'})" title="Adicionar entrega em ${_fmt(key)}">
-        <div class="ptn-cal-day">${day.getDate()}</div>
+        <div class="cal-cell-top"><span class="ptn-cal-day">${day.getDate()}</span><span class="ptn-cal-add" aria-hidden="true"><i data-lucide="plus"></i></span></div>
         ${items.slice(0, 4).map(chip).join('')}
         ${items.length > 4 ? `<div class="ptn-cal-more">+${items.length - 4}</div>` : ''}
       </div>`;
@@ -537,7 +539,7 @@
         <div class="ptn-cal-head">${WEEKDAYS.map(w => `<div>${w}</div>`).join('')}</div>
         <div class="ptn-cal-grid">${grid}</div>
       </div>
-      <div class="ptn-legend">${legend}</div>
+      <div class="ptn-legend">${legend}<span class="cal-legend-heat">Clique em um dia para marcar uma entrega</span></div>
       <div class="sec-hdr" style="margin-top:22px"><div class="sec-lbl">Entregas de ${_monthLabel(_month)}</div></div>
       <div class="ptn-rows">${agenda}</div>`;
   }
@@ -574,12 +576,14 @@
   // ── DETALHE DO PARCEIRO ──
   window._ptnOpen = (id) => {
     _detailId = id;
+    _contractOpen = false;
     _detailMonth = _month;
     const p = partnerById(id);
     if (!p) return;
-    openModal(esc(p.name), '<div id="ptn-detail"></div>',
-      `<button class="btn btn-ghost ptn-danger" onclick="window._ptnDeletePartner('${id}')"><i data-lucide="trash-2"></i> Excluir</button>
-       <button class="btn btn-theme" onclick="closeModal()">Fechar</button>`, { wide: true });
+    openModal(p.name, '<div id="ptn-detail"></div>',
+      `<button class="btn btn-ghost ptn-danger" onclick="window._ptnDeletePartner('${id}')"><i data-lucide="trash-2"></i> Excluir parceiro</button>
+       <span class="ptn-autosave"><i data-lucide="cloud-check"></i> Alterações salvas automaticamente</span>
+       <button class="btn btn-theme" onclick="closeModal()">Concluir</button>`, { wide: true });
     _renderDetail();
   };
 
@@ -596,32 +600,37 @@
     const opt = (list, cur) => list.map(([v, l]) => `<option value="${v}" ${String(cur ?? '') === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('');
     const users = [['', '—']].concat((STATE.users || []).map(u => [u.id, u.name]));
     const upd = (f) => `onchange="window._ptnField('${f}', this.value)"`;
+    const st = P_STATUS[p.status] || P_STATUS.active;
+    const pct = pr.target ? Math.min(100, Math.round(pr.done / pr.target * 100)) : 0;
+    const owner = userById(p.owner);
+    const contractLine = [isPkg ? 'Pacote fechado' : 'Escopo mensal',
+      Number(p.monthly_value) > 0 ? `${_brl(p.monthly_value)}/mês` : 'sem valor',
+      p.start_date ? `desde ${_fmt(p.start_date)}` : '', p.end_date ? `até ${_fmt(p.end_date)}` : '',
+      owner ? owner.name.split(' ')[0] : ''].filter(Boolean).map(esc).join(' · ');
+    const PRESETS = [['reel', 'Instagram', 4, 'Reels'], ['story', 'Instagram', 8, 'Stories'], ['short', 'TikTok', 4, 'TikToks'], ['live', 'Twitch', 2, 'Lives'], ['video', 'YouTube', 1, 'vídeo longo']];
     box.innerHTML = `
-      <div class="ptn-d-grid">
-        <div class="ff"><label>Situação</label><select class="fi" ${upd('status')}>${opt(Object.entries(P_STATUS).map(([k, v]) => [k, v.label]), p.status)}</select></div>
-        <div class="ff"><label>Tipo de escopo</label><select class="fi" ${upd('scope_mode')}>${opt([['monthly', 'Mensal (repete todo mês)'], ['package', 'Pacote fechado']], p.scope_mode)}</select></div>
-        <div class="ff"><label>Valor mensal (R$)</label><input type="number" min="0" step="0.01" class="fi" value="${p.monthly_value ?? ''}" ${upd('monthly_value')}></div>
-        <div class="ff"><label>Responsável</label><select class="fi" ${upd('owner')}>${opt(users, p.owner)}</select></div>
-        <div class="ff"><label>Início</label><input type="date" class="fi" value="${esc(p.start_date || '')}" ${upd('start_date')}></div>
-        <div class="ff"><label>${isPkg ? 'Prazo final' : 'Fim do contrato'}</label><input type="date" class="fi" value="${esc(p.end_date || '')}" ${upd('end_date')}></div>
+      <div class="ptn-d-head">
+        <select class="ptn-status-sel lg" style="--c:${st.color}" ${upd('status')} aria-label="Situação">${opt(Object.entries(P_STATUS).map(([k, v]) => [k, v.label]), p.status)}</select>
+        <div class="ptn-d-head-txt">${contractLine}${card ? ` · <a href="#" onclick="event.preventDefault();closeModal();openMod('pipeline')">ver no Pipeline</a>` : ''}</div>
+        ${pr.target ? `<div class="ptn-d-head-prog"><strong>${pr.done}/${pr.target}</strong><span>${isPkg ? 'no pacote' : MONTHS[_detailMonth.getMonth()]}</span>
+          <div class="ptn-bar ${pct >= 100 ? 'full' : ''}"><i style="width:${pct}%"></i></div></div>` : ''}
       </div>
-      ${p.deal_summary || card ? `<div class="ptn-deal"><i data-lucide="file-signature"></i> ${esc(p.deal_summary || 'Negócio do Pipeline')}${card ? ` · <a href="#" onclick="event.preventDefault();closeModal();openMod('pipeline')">ver no Pipeline</a>` : ''}</div>` : ''}
-      <div class="ff"><label>Observações</label><textarea class="fi" rows="2" placeholder="Combinados, contatos, briefing..." ${upd('notes')}>${esc(p.notes || '')}</textarea></div>
 
-      <div class="ptn-d-sec">
+      <div class="ptn-d-sec first">
         <div class="ptn-d-sec-hdr"><span>Escopo ${isPkg ? 'do pacote' : 'por mês'}</span></div>
         ${scope.length ? `<div class="ptn-scope-list">${scope.map(s => `
           <div class="ptn-scope-item">
             <i data-lucide="${kindOf(s.kind).icon}"></i>
             <span class="ptn-scope-name">${esc(kindOf(s.kind).label)}${s.platform ? ` <em>${esc(s.platform)}</em>` : ''}</span>
-            <input type="number" min="1" class="fi ptn-qty" value="${s.qty}" onchange="window._ptnScopeQty('${s.id}', this.value)" title="Quantidade">
+            <input type="number" min="1" class="fi ptn-qty" value="${s.qty}" onchange="window._ptnScopeQty('${s.id}', this.value)" aria-label="Quantidade">
             <span class="ptn-scope-unit">${isPkg ? 'no total' : 'por mês'}</span>
-            <button class="hdr-icon-btn" title="Remover" onclick="window._ptnScopeDel('${s.id}')"><i data-lucide="x"></i></button>
-          </div>`).join('')}</div>` : `<div class="ptn-hint">Defina o que esse parceiro precisa entregar. Ex.: 4 Reels no Instagram + 2 Lives na Twitch.</div>`}
+            <button class="hdr-icon-btn" title="Remover" aria-label="Remover item" onclick="window._ptnScopeDel('${s.id}')"><i data-lucide="x"></i></button>
+          </div>`).join('')}</div>` : `<div class="ptn-hint">Defina o que esse parceiro precisa entregar. Comece por um atalho ou monte abaixo.</div>
+          <div class="ptn-presets">${PRESETS.map(([k, pl, q, lbl]) => `<button class="ptn-preset" onclick="window._ptnScopeAdd('${k}','${pl}',${q})"><i data-lucide="${kindOf(k).icon}"></i>${q} ${lbl} · ${pl}</button>`).join('')}</div>`}
         <div class="ptn-scope-add">
-          <select class="fi" id="ptn-sa-kind">${KINDS.map(k => `<option value="${k.id}">${k.label}</option>`).join('')}</select>
-          <select class="fi" id="ptn-sa-plat">${PLATFORMS.map(x => `<option>${x}</option>`).join('')}</select>
-          <input type="number" min="1" value="1" class="fi ptn-qty" id="ptn-sa-qty">
+          <select class="fi" id="ptn-sa-kind" aria-label="Formato">${KINDS.map(k => `<option value="${k.id}">${k.label}</option>`).join('')}</select>
+          <select class="fi" id="ptn-sa-plat" aria-label="Plataforma">${PLATFORMS.map(x => `<option>${x}</option>`).join('')}</select>
+          <input type="number" min="1" value="1" class="fi ptn-qty" id="ptn-sa-qty" aria-label="Quantidade">
           <button class="btn btn-outline" onclick="window._ptnScopeAdd()"><i data-lucide="plus"></i> Adicionar</button>
         </div>
       </div>
@@ -630,23 +639,39 @@
         <div class="ptn-d-sec-hdr">
           <span>Entregas ${isPkg ? 'do pacote' : ''}</span>
           ${isPkg ? '' : `<div class="ptn-month sm">
-            <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(-1)"><i data-lucide="chevron-left"></i></button>
+            <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(-1)" aria-label="Mês anterior"><i data-lucide="chevron-left"></i></button>
             <span>${_monthLabel(_detailMonth)}</span>
-            <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(1)"><i data-lucide="chevron-right"></i></button></div>`}
+            <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(1)" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button></div>`}
         </div>
-        ${pr.target ? `<div class="ptn-prog-lbl"><span>${pr.done} de ${pr.target} feitas · ${pr.planned} na pauta</span><strong>${Math.min(100, Math.round(pr.done / pr.target * 100))}%</strong></div>
-          <div class="ptn-bar"><i style="width:${Math.min(100, Math.round(pr.done / pr.target * 100))}%"></i></div>
-          <div class="ptn-scope-mini" style="margin-bottom:12px">${pr.rows.map(r => `<span class="${r.done >= r.s.qty ? 'ok' : ''}">${esc(kindOf(r.s.kind).label)}${r.s.platform ? ' · ' + esc(r.s.platform) : ''} <b>${r.done}/${r.s.qty}</b></span>`).join('')}</div>` : ''}
+        ${pr.target ? `<div class="ptn-scope-mini" style="margin-bottom:12px">${pr.rows.map(r => `<span class="${r.done >= r.s.qty ? 'ok' : ''}"><i data-lucide="${kindOf(r.s.kind).icon}"></i>${esc(kindOf(r.s.kind).label)}${r.s.platform ? ' · ' + esc(r.s.platform) : ''} <b>${r.done}/${r.s.qty}</b></span>`).join('')}<span class="ptn-mini-note">${pr.planned} na pauta</span></div>` : ''}
         <div class="ptn-d-actions">
-          ${scope.length ? `<button class="btn btn-outline" onclick="window._ptnGenerate()"><i data-lucide="wand-sparkles"></i> Gerar pauta ${isPkg ? 'do pacote' : 'do mês'}</button>` : ''}
+          ${scope.length ? `<button class="btn ${delivs.length ? 'btn-outline' : 'btn-theme'}" onclick="window._ptnGenerate()"><i data-lucide="wand-sparkles"></i> Gerar pauta ${isPkg ? 'do pacote' : 'do mês'}</button>` : ''}
           <button class="btn btn-outline" onclick="window._ptnNewDelivery({partner_id:'${p.id}'})"><i data-lucide="plus"></i> Entrega avulsa</button>
         </div>
         <div class="ptn-rows">${delivs.length ? delivs.map(_rowHTML.bind(null, false)).join('')
-          : `<div class="ptn-hint">${scope.length ? 'Nenhuma entrega na pauta ainda. "Gerar pauta" cria as entregas do escopo com datas espalhadas, e você ajusta depois.' : 'Defina o escopo acima para gerar a pauta.'}</div>`}</div>
-      </div>`;
+          : `<div class="ptn-hint">${scope.length ? '"Gerar pauta" cria as entregas do escopo com datas espalhadas no período. Depois é só ajustar.' : 'Defina o escopo acima para gerar a pauta.'}</div>`}</div>
+      </div>
+
+      <details class="ptn-d-sec ptn-contract" ${_contractOpen ? "open" : ""} ontoggle="window._ptnContract(this.open)">
+        <summary><span>Contrato e dados</span><i data-lucide="chevron-down"></i></summary>
+      <div class="ptn-d-grid">
+        <div class="ff"><label>Tipo de escopo</label><select class="fi" ${upd('scope_mode')}>${opt([['monthly', 'Mensal (repete todo mês)'], ['package', 'Pacote fechado']], p.scope_mode)}</select></div>
+        <div class="ff"><label>Valor mensal (R$)</label><input type="number" min="0" step="0.01" class="fi" value="${p.monthly_value ?? ''}" ${upd('monthly_value')}></div>
+        <div class="ff"><label>Responsável</label><select class="fi" ${upd('owner')}>${opt(users, p.owner)}</select></div>
+        <div class="ff"><label>Início</label><input type="date" class="fi" value="${esc(p.start_date || '')}" ${upd('start_date')}></div>
+        <div class="ff"><label>${isPkg ? 'Prazo final' : 'Fim do contrato'}</label><input type="date" class="fi" value="${esc(p.end_date || '')}" ${upd('end_date')}></div>
+      </div>
+      </details>
+      <div class="ff ptn-notes"><label>Observações</label><textarea class="fi" rows="${p.notes && p.notes.length > 120 ? 4 : 2}" placeholder="Combinados, contatos, briefing..." ${upd('notes')}>${esc(p.notes || '')}</textarea></div>`;
     lucide.createIcons();
   }
 
+  function _flashSaved() {
+    const el = document.querySelector('.ptn-autosave');
+    if (!el) return;
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  }
+  window._ptnContract = (open) => { _contractOpen = open; };
   window._ptnDetailMonth = (n) => { _detailMonth = _addMonths(_detailMonth, n); _renderDetail(); };
   window._ptnField = async (field, value) => {
     const patch = { [field]: value === '' ? null : value };
@@ -655,13 +680,14 @@
       const months = (partnerById(_detailId)?.deal_summary || '').match(/ · \d+ meses/)?.[0] || '';
       patch.deal_summary = v > 0 ? `Fixo R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês${months}` : null;
     }
-    try { await _upd('partners', _detailId, patch); _afterChange(); toast('Salvo', 's'); }
+    try { await _upd('partners', _detailId, patch); _afterChange(); _flashSaved(); }
     catch (e) { _err(e); _renderDetail(); }
   };
-  window._ptnScopeAdd = async () => {
-    const kind = document.getElementById('ptn-sa-kind').value;
-    const platform = document.getElementById('ptn-sa-plat').value;
-    const qty = Math.max(1, parseInt(document.getElementById('ptn-sa-qty').value, 10) || 1);
+  // Sem argumentos lê o formulário; com argumentos vem de um atalho
+  window._ptnScopeAdd = async (k, pl, q) => {
+    const kind = k || document.getElementById('ptn-sa-kind').value;
+    const platform = pl || document.getElementById('ptn-sa-plat').value;
+    const qty = Math.max(1, parseInt(q || document.getElementById('ptn-sa-qty').value, 10) || 1);
     const existing = scopeOf(_detailId).find(s => s.kind === kind && (s.platform || '') === platform);
     try {
       if (existing) await _upd('partner_scope', existing.id, { qty: existing.qty + qty });
@@ -727,7 +753,7 @@
     if (!_product) { toast('Cadastre um produto antes', 'w'); return; }
     const contacts = (STATE.crm.contacts || []).filter(c => !L('partners').some(p => p.contact_id === c.id));
     const users = (STATE.users || []).map(u => `<option value="${u.id}" ${u.id === STATE.user?.id ? 'selected' : ''}>${esc(u.name)}</option>`).join('');
-    openModal(`Novo parceiro · ${esc(productById(_product)?.name || '')}`, `
+    openModal(`Novo parceiro · ${productById(_product)?.name || ''}`, `
       <div class="ptn-d-grid">
         <div class="ff" style="grid-column:1/-1"><label>Nome (ou escolha um contato)</label>
           <input class="fi" id="ptn-n-name" list="ptn-n-contacts" placeholder="Nome do parceiro" autocomplete="off">

@@ -24,10 +24,31 @@
   const int = (n) => Math.round(Number(n) || 0).toLocaleString('pt-BR');
   const P = () => window.PTN;
   const products = () => (P()?.products?.() || STATE.crm.products || []);
+  // Cor de cada produto; se duas cores cadastradas forem parecidas demais
+  // (ex.: dois roxos), a segunda vira uma cor livre da paleta.
+  const _hue = (hex) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return null;
+    const n = parseInt(m[1], 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (!d) return null;
+    const h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return (h * 60 + 360) % 360;
+  };
+  const _near = (a, b) => { const x = _hue(a), y = _hue(b); return x != null && y != null && Math.min(Math.abs(x - y), 360 - Math.abs(x - y)) < 28; };
+  let _colorKey = '', _colors = {};
   const productColor = (id) => {
     const list = products();
-    const pr = list.find(x => x.id === id);
-    return pr?.color || PALETTE[Math.max(0, list.findIndex(x => x.id === id)) % PALETTE.length];
+    const key = list.map(x => x.id + x.color).join('|');
+    if (key !== _colorKey) {
+      _colorKey = key; _colors = {};
+      const used = [];
+      list.forEach(pr => {
+        let c = pr.color && !used.some(u => _near(u, pr.color)) ? pr.color : null;
+        if (!c) c = PALETTE.find(x => !used.some(u => u === x || _near(u, x))) || PALETTE[used.length % PALETTE.length];
+        used.push(c); _colors[pr.id] = c;
+      });
+    }
+    return _colors[id] || PALETTE[0];
   };
 
   // Entregas do mês já com parceiro/produto resolvidos
@@ -46,14 +67,16 @@
     el.innerHTML = modHdr('Calendário') + `<div class="mod-body">
       ${heroHTML('calendar', 'Operação', 'Calendário', 'Todas as entregas dos parceiros, dia a dia: quem postou, quanto e quando')}
       <div class="mod-main">
-        <div class="pcrm-tabs" id="cal-products"></div>
-        <div class="pipe-filters ptn-filters">
-          <label class="cal-toggle"><input type="checkbox" ${_showPlanned ? 'checked' : ''} onchange="window._calPlanned(this.checked)"> Mostrar previstas</label>
+        <div class="ptn-bar-top">
+          <div class="pcrm-tabs" id="cal-products" aria-label="Produto"></div>
+        </div>
+        <div class="ptn-toolbar">
+          <label class="cal-switch"><input type="checkbox" ${_showPlanned ? 'checked' : ''} onchange="window._calPlanned(this.checked)"><span class="cal-switch-ui"></span> Mostrar previstas</label>
           <div class="ptn-month">
-            <button class="hdr-icon-btn" onclick="window._calMonth(-1)" title="Mês anterior"><i data-lucide="chevron-left"></i></button>
+            <button class="hdr-icon-btn" onclick="window._calMonth(-1)" title="Mês anterior" aria-label="Mês anterior"><i data-lucide="chevron-left"></i></button>
             <span id="cal-month-label"></span>
-            <button class="hdr-icon-btn" onclick="window._calMonth(1)" title="Próximo mês"><i data-lucide="chevron-right"></i></button>
-            <button class="btn btn-ghost ptn-today" onclick="window._calMonth(0)">Hoje</button>
+            <button class="hdr-icon-btn" onclick="window._calMonth(1)" title="Próximo mês" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button>
+            <button class="ptn-today" id="cal-today" onclick="window._calMonth(0)">Hoje</button>
           </div>
         </div>
         <div class="kpi-row" id="cal-kpis"></div>
@@ -88,6 +111,8 @@
         <i class="cal-dot" style="background:${productColor(pr.id)}"></i><span>${esc(pr.name)}</span></button>`)).join('');
     const ml = document.getElementById('cal-month-label');
     if (ml) ml.textContent = `${MONTHS[_month.getMonth()]} ${_month.getFullYear()}`;
+    const tb = document.getElementById('cal-today');
+    if (tb) { const t = new Date(); tb.classList.toggle('on', _month.getFullYear() === t.getFullYear() && _month.getMonth() === t.getMonth()); }
 
     const items = _monthItems();
     const done = items.filter(x => P().isDone(x.d));
@@ -173,7 +198,7 @@
     const its = _monthItems().filter(x => x.d.due_date === key);
     const prodName = (id) => products().find(x => x.id === id)?.name || '';
     const nDone = its.filter(x => P().isDone(x.d)).length;
-    openModal(`${fmtDay(key)} · ${nDone} ativaç${nDone === 1 ? 'ão' : 'ões'}`, `
+    openModal(`${fmtDay(key)} · ${nDone} ativaç${nDone === 1 ? 'ão' : 'ões'} ${its.length - nDone ? ` · ${its.length - nDone} prevista${its.length - nDone === 1 ? '' : 's'}` : ''}`, `
       <div class="ptn-rows">${its.map(x => {
         const s = P().dStatus(x.d); const st = P().D_STATUS[s]; const k = P().kindOf(x.d.kind);
         return `<div class="ptn-row cal-day-row" onclick="closeModal();setTimeout(()=>window._ptnOpenDelivery('${x.d.id}'),220)">
