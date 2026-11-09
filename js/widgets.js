@@ -441,8 +441,23 @@ function _wStalledLeads() {
 // ── RESULTADOS DOS AFILIADOS (fonte: STATE.reports) ───────
 // Agregador compartilhado com o dashboard. Datas em 'YYYY-MM-DD'.
 window.AFF = {
+  // Relatórios das casas + resultados dos parceiros fixos (módulo Parceiros),
+  // no mesmo formato. Resultado de parceiro é mensal: cai no dia 1 do mês.
+  all() {
+    const products = STATE.crm?.products || [];
+    const partners = new Map((STATE.crm?.partners || []).map(p => [p.id, p]));
+    const extra = (STATE.crm?.partnerResults || []).map(r => {
+      const p = partners.get(r.partner_id);
+      return {
+        date: String(r.period || '').substring(0, 10), brand: products.find(x => x.id === p?.product_id)?.name || 'Parceiros',
+        affiliateId: 'ptn:' + r.partner_id, deposits: Number(r.deposits) || 0, registrations: Number(r.registrations) || 0,
+        ftd: Number(r.ftd) || 0, qftd: 0, netRev: Number(r.net_rev) || 0, partner: true,
+      };
+    });
+    return extra.length ? (STATE.reports || []).concat(extra) : (STATE.reports || []);
+  },
   rows(startKey, endKey) {
-    return (STATE.reports || []).filter(r => {
+    return AFF.all().filter(r => {
       const d = String(r.date || '').substring(0, 10);
       return d && (!startKey || d >= startKey) && (!endKey || d <= endKey);
     });
@@ -482,7 +497,7 @@ function _delta(cur, prev) {
 function _affWeekly(field, n = 8) {
   const week = 7 * 86400000;
   const b = Array(n).fill(0);
-  (STATE.reports || []).forEach(r => {
+  AFF.all().forEach(r => {
     const diff = Date.now() - new Date(r.date).getTime();
     const idx = n - 1 - Math.floor(diff / week);
     if (idx >= 0 && idx < n) b[idx] += Number(r[field]) || 0;
@@ -504,13 +519,13 @@ function _affSpark(series, accent) {
   return `<svg class="hw2-aff-spark" viewBox="0 0 ${w} ${h}" aria-hidden="true">${bars}</svg>`;
 }
 function _lastReportDate() {
-  const d = (STATE.reports || []).map(r => String(r.date || '').substring(0, 10)).filter(Boolean).sort().pop();
+  const d = AFF.all().map(r => String(r.date || '').substring(0, 10)).filter(Boolean).sort().pop();
   return d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '') : null;
 }
 
 // Widget com uma linha por métrica: rótulo, valor grande, delta e sparkline 8 semanas
 function _affRows(id, title, icon, accent, rows, footLine, emptyMsg) {
-  if (!(STATE.reports || []).length) {
+  if (!AFF.all().length) {
     return _shell(id, title, icon,
       `<div class="hw2-empty"><p>${emptyMsg}</p></div>`,
       `<button class="hw2-cta" onclick="event.stopPropagation();openMod('dashboard')">Ver dashboard →</button>`,

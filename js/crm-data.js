@@ -72,6 +72,10 @@ const RT_TABLES = {
   tags: { key: 'tags', pk: ['id'] },
   contact_tags: { key: 'contactTags', pk: ['contact_id', 'tag_id'] },
   tasks: { key: 'tasks', pk: ['id'] },
+  partners: { key: 'partners', pk: ['id'] },
+  partner_scope: { key: 'partnerScope', pk: ['id'] },
+  partner_deliveries: { key: 'partnerDeliveries', pk: ['id'] },
+  partner_results: { key: 'partnerResults', pk: ['id'] },
 };
 let _rtChannel = null, _rtTimer = null, _hiddenAt = 0;
 function _rtApply(table, p) {
@@ -94,6 +98,8 @@ function _rtRerender() {
     if (document.querySelector('.kan-card-drag')) return _rtRerender();
     try {
       window._pcrmRefresh && window._pcrmRefresh();
+      window._ptnRefresh && window._ptnRefresh();
+      window._calRefresh && window._calRefresh();
       window._ctcRefreshList && window._ctcRefreshList();
       window._dashRefresh && window._dashRefresh();
       if (document.getElementById('hub')?.style.display === 'flex' && window.buildHubWidgets) buildHubWidgets();
@@ -125,6 +131,38 @@ document.addEventListener('visibilitychange', () => {
   }
   _hiddenAt = 0;
 });
+
+// Parceiros fixos: tabelas partners / partner_scope / partner_deliveries /
+// partner_results. Resultados somam no Dashboard via AFF.all() (widgets.js).
+CRM.loadPartners = async () => {
+  const sb = window.sb?.schema('crm');
+  if (!sb) return false;
+  try {
+    const [p, s, d, r] = await Promise.all([
+      sb.from('partners').select('*').order('name'),
+      sb.from('partner_scope').select('*'),
+      sb.from('partner_deliveries').select('*').order('due_date', { nullsFirst: false }).range(0, 9999),
+      sb.from('partner_results').select('*').range(0, 9999),
+    ]);
+    const err = [p, s, d, r].find(x => x.error);
+    if (err) {
+      console.warn('[CRM Data] parceiros:', err.error);
+      STATE.crm.ptnError = err.error.message || 'erro desconhecido';
+      return false;
+    }
+    STATE.crm.ptnError = null;
+    STATE.crm.partners = p.data || [];
+    STATE.crm.partnerScope = s.data || [];
+    STATE.crm.partnerDeliveries = d.data || [];
+    STATE.crm.partnerResults = r.data || [];
+    STATE.crm.ptnLoaded = true;
+    return true;
+  } catch (e) {
+    console.warn('[CRM Data] parceiros falhou:', e);
+    STATE.crm.ptnError = 'Sem conexão com o banco.';
+    return false;
+  }
+};
 
 async function _crmLoadAll() {
   STATE.crm.loading = true;
@@ -201,6 +239,8 @@ async function _crmLoadAll() {
     STATE.crm.tasks = tasks.data || [];
     STATE.crm.contactTags = contactTags.data || [];
     STATE.crm.loaded = true;
+    // Parceiros fixos (escopo/entregas/resultados): falha aqui não derruba o CRM
+    await CRM.loadPartners();
     CRM.startRealtime();
     console.log('[CRM Data] loaded:',
       `${STATE.crm.contacts.length} contatos, ${STATE.crm.products.length} produtos, ${STATE.crm.cards.length} cards, ${STATE.crm.stages.length} stages`);

@@ -19,7 +19,7 @@ const CONTRACT_TYPES={
   tiered:{label:'CPA Escalonado',css:'tiered'},
   pct_deposit:{label:'% de Depósitos',css:'deposit'},
 };
-const ALL_MODS=['dashboard','affiliates','brands','payments','tasks','pipeline','audit','backup','users','settings'];
+const ALL_MODS=['dashboard','affiliates','brands','payments','tasks','pipeline','partners','calendar','audit','backup','users','settings'];
 const ROLES={
   admin:{label:'Admin',color:'#ef4444',desc:'Acesso total'},
   financeiro:{label:'Financeiro',color:'#f59e0b',desc:'Pagamentos e relatórios'},
@@ -1522,6 +1522,8 @@ const MODS=[
   {id:'dashboard',label:'Dashboard',icon:'chart-column',sub:'Receita · Deals · Conversão',color:'rgba(236,72,153,0.32)',glow:'rgba(236,72,153,0.14)',bg:'rgba(236,72,153,0.1)',stroke:'#ec4899'},
   {id:'contacts',label:'Contatos',icon:'contact-round',sub:'Wishlist · Prospects · Clientes',color:'rgba(20,184,166,0.32)',glow:'rgba(20,184,166,0.14)',bg:'rgba(20,184,166,0.1)',stroke:'#14b8a6'},
   {id:'pipeline',label:'Pipeline',icon:'git-branch',sub:'B2B · B2C · Kanban',color:'rgba(99,102,241,0.32)',glow:'rgba(99,102,241,0.14)',bg:'rgba(99,102,241,0.1)',stroke:'#6366f1'},
+  {id:'partners',label:'Parceiros',icon:'handshake',sub:'Escopo · Entregas · Calendário',color:'rgba(245,158,11,0.32)',glow:'rgba(245,158,11,0.14)',bg:'rgba(245,158,11,0.1)',stroke:'#f59e0b'},
+  {id:'calendar',label:'Calendário',icon:'calendar-days',sub:'Ativações de todos os parceiros',color:'rgba(59,130,246,0.32)',glow:'rgba(59,130,246,0.14)',bg:'rgba(59,130,246,0.1)',stroke:'#3b82f6'},
   {id:'tasks',label:'Tarefas',icon:'check-square',sub:'Workflow integrado',color:'rgba(16,185,129,0.32)',glow:'rgba(16,185,129,0.14)',bg:'rgba(16,185,129,0.1)',stroke:'#10b981'},
   {id:'settings',label:'Configurações',icon:'settings',sub:'Equipe · Auditoria · Backup · MCP',color:'rgba(148,163,184,0.32)',glow:'rgba(148,163,184,0.14)',bg:'rgba(148,163,184,0.1)',stroke:'#94a3b8'},
 ];
@@ -1690,7 +1692,7 @@ function modHdr(label){
   </div>`;
 }
 
-const HERO_ICONS={dashboard:'chart-column',contacts:'contact-round','pipeline-crm':'git-branch',pipeline:'git-branch',tasks:'check-square',settings:'settings',audit:'activity',users:'users',backup:'cloud'};
+const HERO_ICONS={dashboard:'chart-column',contacts:'contact-round','pipeline-crm':'git-branch',partners:'handshake',calendar:'calendar-days',pipeline:'git-branch',tasks:'check-square',settings:'settings',audit:'activity',users:'users',backup:'cloud'};
 function heroHTML(mosId,eyebrow,title,sub){
   // Module cover: a full-width ink band with the module icon, a small
   // category eyebrow, a large title and a one-line description.
@@ -1718,6 +1720,8 @@ function buildMod(id,el){
     // CRM (frente comercial — schema crm)
     contacts: typeof bContacts === 'function' ? bContacts : null,
     pipeline: typeof bPipelineCRM === 'function' ? bPipelineCRM : null,
+    partners: typeof bPartners === 'function' ? bPartners : null,
+    calendar: typeof bCalendar === 'function' ? bCalendar : null,
   };
   map[id]?.(el);
 }

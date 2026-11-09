@@ -2,7 +2,8 @@
 // DASHBOARD — Resultados dos afiliados + funil comercial
 // ══════════════════════════════════════════════════════════
 // Dinheiro aqui vem SÓ dos resultados dos afiliados (public.reports →
-// STATE.reports): depósitos, cadastros, FTDs e lucro (NGR).
+// STATE.reports + resultados dos parceiros fixos, via AFF.all()):
+// depósitos, cadastros, FTDs e lucro (NGR).
 // A pipeline (schema `crm`) entra apenas como funil: contagens de
 // negociações, reuniões, fechamentos e conversão — nunca valor.
 // ══════════════════════════════════════════════════════════
@@ -164,7 +165,7 @@
     const all = F.period === 'all';
     const cur = AFF.sum(AFF.rows(all ? null : AFF.dateKey(start), AFF.dateKey(end)));
     const prev = all ? AFF.sum([]) : AFF.sum(AFF.rows(AFF.dateKey(prevStart), AFF.dateKey(prevEnd)));
-    return { cur, prev, hasData: (STATE.reports || []).length > 0 };
+    return { cur, prev, hasData: AFF.all().length > 0 };
   }
 
   function _computeFunnel() {
@@ -301,13 +302,13 @@
     if (!canvas || typeof Chart === 'undefined') return;
     const months = _monthKeys(12);
     const map = {}; months.forEach(m => map[m.key] = 0);
-    (STATE.reports || []).forEach(r => {
+    AFF.all().forEach(r => {
       const k = String(r.date || '').substring(0, 7);
       if (map[k] !== undefined) map[k] += Number(r.netRev) || 0;
     });
     const data = months.map(m => map[m.key]);
     const total = data.reduce((s, v) => s + v, 0);
-    document.getElementById('dash-ngr-sub').textContent = (STATE.reports || []).length ? `Total 12m: ${_fmt(total)}` : 'Sem dados';
+    document.getElementById('dash-ngr-sub').textContent = AFF.all().length ? `Total 12m: ${_fmt(total)}` : 'Sem dados';
 
     if (window._dashNgrChart) window._dashNgrChart.destroy();
     const pos = cssVar('--theme'), neg = cssVar('--red', '#ef4444');
@@ -326,7 +327,7 @@
     if (!canvas || typeof Chart === 'undefined') return;
     const months = _monthKeys(6);
     const byBrand = {};
-    (STATE.reports || []).forEach(r => {
+    AFF.all().forEach(r => {
       const k = String(r.date || '').substring(0, 7);
       if (!months.some(m => m.key === k)) return;
       const b = r.brand || 'Outros';

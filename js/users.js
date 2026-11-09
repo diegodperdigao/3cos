@@ -131,8 +131,8 @@ function _rerenderUsersAnywhere() {
 // NOVO USUÁRIO / EDITAR USUÁRIO
 // ══════════════════════════════════════════════════════════
 
-const _ALL_MODULE_IDS = ['dashboard','contacts','pipeline','tasks','settings'];
-const _MODULE_LABELS = { dashboard:'Dashboard', contacts:'Contatos', pipeline:'Pipeline', tasks:'Tarefas', settings:'Configurações' };
+const _ALL_MODULE_IDS = ['dashboard','contacts','pipeline','partners','calendar','tasks','settings'];
+const _MODULE_LABELS = { dashboard:'Dashboard', contacts:'Contatos', pipeline:'Pipeline', partners:'Parceiros', calendar:'Calendário', tasks:'Tarefas', settings:'Configurações' };
 
 function _userForm(u = {}) {
   const roles = Object.entries(ROLES || {}).map(([id, r]) =>
