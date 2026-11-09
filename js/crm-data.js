@@ -85,7 +85,12 @@ function _rtApply(table, p) {
   const row = p.eventType === 'DELETE' ? p.old : p.new;
   const same = (x) => cfg.pk.every(k => x[k] === row[k]);
   const i = list.findIndex(same);
+  // INSERT chega com 2s de atraso (ver startRealtime): se a linha já está no
+  // STATE, ela é igual ou mais nova — não sobrescreve. UPDATE fora de ordem
+  // (mais antigo que o que já temos) também é ignorado.
+  const older = (a, b) => a?.updated_at && b?.updated_at && new Date(a.updated_at) < new Date(b.updated_at);
   if (p.eventType === 'DELETE') { if (i >= 0) list.splice(i, 1); }
+  else if (i >= 0 && (p.eventType === 'INSERT' || older(p.new, list[i]))) return;
   else if (i >= 0) list[i] = { ...list[i], ...p.new };
   else cfg.prepend ? list.unshift(p.new) : list.push(p.new);
   if (cfg.sort) list.sort(cfg.sort);
