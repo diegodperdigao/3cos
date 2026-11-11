@@ -6953,3 +6953,27 @@ button.kan-card-owner:hover{outline:2px solid var(--theme);outline-offset:1px;}
 :root:not([data-edition="mono"]) :is(.modal,.ctc-pop,.pcrm-owner-menu,.cd-deal-menu,.tag-picker,.search-panel,.hcm-item){border-radius:var(--r-md) !important;}
 :root:not([data-edition="mono"]) .hub-stage .hub-hero-cta{background:var(--inv-bg) !important;color:var(--inv-fg) !important;border-radius:var(--r-xs) !important;box-shadow:none !important;}
 :root:not([data-edition="mono"]) .hub-stage .hub-hero-cta svg{stroke:var(--inv-fg) !important;}
+
+/* ── Ajustes da forma (marca 3C): seta única nos selects + caixas que ficaram redondas ── */
+:root:not([data-edition="mono"]) select:not([multiple]):not([size]){
+  -webkit-appearance:none !important;appearance:none !important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8a8a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat:no-repeat !important;background-position:right 10px center !important;background-size:12px 12px !important;
+  padding-right:30px !important;border-radius:var(--r-xs) !important;}
+:root:not([data-edition="mono"]) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea):not(.search-pill-input){border-radius:var(--r-xs) !important;}
+/* mesma altura para busca e seleção lado a lado nos filtros do Pipeline */
+:root:not([data-edition="mono"]) .pipe-filters :is(input,select){height:32px !important;box-sizing:border-box;}
+/* caixas e painéis: 4px */
+:root:not([data-edition="mono"]) :is(.pipe-filters,.ctc-filterbar,.ctc-tile,.hw2,.st-tabs,.dock-item,.ctc-fb-select-wrap){border-radius:var(--r-sm) !important;}
+/* itens pequenos: 2px */
+:root:not([data-edition="mono"]) :is(.st-tab,.hw2-icon,.st-section-icon,.cp-input,.cp-send,.cp-title-icon,.hub-user-chip,.dock-item-icon){border-radius:var(--r-xs) !important;}
+/* menus e flutuantes: 8px */
+:root:not([data-edition="mono"]) :is(.hdr-user-dropdown,.hub-user-dropdown,#copilot-fab){border-radius:var(--r-md) !important;}
+/* Contatos: grupos de filtro e chips de perfil no padrão (2px, ativo invertido) */
+:root:not([data-edition="mono"]) .ctc-fb-seg{border-radius:var(--r-sm) !important;}
+:root:not([data-edition="mono"]) :is(.ctc-fb-chip,.ctc-pf-chip){border-radius:var(--r-xs) !important;}
+:root:not([data-edition="mono"]) :is(.ctc-fb-chip.on,.ctc-pf-chip.on){background:var(--inv-bg) !important;color:var(--inv-fg) !important;border-color:var(--inv-bg) !important;box-shadow:none !important;}
+:root:not([data-edition="mono"]) :is(.ctc-fb-chip.on,.ctc-pf-chip.on) span{color:color-mix(in srgb,var(--inv-fg) 70%,transparent) !important;}
+:root:not([data-edition="mono"]) :is(.ctc-fb-chip.on,.ctc-pf-chip.on) svg{color:var(--inv-fg) !important;stroke:var(--inv-fg) !important;}
+:root:not([data-edition="mono"]) :is(.ibt,.hub-cta-btn,.mob-sb-footer-btn,.ctc-tile-tier,.dash-list-prob,.st-badge-mute,.st-badge-ok){border-radius:var(--r-xs) !important;}
+:root:not([data-edition="mono"]) .st-theme-preview{border-radius:var(--r-sm) !important;}
