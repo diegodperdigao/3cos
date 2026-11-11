@@ -7100,3 +7100,34 @@ button.kan-card-owner:hover{outline:2px solid var(--theme);outline-offset:1px;}
   .hubt-proj{scroll-snap-align:start;}
   #hub .hub-stage .hub-hero-cta .btn{flex:1 1 auto;justify-content:center;}
 }
+/* Hub enxuto: projetos em fileira compacta, lista única, sem indicadores */
+#hub .hub-stage{max-width:880px !important;gap:24px !important;}
+#hub .hub-widgets{display:none !important;}
+.hubt-proj-grid{display:flex !important;flex-wrap:wrap;gap:8px !important;grid-auto-flow:unset !important;overflow:visible !important;}
+.hubt-proj{flex-direction:row !important;align-items:center;gap:10px !important;padding:8px 14px 8px 8px !important;
+  border-top-width:1px !important;border-left:3px solid var(--pc) !important;position:relative;}
+.hubt-proj b{font-family:var(--fh,var(--fd));font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:var(--text);}
+.hubt-proj .prod-mark{border-radius:var(--r-xs,2px);}
+.hubt-dot{width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;}
+.hubt-links{margin-left:auto;display:flex;gap:14px;}
+.hubt-links button{background:none;border:none;padding:0;cursor:pointer;font-family:var(--fb);font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--text3);}
+.hubt-links button:hover{color:var(--text);text-decoration:underline;}
+.hubt-today .hubt-group{padding:0;}
+.hubt-today .hubt-row:first-child{border-top:none;}
+.hubt-today .hubt-empty{border-top:none;}
+@media (max-width:768px){
+  .hubt-proj-grid{flex-wrap:nowrap;overflow-x:auto !important;}
+  .hubt-proj{flex:0 0 auto;}
+  .hubt-links{gap:10px;}
+}
+/* Dock de módulos mais leve: ícone sem bloco preto, rótulo pequeno */
+#hub .hub-stage .hub-dock{display:grid !important;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px !important;width:100% !important;
+  background:none !important;border:none !important;box-shadow:none !important;padding:0 !important;margin-top:8px !important;}
+#hub .hub-stage .dock-item{height:auto !important;width:auto !important;padding:12px 6px !important;background:transparent !important;border:1px solid var(--gb) !important;
+  box-shadow:none !important;flex-direction:column;gap:6px !important;transform:none !important;}
+#hub .hub-stage .dock-item:hover{border-color:var(--gb3) !important;background:var(--bg2) !important;}
+#hub .hub-stage .dock-item-icon{width:auto !important;height:auto !important;background:none !important;border:none !important;box-shadow:none !important;}
+#hub .hub-stage .dock-item-icon svg{width:18px !important;height:18px !important;stroke:var(--text2) !important;}
+#hub .hub-stage .dock-item:hover .dock-item-icon svg{stroke:var(--text) !important;}
+#hub .hub-stage .dock-item{min-height:0 !important;justify-content:center !important;align-items:center !important;}
+#hub .hub-stage .dock-item-label{font-size:12px !important;font-weight:500 !important;color:var(--text2) !important;}

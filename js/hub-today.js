@@ -1,12 +1,12 @@
 // ══════════════════════════════════════════════════════════
 // HUB — "Para hoje" + projetos
 // ══════════════════════════════════════════════════════════
-// A tela inicial vira painel de trabalho:
+// A tela inicial é curta de propósito (o resto mora nos módulos):
 //   1. Saudação com data e atalhos (nova negociação, contato, tarefa)
-//   2. Projetos: um cartão por produto (logo, cor, parceiros, entregas, negócios)
-//   3. Para hoje: tarefas vencidas/de hoje, entregas atrasadas/de hoje ou
-//      aguardando aprovação, negócios parados há 14+ dias
-//   4. Indicadores: os widgets escolhidos pelo usuário (widgets.js)
+//   2. Projetos: logo + nome de cada produto (bolinha se houver entrega atrasada)
+//   3. Para hoje: os 5 itens mais urgentes (tarefas, entregas, negócios parados
+//      há 14+ dias), com links para ver o resto de cada tipo
+// Os widgets antigos ficam fora do Hub (o Dashboard tem os indicadores).
 // Reconstrói sempre que os widgets são reconstruídos (dados chegaram/mudaram).
 // ══════════════════════════════════════════════════════════
 (function () {
@@ -84,45 +84,17 @@
       });
   }
 
-  function _group(id, title, rows, all, emptyMsg) {
-    const shown = rows.slice(0, LIMIT);
-    return `<div class="hubt-group">
-      <div class="hubt-group-hdr"><span>${title}</span><b>${rows.length}</b>
-        ${rows.length > LIMIT ? `<button class="hubt-more" onclick="${all}">Ver todos</button>` : ''}</div>
-      ${shown.length ? shown.map(r => `<button class="hubt-row" onclick="${r.click}">
-          <span class="hubt-row-ic">${r.mark || `<i data-lucide="${r.icon || 'circle'}"></i>`}</span>
-          <span class="hubt-row-txt"><b>${esc(r.title)}</b>${r.meta ? `<small>${esc(r.meta)}</small>` : ''}</span>
-          <span class="hubt-badge ${r.tone}">${r.badge}</span>
-        </button>`).join('') : `<div class="hubt-empty">${emptyMsg}</div>`}
-    </div>`;
-  }
-
-  // ── Projetos ──────────────────────────────────────────────
+  // ── Projetos: só logo + nome (alerta discreto se houver entrega atrasada) ──
   function _projects(today) {
     const list = products();
     if (!list.length) return '';
-    const month = today.slice(0, 7);
     const P = STATE.crm?.partners || [], D = STATE.crm?.partnerDeliveries || [];
-    const loaded = !!STATE.crm?.ptnLoaded;
     return `<section class="hubt-projects">
-      <div class="hubt-sec-hdr"><span>Projetos</span>
-        <button class="hubt-more" onclick="openMod('settings')">Personalizar</button></div>
       <div class="hubt-proj-grid">${list.map(pr => {
-        const ps = P.filter(p => p.product_id === pr.id && (p.status === 'active' || p.status === 'onboarding'));
-        const ids = new Set(ps.map(p => p.id));
-        const md = D.filter(d => ids.has(d.partner_id) && String(d.due_date || '').startsWith(month));
-        const done = md.filter(d => d.status === 'delivered' || d.status === 'approved').length;
-        const late = D.filter(d => ids.has(d.partner_id) && d.status === 'planned' && d.due_date && d.due_date < today).length;
-        const deals = (STATE.crm?.cards || []).filter(c => c.product_id === pr.id && openStage(c)).length;
-        return `<button class="hubt-proj" style="--pc:${prodColor(pr)}" onclick="window._hubOpenProduct('${pr.id}')">
-          <div class="hubt-proj-top">${prodMark(pr, 32)}<div><b>${esc(pr.name)}</b><small>${esc(pr.category || 'Projeto')}</small></div>
-            ${late ? `<span class="hubt-badge late">${late} atrasada${late === 1 ? '' : 's'}</span>` : ''}</div>
-          <div class="hubt-proj-stats">
-            <div><b>${loaded ? ps.length : '–'}</b><small>parceiros</small></div>
-            <div><b>${loaded ? `${done}/${md.length}` : '–'}</b><small>entregas no mês</small></div>
-            <div><b>${deals}</b><small>negócios abertos</small></div>
-          </div>
-        </button>`;
+        const ids = new Set(P.filter(p => p.product_id === pr.id && p.status !== 'ended').map(p => p.id));
+        const late = D.some(d => ids.has(d.partner_id) && d.status === 'planned' && d.due_date && d.due_date < today);
+        return `<button class="hubt-proj" style="--pc:${prodColor(pr)}" onclick="window._hubOpenProduct('${pr.id}')" title="Abrir ${esc(pr.name)}">
+          ${prodMark(pr, 28)}<b>${esc(pr.name)}</b>${late ? '<i class="hubt-dot" title="Entrega atrasada"></i>' : ''}</button>`;
       }).join('')}</div>
     </section>`;
   }
@@ -152,15 +124,10 @@
     }
     const now = new Date(), today = iso(now);
     const tasks = _tasks(today), delivs = _deliveries(today), stalled = _stalled();
-    const total = tasks.length + delivs.length + stalled.length;
-    const urgent = tasks.length + delivs.length;
 
     // Saudação: data em sobretítulo + resumo + atalhos
     const sub = document.getElementById('hub-hero-sub');
-    const parts = [];
-    if (urgent) parts.push(`${urgent} ${urgent === 1 ? 'item vence' : 'itens vencem'} hoje ou já ${urgent === 1 ? 'passou' : 'passaram'}`);
-    if (stalled.length) parts.push(`${stalled.length} negócio${stalled.length === 1 ? '' : 's'} parado${stalled.length === 1 ? '' : 's'}`);
-    if (sub) sub.innerHTML = `<span class="hubt-date">${WEEK[now.getDay()]}, ${now.getDate()} de ${MONTHS[now.getMonth()]}</span> · ${parts.length ? parts.join(' · ') + '.' : 'Nada atrasado. Bora puxar uma call?'}`;
+    if (sub) sub.innerHTML = `<span class="hubt-date">${WEEK[now.getDay()]}, ${now.getDate()} de ${MONTHS[now.getMonth()]}</span>`;
     const cta = document.getElementById('hub-hero-cta');
     if (cta) cta.innerHTML = `
       <button class="btn btn-theme" onclick="window._hubNew('deal')"><i data-lucide="plus"></i> Nova negociação</button>
@@ -173,17 +140,25 @@
       el.id = 'hub-today';
       stage.insertBefore(el, strip);
     }
+    // Uma lista só, com o que é mais urgente primeiro, no máximo 5 itens.
+    const top = [...tasks.filter(r => r.tone === 'late'), ...delivs.filter(r => r.tone === 'late'),
+      ...tasks.filter(r => r.tone !== 'late'), ...delivs.filter(r => r.tone !== 'late'), ...stalled].slice(0, LIMIT);
+    const links = [
+      tasks.length ? `<button onclick="openMod('tasks')">${tasks.length} tarefa${tasks.length === 1 ? '' : 's'}</button>` : '',
+      delivs.length ? `<button onclick="openMod('calendar')">${delivs.length} entrega${delivs.length === 1 ? '' : 's'}</button>` : '',
+      stalled.length ? `<button onclick="openMod('pipeline')">${stalled.length} negócio${stalled.length === 1 ? '' : 's'} parado${stalled.length === 1 ? '' : 's'}</button>` : '',
+    ].filter(Boolean).join('');
     el.innerHTML = `${_projects(today)}
       <section class="hubt-today">
-        <div class="hubt-sec-hdr"><span>Para hoje</span><b>${total}</b></div>
-        <div class="hubt-groups">
-          ${_group('tasks', 'Tarefas', tasks, "openMod('tasks')", 'Nenhuma tarefa vencendo.')}
-          ${_group('deliv', 'Entregas de parceiros', delivs, "openMod('calendar')", STATE.crm?.ptnLoaded ? 'Nenhuma entrega pendente.' : 'Carregando entregas...')}
-          ${_group('stalled', 'Negócios parados 14+ dias', stalled, "openMod('pipeline')", 'Nada parado. GG.')}
+        <div class="hubt-sec-hdr"><span>Para hoje</span>${links ? `<span class="hubt-links">${links}</span>` : ''}</div>
+        <div class="hubt-group">
+          ${top.length ? top.map(r => `<button class="hubt-row" onclick="${r.click}">
+              <span class="hubt-row-ic">${r.mark || `<i data-lucide="${r.icon || 'circle'}"></i>`}</span>
+              <span class="hubt-row-txt"><b>${esc(r.title)}</b>${r.meta ? `<small>${esc(r.meta)}</small>` : ''}</span>
+              <span class="hubt-badge ${r.tone}">${r.badge}</span>
+            </button>`).join('') : '<div class="hubt-empty">Nada pendente para hoje. Bora puxar uma call?</div>'}
         </div>
-      </section>
-      <div class="hubt-sec-hdr hubt-ind-hdr"><span>Indicadores</span>
-        <button class="hubt-more" onclick="window.openHubWidgetPicker && openHubWidgetPicker()">Escolher</button></div>`;
+      </section>`;
     if (window.lucide) lucide.createIcons();
   };
 
