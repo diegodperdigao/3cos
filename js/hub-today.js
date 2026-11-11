@@ -2,10 +2,11 @@
 // HUB — "Para hoje" + projetos
 // ══════════════════════════════════════════════════════════
 // A tela inicial é curta de propósito (o resto mora nos módulos):
-//   1. Saudação com data e atalhos (nova negociação, contato, tarefa)
+//   1. Saudação com data e atalhos (nova negociação, novo contato)
 //   2. Projetos: logo + nome de cada produto (bolinha se houver entrega atrasada)
-//   3. Para hoje: os 5 itens mais urgentes (tarefas, entregas, negócios parados
-//      há 14+ dias), com links para ver o resto de cada tipo
+//   3. Para hoje: os 5 itens mais urgentes (entregas de parceiros, negócios
+//      parados há 14+ dias), com links para ver o resto de cada tipo.
+//      Tarefas ficam de fora de propósito (não são prioridade).
 // Os widgets antigos ficam fora do Hub (o Dashboard tem os indicadores).
 // Reconstrói sempre que os widgets são reconstruídos (dados chegaram/mudaram).
 // ══════════════════════════════════════════════════════════
@@ -30,19 +31,6 @@
   };
 
   // ── Itens "Para hoje" ─────────────────────────────────────
-  function _tasks(today) {
-    const all = (STATE.tasks || []).filter(t => t.status !== 'concluída' && t.dueDate && t.dueDate.slice(0, 10) <= today);
-    const mine = all.filter(t => t.assignee && t.assignee === me().name);
-    const list = (mine.length ? mine : all).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-    return list.map(t => {
-      const late = daysBetween(t.dueDate.slice(0, 10), today);
-      return {
-        icon: 'check-square', title: t.title || 'Tarefa', meta: t.assignee || 'Sem responsável',
-        badge: late > 0 ? `${late}d atrasada` : 'hoje', tone: late > 0 ? 'late' : 'today',
-        click: `openMod('tasks')`,
-      };
-    });
-  }
   const _dLabel = (d) => d.title || [window.PTN?.kindOf ? PTN.kindOf(d.kind).label : d.kind, d.platform].filter(Boolean).join(' · ') || 'Entrega';
   function _deliveries(today) {
     const D = STATE.crm?.partnerDeliveries || [], P = STATE.crm?.partners || [];
@@ -123,7 +111,8 @@
       CRM.loadPartners().then(ok => { if (ok) window.buildHubToday(); }).catch(() => {});
     }
     const now = new Date(), today = iso(now);
-    const tasks = _tasks(today), delivs = _deliveries(today), stalled = _stalled();
+    // Tarefas não entram no Hub (não são prioridade da operação): só entregas e negócios.
+    const delivs = _deliveries(today), stalled = _stalled();
 
     // Saudação: data em sobretítulo + resumo + atalhos
     const sub = document.getElementById('hub-hero-sub');
@@ -131,8 +120,7 @@
     const cta = document.getElementById('hub-hero-cta');
     if (cta) cta.innerHTML = `
       <button class="btn btn-theme" onclick="window._hubNew('deal')"><i data-lucide="plus"></i> Nova negociação</button>
-      <button class="btn btn-outline" onclick="window._hubNew('contact')"><i data-lucide="user-plus"></i> Novo contato</button>
-      <button class="btn btn-outline" onclick="window._hubNew('task')"><i data-lucide="check-square"></i> Nova tarefa</button>`;
+      <button class="btn btn-outline" onclick="window._hubNew('contact')"><i data-lucide="user-plus"></i> Novo contato</button>`;
 
     let el = document.getElementById('hub-today');
     if (!el) {
@@ -141,10 +129,8 @@
       stage.insertBefore(el, strip);
     }
     // Uma lista só, com o que é mais urgente primeiro, no máximo 5 itens.
-    const top = [...tasks.filter(r => r.tone === 'late'), ...delivs.filter(r => r.tone === 'late'),
-      ...tasks.filter(r => r.tone !== 'late'), ...delivs.filter(r => r.tone !== 'late'), ...stalled].slice(0, LIMIT);
+    const top = [...delivs.filter(r => r.tone === 'late'), ...delivs.filter(r => r.tone !== 'late'), ...stalled].slice(0, LIMIT);
     const links = [
-      tasks.length ? `<button onclick="openMod('tasks')">${tasks.length} tarefa${tasks.length === 1 ? '' : 's'}</button>` : '',
       delivs.length ? `<button onclick="openMod('calendar')">${delivs.length} entrega${delivs.length === 1 ? '' : 's'}</button>` : '',
       stalled.length ? `<button onclick="openMod('pipeline')">${stalled.length} negócio${stalled.length === 1 ? '' : 's'} parado${stalled.length === 1 ? '' : 's'}</button>` : '',
     ].filter(Boolean).join('');
@@ -164,7 +150,6 @@
 
   // ── Ações ─────────────────────────────────────────────────
   window._hubNew = (kind) => {
-    if (kind === 'task') { window.openNewTask && openNewTask(); return; }
     if (kind === 'contact') { openMod('contacts'); setTimeout(() => window._ctcOpenNew && _ctcOpenNew(), 450); return; }
     openMod('pipeline');
     setTimeout(() => window._pcrmOpenNewCard && _pcrmOpenNewCard(window._pcrmGetScope ? _pcrmGetScope() : 'rips'), 450);
