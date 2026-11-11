@@ -35,7 +35,10 @@ Claude Code. Este arquivo vale para todas: siga as regras abaixo.
   continua vendo a versão velha.
 - `api/*.js`: funções serverless da Vercel (Copilot, leads da LP, MCP, admin). Só
   rodam na Vercel; localmente não existem. Variáveis secretas ficam no painel da
-  Vercel, nunca no código.
+  Vercel (Settings → Environment Variables, marcando Production + Preview), nunca no
+  código. O Copilot usa Google Gemini: `GEMINI_API_KEY` (chave do AI Studio) e,
+  opcional, `GEMINI_MODEL`.
+- Login é só Supabase Auth (o Firebase foi removido; não reintroduza).
 - **Banco:** Supabase, projeto "3cos" (`zolvuamsikxtobzafkao`), schema `crm`.
   O front usa a chave pública (anon) + RLS; `window.sb.schema('crm')`.
   Os dados são **reais e compartilhados**: local, prévia e produção usam o mesmo banco.

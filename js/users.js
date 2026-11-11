@@ -890,10 +890,7 @@ window.toggleTheme = _wrapToggleTheme;
   if(typeof lucide!=='undefined')lucide.createIcons();
 })();
 
-// 2) Validate session against Supabase OR Firebase (whichever is the source)
-// CRITICAL: with Phase 3, login can come from Supabase Auth. The user may
-// have NO Firebase session at all. So we cannot force-logout when Firebase
-// says null — we must check Supabase first.
+// 2) Valida a sessão no Supabase (único backend de login)
 async function _validateSession() {
   // Supabase first (Phase 3+ primary)
   if (window.SUPABASE_CONFIGURED && window.sb) {
@@ -930,7 +927,7 @@ async function _validateSession() {
         // Rebuilding here causes flickering (double render).
         updateNotifBadge();
         setTimeout(() => { if (typeof runPaymentWatchdog === 'function') runPaymentWatchdog(); }, 2000);
-        return true; // Session is valid, do not fall through to Firebase
+        return true; // sessão válida
       }
       // Sem sessão no Supabase: a cópia local do login (3cos_sess) não basta —
       // o banco devolve tudo vazio e parece que os dados sumiram. Volta pro login.
@@ -938,7 +935,6 @@ async function _validateSession() {
       return false;
     } catch (e) {
       console.warn('[validateSession] Supabase check failed:', e);
-      // Fall through to Firebase
     }
   }
   return false;
@@ -967,42 +963,6 @@ if (window.sb?.auth?.onAuthStateChange) {
   });
 }
 
-// Run Supabase validation immediately on boot (in parallel with Firebase listener)
+// Valida a sessão do Supabase assim que o app abre
 _validateSession();
 
-fbAuth.onAuthStateChanged(async (firebaseUser) => {
-  // PHASE 3: if Supabase has a valid session, ignore Firebase entirely
-  if (window.SUPABASE_CONFIGURED && window.sb) {
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session?.user) {
-        // Supabase is authoritative — Firebase signal is irrelevant
-        return;
-      }
-    } catch (e) { /* fall through */ }
-  }
-
-  if (firebaseUser && STATE.user) {
-    // Session valid — sync cloud data silently and refresh UI
-    await loadFromCloud();
-    fixBrandLogos();
-    const hub=document.getElementById('hub');
-    if(hub && hub.style.display==='flex'){buildHubCards();buildMobileHome();if(window.buildHubWidgets)buildHubWidgets();updateNotifBadge();lucide.createIcons();}
-    setTimeout(()=>{if(typeof runPaymentWatchdog==='function')runPaymentWatchdog();},2000);
-  } else if (!firebaseUser && STATE.user) {
-    // Firebase says not authenticated AND we have no Supabase session — force logout
-    STATE.user=null;localStorage.removeItem('3cos_sess');
-    document.getElementById('hub').style.display='none';
-    document.getElementById('hub').style.opacity='0';
-    document.getElementById('lock').style.display='flex';
-    document.getElementById('lock').style.opacity='1';
-  } else if (firebaseUser && !STATE.user) {
-    // Firebase authenticated but no local session — restore
-    const found=STATE.users.find(u=>u.email===firebaseUser.email&&u.status==='ativo');
-    if(found){
-      STATE.user=found;await loadFromCloud();fixBrandLogos();
-      localStorage.setItem('3cos_sess',JSON.stringify({user:STATE.user,exp:Date.now()+7*86400000}));
-      showHub();
-    }
-  }
-});
