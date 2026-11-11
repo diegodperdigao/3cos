@@ -6865,3 +6865,54 @@ button.kan-card-owner:hover{outline:2px solid var(--theme);outline-offset:1px;}
 .kan-card.is-late{background:color-mix(in srgb,var(--red) 6%,var(--bg2)) !important;
   border-color:color-mix(in srgb,var(--red) 28%,var(--gb)) !important;}
 .kan-card.is-warn{border-color:color-mix(in srgb,var(--amber) 26%,var(--gb)) !important;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* Marca 3C: tokens (docs/referencias/2026-11-11-marca-3c.md)  */
+/* Neutros puros, primário/ativo em branco-preto, rosa raro,   */
+/* barra de título preta. Não afeta a edição "mono".           */
+/* ══════════════════════════════════════════════════════════ */
+:root:not([data-edition="mono"]){
+  --bg:#0f0f0f; --bg0:#000000; --bg2:#161616; --bg3:#202020;
+  --text:#ffffff; --text2:#a8a8a8; --text3:#6b6b6b;
+  --gb:rgba(255,255,255,0.08); --gb2:rgba(255,255,255,0.14); --gb3:rgba(255,255,255,0.24);
+  --inv-bg:#ffffff; --inv-fg:#000000;
+  --theme:#ff2e63; --theme-dim:rgba(255,46,99,0.12); --theme-b:rgba(255,46,99,0.32); --theme-glow:rgba(255,46,99,0.20);
+  --pink:#ff2e63;
+  --shadow-1:none;
+  --hero-bg:#000000; --hero-fg:#ffffff; --hero-fg2:#a8a8a8;
+  --hero-tile:rgba(255,255,255,0.08); --hero-tile-line:rgba(255,255,255,0.14);
+}
+:root[data-theme="light"]:not([data-edition="mono"]){
+  --bg:#f4f4f4; --bg0:#ebebeb; --bg2:#ffffff; --bg3:#efefef;
+  --text:#0f0f0f; --text2:#5c5c5c; --text3:#8a8a8a;
+  --gb:rgba(0,0,0,0.09); --gb2:rgba(0,0,0,0.14); --gb3:rgba(0,0,0,0.24);
+  --inv-bg:#0f0f0f; --inv-fg:#ffffff;
+  --theme:#c11c51; --theme-dim:rgba(193,28,81,0.08); --theme-b:rgba(193,28,81,0.30); --theme-glow:rgba(193,28,81,0.16);
+  --pink:#c11c51;
+  --shadow-1:none;
+  --hero-bg:#0f0f0f; --hero-fg:#ffffff; --hero-fg2:rgba(255,255,255,0.64);
+}
+
+/* Barra de título preta nos dois temas */
+:root:not([data-edition="mono"]) .hero{background:var(--hero-bg) !important;color:var(--hero-fg);border-bottom-color:transparent !important;}
+:root:not([data-edition="mono"]) .hero-title{color:var(--hero-fg) !important;}
+:root:not([data-edition="mono"]) .hero-sub{color:var(--hero-fg2);}
+:root:not([data-edition="mono"]) .hero-icon{background:var(--hero-tile);border-color:var(--hero-tile-line);}
+:root:not([data-edition="mono"]) .hero-icon svg{stroke:var(--hero-fg2) !important;}
+
+/* Primário: bloco invertido (branco no escuro, preto no claro) */
+:root:not([data-edition="mono"]) .btn-theme,
+:root:not([data-edition="mono"]) .lock-btn{background:var(--inv-bg) !important;color:var(--inv-fg) !important;}
+:root:not([data-edition="mono"]) .btn-theme svg{stroke:var(--inv-fg) !important;}
+:root:not([data-edition="mono"]) .btn-theme:hover{background:var(--inv-bg) !important;opacity:.86;}
+
+/* Aba e segmento ativos: mesmo gesto invertido */
+:root:not([data-edition="mono"]) .pcrm-tab.on,
+:root:not([data-edition="mono"]) .ptn-seg button.on,
+:root:not([data-edition="mono"]) .st-seg.on{background:var(--inv-bg);color:var(--inv-fg);box-shadow:none;}
+:root:not([data-edition="mono"]) .pcrm-tab.on svg,
+:root:not([data-edition="mono"]) .ptn-seg button.on svg{stroke:var(--inv-fg) !important;}
+:root:not([data-edition="mono"]) .pcrm-tab.on .pcrm-tab-count{background:color-mix(in srgb,var(--inv-fg) 14%,transparent);color:var(--inv-fg);}
+
+/* Rosa sai da barra de rolagem */
+:root:not([data-edition="mono"]) ::-webkit-scrollbar-thumb{background:var(--gb3);}
