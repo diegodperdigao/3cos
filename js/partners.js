@@ -225,8 +225,8 @@
     const pEl = document.getElementById('ptn-products');
     if (pEl) pEl.innerHTML = products.map(pr => {
       const n = L('partners').filter(p => p.product_id === pr.id && p.status !== 'ended').length;
-      return `<button class="pcrm-tab ${_product === pr.id ? 'on' : ''}" onclick="window._ptnProduct('${pr.id}')">
-        <span>${esc(pr.name)}</span><span class="pcrm-tab-count">${n}</span></button>`;
+      return `<button class="pcrm-tab prod-tab ${_product === pr.id ? 'on' : ''}" style="--pc:${prodColor(pr)}" onclick="window._ptnProduct('${pr.id}')">
+        ${prodMark(pr, 16)}<span>${esc(pr.name)}</span><span class="pcrm-tab-count">${n}</span></button>`;
     }).join('');
     const ml = document.getElementById('ptn-month-label');
     if (ml) ml.textContent = _monthLabel(_month);

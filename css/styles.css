@@ -6977,3 +6977,33 @@ button.kan-card-owner:hover{outline:2px solid var(--theme);outline-offset:1px;}
 :root:not([data-edition="mono"]) :is(.ctc-fb-chip.on,.ctc-pf-chip.on) svg{color:var(--inv-fg) !important;stroke:var(--inv-fg) !important;}
 :root:not([data-edition="mono"]) :is(.ibt,.hub-cta-btn,.mob-sb-footer-btn,.ctc-tile-tier,.dash-list-prob,.st-badge-mute,.st-badge-ok){border-radius:var(--r-xs) !important;}
 :root:not([data-edition="mono"]) .st-theme-preview{border-radius:var(--r-sm) !important;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* Marca de cada projeto: logo + cor (Configurações > Produtos) */
+/* ══════════════════════════════════════════════════════════ */
+.prod-mark{display:inline-block;flex-shrink:0;object-fit:contain;border-radius:var(--r-xs,2px);vertical-align:middle;}
+.prod-mark-txt{display:inline-flex;align-items:center;justify-content:center;background:var(--pc);color:#fff;
+  font-family:var(--fh,var(--fd));font-weight:800;line-height:1;}
+/* aba do projeto: logo + barra na cor do projeto quando ativa */
+.pcrm-tab.prod-tab{position:relative;gap:7px;}
+.pcrm-tab.prod-tab.on{box-shadow:inset 0 -3px 0 var(--pc) !important;}
+.pcrm-tab.prod-tab:not(.on):hover{box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--pc) 60%,transparent);}
+/* selo do projeto no cartão do Pipeline: o logo substitui o quadradinho */
+.kan-card-prod::before{display:none !important;}
+.kan-card-prod{gap:5px;}
+/* Configurações > Produtos */
+.st-product-head .prod-mark{border-radius:var(--r-sm,4px);}
+.st-product-card{border-top:3px solid var(--prod-c) !important;}
+.prod-logo-field{display:flex;align-items:center;gap:14px;}
+.prod-logo-prev{width:64px;height:64px;border:1px dashed var(--gb2);border-radius:var(--r-sm,4px);display:flex;align-items:center;justify-content:center;background:var(--bg3);flex-shrink:0;overflow:hidden;}
+.prod-logo-prev img{width:100%;height:100%;object-fit:contain;}
+.prod-logo-prev svg{width:22px;height:22px;stroke:var(--text3);}
+.prod-logo-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.prod-logo-actions label.btn{cursor:pointer;}
+.prod-logo-hint{width:100%;font-size:11.5px;color:var(--text3);margin-top:4px;}
+.prod-swatches{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.prod-sw{width:28px;height:28px;border-radius:var(--r-xs,2px);background:var(--sw);border:2px solid transparent;cursor:pointer;padding:0;outline:1px solid var(--gb);}
+.prod-sw.on{border-color:var(--bg2);outline:2px solid var(--text);}
+.prod-sw-custom{width:36px;height:30px;padding:2px;border:1px solid var(--gb2);border-radius:var(--r-xs,2px);background:var(--bg2);cursor:pointer;}
+.ff input.prod-sw-custom{width:40px !important;min-width:0 !important;height:30px !important;padding:2px !important;flex:0 0 auto;}
+.ff .prod-logo-actions label.btn{text-transform:none !important;letter-spacing:0 !important;font-size:12px !important;font-weight:500 !important;color:var(--text) !important;margin:0 !important;display:inline-flex !important;}

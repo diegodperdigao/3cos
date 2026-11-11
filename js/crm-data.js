@@ -454,3 +454,16 @@ CRM.productById = (id) => STATE.crm.products.find(p => p.id === id);
 CRM.cardsForScope = (scope) => STATE.crm.cards.filter(c => c.scope === scope);
 CRM.stagesForScope = (scope) => STATE.crm.stages
   .filter(s => s.scope === scope).sort((a, b) => a.position - b.position);
+
+// ── MARCA DO PROJETO (logo + cor) ─────────────────────────
+// prodColor(p): cor escolhida em Configurações > Produtos.
+// prodMark(p, size): logo do projeto; sem logo, quadrado com a inicial na cor dele.
+window.prodColor = (p) => (p && p.color) || '#8a8a8a';
+window.prodMark = (p, size = 16) => {
+  if (!p) return '';
+  const s = `width:${size}px;height:${size}px`;
+  const name = String(p.name || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  if (p.logo_url) return `<img class="prod-mark" src="${p.logo_url}" alt="${name}" style="${s}">`;
+  return `<span class="prod-mark prod-mark-txt" style="${s};--pc:${window.prodColor(p)};font-size:${Math.round(size * 0.58)}px">${name.charAt(0).toUpperCase()}</span>`;
+};
+window.prodByName = (n) => (STATE.crm?.products || []).find(p => String(p.name || '').toLowerCase() === String(n || '').toLowerCase());
