@@ -1,17 +1,11 @@
 // ══════════════════════════════════════════════════════════
 // 3C OS — Core Application (Supabase backend)
 // ══════════════════════════════════════════════════════════
-// Firebase has been fully removed. Supabase handles:
+// Backend: Supabase.
 // - Auth (supabase-client.js → sb.auth)
 // - Data (data.js → Data.loadAll/syncAll)
 // - Realtime (data.js → Data.subscribeAll)
 // ══════════════════════════════════════════════════════════
-
-// Legacy stubs so existing code doesn't throw reference errors
-// while we clean up all call sites over time
-const fbAuth = { signInWithEmailAndPassword: () => Promise.reject(new Error('Firebase removed')), signOut: () => Promise.resolve(), onAuthStateChanged: () => {}, currentUser: null };
-const fbDb = null;
-const FB_DOC = { get: () => Promise.resolve({ exists: false }), set: () => Promise.resolve() };
 
 const LOGO='assets/brand/3cos-app-icon.svg';
 const CONTRACT_TYPES={
@@ -172,14 +166,12 @@ const saveToCloud = async () => {
   if (STATE.auditLog && STATE.auditLog.length > 200) STATE.auditLog = STATE.auditLog.slice(0, 200);
   if (STATE.notifications && STATE.notifications.length > 50) STATE.notifications = STATE.notifications.slice(0, 50);
 
-  // Supabase is the ONLY cloud target now (Firebase removed in Phase 4)
   if (window.SUPABASE_CONFIGURED && window.Data?.syncAll) {
     Data.syncAll().catch(err => console.warn('[saveToCloud] Supabase sync failed:', err));
   }
 };
 
 const loadFromCloud = async () => {
-  // Supabase is the ONLY cloud source (Firebase removed)
   if (window.SUPABASE_CONFIGURED && window.sb && window.Data) {
     try {
       const ok = await Data.loadAll();
@@ -1159,7 +1151,7 @@ window.toggleTheme=function(){
 };
 (()=>{const t=localStorage.getItem('3cos_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
 
-// ── AUTH (PHASE 3: Supabase Auth as primary, Firebase as fallback) ──
+// ── AUTH (Supabase) ──
 window.doLogin=async()=>{
   const email=document.getElementById('le').value.trim();
   const pass=document.getElementById('lp').value;
