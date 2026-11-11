@@ -188,8 +188,19 @@
 
     _renderTabCounts();
     board.style.gridTemplateColumns = `repeat(${stages.length}, minmax(240px, 1fr))`;
-    board.innerHTML = stages.map(stage => {
+    board.innerHTML = stages.map((stage, si) => {
       const stageCards = cards.filter(c => c.stage_id === stage.id);
+      // Resumo da coluna: alcance somado dos contatos + quantos estão parados.
+      const sn = (stage.name || '').toLowerCase();
+      const settledCol = stage.is_lost || sn.includes('fechado') || sn.includes('follow');
+      let reach = 0;
+      stageCards.forEach(c => { const ct = CRM.contactById(c.contact_id);
+        const r = ct && window._ctcTotalReach ? _ctcTotalReach(ct) : null; if (r) reach += r; });
+      const stuck = settledCol ? 0 : stageCards.filter(c => _daysSince(c.updated_at) >= 7).length;
+      const agg = [
+        reach && window._ctcFmtFollowers ? `${_ctcFmtFollowers(reach)} de alcance` : '',
+        stuck ? `<span class="kan-col-stuck">${stuck} parado${stuck === 1 ? '' : 's'}</span>` : '',
+      ].filter(Boolean).join(' · ');
       return `<div class="kan-col" data-stage="${stage.id}"
           ondragover="event.preventDefault();this.classList.add('kan-col-drop')"
           ondragleave="this.classList.remove('kan-col-drop')"
@@ -199,15 +210,17 @@
           <span class="kan-stage-name">${_esc(stage.name)}</span>
           <span class="kan-stage-count">${stageCards.length}</span>
         </div>
+        ${agg ? `<div class="kan-col-agg">${agg}</div>` : ''}
         <div class="kan-cards">
-          ${stageCards.map(card => _cardHTML(card)).join('')}
+          ${stageCards.map(card => _cardHTML(card, si === 0)).join('')}
         </div>
       </div>`;
     }).join('');
     lucide.createIcons();
   }
 
-  function _cardHTML(card) {
+  // backlog = 1ª etapa (abordagem): cartão parado ali é normal, então não tingimos.
+  function _cardHTML(card, backlog) {
     const contact = CRM.contactById(card.contact_id);
     const product = CRM.productById(card.product_id);
     const stage = CRM.stageById(card.stage_id);
@@ -217,6 +230,9 @@
     const settled = stageName.includes('fechado') || stageName.includes('follow');
     // Lost cards já têm visual próprio — não aplicamos warning amber/red em cima.
     const ageClass = (settled || isLost) ? '' : days >= 14 ? ' is-late' : days >= 7 ? ' is-warn' : '';
+    // Produto só aparece quando a aba mistura produtos (no Rips é redundante).
+    const showProduct = product && !SCOPE_META[card.scope]?.product;
+    const ageShort = days <= 0 ? 'hoje' : `${days}d`;
 
     // Avatar do contato: avatar_url manual > iniciais em gradiente
     let avatarHTML = '';
@@ -245,16 +261,14 @@
     const tier = contact?.tier && window._ctcTierById ? _ctcTierById(contact.tier) : null;
     const tierChip = tier ? `<span class="kan-card-tier" style="--tier-c:${tier.color}" title="${tier.label} · ${tier.desc}">${tier.id}</span>` : '';
 
-    return `<div class="kan-card${isLost ? ' is-lost' : ''}"
+    return `<div class="kan-card${isLost ? ' is-lost' : ''}${backlog ? '' : ageClass}"
         draggable="true"
         ondragstart="event.dataTransfer.setData('text/plain', '${card.id}'); this.classList.add('kan-card-drag')"
         ondragend="this.classList.remove('kan-card-drag')"
         onclick="window._pcrmOpenCard('${card.id}')">
       ${lostOverlay}
-      ${(product || affChip || tierChip) ? `<div class="kan-card-tag-row">
-        ${product ? `<div class="kan-card-tag" style="background:${product.color || '#94a3b8'}22;color:${product.color || '#94a3b8'};border:1px solid ${product.color || '#94a3b8'}44">
-          <i data-lucide="package" style="width:9px;height:9px"></i> ${_esc(product.name)}
-        </div>` : ''}
+      ${(showProduct || affChip || tierChip) ? `<div class="kan-card-tag-row">
+        ${showProduct ? `<span class="kan-card-prod" style="--pc:${product.color || '#94a3b8'}">${_esc(product.name)}</span>` : ''}
         ${affChip}
         ${tierChip}
       </div>` : ''}
@@ -270,7 +284,7 @@
             : _esc(contact.name)}</span>
       </div>` : ''}
       <div class="kan-card-foot">
-        <span class="kan-card-age${ageClass}"><i data-lucide="clock" style="width:11px;height:11px"></i>${_ageLabel(days)}</span>
+        <span class="kan-card-age${ageClass}" title="Última movimentação ${_ageLabel(days)}"><i data-lucide="${ageClass ? 'hourglass' : 'clock'}" style="width:11px;height:11px"></i>${ageShort}</span>
         ${(() => { const r = contact && window._ctcTotalReach ? _ctcTotalReach(contact) : null;
           return r != null ? `<span class="kan-card-reach" title="Seguidores somando todas as redes"><i data-lucide="users" style="width:11px;height:11px"></i>${_ctcFmtFollowers(r)}</span>` : ''; })()}
         ${(() => { const o = (STATE.users || []).find(u => u.id === card.owner);

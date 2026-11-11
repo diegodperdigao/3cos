@@ -256,6 +256,7 @@
     if (el && _view === 'results') {
       const t = _resultTotals(list, _month);
       const cpa = t.registrations ? t.invest / t.registrations : null;
+      el.hidden = !t.invest && !t.registrations && !t.deposits && !t.views;
       el.innerHTML =
         kpi('wallet', 'Investimento', _brl(t.invest), `valor fixo de ${t.paid} parceiro${t.paid === 1 ? '' : 's'} em ${MONTHS[_month.getMonth()]}`) +
         kpi('user-plus', 'Cadastros', _int(t.registrations), `${_int(t.ftd)} FTDs no mês`) +
@@ -263,6 +264,7 @@
         kpi('target', 'Custo por cadastro', cpa == null ? '—' : _brl(cpa), t.views ? `${_int(t.views)} views nas entregas` : 'investimento ÷ cadastros');
       return;
     }
+    if (el) el.hidden = !live && !monthD.length && !late && !next7 && !toReview;
     if (el) el.innerHTML =
       kpi('handshake', 'Em operação', live, `${list.filter(p => p.status === 'onboarding').length} em onboarding`) +
       kpi('list-checks', 'Entregas do mês', `${monthD.filter(isDone).length}/${monthD.length}`, `feitas / previstas em ${MONTHS[_month.getMonth()]}`) +
