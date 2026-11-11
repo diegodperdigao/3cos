@@ -215,8 +215,9 @@
       ? `${_periodLabel()} · ${cur.affiliates.size} afiliado${cur.affiliates.size === 1 ? '' : 's'} · ${cur.brands.size} marca${cur.brands.size === 1 ? '' : 's'}`
       : 'nenhum resultado lançado ainda';
     if (!el) return;
+    el.hidden = !hasData || (!cur.deposits && !cur.registrations && !cur.ftd && !cur.ngr);
     const deltaHTML = (d) => F.period === 'all' ? `<div class="dash-kpi-delta">todo histórico</div>` : `
-        <div class="dash-kpi-delta ${d >= 0 ? 'pos' : 'neg'}">
+        <div class="dash-kpi-delta ${d > 0 ? 'pos' : d < 0 ? 'neg' : ''}">
           <i data-lucide="${d >= 0 ? 'arrow-up-right' : 'arrow-down-right'}"></i>
           ${d >= 0 ? '+' : ''}${d}% vs anterior
         </div>`;
@@ -253,6 +254,7 @@
     const k = _computeFunnel();
     const el = document.getElementById('dash-kpis');
     const sub = document.getElementById('dash-funnel-sub');
+    if (el) el.hidden = !k.total;
     if (sub) sub.textContent = `${k.total} negociaç${k.total === 1 ? 'ão' : 'ões'} · ${F.scope === 'all' ? 'todos os funis' : (F.scope === 'rips' ? 'Rips' : F.scope.toUpperCase())}`;
     if (!el) return;
     el.innerHTML = `

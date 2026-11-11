@@ -128,6 +128,7 @@
     const kpi = (icon, lbl, val, sub) => `<div class="kpi"><div class="kpi-icon-row"><i data-lucide="${icon}"></i><span class="kpi-lbl">${lbl}</span></div>
       <div class="kpi-val sm">${val}</div><div class="kpi-sub">${sub}</div></div>`;
     const k = document.getElementById('cal-kpis');
+    if (k) k.hidden = !items.length && !views;
     if (k) k.innerHTML =
       kpi('zap', 'Ativações no mês', done.length, `${items.length - done.length} ainda previstas`) +
       kpi('users', 'Parceiros que postaram', posters.size, `${daysWith} dia${daysWith === 1 ? '' : 's'} com ativação`) +
