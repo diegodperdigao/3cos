@@ -43,7 +43,7 @@
       _colorKey = key; _colors = {};
       const used = [];
       list.forEach(pr => {
-        let c = pr.color && !used.some(u => _near(u, pr.color)) ? pr.color : null;
+        let c = pr.color || null;
         if (!c) c = PALETTE.find(x => !used.some(u => u === x || _near(u, x))) || PALETTE[used.length % PALETTE.length];
         used.push(c); _colors[pr.id] = c;
       });
@@ -107,8 +107,8 @@
     if (_product !== 'all' && !list.some(x => x.id === _product)) _product = 'all';
     const tabs = document.getElementById('cal-products');
     if (tabs) tabs.innerHTML = [`<button class="pcrm-tab ${_product === 'all' ? 'on' : ''}" onclick="window._calProduct('all')"><span>Todos os produtos</span></button>`]
-      .concat(list.map(pr => `<button class="pcrm-tab ${_product === pr.id ? 'on' : ''}" onclick="window._calProduct('${pr.id}')">
-        <i class="cal-dot" style="background:${productColor(pr.id)}"></i><span>${esc(pr.name)}</span></button>`)).join('');
+      .concat(list.map(pr => `<button class="pcrm-tab prod-tab ${_product === pr.id ? 'on' : ''}" style="--pc:${productColor(pr.id)}" onclick="window._calProduct('${pr.id}')">
+        ${prodMark(pr, 16)}<span>${esc(pr.name)}</span></button>`)).join('');
     const ml = document.getElementById('cal-month-label');
     if (ml) ml.textContent = `${MONTHS[_month.getMonth()]} ${_month.getFullYear()}`;
     const tb = document.getElementById('cal-today');

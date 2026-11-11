@@ -106,7 +106,7 @@ function _renderProductsGrid() {
   grid.innerHTML = products.map(p => `
     <div class="st-product-card" style="--prod-c:${p.color || '#94a3b8'}">
       <div class="st-product-head">
-        <div class="st-product-dot" style="background:${p.color || '#94a3b8'}"></div>
+        ${prodMark(p, 36)}
         <div class="st-product-info">
           <div class="st-product-name">${_escapeHTML(p.name)}</div>
           ${p.category ? `<div class="st-product-cat">${_escapeHTML(p.category)}</div>` : ''}
@@ -123,9 +123,26 @@ function _renderProductsGrid() {
   lucide.createIcons();
 }
 
+// Paleta sugerida: neons da arte 3C (docs/referencias/2026-11-11-marca-3c.md)
+const _PROD_SWATCHES = ['#9b5cff', '#8fe33a', '#ff8a1f', '#f0389b', '#ff2e63', '#2fb8ff', '#ffd23f', '#14b8a6'];
+let _prodLogo; // undefined = não mexeu; '' = remover; data URL = novo logo
+
 function _prodForm(p = {}) {
+  _prodLogo = undefined;
+  const c = p.color || _PROD_SWATCHES[0];
   return `
     <div class="form-grid">
+      <div class="ff"><label>Logo</label>
+        <div class="prod-logo-field">
+          <div class="prod-logo-prev" id="prod-logo-prev">${p.logo_url ? `<img src="${p.logo_url}" alt="">` : '<i data-lucide="image"></i>'}</div>
+          <div class="prod-logo-actions">
+            <label class="btn btn-outline"><i data-lucide="upload"></i> Enviar logo
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onchange="window._prodLogoPick(this)"></label>
+            <button type="button" class="btn btn-ghost" onclick="window._prodLogoClear()">Remover</button>
+            <div class="prod-logo-hint">PNG, JPG, WEBP ou SVG. Quadrado fica melhor; reduzimos para 160px.</div>
+          </div>
+        </div>
+      </div>
       <div class="ff"><label>Nome *</label><input id="prod-f-name" class="fi" type="text" value="${_escapeHTML(p.name || '')}" placeholder="Ex: Chute, CAP, Fortuna"></div>
       <div class="form-row">
         <div class="ff"><label>Categoria</label><input id="prod-f-category" class="fi" type="text" value="${_escapeHTML(p.category || '')}" placeholder="Casino, Apostas, Poker..."></div>
@@ -138,8 +155,14 @@ function _prodForm(p = {}) {
         </div>
       </div>
       <div class="form-row">
-        <div class="ff"><label>Cor</label><input id="prod-f-color" class="fi" type="color" value="${p.color || '#6366f1'}" style="width:80px;height:38px;padding:4px"></div>
         <div class="ff" style="flex:1"><label>Descrição</label><input id="prod-f-description" class="fi" type="text" value="${_escapeHTML(p.description || '')}" placeholder="Descrição curta"></div>
+      </div>
+      <div class="ff"><label>Cor do projeto</label>
+        <div class="prod-swatches">
+          ${_PROD_SWATCHES.map(x => `<button type="button" class="prod-sw ${x === c.toLowerCase() ? 'on' : ''}" style="--sw:${x}" title="${x}" onclick="window._prodPickColor('${x}')"></button>`).join('')}
+          <input id="prod-f-color" class="prod-sw-custom" type="color" value="${c}" title="Outra cor" oninput="window._prodPickColor(this.value, true)">
+        </div>
+        <div class="prod-logo-hint">Usada nas abas, no calendário e nos selos do projeto.</div>
       </div>
     </div>
   `;
@@ -153,8 +176,41 @@ function _prodRead() {
     status: get('prod-f-status'),
     color: get('prod-f-color') || '#6366f1',
     description: get('prod-f-description').trim() || null,
+    ...(_prodLogo !== undefined ? { logo_url: _prodLogo || null } : {}),
   };
 }
+
+window._prodPickColor = (c, fromInput) => {
+  if (!fromInput) { const i = document.getElementById('prod-f-color'); if (i) i.value = c; }
+  document.querySelectorAll('.prod-sw').forEach(b => b.classList.toggle('on', b.title.toLowerCase() === c.toLowerCase()));
+};
+window._prodLogoClear = () => {
+  _prodLogo = '';
+  const pv = document.getElementById('prod-logo-prev');
+  if (pv) { pv.innerHTML = '<i data-lucide="image"></i>'; lucide.createIcons(); }
+};
+// Reduz a imagem no navegador (máx. 160px) e guarda como data URL.
+window._prodLogoPick = (input) => {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  if (f.size > 4 * 1024 * 1024) { toast('Imagem muito grande (máx. 4 MB)', 'e'); return; }
+  const r = new FileReader();
+  r.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 160, k = Math.min(1, max / Math.max(img.width || max, img.height || max));
+      const w = Math.max(1, Math.round((img.width || max) * k)), h = Math.max(1, Math.round((img.height || max) * k));
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      _prodLogo = cv.toDataURL('image/png');
+      const pv = document.getElementById('prod-logo-prev');
+      if (pv) pv.innerHTML = `<img src="${_prodLogo}" alt="">`;
+    };
+    img.onerror = () => toast('Não consegui ler essa imagem', 'e');
+    img.src = r.result;
+  };
+  r.readAsDataURL(f);
+};
 
 window._prodOpenNew = () => {
   openModal('Novo produto', _prodForm(), `
@@ -173,7 +229,7 @@ window._prodSaveNew = async () => {
     _renderProductsGrid();
     toast(`Produto "${payload.name}" criado`, 's');
   } catch (e) {
-    toast('Erro: ' + (e.message || 'desconhecido'), 'e');
+    toast(/logo_url/.test(e.message || '') ? 'Falta aplicar o SQL 004 (logo) no Supabase' : 'Erro: ' + (e.message || 'desconhecido'), 'e');
   }
 };
 
@@ -196,7 +252,7 @@ window._prodSaveEdit = async (id) => {
     _renderProductsGrid();
     toast('Produto atualizado', 's');
   } catch (e) {
-    toast('Erro: ' + (e.message || 'desconhecido'), 'e');
+    toast(/logo_url/.test(e.message || '') ? 'Falta aplicar o SQL 004 (logo) no Supabase' : 'Erro: ' + (e.message || 'desconhecido'), 'e');
   }
 };
 
