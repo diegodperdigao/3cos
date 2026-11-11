@@ -48,11 +48,12 @@
       <div class="mod-main">
         <!-- Abas de scope -->
         <div class="pcrm-tabs">
-          ${SCOPE_ORDER.map(sc => `<button class="pcrm-tab ${_scope === sc ? 'on' : ''}" data-scope="${sc}" onclick="window._pcrmSwitchTab('${sc}')">
-            <i data-lucide="${SCOPE_META[sc].icon}"></i>
+          ${SCOPE_ORDER.map(sc => { const pp = SCOPE_META[sc].product && window.prodByName ? prodByName(SCOPE_META[sc].product) : null;
+            return `<button class="pcrm-tab ${pp ? 'prod-tab ' : ''}${_scope === sc ? 'on' : ''}" data-scope="${sc}" ${pp ? `style="--pc:${prodColor(pp)}"` : ''} onclick="window._pcrmSwitchTab('${sc}')">
+            ${pp ? prodMark(pp, 16) : `<i data-lucide="${SCOPE_META[sc].icon}"></i>`}
             <span>${SCOPE_META[sc].title}</span>
             <span class="pcrm-tab-count" id="pcrm-count-${sc}"></span>
-          </button>`).join('')}
+          </button>`; }).join('')}
         </div>
 
         <div class="sec-hdr" style="margin-top:16px">
@@ -268,7 +269,7 @@
         onclick="window._pcrmOpenCard('${card.id}')">
       ${lostOverlay}
       ${(showProduct || affChip || tierChip) ? `<div class="kan-card-tag-row">
-        ${showProduct ? `<span class="kan-card-prod" style="--pc:${product.color || '#94a3b8'}">${_esc(product.name)}</span>` : ''}
+        ${showProduct ? `<span class="kan-card-prod" style="--pc:${prodColor(product)}">${prodMark(product, 14)}${_esc(product.name)}</span>` : ''}
         ${affChip}
         ${tierChip}
       </div>` : ''}
