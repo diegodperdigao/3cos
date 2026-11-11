@@ -6979,6 +6979,32 @@ button.kan-card-owner:hover{outline:2px solid var(--theme);outline-offset:1px;}
 :root:not([data-edition="mono"]) .st-theme-preview{border-radius:var(--r-sm) !important;}
 
 /* ══════════════════════════════════════════════════════════ */
+/* Login com a arte da marca 3C (sempre escuro: tela de marca)  */
+/* ══════════════════════════════════════════════════════════ */
+/* a arte tem 1920x736 e o "3" fica em x≈1250: posiciona o 3 a ~70% da largura */
+#lock,#reset-screen{background:#000 url('../assets/brand/3c-arte-login.jpg') no-repeat calc(70vw - 169.8vh) center / auto 100% !important;
+  justify-content:flex-start !important;color:#fff;}
+#lock::before,#reset-screen::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,#000 0%,#000 26%,rgba(0,0,0,.6) 38%,rgba(0,0,0,0) 50%);}
+#lock .lock-box,#reset-screen .lock-box{width:360px;margin-left:clamp(24px,9vw,140px);text-align:left;background:transparent !important;
+  border:none !important;box-shadow:none !important;padding:0 !important;
+  --text:#fff;--text2:#a8a8a8;--text3:#6b6b6b;--bg2:#0f0f0f;--bg3:#161616;--gb:rgba(255,255,255,.1);--gb2:rgba(255,255,255,.18);}
+#lock .lock-brand,#reset-screen .lock-brand{justify-content:flex-start;margin:0 0 4px;}
+#lock .brand-h-light,#reset-screen .brand-h-light{display:none !important;}
+#lock .brand-h-dark,#reset-screen .brand-h-dark{display:block !important;}
+#lock .lock-sub,#reset-screen .lock-sub{font-family:var(--fh,var(--fd));font-size:11px;font-weight:600;letter-spacing:.2em;color:#a8a8a8;margin:14px 0 36px;}
+#lock .lock-field,#reset-screen .lock-field{background:#0f0f0f !important;border:1px solid rgba(255,255,255,.14) !important;color:#fff !important;border-radius:2px !important;}
+#lock .lock-field:focus,#reset-screen .lock-field:focus{border-color:#ff2e63 !important;outline:none;box-shadow:0 0 0 3px rgba(255,46,99,.18) !important;}
+#lock .lock-btn,#reset-screen .lock-btn{background:#fff !important;color:#000 !important;border-radius:2px !important;font-weight:600;letter-spacing:.02em;}
+#lock .lock-btn:hover,#reset-screen .lock-btn:hover{opacity:.88;}
+#lock .lock-hint,#reset-screen .lock-hint,#lock .lock-reset,#reset-screen .lock-reset{color:#8a8a8a;}
+#lock .lock-reset:hover,#reset-screen .lock-reset:hover{color:#fff;}
+#lock .lock-theme-toggle{display:none !important;}
+@media (max-width:820px){
+  #lock,#reset-screen{background-size:auto 46vh !important;background-position:70% top !important;align-items:flex-end !important;justify-content:center !important;padding-bottom:max(40px,env(safe-area-inset-bottom)) !important;}
+  #lock::before,#reset-screen::before{background:linear-gradient(180deg,rgba(0,0,0,0) 20vh,#000 46vh);}
+  #lock .lock-box,#reset-screen .lock-box{margin:0 20px;width:auto;max-width:400px;flex:1;}
+}
 /* Marca de cada projeto: logo + cor (Configurações > Produtos) */
 /* ══════════════════════════════════════════════════════════ */
 .prod-mark{display:inline-block;flex-shrink:0;object-fit:contain;border-radius:var(--r-xs,2px);vertical-align:middle;}
