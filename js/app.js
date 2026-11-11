@@ -1506,6 +1506,8 @@ window.updateHubHero = () => {
 
   sub.innerHTML = subText;
   cta.innerHTML = ctaHtml;
+  // Hub novo (hub-today.js) reescreve sub + atalhos com o resumo do dia.
+  if (window.buildHubToday) window.buildHubToday();
   if (window.lucide) lucide.createIcons();
 };
 
