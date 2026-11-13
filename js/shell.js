@@ -224,7 +224,7 @@
     if (b) {
       b.title = on ? 'Expandir menu' : 'Minimizar menu';
       b.setAttribute('aria-label', b.title);
-      b.innerHTML = `<i data-lucide="${on ? 'panel-left-open' : 'panel-left-close'}"></i>`;
+      b.innerHTML = `<i data-lucide="${on ? 'chevron-right' : 'chevron-left'}"></i>`;
       if (window.lucide) lucide.createIcons();
     }
   }

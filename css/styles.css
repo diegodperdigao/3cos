@@ -7742,3 +7742,21 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 }
 /* F5 dentro de um módulo: o Início não aparece enquanto o módulo abre */
 html.boot-mod #hub{display:none !important;}
+
+/* ── Cabeçalho da sidebar: logo + "CRM" leve, botão de minimizar na borda ── */
+.side-top{position:relative;height:64px;padding:0 18px;justify-content:flex-start;}
+.side-logo{gap:12px;min-width:0;}
+.side-logo img{height:28px;}
+.side-logo span{border:none;padding:0 0 0 12px;border-left:1px solid var(--gb2);height:20px;display:flex;align-items:center;
+  font:600 11px/1 'Inter',system-ui,sans-serif;letter-spacing:.14em;color:var(--text3);}
+.side-logo:hover span{color:var(--text2);}
+.side-collapse{position:absolute;right:-12px;top:20px;width:24px;height:24px;border-radius:50%;z-index:2;
+  background:var(--bg2);border:1px solid var(--gb2);color:var(--text2);box-shadow:0 2px 8px rgba(0,0,0,.35);
+  transition:color .15s,border-color .15s,background .15s;}
+.side-collapse svg{width:14px;height:14px;}
+.side-collapse:hover{color:var(--text);background:var(--bg3);border-color:var(--text3);}
+@media (min-width:769px){
+  html.side-mini .side-top{flex-direction:row;justify-content:center;height:64px;padding:0;}
+  html.side-mini .side-logo{width:40px;overflow:hidden;gap:0;margin-right:12px;}
+  html.side-mini .side-logo img{height:22px;}
+}
