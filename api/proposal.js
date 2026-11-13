@@ -13,7 +13,10 @@
 // Usa a mesma chave do Copilot (GEMINI_API_KEY / GEMINI_MODEL no Vercel).
 // ══════════════════════════════════════════════════════════
 
-const { admin } = require('./_lib/supabase-admin');
+// Projeto e chave PÚBLICA (anon) do Supabase, as mesmas de js/supabase-client.js.
+// Servem só para conferir o token da sessão em /auth/v1/user (sem chave de serviço).
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zolvuamsikxtobzafkao.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_pLaVyissnbo1jvOwfoG3pQ_ENDQZrpd';
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const FALLBACK_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.0-flash'];
@@ -122,8 +125,8 @@ module.exports = async function handler(req, res) {
   const token = auth.replace(/^Bearer\s+/i, '').trim();
   if (!token) return res.status(401).json({ error: 'Faça login no CRM.' });
   try {
-    const { data, error } = await admin().auth.getUser(token);
-    if (error || !data?.user) return res.status(401).json({ error: 'Sessão expirada. Entre de novo no CRM.' });
+    const u = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` } });
+    if (!u.ok) return res.status(401).json({ error: 'Sessão expirada. Entre de novo no CRM.' });
   } catch (e) {
     return res.status(500).json({ error: 'Não foi possível validar a sessão: ' + (e.message || e) });
   }
