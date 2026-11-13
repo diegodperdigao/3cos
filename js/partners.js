@@ -60,6 +60,7 @@
   let _detailId = null;      // parceiro aberto no modal
   let _detailMonth = null;   // mês mostrado dentro do modal
   let _contractOpen = false; // seção "Contrato e dados" aberta no modal
+  let _detailTab = 'entregas'; // aba do parceiro: 'entregas' | 'escopo'
 
   // ── Utilidades ──
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -604,10 +605,11 @@
     if (!p) return;
     const card = p.card_id ? (STATE.crm.cards || []).find(c => c.id === p.card_id) : null;
     if (card && window._pcrmEditWonDeal) { window._pcrmEditWonDeal(card.id, { from: 'partners', name: p.name }); return; }
-    window._ptnOpen(id);
+    window._ptnOpen(id, 'escopo');
   };
-  window._ptnOpen = (id) => {
+  window._ptnOpen = (id, tab) => {
     _detailId = id;
+    _detailTab = tab || (scopeOf(id).length ? 'entregas' : 'escopo');
     _contractOpen = false;
     _detailMonth = _month;
     const p = partnerById(id);
@@ -649,6 +651,29 @@
           <div class="ptn-bar ${pct >= 100 ? 'full' : ''}"><i style="width:${pct}%"></i></div></div>` : ''}
       </div>
 
+      <div class="ptn-dtabs" role="tablist" aria-label="Seções do parceiro">
+        <button role="tab" aria-selected="${_detailTab === 'entregas'}" class="${_detailTab === 'entregas' ? 'on' : ''}" onclick="window._ptnDetailTab('entregas')"><i data-lucide="send"></i> Entregas${pr.target ? ` <b>${pr.done}/${pr.target}</b>` : ''}</button>
+        <button role="tab" aria-selected="${_detailTab === 'escopo'}" class="${_detailTab === 'escopo' ? 'on' : ''}" onclick="window._ptnDetailTab('escopo')"><i data-lucide="list-checks"></i> Escopo e contrato${scope.length ? '' : ' <em>definir</em>'}</button>
+      </div>
+      <div class="ptn-dpanel" role="tabpanel" ${_detailTab === 'entregas' ? '' : 'hidden'}>
+      <div class="ptn-d-sec first">
+        <div class="ptn-d-sec-hdr">
+          <span>Entregas ${isPkg ? 'do pacote' : ''}</span>
+          ${isPkg ? '' : `<div class="ptn-month sm">
+            <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(-1)" aria-label="Mês anterior"><i data-lucide="chevron-left"></i></button>
+            <span>${_monthLabel(_detailMonth)}</span>
+            <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(1)" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button></div>`}
+        </div>
+        ${pr.target ? `<div class="ptn-scope-mini" style="margin-bottom:12px">${pr.rows.map(r => `<span class="${r.done >= r.s.qty ? 'ok' : ''}"><i data-lucide="${kindOf(r.s.kind).icon}"></i>${esc(kindOf(r.s.kind).label)}${r.s.platform ? ' · ' + esc(r.s.platform) : ''} <b>${r.done}/${r.s.qty}</b></span>`).join('')}${pr.planned ? `<span class="ptn-mini-note">${pr.planned} prevista${pr.planned > 1 ? 's' : ''}</span>` : ''}</div>` : ''}
+        <div class="ptn-d-actions">
+          <button class="btn btn-theme" onclick="window._ptnNewDelivery({partner_id:'${p.id}'})"><i data-lucide="plus"></i> Registrar entrega</button>
+        </div>
+        <div class="ptn-rows">${delivs.length ? delivs.map(_rowHTML.bind(null, false)).join('')
+          : `<div class="ptn-hint">${scope.length ? `Nenhuma entrega registrada ${isPkg ? 'no pacote' : 'neste mês'}. Quando o parceiro publicar, clique em "Registrar entrega" e cole o link.` : `Ainda não há escopo. Defina na aba <a href="#" onclick="event.preventDefault();window._ptnDetailTab('escopo')">Escopo e contrato</a>; as entregas são registradas aqui quando forem publicadas.`}</div>`}</div>
+      </div>
+
+      </div>
+      <div class="ptn-dpanel" role="tabpanel" ${_detailTab === 'escopo' ? '' : 'hidden'}>
       <div class="ptn-d-sec first">
         <div class="ptn-d-sec-hdr"><span>Escopo ${isPkg ? 'do pacote' : 'por mês'}</span>
           <button class="btn btn-outline ptn-full-btn" onclick="window._ptnFullScope('${p.id}')"><i data-lucide="file-text"></i> ${scope.length ? 'Editar com a proposta' : 'Colar proposta e preencher'}</button></div>
@@ -669,24 +694,8 @@
         </div>
       </div>
 
-      <div class="ptn-d-sec">
-        <div class="ptn-d-sec-hdr">
-          <span>Entregas ${isPkg ? 'do pacote' : ''}</span>
-          ${isPkg ? '' : `<div class="ptn-month sm">
-            <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(-1)" aria-label="Mês anterior"><i data-lucide="chevron-left"></i></button>
-            <span>${_monthLabel(_detailMonth)}</span>
-            <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(1)" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button></div>`}
-        </div>
-        ${pr.target ? `<div class="ptn-scope-mini" style="margin-bottom:12px">${pr.rows.map(r => `<span class="${r.done >= r.s.qty ? 'ok' : ''}"><i data-lucide="${kindOf(r.s.kind).icon}"></i>${esc(kindOf(r.s.kind).label)}${r.s.platform ? ' · ' + esc(r.s.platform) : ''} <b>${r.done}/${r.s.qty}</b></span>`).join('')}${pr.planned ? `<span class="ptn-mini-note">${pr.planned} prevista${pr.planned > 1 ? 's' : ''}</span>` : ''}</div>` : ''}
-        <div class="ptn-d-actions">
-          <button class="btn btn-theme" onclick="window._ptnNewDelivery({partner_id:'${p.id}'})"><i data-lucide="plus"></i> Registrar entrega</button>
-        </div>
-        <div class="ptn-rows">${delivs.length ? delivs.map(_rowHTML.bind(null, false)).join('')
-          : `<div class="ptn-hint">${scope.length ? `Nenhuma entrega registrada ${isPkg ? 'no pacote' : 'neste mês'}. Quando o parceiro publicar, clique em "Registrar entrega" e cole o link.` : 'Defina o escopo acima e registre as entregas quando forem publicadas.'}</div>`}</div>
-      </div>
-
-      <details class="ptn-d-sec ptn-contract" ${_contractOpen ? "open" : ""} ontoggle="window._ptnContract(this.open)">
-        <summary><span>Contrato e dados</span><i data-lucide="chevron-down"></i></summary>
+      <div class="ptn-d-sec ptn-contract-plain">
+        <div class="ptn-d-sec-hdr"><span>Contrato e dados</span></div>
       <div class="ptn-d-grid">
         <div class="ff"><label>Tipo de escopo</label><select class="fi" ${upd('scope_mode')}>${opt([['monthly', 'Mensal (repete todo mês)'], ['package', 'Pacote fechado']], p.scope_mode)}</select></div>
         <div class="ff"><label>Tipo de negócio</label><select class="fi" ${upd('deal_type')}>${opt([['fixo', 'Fixo'], ['minimo_garantido', 'Mínimo garantido + RevShare']], p.deal_type || 'fixo')}</select></div>
@@ -698,8 +707,9 @@
         <div class="ff"><label>Contrato</label><select class="fi" ${upd('contract_status')}>${opt([['', '—'], ['draft', 'Em elaboração'], ['sent', 'Enviado para assinatura'], ['signed', 'Assinado']], p.contract_status || '')}</select></div>
         <div class="ff ptn-d-wide"><label>Link do contrato${p.contract_url ? ` · <a href="${esc(p.contract_url)}" target="_blank" rel="noopener">abrir</a>` : ''}</label><input type="url" class="fi" placeholder="https://..." value="${esc(p.contract_url || '')}" ${upd('contract_url')}></div>
       </div>
-      </details>
-      <div class="ff ptn-notes"><label>Observações</label><textarea class="fi" rows="${p.notes && p.notes.length > 120 ? 4 : 2}" placeholder="Combinados, contatos, briefing..." ${upd('notes')}>${esc(p.notes || '')}</textarea></div>`;
+      </div>
+      <div class="ff ptn-notes"><label>Observações</label><textarea class="fi" rows="${p.notes && p.notes.length > 120 ? 4 : 2}" placeholder="Combinados, contatos, briefing..." ${upd('notes')}>${esc(p.notes || '')}</textarea></div>
+      </div>`;
     lucide.createIcons();
   }
 
@@ -709,6 +719,7 @@
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
   }
   window._ptnContract = (open) => { _contractOpen = open; };
+  window._ptnDetailTab = (t) => { _detailTab = t; _renderDetail(); };
   window._ptnDetailMonth = (n) => { _detailMonth = _addMonths(_detailMonth, n); _renderDetail(); };
   window._ptnField = async (field, value) => {
     const patch = { [field]: value === '' ? null : value };

@@ -132,7 +132,7 @@
     const nav = document.getElementById('side-nav');
     if (!nav || !STATE.user) return;
     const item = (on, onclick, icon, label, sub, extra = '') =>
-      `<button class="side-item${on ? ' on' : ''}" onclick="${onclick}"${on ? ' aria-current="page"' : ''}>
+      `<button class="side-item${on ? ' on' : ''}" onclick="${onclick}" title="${label}"${on ? ' aria-current="page"' : ''}>
         <i data-lucide="${icon}"></i><span class="side-item-t">${label}${sub ? `<small>${sub}</small>` : ''}</span>${extra}</button>`;
 
     // A sidebar é só da 3C. As marcas são escolhidas no Início (cartões); dentro de
@@ -148,7 +148,7 @@
           <button class="side-universe-x" onclick="goBack()" title="Sair do universo ${esc(bp.name)} e voltar ao Início"><i data-lucide="x"></i></button>
         </div>
         ${BRAND_MODS.filter(m => canSee(m.id) && (!m.needsScope || scopeOf(bp)))
-          .map(m => `<button class="side-subitem${_active === m.id ? ' on' : ''}" onclick="enterBrand('${bp.id}','${m.id}')"${_active === m.id ? ' aria-current="page"' : ''}><i data-lucide="${m.icon}"></i>${m.label}</button>`).join('')}
+          .map(m => `<button class="side-subitem${_active === m.id ? ' on' : ''}" title="${m.label}" onclick="enterBrand('${bp.id}','${m.id}')"${_active === m.id ? ' aria-current="page"' : ''}><i data-lucide="${m.icon}"></i>${m.label}</button>`).join('')}
       </div>`;
     }
 
@@ -192,6 +192,27 @@
   };
   window.closeMobSidebar = () => document.documentElement.classList.remove('side-open');
 
+  // ── Sidebar minimizada (só ícones), lembrada neste navegador ──
+  const _miniKey = '3c_side_mini';
+  function _applyMini(on) {
+    document.documentElement.classList.toggle('side-mini', on);
+    const b = document.getElementById('side-collapse');
+    if (b) {
+      b.title = on ? 'Expandir menu' : 'Minimizar menu';
+      b.setAttribute('aria-label', b.title);
+      b.innerHTML = `<i data-lucide="${on ? 'panel-left-open' : 'panel-left-close'}"></i>`;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+  window.toggleSideMini = () => {
+    const on = !document.documentElement.classList.contains('side-mini');
+    try { localStorage.setItem(_miniKey, on ? '1' : '0'); } catch (_) {}
+    _applyMini(on);
+    // gráficos e kanban recalculam a largura
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 220);
+  };
+  try { _applyMini(localStorage.getItem(_miniKey) === '1'); } catch (_) {}
+
   // ── Logado? (mostra a sidebar só fora do login) ───────────
   function _syncSignedIn() {
     const hidden = (id) => { const el = document.getElementById(id); return !el || getComputedStyle(el).display === 'none'; };
@@ -205,6 +226,7 @@
     const mo = new MutationObserver(_syncSignedIn);
     ['lock', 'reset-screen', 'hub'].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, { attributes: true, attributeFilter: ['style'] }); });
     _syncSignedIn();
+    try { _applyMini(localStorage.getItem(_miniKey) === '1'); } catch (_) {}
     // Produtos chegam depois do login: redesenha a sidebar quando o CRM carregar
     // F5 dentro de uma marca: o módulo abre antes de os produtos/etapas chegarem
     // (sem logo e com a pipeline geral). Quando os dados chegam, reabre uma vez.
