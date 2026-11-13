@@ -395,7 +395,7 @@
   const CONTRACT_STATUS = { draft: 'Em elaboração', sent: 'Enviado para assinatura', signed: 'Assinado' };
   let _wonScope = [];
 
-  function _pcrmOpenWonDealModal(card, destStage, onConfirm) {
+  function _pcrmOpenWonDealModal(card, destStage, onConfirm, opts = {}) {
     const isSub = card.affiliate_role === 'sub';
     const existing = {
       deal_type: card.deal_type || '',
@@ -430,11 +430,11 @@
     const lbl = (t, req = false, opt = false) => `<label class="won-lbl">${t}${req ? ' <span class="won-req">*</span>' : ''}${opt ? ' <span class="won-opt">(opcional)</span>' : ''}</label>`;
     const body = `
       <div class="won-wrap">
-        <div class="won-intro">
+        ${opts.intro ? `<div class="won-intro">${opts.intro}</div>` : `<div class="won-intro">
           Fechando <strong>${_esc(card.title)}</strong> em <strong>${_esc(destStage.name)}</strong>.
           O que você registrar aqui vai para o histórico do card e, se for Fixo, o parceiro já nasce em Parceiros com o escopo pronto.
-        </div>
-        ${partner ? `<div class="won-note"><i data-lucide="refresh-cw"></i> Este negócio já é parceiro em Parceiros. O que você mudar aqui (valor, início, escopo e contrato) é salvo lá também, e o que mudar lá aparece aqui.</div>` : ''}
+        </div>`}
+        ${partner && !opts.intro ? `<div class="won-note"><i data-lucide="refresh-cw"></i> Este negócio já é parceiro em Parceiros. O que você mudar aqui (valor, início, escopo e contrato) é salvo lá também, e o que mudar lá aparece aqui.</div>` : ''}
 
         <details class="won-ai" ${existing.proposal_text ? '' : 'open'}>
           <summary><i data-lucide="file-text"></i> Colar proposta e escopo <span class="won-opt">(o mesmo texto do jurídico)</span><i data-lucide="chevron-down" class="won-chev"></i></summary>
@@ -511,7 +511,7 @@
     `;
     const footer = `
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-theme" id="won-confirm" onclick="window._pcrmConfirmWon()"><i data-lucide="check-circle"></i> Fechar negócio</button>
+      <button class="btn btn-theme" id="won-confirm" onclick="window._pcrmConfirmWon()"><i data-lucide="check-circle"></i> ${opts.confirmLabel || 'Fechar negócio'}</button>
     `;
     window.__pcrmPendingWonConfirm = (terms) => {
       closeModal();
@@ -519,7 +519,7 @@
       window.__pcrmPendingWonConfirm = null;
     };
     window.__pcrmWonCtx = { isSub };
-    openModal('Fechar negócio', body, footer, { wide: true });
+    openModal(opts.title || 'Fechar negócio', body, footer, { wide: true });
     window._pcrmWonScopeRender();
     lucide.createIcons();
     if (existing.deal_type === 'revenue_share' && existing.rev_share_pct !== '') window._pcrmWonRsPctChanged(existing.rev_share_pct);
@@ -1546,23 +1546,31 @@
 
   // Edit the won-deal terms on an already-won card. Reopens the same
   // modal we use at close-time, pre-filled with the current values.
-  window._pcrmEditWonDeal = (cardId) => {
+  // opts.from === 'partners': aberto em Parceiros ativos (título e textos próprios)
+  window._pcrmEditWonDeal = (cardId, opts = {}) => {
     const card = STATE.crm.cards.find(c => c.id === cardId);
     if (!card) return;
     const stage = CRM.stageById(card.stage_id);
     if (!stage || !stage.is_won) return;
     closeModal();
+    const fromPtn = opts.from === 'partners';
+    const mOpts = fromPtn ? {
+      title: 'Escopo e contrato',
+      confirmLabel: 'Salvar',
+      intro: `Escopo, valor e contrato de <strong>${_esc(opts.name || card.title)}</strong>. Cole a proposta para a IA preencher ou monte as linhas abaixo. Fica salvo aqui em Parceiros e no card do Pipeline.`,
+    } : {};
     _pcrmOpenWonDealModal(card, stage, async (terms) => {
       try {
         const partner = (STATE.crm.partners || []).find(x => x.card_id === cardId);
         await CRM.cards.update(cardId, { stage_id: card.stage_id, ...terms });
         if (partner && terms.deal_type === 'fixo') await _pcrmSyncPartner(partner, terms);
-        _renderBoard(card.scope || 'b2b');
-        toast(partner && terms.deal_type === 'fixo' ? 'Termos atualizados aqui e em Parceiros' : 'Termos atualizados', 's');
+        if (document.querySelector('#mod-pipeline.active #pcrm-board')) _renderBoard(card.scope || 'b2b');
+        if (window._ptnRefresh) window._ptnRefresh();
+        toast(fromPtn ? 'Escopo salvo em Parceiros e no Pipeline' : (partner && terms.deal_type === 'fixo' ? 'Termos atualizados aqui e em Parceiros' : 'Termos atualizados'), 's');
       } catch (e) {
         toast('Erro ao salvar: ' + (e.message || 'desconhecido'), 'e');
       }
-    });
+    }, mOpts);
   };
 
   // Edit the lost reason on an already-lost card (opens the same modal
