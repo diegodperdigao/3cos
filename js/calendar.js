@@ -23,7 +23,7 @@
   const fmtDay = (s) => { const d = parse(s); return `${d.getDate()} de ${MONTHS[d.getMonth()]}`; };
   const int = (n) => Math.round(Number(n) || 0).toLocaleString('pt-BR');
   const P = () => window.PTN;
-  const products = () => (P()?.products?.() || STATE.crm.products || []);
+  const products = () => { const l = (P()?.products?.() || STATE.crm.products || []); return window.sortProducts ? sortProducts(l) : l; };
   // Cor de cada produto; se duas cores cadastradas forem parecidas demais
   // (ex.: dois roxos), a segunda vira uma cor livre da paleta.
   const _hue = (hex) => {

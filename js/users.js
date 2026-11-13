@@ -867,17 +867,21 @@ window.toggleTheme = _wrapToggleTheme;
         if(_avEl && typeof window.userAvatar === 'function'){
           _avEl.innerHTML = window.userAvatar(STATE.user, 32);
         }
-        // Show hub first (always stable)
-        const hub=document.getElementById('hub');hub.style.display='flex';hub.style.opacity='1';
+        // F5 dentro de um módulo: abre direto nele (sem mostrar o Início antes)
+        const savedMod=/^#fila=/.test(location.hash) ? 'contacts' : sessionStorage.getItem('3cos_activeMod');
+        const hub=document.getElementById('hub');
+        if(savedMod){hub.style.display='none';hub.style.opacity='0';} else {hub.style.display='flex';hub.style.opacity='1';}
         try { buildHubCards(); buildMobileHome(); if(window.buildHubWidgets)buildHubWidgets(); if(window.renderHolidayPostIt)renderHolidayPostIt(); } catch(e){ console.error('[boot] buildHub failed:', e); }
         updateNotifBadge();initMosaics();lucide.createIcons();
         if (typeof applyAppTheme === 'function') applyAppTheme();
         else if (typeof applyBetaEdition === 'function') applyBetaEdition();
         if (typeof updateCopilotVisibility === 'function') updateCopilotVisibility();
         // Restore active module (openMod has try/catch safety net)
-        const savedMod=/^#fila=/.test(location.hash) ? 'contacts' : sessionStorage.getItem('3cos_activeMod');
-        if(savedMod && typeof openMod === 'function'){
-          setTimeout(()=>{ try{openMod(savedMod);}catch(e){console.error('[boot] module restore failed:',e);} },200);
+        if(savedMod){
+          // espera todos os scripts dos módulos carregarem (users.js roda antes deles)
+          const _restore=()=>{ try{ if (typeof openMod === 'function') openMod(savedMod,{instant:true}); }
+            catch(e){ console.error('[boot] module restore failed:',e); hub.style.display='flex'; hub.style.opacity='1'; } };
+          if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_restore,{once:true}); else setTimeout(_restore,0);
         }
         return;
       }

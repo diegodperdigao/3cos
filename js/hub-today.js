@@ -19,7 +19,10 @@
   const WEEK = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
   let _ptnRequested = false, _crmTry = 0, _crmTimer = null;
 
-  const products = () => (STATE.crm?.products || []).filter(p => p.status !== 'inactive');
+  const products = () => {
+    const list = (window.crmProducts ? crmProducts() : (STATE.crm?.products || [])).filter(p => p.status !== 'inactive');
+    return window.sortProducts ? sortProducts(list) : list;
+  };
   const slug = (n) => String(n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
   const fmtInt = (v) => Math.round(Number(v) || 0).toLocaleString('pt-BR');
   const fmtBRL = (v) => {
@@ -178,7 +181,7 @@
   window._hubNew = (kind) => {
     if (kind === 'contact') { (window.go3C || openMod)('contacts'); setTimeout(() => window._ctcOpenNew && _ctcOpenNew(), 450); return; }
     // As pipelines moram dentro das marcas: pergunta em qual
-    const brands = products().filter(pr => window.brandMeta && (STATE.crm?.stages || []).some(st => st.scope === slug(pr.name)));
+    const brands = products().filter(pr => window.brandMeta && (window.crmStages ? crmStages() : (STATE.crm?.stages || [])).some(st => st.scope === slug(pr.name)));
     const go = (pid, sc) => `closeModal();${pid ? `enterBrand('${pid}','pipeline')` : `go3C('pipeline')`};setTimeout(()=>window._pcrmOpenNewCard&&_pcrmOpenNewCard('${sc}'),550)`;
     openModal('Nova negociação', `<div class="hubn-hint">Em qual pipeline?</div>
       <div class="hubn-grid">${brands.map(pr => { const m = brandMeta(pr); const lg = m.logo || pr.logo_url; const lgd = m.logoDark || lg;

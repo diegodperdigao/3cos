@@ -1546,8 +1546,23 @@ function buildMobileHome(){
 }
 
 // ── MODULE OPEN/CLOSE ──
-window.openMod=id=>{
+// opts.instant: sem as transições (usado no F5 para abrir direto no módulo)
+window.openMod=(id,opts={})=>{
   sessionStorage.setItem('3cos_activeMod',id);
+  if(opts.instant){
+    const hub=document.getElementById('hub');hub.style.display='none';hub.style.opacity='0';
+    document.querySelectorAll('.mod.active').forEach(a=>{a.style.display='none';a.classList.remove('active');});
+    const el=document.getElementById('mod-'+id);
+    if(el){
+      const t=el.style.transition;el.style.transition='none';
+      try{ buildMod(id,el); }catch(err){ console.error('[openMod] buildMod failed for',id,err); }
+      el.style.display='flex';el.classList.add('active');el.style.opacity='1';
+      requestAnimationFrame(()=>{el.style.transition=t;});
+      initMosaics();lucide.createIcons();
+    }
+    updateBottomNav(id);
+    return;
+  }
   const _doBuild = (el) => {
     try {
       buildMod(id, el);
