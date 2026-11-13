@@ -908,5 +908,5 @@
   };
 
   // Compartilhado com o módulo Calendário (js/calendar.js)
-  window.PTN = { KINDS, PLATFORMS, D_STATUS, CONTENT_FIELDS, kindOf, dStatus, isDone, products: _products, load: _load };
+  window.PTN = { payOf: _payOf, activeIn: _activeIn, KINDS, PLATFORMS, D_STATUS, CONTENT_FIELDS, kindOf, dStatus, isDone, products: _products, load: _load };
 })();

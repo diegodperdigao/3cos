@@ -438,32 +438,20 @@ function _renderGeneralSettings(el){
           <div class="st-section-icon"><i data-lucide="palette"></i></div>
           <div>
             <div class="st-section-title">Aparência</div>
-            <div class="st-section-sub">Tema visual e modo de contraste</div>
+            <div class="st-section-sub">Tema claro ou escuro</div>
           </div>
         </div>
         <div class="st-card">
           <div class="st-row st-row-col">
             <div class="st-label">Tema</div>
-            <div class="st-theme-grid">
-              <div class="st-theme-card ${themeName==='default-dark'?'on':''}" onclick="setAppTheme('default-dark')">
+            <div class="st-theme-grid st-theme-grid-2">
+              <div class="st-theme-card ${themeName!=='default-light'&&themeName!=='mono-light'?'on':''}" onclick="setAppTheme('default-dark')">
                 <div class="st-theme-preview st-theme-default-dark"></div>
-                <div class="st-theme-name">Default Dark</div>
-                <div class="st-theme-desc">Padrão · neutro escuro com acento rosa</div>
+                <div class="st-theme-name">Escuro</div>
               </div>
-              <div class="st-theme-card ${themeName==='default-light'?'on':''}" onclick="setAppTheme('default-light')">
+              <div class="st-theme-card ${themeName==='default-light'||themeName==='mono-light'?'on':''}" onclick="setAppTheme('default-light')">
                 <div class="st-theme-preview st-theme-default-light"></div>
-                <div class="st-theme-name">Default Light</div>
-                <div class="st-theme-desc">Padrão · neutro claro com acento rosa</div>
-              </div>
-              <div class="st-theme-card ${themeName==='mono-dark'?'on':''}" onclick="setAppTheme('mono-dark')">
-                <div class="st-theme-preview st-theme-mono-dark"></div>
-                <div class="st-theme-name">Mono Dark</div>
-                <div class="st-theme-desc">Monocromático · foco e silêncio visual</div>
-              </div>
-              <div class="st-theme-card ${themeName==='mono-light'?'on':''}" onclick="setAppTheme('mono-light')">
-                <div class="st-theme-preview st-theme-mono-light"></div>
-                <div class="st-theme-name">Mono Light</div>
-                <div class="st-theme-desc">Monocromático em base clara</div>
+                <div class="st-theme-name">Claro</div>
               </div>
             </div>
           </div>
@@ -689,7 +677,7 @@ window.setAppTheme = (name) => {
   STATE.settings.theme = name;
   applyAppTheme();
   saveToLocal();
-  const labels={'default-dark':'Default Dark','default-light':'Default Light','mono-dark':'Mono Dark','mono-light':'Mono Light'};
+  const labels={'default-dark':'Escuro','default-light':'Claro','mono-dark':'Escuro','mono-light':'Claro'};
   if (prev !== name) logAction('Tema alterado', `${labels[prev]||prev} → ${labels[name]||name}`);
   toast(`Tema ${labels[name]||name} aplicado`, 's');
   // Re-render settings to update selection UI
@@ -701,11 +689,12 @@ window.setAppTheme = (name) => {
 window.THEME_MAP = {
   'default-dark':   { edition: '',         theme: 'dark'  },
   'default-light':  { edition: '',         theme: 'light' },
-  'mono-dark':      { edition: 'mono',     theme: 'dark'  },
-  'mono-light':     { edition: 'mono',     theme: 'light' },
+  // Só existem Claro e Escuro: as edições "Mono" antigas viram o tema padrão
+  'mono-dark':      { edition: '',         theme: 'dark'  },
+  'mono-light':     { edition: '',         theme: 'light' },
   // Legacy keys — retired editions (glass, bento, meridian, neonflow) fall back to Default
   'default':        { edition: '',         theme: 'dark'  },
-  'mono':           { edition: 'mono',     theme: 'dark'  },
+  'mono':           { edition: '',         theme: 'dark'  },
   'bento-light':    { edition: '',         theme: 'light' },
   'bento-dark':     { edition: '',         theme: 'dark'  },
   'bento':          { edition: '',         theme: 'light' },
