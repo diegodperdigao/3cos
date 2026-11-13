@@ -47,7 +47,7 @@
     { id: 'views', label: 'Views' }, { id: 'likes', label: 'Curtidas' }, { id: 'comments', label: 'Comentários' },
     { id: 'shares', label: 'Compart.' }, { id: 'clicks', label: 'Cliques' },
   ];
-  const PRODUCT_ORDER = ['rips', 'chute', 'cap', 'fortuna'];
+  const PRODUCT_ORDER = ['rips', 'chute', 'sortudão', 'sortudao', 'cap', 'fortuna'];
   const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
   const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 

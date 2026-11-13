@@ -48,7 +48,23 @@
   // Módulos que só existem no 3C: abrir um deles sai do universo.
   const GENERAL_ONLY = new Set(['contacts', 'tasks', 'settings', 'audit', 'users', 'backup']);
 
-  const products = () => (STATE.crm?.products || []).filter(p => p.status !== 'inactive');
+  // Marcas e etapas ficam guardadas no navegador: no F5 a sidebar e o Início já
+  // mostram as marcas antes de o CRM inteiro carregar (atualiza quando chega).
+  const _cacheKey = '3c_cache_brands';
+  const _cached = () => { try { return JSON.parse(localStorage.getItem(_cacheKey) || 'null'); } catch (_) { return null; } };
+  window.crmProducts = () => (STATE.crm?.products?.length ? STATE.crm.products : (_cached()?.products || []));
+  window.crmStages = () => (STATE.crm?.stages?.length ? STATE.crm.stages : (_cached()?.stages || []));
+  function _saveCache() {
+    if (!STATE.crm?.loaded || !STATE.crm.products?.length) return;
+    try { localStorage.setItem(_cacheKey, JSON.stringify({ products: STATE.crm.products, stages: STATE.crm.stages || [] })); } catch (_) {}
+  }
+  // Ordem das marcas: Rips, Chute, Sortudão; as outras depois, em ordem alfabética
+  const ORDER = ['rips', 'chute', 'sortudao'];
+  window.sortProducts = (list) => [...list].sort((a, b) => {
+    const ra = ORDER.indexOf(fold(a.name)), rb = ORDER.indexOf(fold(b.name));
+    return ((ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb)) || String(a.name).localeCompare(String(b.name), 'pt-BR');
+  });
+  const products = () => sortProducts(crmProducts().filter(p => p.status !== 'inactive'));
   const canSee = (id) => {
     const u = STATE.user; if (!u) return false;
     return u.role === 'admin' || (u.modules || []).includes(id);
@@ -57,10 +73,10 @@
   // ── Estado da marca ───────────────────────────────────────
   let _brand = sessionStorage.getItem('3c_brand') || '';
   window.brandId = () => _brand || '';
-  window.brandProduct = () => (_brand ? (STATE.crm?.products || []).find(p => p.id === _brand) || null : null);
+  window.brandProduct = () => (_brand ? crmProducts().find(p => p.id === _brand) || null : null);
   window.brandMeta = (p) => brandMeta(p || window.brandProduct());
   // Pipeline da marca: existe quando há etapas com o slug do produto (migration 005)
-  const scopeOf = (p) => { const sc = fold(p?.name).replace(/[^a-z0-9]+/g, '_'); return sc && (STATE.crm?.stages || []).some(s => s.scope === sc) ? sc : null; };
+  const scopeOf = (p) => { const sc = fold(p?.name).replace(/[^a-z0-9]+/g, '_'); return sc && crmStages().some(s => s.scope === sc) ? sc : null; };
   window.brandScope = () => { const p = window.brandProduct(); return p ? scopeOf(p) : null; };
 
   function _setBrand(id) {
@@ -89,12 +105,12 @@
   const _goBack = window.goBack;
   let _active = sessionStorage.getItem('3cos_activeMod') || 'hub';
 
-  window.openMod = (id) => {
+  window.openMod = (id, opts) => {
     if (GENERAL_ONLY.has(id) && _brand) _setBrand('');
     // Marca sem pipeline própria: a Pipeline aberta é a geral (B2B/B2C)
     if (id === 'pipeline' && _brand && STATE.crm?.loaded && !window.brandScope()) _setBrand('');
     _active = id;
-    _openMod(id);
+    _openMod(id, opts);
     renderSide();
     closeMobSidebar();
   };
@@ -241,6 +257,7 @@
     const wait = setInterval(() => {
       tries++;
       if (STATE.crm?.loaded) {
+        _saveCache();
         applyBrand();
         if (!reopened && _brand && window.brandProduct() && _active !== 'hub' && BRAND_MODS.some(m => m.id === _active)) {
           reopened = true;

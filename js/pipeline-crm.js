@@ -43,7 +43,8 @@
   // Registra a pipeline de cada produto que já tem etapas no banco
   function _syncProductScopes() {
     const stages = STATE.crm?.stages || [];
-    (STATE.crm?.products || []).forEach(p => {
+    const prods = STATE.crm?.products || [];
+    (window.sortProducts ? sortProducts(prods) : prods).forEach(p => {
       const sc = _slug(p.name);
       if (!sc || sc === 'b2b' || sc === 'b2c' || !stages.some(s => s.scope === sc)) return;
       if (!SCOPE_META[sc]) SCOPE_META[sc] = { label: p.name, title: p.name, sub: `Aquisição do ${p.name}`, icon: 'rocket', color: p.color || 'var(--theme)', product: p.name };
