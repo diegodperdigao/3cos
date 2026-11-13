@@ -1549,6 +1549,7 @@ function buildMobileHome(){
 // opts.instant: sem as transições (usado no F5 para abrir direto no módulo)
 window.openMod=(id,opts={})=>{
   sessionStorage.setItem('3cos_activeMod',id);
+  document.documentElement.classList.remove('boot-mod');
   if(opts.instant){
     const hub=document.getElementById('hub');hub.style.display='none';hub.style.opacity='0';
     document.querySelectorAll('.mod.active').forEach(a=>{a.style.display='none';a.classList.remove('active');});

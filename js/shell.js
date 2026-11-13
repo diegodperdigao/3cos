@@ -115,6 +115,7 @@
     closeMobSidebar();
   };
   window.goBack = () => {
+    document.documentElement.classList.remove('boot-mod');
     _active = 'hub';
     if (_brand) _setBrand('');
     _goBack();
@@ -250,6 +251,8 @@
     ['lock', 'reset-screen', 'hub'].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, { attributes: true, attributeFilter: ['style'] }); });
     _syncSignedIn();
     try { _applyMini(localStorage.getItem(_miniKey) === '1'); } catch (_) {}
+    // Início já com os cartões das marcas (do cache), sem esperar o CRM carregar
+    if (STATE.user && window.buildHubToday) { try { buildHubToday(); } catch (_) {} }
     // Produtos chegam depois do login: redesenha a sidebar quando o CRM carregar
     // F5 dentro de uma marca: o módulo abre antes de os produtos/etapas chegarem
     // (sem logo e com a pipeline geral). Quando os dados chegam, reabre uma vez.
