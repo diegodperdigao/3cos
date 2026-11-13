@@ -92,9 +92,13 @@
     if (p) {
       root.setAttribute('data-brand', brandMeta(p).slug);
       root.style.setProperty('--brand-c', brandMeta(p).accent);
+      // logo na capa do módulo (fundo preto nos dois temas → versão clara)
+      const lg = brandMeta(p).logo;
+      if (lg) root.style.setProperty('--brand-logo', `url("${new URL(lg, location.href).href}")`); else root.style.removeProperty('--brand-logo');
     } else {
       root.removeAttribute('data-brand');
       root.style.removeProperty('--brand-c');
+      root.style.removeProperty('--brand-logo');
     }
     renderSide();
   }

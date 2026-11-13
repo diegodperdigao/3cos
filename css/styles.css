@@ -7760,3 +7760,27 @@ html.boot-mod #hub{display:none !important;}
   html.side-mini .side-logo{width:40px;overflow:hidden;gap:0;margin-right:12px;}
   html.side-mini .side-logo img{height:22px;}
 }
+
+/* ══════════════════════════════════════════════════════════ */
+/* Universos no mesmo idioma do cartão da marca no Hub:        */
+/* fio de 3px no topo, logo grande na capa, painel de          */
+/* resultados com véu leve da cor da marca.                    */
+/* ══════════════════════════════════════════════════════════ */
+:root[data-brand] .hero{box-shadow:inset 0 3px 0 var(--brand-a) !important;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--brand-a) 12%,var(--hero-bg)) 0%,var(--hero-bg) 70%) !important;}
+/* ícone da capa vira o logo da marca (como no cabeçalho do cartão) */
+:root[data-brand]:not([data-edition="mono"]) .hero-icon{width:auto !important;min-width:96px;max-width:150px;height:30px !important;
+  background:var(--brand-logo) left center/contain no-repeat !important;border:none !important;border-radius:0 !important;
+  padding-right:16px;margin-right:4px;box-sizing:content-box;border-right:1px solid rgba(255,255,255,.18) !important;}
+:root[data-brand]:not([data-edition="mono"]) .hero-icon svg{display:none !important;}
+/* faixas de resultado (KPIs) = "Resultado do mês" do cartão */
+:root[data-brand] :is(.kpi-row,.dash-kpi-row):not([hidden]){background:color-mix(in srgb,var(--brand-a) 6%,var(--bg2));
+  border:1px solid var(--gb2);border-top:3px solid var(--brand-a);border-bottom:1px solid var(--gb2) !important;border-radius:6px;padding:4px 0 !important;}
+:root[data-brand] :is(.kpi-row .kpi,.dash-kpi-row .dash-kpi){background:transparent !important;}
+:root[data-brand] .pipe-filters{border-top:3px solid var(--brand-a) !important;background:color-mix(in srgb,var(--brand-a) 5%,var(--bg2)) !important;}
+/* painéis (gráficos, listas, calendário) = cartão do Hub */
+:root[data-brand] :is(.dash-chart-card,.dash-list-card,.ptn-cal){border-top:3px solid var(--brand-a) !important;}
+/* cartão de parceiro: borda puxa a cor da marca no hover */
+:root[data-brand] .ptn-card:hover{border-color:color-mix(in srgb,var(--brand-a) 45%,var(--gb2)) !important;}
+/* o fio da marca agora fica no topo da capa: tira o do cabeçalho para não dobrar */
+:root[data-brand] .mod-hdr{box-shadow:none !important;}
