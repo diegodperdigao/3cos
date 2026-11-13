@@ -26,7 +26,7 @@
   const BRANDS = {
     chute: { slug: 'chute', logo: 'assets/brands/chute/logo.webp', accent: '#F2FC40' },
     rips: { slug: 'rips', logo: 'assets/brands/rips/logo.svg', logoDark: 'assets/brands/rips/logo-tinta.svg', accent: '#5FF3E4' },
-    sortudao: { slug: 'sortudao', logo: 'assets/brands/sortudao/logo.webp', accent: '#4FD554' },
+    sortudao: { slug: 'sortudao', logo: 'assets/brands/sortudao/logo.webp', accent: '#0BA334' },
   };
   const brandMeta = (p) => BRANDS[fold(p?.name)] || { slug: 'custom', logo: p?.logo_url || '', accent: window.prodColor ? prodColor(p) : (p?.color || '#888') };
   window.brandAccent = (p) => brandMeta(p).accent;
@@ -41,7 +41,6 @@
   const GENERAL_MODS = [
     { id: 'dashboard', label: 'Dashboard', icon: 'chart-column', sub: 'Todas as marcas' },
     { id: 'contacts', label: 'Contatos', icon: 'contact-round' },
-    { id: 'pipeline', label: 'Pipeline', icon: 'git-branch', sub: 'B2B · B2C' },
     { id: 'calendar', label: 'Calendário', icon: 'calendar-days', sub: 'Todas as marcas' },
     { id: 'tasks', label: 'Tarefas', icon: 'check-square' },
     { id: 'settings', label: 'Configurações', icon: 'settings' },
@@ -168,7 +167,7 @@
           <span class="side-user-t"><b>${esc(u.name || '')}</b><small>${esc(u.title || (window.ROLES?.[u.role]?.label) || u.role || '')}</small></span>
         </div>
         <div class="side-foot-btns">
-          <button onclick="toggleTheme();renderSide()" title="Alternar tema claro/escuro"><i data-lucide="${document.documentElement.getAttribute('data-theme') === 'light' ? 'moon' : 'sun'}"></i></button>
+          <button onclick="toggleTheme()" title="Alternar tema claro/escuro"><i data-lucide="${document.documentElement.getAttribute('data-theme') === 'light' ? 'moon' : 'sun'}"></i></button>
           <button onclick="toggleActionCenter()" title="Alertas"><i data-lucide="bell"></i></button>
           <button onclick="doLogout()" title="Sair"><i data-lucide="log-out"></i></button>
         </div>`;
@@ -191,6 +190,15 @@
     document.documentElement.classList.add('side-open');
   };
   window.closeMobSidebar = () => document.documentElement.classList.remove('side-open');
+
+  // ── Tema: só claro e escuro. O botão da sidebar grava a escolha (Configurações) ──
+  const _baseToggle = window.toggleTheme;
+  window.toggleTheme = () => {
+    if (_baseToggle) _baseToggle();
+    const light = document.documentElement.getAttribute('data-theme') === 'light';
+    if (window.STATE?.settings) { STATE.settings.theme = light ? 'default-light' : 'default-dark'; try { if (typeof saveToLocal === 'function') saveToLocal(); } catch (_) {} }
+    renderSide();
+  };
 
   // ── Sidebar minimizada (só ícones), lembrada neste navegador ──
   const _miniKey = '3c_side_mini';
