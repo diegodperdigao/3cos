@@ -88,7 +88,7 @@
         const s = AFF.dateKey(new Date(d.getFullYear(), d.getMonth(), 1)), e = AFF.dateKey(new Date(d.getFullYear(), d.getMonth() + 1, 0));
         const ps = AFF.dateKey(new Date(d.getFullYear(), d.getMonth() - 1, 1)), pe = AFF.dateKey(new Date(d.getFullYear(), d.getMonth(), 0));
         cur = AFF.sum(AFF.rows(s, e)); prev = AFF.sum(AFF.rows(ps, pe));
-        label = `${MONTHS[d.getMonth()]} (último mês com dados)`;
+        label = `${MONTHS[d.getMonth()]}, último com dados`;
       }
     }
     const delta = (c, p) => p > 0 ? Math.round((c - p) / p * 100) : (c > 0 ? 100 : 0);
