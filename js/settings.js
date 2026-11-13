@@ -189,6 +189,24 @@ window._prodLogoClear = () => {
   const pv = document.getElementById('prod-logo-prev');
   if (pv) { pv.innerHTML = '<i data-lucide="image"></i>'; lucide.createIcons(); }
 };
+// Cor principal do logo: a mais frequente entre os pixels com cor de verdade
+// (ignora transparente, branco, preto e cinza). Sem cor viva, não sugere nada.
+function _prodLogoColor(cv) {
+  try {
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, n = {};
+    for (let i = 0; i < d.length; i += 4) {
+      const [r, g, b, a] = [d[i], d[i + 1], d[i + 2], d[i + 3]];
+      if (a < 200) continue;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      if (mx < 50 || mx - mn < 60) continue;
+      const k = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+      (n[k] ||= { c: 0, r: 0, g: 0, b: 0 }); n[k].c++; n[k].r += r; n[k].g += g; n[k].b += b;
+    }
+    const top = Object.values(n).sort((x, y) => y.c - x.c)[0];
+    if (!top || top.c < 12) return null;
+    return '#' + [top.r, top.g, top.b].map(v => Math.round(v / top.c).toString(16).padStart(2, '0')).join('');
+  } catch (e) { return null; }
+}
 // Reduz a imagem no navegador (máx. 160px) e guarda como data URL.
 window._prodLogoPick = (input) => {
   const f = input.files && input.files[0];
@@ -205,6 +223,8 @@ window._prodLogoPick = (input) => {
       _prodLogo = cv.toDataURL('image/png');
       const pv = document.getElementById('prod-logo-prev');
       if (pv) pv.innerHTML = `<img src="${_prodLogo}" alt="">`;
+      const cor = _prodLogoColor(cv);
+      if (cor) { window._prodPickColor(cor); toast('Cor do projeto puxada do logo (dá para trocar)', 's'); }
     };
     img.onerror = () => toast('Não consegui ler essa imagem', 'e');
     img.src = r.result;

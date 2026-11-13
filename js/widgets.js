@@ -649,6 +649,7 @@ window.buildHubWidgets = () => {
     notifications: _wNotifications,
   };
   wrap.innerHTML = active.map(id => (renderMap[id] || (() => ''))()).join('');
+  if (window.buildHubToday) window.buildHubToday();
   if (typeof lucide !== 'undefined') lucide.createIcons();
 };
 
