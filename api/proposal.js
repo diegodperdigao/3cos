@@ -156,7 +156,8 @@ module.exports = async function handler(req, res) {
       if (!r.ok) {
         const msg = data?.error?.message || `HTTP ${r.status}`;
         attempts.push({ model: modelId, status: r.status, error: msg });
-        if (r.status === 404 || (r.status === 429 && /limit:\s*0/.test(msg))) continue;
+        // Modelo fora, sem cota ou sobrecarregado: tenta o próximo
+        if ([404, 429, 500, 503].includes(r.status)) continue;
         return res.status(502).json({ error: 'A leitura da proposta falhou: ' + msg });
       }
       const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '{}';
