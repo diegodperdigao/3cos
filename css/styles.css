@@ -7711,3 +7711,5 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 #hub .hubt-sec-hdr i{white-space:normal !important;}
 .hubr-kpi b{overflow-wrap:normal !important;}
 @media (max-width:768px){ .hubr-kpi b{font-size:20px;} .hubr-kpi.big b{font-size:28px;} }
+/* Cartões das marcas ocupam a linha toda no desktop (sem buraco à direita em tela larga) */
+@media (min-width:769px){ .hubt-brands{grid-template-columns:repeat(auto-fit,minmax(320px,1fr)) !important;} }
