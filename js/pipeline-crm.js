@@ -566,12 +566,19 @@
     if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader"></i> Lendo a proposta...'; lucide.createIcons(); }
     try {
       const { data: { session } } = await window.sb.auth.getSession();
-      const r = await fetch('/api/proposal', {
+      const call = () => fetch('/api/proposal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
         body: JSON.stringify({ text, today: _todayISO() }),
       });
+      let r = await call();
       if (r.status === 404) throw new Error('A leitura por IA só funciona no link publicado (Vercel), não na cópia local.');
+      // IA sobrecarregada: espera um pouco e tenta mais uma vez sozinha
+      if (r.status === 503 || r.status === 502 || r.status === 504) {
+        show('A IA está ocupada. Tentando de novo...', 'warn');
+        await new Promise(res => setTimeout(res, 5000));
+        r = await call();
+      }
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || `Erro ${r.status}`);
       _pcrmWonApply(data.fields || {});
