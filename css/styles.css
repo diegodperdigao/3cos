@@ -7168,7 +7168,7 @@ button.kan-card-owner:hover{outline:2px solid var(--theme);outline-offset:1px;}
   background:linear-gradient(90deg,#0b0b0b 0%,rgba(11,11,11,.85) 38%,rgba(11,11,11,0) 75%),linear-gradient(0deg,#0b0b0b 0%,rgba(11,11,11,0) 55%);}
 #hub .hub-stage .hub-hero>*{position:relative;}
 #hub .hub-stage .hub-hero-sub{order:-1;margin:0 !important;}
-#hub .hubt-date{font:500 12px var(--fmono) !important;letter-spacing:.06em !important;text-transform:uppercase;color:var(--text3) !important;}
+#hub .hubt-date{font:500 12px var(--fmono) !important;letter-spacing:.06em !important;text-transform:uppercase;color:var(--text2) !important;}
 #hub .hub-stage .hub-hero-title{font:900 52px/.95 'Montserrat',sans-serif !important;letter-spacing:-.02em !important;text-transform:uppercase;color:var(--text) !important;margin:0 !important;text-align:left !important;}
 #hub .hub-stage .hub-hero-name{color:var(--text) !important;background:none !important;-webkit-text-fill-color:currentColor !important;}
 #hub .hub-stage .hub-hero-cta:empty{display:none !important;}
@@ -7177,7 +7177,9 @@ button.kan-card-owner:hover{outline:2px solid var(--theme);outline-offset:1px;}
 #hub .hubt-projs{display:flex;gap:28px;flex-wrap:wrap;}
 #hub .hubt-pj{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;font:800 13px 'Montserrat',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);}
 #hub .hubt-pj i{width:6px;height:6px;background:var(--pc);}
-#hub .hubt-pj img{width:18px;height:18px;object-fit:contain;border-radius:2px;}
+#hub .hubt-pj img{width:24px;height:24px;object-fit:contain;border-radius:2px;}
+#hub .hubt-pj{border-bottom:2px solid transparent;padding:6px 0;}
+#hub .hubt-pj:hover{border-bottom-color:var(--pc);}
 #hub .hubt-pj:hover,#hub .hubt-pj.late{color:var(--text);}
 #hub .hubt-pj:focus-visible{outline:1px solid var(--text);outline-offset:4px;}
 #hub .hubt-pj em{font:500 10px var(--fmono);font-style:normal;letter-spacing:0;text-transform:none;color:var(--hub-pink);}
