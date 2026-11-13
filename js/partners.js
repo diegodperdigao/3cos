@@ -500,7 +500,7 @@
           <div class="ptn-bar ${pct >= 100 ? 'full' : ''}"><i style="width:${pct}%"></i></div>
         </div>
         <div class="ptn-scope-mini">${pr.rows.map(r => `<span class="${r.done >= r.s.qty ? 'ok' : ''}"><i data-lucide="${kindOf(r.s.kind).icon}"></i>${esc(kindOf(r.s.kind).label)}${r.s.platform ? ' · ' + esc(r.s.platform) : ''} <b>${r.done}/${r.s.qty}</b></span>`).join('')}</div>`
-        : `<div class="ptn-noscope"><i data-lucide="list-plus"></i><span><b>Definir escopo</b>O que esse parceiro precisa entregar</span><i data-lucide="arrow-right"></i></div>`}
+        : `<div class="ptn-noscope" role="button" tabindex="0" onclick="event.stopPropagation();window._ptnFullScope('${p.id}')" onkeydown="if(event.key==='Enter'){event.stopPropagation();event.preventDefault();window._ptnFullScope('${p.id}')}"><i data-lucide="list-plus"></i><span><b>Definir escopo</b>Colar a proposta ou montar o que ele precisa entregar</span><i data-lucide="arrow-right"></i></div>`}
       <div class="ptn-card-foot">
         ${late ? `<span class="ptn-late"><i data-lucide="alarm-clock"></i> ${late} atrasada${late > 1 ? 's' : ''}</span>` : ''}
         <span class="ptn-next"><i data-lucide="calendar-clock"></i>${next ? `Próxima ${_fmt(next.due_date)} · ${esc(kindOf(next.kind).label)}` : 'Nada marcado'}</span>
@@ -579,6 +579,16 @@
   }
 
   // ── DETALHE DO PARCEIRO ──
+  // Formulário completo (o mesmo da janela "Ganho" do Pipeline): colar proposta e
+  // a IA preencher, linhas do escopo, valor, início, duração e contrato. Salva no
+  // parceiro e no card de origem. Parceiro cadastrado na mão (sem card): editor daqui.
+  window._ptnFullScope = (id) => {
+    const p = partnerById(id);
+    if (!p) return;
+    const card = p.card_id ? (STATE.crm.cards || []).find(c => c.id === p.card_id) : null;
+    if (card && window._pcrmEditWonDeal) { window._pcrmEditWonDeal(card.id, { from: 'partners', name: p.name }); return; }
+    window._ptnOpen(id);
+  };
   window._ptnOpen = (id) => {
     _detailId = id;
     _contractOpen = false;
@@ -623,7 +633,8 @@
       </div>
 
       <div class="ptn-d-sec first">
-        <div class="ptn-d-sec-hdr"><span>Escopo ${isPkg ? 'do pacote' : 'por mês'}</span></div>
+        <div class="ptn-d-sec-hdr"><span>Escopo ${isPkg ? 'do pacote' : 'por mês'}</span>
+          <button class="btn btn-outline ptn-full-btn" onclick="window._ptnFullScope('${p.id}')"><i data-lucide="file-text"></i> ${scope.length ? 'Editar com a proposta' : 'Colar proposta e preencher'}</button></div>
         ${scope.length ? `<div class="ptn-scope-list">${scope.map(s => `
           <div class="ptn-scope-item">
             <i data-lucide="${kindOf(s.kind).icon}"></i>

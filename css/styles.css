@@ -7570,3 +7570,9 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 }
 .won-note span{flex:1;}
 .kan-scope-miss{font-weight:700;}
+/* Parceiros: atalho para o formulário completo de escopo */
+.ptn-d-sec-hdr{gap:10px;flex-wrap:wrap;}
+.ptn-full-btn{margin-left:auto;padding:5px 10px !important;font-size:12px !important;}
+.ptn-noscope{cursor:pointer;}
+.ptn-noscope:hover{border-color:var(--text3) !important;}
+.ptn-noscope:focus-visible{outline:2px solid var(--theme);outline-offset:2px;}
