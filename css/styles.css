@@ -7582,3 +7582,49 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 .won-mg-hint{flex:1;min-width:220px;margin:0;font-size:12.5px;line-height:1.5;color:var(--text2);}
 .won-mg-hint strong{color:var(--text);}
 .pcrm-deal-type-opt{flex:1;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* Sidebar minimizada (só ícones) · botão no topo              */
+/* ══════════════════════════════════════════════════════════ */
+.side-collapse{all:unset;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:2px;color:var(--text2);border:1px solid var(--gb2);flex-shrink:0;}
+.side-collapse:hover{color:var(--text);border-color:var(--text3);}
+.side-collapse:focus-visible{outline:2px solid #f4f4f4;outline-offset:2px;}
+.side-collapse svg{width:16px;height:16px;}
+#app-side,html.signed-in #hub,html.signed-in .mod{transition:width .2s var(--ease),left .2s var(--ease);}
+@media (max-width:768px){ .side-collapse{display:none;} }
+@media (min-width:769px){
+  html.side-mini{--side-w:68px;}
+  html.side-mini .side-top{flex-direction:column;justify-content:center;gap:8px;height:auto;padding:12px 0;}
+  html.side-mini .side-logo{width:40px;overflow:hidden;}
+  html.side-mini .side-logo img{height:22px;width:auto;max-width:none;}
+  html.side-mini .side-logo span{display:none;}
+  html.side-mini .side-nav{padding:10px 8px;align-items:stretch;}
+  html.side-mini .side-item{justify-content:center;padding:10px 0;}
+  html.side-mini .side-item-t{display:none;}
+  html.side-mini .side-lbl{font-size:0;padding:10px 0 4px;margin:0 8px;border-top:1px solid var(--gb);}
+  html.side-mini .side-universe{padding:6px 4px;align-items:center;}
+  html.side-mini .side-universe-head{flex-direction:column;padding:2px 0 6px;gap:6px;}
+  html.side-mini .side-universe-logo{height:auto;width:44px;}
+  html.side-mini .side-universe-logo img{max-width:44px;height:auto;}
+  html.side-mini .side-subitem{justify-content:center;padding:9px 0;width:100%;font-size:0;gap:0;}
+  html.side-mini .side-subitem svg{width:17px;height:17px;}
+  html.side-mini .side-foot{padding:10px 8px;}
+  html.side-mini .side-user{justify-content:center;}
+  html.side-mini .side-user-t{display:none;}
+  html.side-mini .side-foot-btns{flex-direction:column;}
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/* Parceiro: abas "Entregas" e "Escopo e contrato"             */
+/* ══════════════════════════════════════════════════════════ */
+.ptn-dtabs{display:flex;gap:4px;border-bottom:1px solid var(--gb2);margin:14px 0 0;}
+.ptn-dtabs button{all:unset;cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 14px;font:600 13px var(--fb);color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.ptn-dtabs button svg{width:15px;height:15px;stroke:currentColor;}
+.ptn-dtabs button b{font:600 11px var(--fmono);padding:2px 6px;border-radius:2px;background:var(--bg3);color:var(--text);}
+.ptn-dtabs button em{font-style:normal;font-size:11px;font-weight:600;padding:2px 6px;border-radius:2px;color:color-mix(in srgb,var(--amber) 70%,var(--text));background:color-mix(in srgb,var(--amber) 14%,transparent);}
+.ptn-dtabs button:hover{color:var(--text);}
+.ptn-dtabs button.on{color:var(--text);border-bottom-color:var(--brand-a,var(--text));}
+.ptn-dtabs button:focus-visible{outline:2px solid var(--theme);outline-offset:-2px;}
+.ptn-dpanel{padding-top:4px;}
+.ptn-dpanel[hidden]{display:none !important;}
+.ptn-contract-plain{margin-top:6px;}
