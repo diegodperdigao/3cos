@@ -28,12 +28,12 @@
     const list = products();
     if (!list.length) return '';
     const P = STATE.crm?.partners || [], D = STATE.crm?.partnerDeliveries || [];
-    return `<section class="hubt-projects"><div class="hubt-proj-grid">${list.map(pr => {
+    return `<nav class="hubt-projs">${list.map(pr => {
       const ids = new Set(P.filter(p => p.product_id === pr.id && p.status !== 'ended').map(p => p.id));
       const late = D.some(d => ids.has(d.partner_id) && d.status === 'planned' && d.due_date && d.due_date < today);
-      return `<button class="hubt-proj" style="--pc:${prodColor(pr)}" onclick="window._hubOpenProduct('${pr.id}')" title="Abrir ${esc(pr.name)}">
-        ${prodMark(pr, 28)}<b>${esc(pr.name)}</b>${late ? '<i class="hubt-dot" title="Entrega atrasada"></i>' : ''}</button>`;
-    }).join('')}</div></section>`;
+      const mark = pr.logo_url ? `<img src="${esc(pr.logo_url)}" alt="">` : '<i></i>';
+      return `<button class="hubt-pj${late ? ' late' : ''}" style="--pc:${prodColor(pr)}" onclick="window._hubOpenProduct('${pr.id}')" title="Abrir ${esc(pr.name)}">${mark}<b>${esc(pr.name)}</b>${late ? '<em>atrasado</em>' : ''}</button>`;
+    }).join('')}</nav>`;
   }
 
   // ── Conteúdos do dia (Calendário) ─────────────────────────
@@ -53,18 +53,18 @@
       const p = live.get(d.partner_id);
       const prod = (STATE.crm.products || []).find(x => x.id === p.product_id);
       const k = _kind(d);
-      return `<button class="hubt-row" onclick="window._hubOpenPartner('${p.id}')">
-        <span class="hubt-row-ic">${prod ? prodMark(prod, 18) : `<i data-lucide="${k.icon}"></i>`}</span>
-        <span class="hubt-row-txt"><b>${esc(p.name)}</b><small>${esc(d.title || [k.label, d.platform].filter(Boolean).join(' · '))}</small></span>
-        <span class="hubt-badge ${done(d) ? 'ok' : 'today'}">${done(d) ? 'no ar' : 'previsto'}</span>
+      return `<button class="hubt-row" style="--pc:${prod ? prodColor(prod) : 'var(--text3)'}" onclick="window._hubOpenPartner('${p.id}')">
+        <span class="hubt-row-k">${esc(k.label)}</span>
+        <span class="hubt-row-txt"><b>${esc(d.title || [k.label, d.platform].filter(Boolean).join(' · '))}</b><small>${prod ? `<span>${esc(prod.name)}</span> · ` : ''}${esc(p.name)}${d.platform && d.title ? ' · ' + esc(d.platform) : ''}</small></span>
+        <span class="hubt-st ${done(d) ? 'on' : ''}">${done(d) ? 'no ar' : 'previsto'}</span>
       </button>`;
     });
     const title = day === today ? 'Conteúdos de hoje' : `Próximos conteúdos · ${dayLabel(day)}`;
     const loading = !STATE.crm?.ptnLoaded;
     return `<section class="hubt-col">
-      <div class="hubt-sec-hdr"><span>${title}</span>${items.length ? `<b>${items.length}</b>` : ''}
-        <button class="hubt-more" onclick="openMod('calendar')">Abrir calendário</button></div>
-      <div class="hubt-group">${rows.length ? rows.slice(0, LIMIT).join('') + (rows.length > LIMIT ? `<button class="hubt-row hubt-row-more" onclick="openMod('calendar')">+ ${rows.length - LIMIT} no calendário</button>` : '')
+      <div class="hubt-sec-hdr"><span>${title}</span>${items.length ? `<i>${items.length} ${items.length === 1 ? 'conteúdo' : 'conteúdos'}</i>` : ''}
+        <button class="hubt-more" onclick="openMod('calendar')">Calendário</button></div>
+      <div class="hubt-list">${rows.length ? rows.slice(0, LIMIT).join('') + (rows.length > LIMIT ? `<button class="hubt-row hubt-row-more" onclick="openMod('calendar')">+ ${rows.length - LIMIT} no calendário</button>` : '')
         : `<div class="hubt-empty">${loading ? 'Carregando o calendário...' : 'Nenhum conteúdo previsto. Marque entregas no Calendário dos parceiros.'}</div>`}</div>
     </section>`;
   }
@@ -88,24 +88,21 @@
         const s = AFF.dateKey(new Date(d.getFullYear(), d.getMonth(), 1)), e = AFF.dateKey(new Date(d.getFullYear(), d.getMonth() + 1, 0));
         const ps = AFF.dateKey(new Date(d.getFullYear(), d.getMonth() - 1, 1)), pe = AFF.dateKey(new Date(d.getFullYear(), d.getMonth(), 0));
         cur = AFF.sum(AFF.rows(s, e)); prev = AFF.sum(AFF.rows(ps, pe));
-        label = `último mês com lançamento: ${MONTHS[d.getMonth()]}`;
+        label = `${MONTHS[d.getMonth()]} (último mês com dados)`;
       }
     }
     const delta = (c, p) => p > 0 ? Math.round((c - p) / p * 100) : (c > 0 ? 100 : 0);
-    const kpi = (lbl, val, c, p, neg) => {
-      const dl = delta(c, p);
-      return `<div class="hubt-kpi"><small>${lbl}</small><b class="${neg ? 'neg' : ''}">${val}</b>
-        <span class="${dl > 0 ? 'up' : dl < 0 ? 'down' : ''}">${dl > 0 ? '+' : ''}${dl}% vs mês anterior</span></div>`;
-    };
+    const dl = (c, p) => { const v = delta(c, p); return v ? `<em class="${v > 0 ? 'up' : 'down'}">${v > 0 ? '+' : ''}${v}%</em>` : ''; };
+    const brl = (v) => fmtBRL(v).replace(/^R\$\s?/, '');
+    const n = cur.affiliates.size;
     return `<section class="hubt-col">
-      <div class="hubt-sec-hdr"><span>Resultados dos afiliados</span>
-        <button class="hubt-more" onclick="openMod('dashboard')">Abrir dashboard</button></div>
-      <div class="hubt-group hubt-kpis">
-        ${kpi('Depósitos', fmtBRL(cur.deposits), cur.deposits, prev.deposits)}
-        ${kpi('Cadastros', fmtInt(cur.registrations), cur.registrations, prev.registrations)}
-        ${kpi('FTDs', fmtInt(cur.ftd), cur.ftd, prev.ftd)}
-        ${kpi('Lucro (NGR)', fmtBRL(cur.ngr), cur.ngr, prev.ngr, cur.ngr < 0)}
-        <div class="hubt-kpi-foot">${label}${cur.affiliates.size ? ` · ${cur.affiliates.size} afiliado${cur.affiliates.size === 1 ? '' : 's'}` : ''}</div>
+      <div class="hubt-sec-hdr"><span>Afiliados</span><i>${label}${n ? ` · ${n} afiliado${n === 1 ? '' : 's'}` : ''}</i>
+        <button class="hubt-more" onclick="openMod('dashboard')">Dashboard</button></div>
+      <div class="hubt-big"><small>Depósitos ${dl(cur.deposits, prev.deposits)}</small><strong><sup>R$</sup>${brl(cur.deposits)}</strong></div>
+      <div class="hubt-trio">
+        <div><small>FTDs ${dl(cur.ftd, prev.ftd)}</small><strong>${fmtInt(cur.ftd)}</strong></div>
+        <div><small>NGR ${dl(cur.ngr, prev.ngr)}</small><strong class="${cur.ngr < 0 ? 'neg' : ''}">${fmtBRL(cur.ngr)}</strong></div>
+        <div><small>Cadastros ${dl(cur.registrations, prev.registrations)}</small><strong>${fmtInt(cur.registrations)}</strong></div>
       </div>
     </section>`;
   }
@@ -138,9 +135,7 @@
     const sub = document.getElementById('hub-hero-sub');
     if (sub) sub.innerHTML = `<span class="hubt-date">${WEEK[now.getDay()]}, ${now.getDate()} de ${MONTHS[now.getMonth()]}</span>`;
     const cta = document.getElementById('hub-hero-cta');
-    if (cta) cta.innerHTML = `
-      <button class="btn btn-theme" onclick="window._hubNew('deal')"><i data-lucide="plus"></i> Nova negociação</button>
-      <button class="btn btn-outline" onclick="window._hubNew('contact')"><i data-lucide="user-plus"></i> Novo contato</button>`;
+    if (cta) cta.innerHTML = '';
 
     let el = document.getElementById('hub-today');
     if (!el) {
@@ -148,7 +143,10 @@
       el.id = 'hub-today';
       stage.insertBefore(el, strip);
     }
-    el.innerHTML = `${_projects(today)}<div class="hubt-cols">${_contents(today)}${_results(now)}</div>`;
+    el.innerHTML = `<div class="hubt-bar">${_projects(today)}<div class="hubt-cta">
+        <button class="hubt-btn" onclick="window._hubNew('contact')">Novo contato</button>
+        <button class="hubt-btn p" onclick="window._hubNew('deal')">Nova negociação</button></div></div>
+      <div class="hubt-cols">${_contents(today)}${_results(now)}</div>`;
     if (window.lucide) lucide.createIcons();
   };
 
