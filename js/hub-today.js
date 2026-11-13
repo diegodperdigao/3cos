@@ -19,9 +19,15 @@
   const WEEK = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
   let _ptnRequested = false, _crmTry = 0, _crmTimer = null;
 
+  // Marcas: do CRM quando carregado; antes disso, da lista guardada no navegador
+  // (o Início é montado antes de shell.js carregar, então lê o cache direto aqui).
+  const _cachedProducts = () => { try { return JSON.parse(localStorage.getItem('3c_cache_brands') || 'null')?.products || []; } catch (_) { return []; } };
   const products = () => {
-    const list = (window.crmProducts ? crmProducts() : (STATE.crm?.products || [])).filter(p => p.status !== 'inactive');
-    return window.sortProducts ? sortProducts(list) : list;
+    const src = window.crmProducts ? crmProducts() : (STATE.crm?.products?.length ? STATE.crm.products : _cachedProducts());
+    const list = src.filter(p => p.status !== 'inactive');
+    if (window.sortProducts) return sortProducts(list);
+    const ORDER = ['rips', 'chute', 'sortudao'], rk = (p) => { const i = ORDER.indexOf(slug(p.name)); return i < 0 ? 99 : i; };
+    return [...list].sort((a, b) => (rk(a) - rk(b)) || String(a.name).localeCompare(String(b.name), 'pt-BR'));
   };
   const slug = (n) => String(n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
   const fmtInt = (v) => Math.round(Number(v) || 0).toLocaleString('pt-BR');

@@ -880,7 +880,7 @@ window.toggleTheme = _wrapToggleTheme;
         if(savedMod){
           // espera todos os scripts dos módulos carregarem (users.js roda antes deles)
           const _restore=()=>{ try{ if (typeof openMod === 'function') openMod(savedMod,{instant:true}); }
-            catch(e){ console.error('[boot] module restore failed:',e); hub.style.display='flex'; hub.style.opacity='1'; } };
+            catch(e){ console.error('[boot] module restore failed:',e); document.documentElement.classList.remove('boot-mod'); hub.style.display='flex'; hub.style.opacity='1'; } };
           if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_restore,{once:true}); else setTimeout(_restore,0);
         }
         return;

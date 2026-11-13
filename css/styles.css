@@ -7740,3 +7740,5 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
   html.side-mini .side-brand-btn{justify-content:center;}
   html.side-mini .side-sub{margin:0 0 6px 0 !important;padding-left:0 !important;border-left:none !important;}
 }
+/* F5 dentro de um módulo: o Início não aparece enquanto o módulo abre */
+html.boot-mod #hub{display:none !important;}
