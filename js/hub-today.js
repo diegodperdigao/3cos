@@ -76,6 +76,8 @@
     const logoDark = meta.logoDark || logo;
     const mark = logo ? `<img class="brand-h-dark" src="${esc(logo)}" alt="${esc(pr.name)}"><img class="brand-h-light" src="${esc(logoDark)}" alt="${esc(pr.name)}">` : `<b>${esc(pr.name)}</b>`;
     const ld = !STATE.crm?.ptnLoaded;
+    const ldCrm = !STATE.crm?.loaded; // pipeline ainda carregando: mostra "–", não 0
+    const vc = (x) => (ldCrm ? '–' : x);
     const s = _stats(pr, today);
     const v = (x) => (ld ? '–' : x);
     const stat = (val, label, cls = '') => `<span class="${cls}"><b>${val}</b><small>${label}</small></span>`;
@@ -84,7 +86,7 @@
       <span class="hubt-brand-sec hubt-brand-res"><span class="hubt-brand-lbl">Resultado do mês</span><span class="hubt-brand-stats s4">
         ${stat(v(s.invest ? fmtBRL(s.invest) : '—'), 'a pagar')}${stat(v(s.hasResults ? fmtInt(s.registrations) : '—'), 'cadastros')}${stat(v(s.hasResults ? fmtInt(s.ftd) : '—'), 'FTDs')}${stat(v(s.hasResults ? fmtBRL(s.deposits) : '—'), 'depósitos')}</span></span>
       <span class="hubt-brand-sec"><span class="hubt-brand-lbl">Pipeline</span><span class="hubt-brand-stats">
-        ${stat(fmtInt(s.open), 'em aberto')}${stat(fmtInt(s.newLeads), 'novos no mês')}${stat(fmtInt(s.won), 'fechados no mês')}</span></span>
+        ${stat(vc(fmtInt(s.open)), 'em aberto')}${stat(vc(fmtInt(s.newLeads)), 'novos no mês')}${stat(vc(fmtInt(s.won)), 'fechados no mês')}</span></span>
       <span class="hubt-brand-sec"><span class="hubt-brand-lbl">Parceiros</span><span class="hubt-brand-stats">
         ${stat(v(fmtInt(s.partners)), 'em operação')}${stat(v(`${s.delivDone}/${s.delivAll}`), 'entregas no mês')}${stat(v(fmtInt(s.late)), s.late === 1 ? 'atrasada' : 'atrasadas', s.late && !ld ? 'late' : '')}</span></span>
     </button>`;
