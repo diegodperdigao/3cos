@@ -12,6 +12,23 @@
   // Filtros do dashboard
   const F = { period: '30d', scope: 'all' };
 
+  // Universo de marca (js/shell.js): resultados e funil só daquela marca.
+  // No 3C (sem marca) o dashboard soma tudo, como antes.
+  const _bp = () => (window.brandProduct ? brandProduct() : null);
+  const _affAll = () => {
+    const p = _bp(), all = AFF.all();
+    return p ? all.filter(r => String(r.brand || '').toLowerCase() === String(p.name || '').toLowerCase()) : all;
+  };
+  const _affRows = (s, e) => _affAll().filter(r => {
+    const d = String(r.date || '').substring(0, 10);
+    return d && (!s || d >= s) && (!e || d <= e);
+  });
+  const _scopeLabel = (sc) => {
+    if (sc === 'b2b' || sc === 'b2c') return sc.toUpperCase();
+    const p = (STATE.crm?.products || []).find(x => String(x.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_') === sc);
+    return p ? p.name : sc;
+  };
+
   // Etapas: "Negócio Fechado" = ganho; "Follow Up" = pós-fechamento
   function _stageName(stageId) {
     const s = (STATE.crm?.stages || []).find(x => x.id === stageId);
@@ -39,7 +56,7 @@
     el.innerHTML = `
     <div class="mod-wrap">
       ${modHdr('Dashboard — Comercial')}
-      ${heroHTML('dashboard', 'CRM Comercial', 'Dashboard', 'Resultados dos afiliados e saúde do funil comercial')}
+      ${heroHTML('dashboard', 'CRM Comercial', 'Dashboard', _bp() ? `Resultados e funil comercial do ${_bp().name}` : 'Resultados dos afiliados e saúde do funil comercial de todas as marcas')}
       <div class="mod-main">
 
         <!-- FILTROS -->
@@ -54,15 +71,13 @@
               <option value="all">Todo histórico</option>
             </select>
           </div>
-          <div class="pipe-filter-group">
+          ${_bp() ? '' : `<div class="pipe-filter-group">
             <label>Funil</label>
             <select class="fi pipe-filter-select" onchange="window._dashSetScope(this.value)">
-              <option value="all">Todos os funis</option>
-              <option value="rips">Apenas Rips</option>
-              <option value="b2c">Apenas B2C</option>
-              <option value="b2b">Apenas B2B</option>
+              <option value="all"${F.scope === 'all' ? ' selected' : ''}>Todos os funis</option>
+              ${(window._pcrmProductScopes ? _pcrmProductScopes() : []).concat(['b2c', 'b2b']).map(sc => `<option value="${sc}"${F.scope === sc ? ' selected' : ''}>Apenas ${_scopeLabel(sc)}</option>`).join('')}
             </select>
-          </div>
+          </div>`}
         </div>
 
         <!-- RESULTADOS DOS AFILIADOS -->
@@ -134,6 +149,11 @@
   // ── CÁLCULOS ───────────────────────────────────────────────
   function _cardsFiltered() {
     let cards = STATE.crm?.cards || [];
+    const p = _bp();
+    if (p) {
+      const sc = window.brandScope ? brandScope() : null;
+      return cards.filter(c => c.product_id === p.id || (sc && c.scope === sc));
+    }
     if (F.scope !== 'all') cards = cards.filter(c => c.scope === F.scope);
     return cards;
   }
@@ -163,9 +183,9 @@
     const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - periodDays);
     const prevEnd = new Date(start); prevEnd.setDate(prevEnd.getDate() - 1);
     const all = F.period === 'all';
-    const cur = AFF.sum(AFF.rows(all ? null : AFF.dateKey(start), AFF.dateKey(end)));
-    const prev = all ? AFF.sum([]) : AFF.sum(AFF.rows(AFF.dateKey(prevStart), AFF.dateKey(prevEnd)));
-    return { cur, prev, hasData: AFF.all().length > 0 };
+    const cur = AFF.sum(_affRows(all ? null : AFF.dateKey(start), AFF.dateKey(end)));
+    const prev = all ? AFF.sum([]) : AFF.sum(_affRows(AFF.dateKey(prevStart), AFF.dateKey(prevEnd)));
+    return { cur, prev, hasData: _affAll().length > 0 };
   }
 
   function _computeFunnel() {
@@ -255,7 +275,7 @@
     const el = document.getElementById('dash-kpis');
     const sub = document.getElementById('dash-funnel-sub');
     if (el) el.hidden = !k.total;
-    if (sub) sub.textContent = `${k.total} negociaç${k.total === 1 ? 'ão' : 'ões'} · ${F.scope === 'all' ? 'todos os funis' : (F.scope === 'rips' ? 'Rips' : F.scope.toUpperCase())}`;
+    if (sub) sub.textContent = `${k.total} negociaç${k.total === 1 ? 'ão' : 'ões'} · ${_bp() ? _bp().name : (F.scope === 'all' ? 'todos os funis' : _scopeLabel(F.scope))}`;
     if (!el) return;
     el.innerHTML = `
       <div class="dash-kpi" style="--kpi-accent:#10b981">
@@ -304,13 +324,13 @@
     if (!canvas || typeof Chart === 'undefined') return;
     const months = _monthKeys(12);
     const map = {}; months.forEach(m => map[m.key] = 0);
-    AFF.all().forEach(r => {
+    _affAll().forEach(r => {
       const k = String(r.date || '').substring(0, 7);
       if (map[k] !== undefined) map[k] += Number(r.netRev) || 0;
     });
     const data = months.map(m => map[m.key]);
     const total = data.reduce((s, v) => s + v, 0);
-    document.getElementById('dash-ngr-sub').textContent = AFF.all().length ? `Total 12m: ${_fmt(total)}` : 'Sem dados';
+    document.getElementById('dash-ngr-sub').textContent = _affAll().length ? `Total 12m: ${_fmt(total)}` : 'Sem dados';
 
     if (window._dashNgrChart) window._dashNgrChart.destroy();
     const pos = cssVar('--theme'), neg = cssVar('--red', '#ef4444');
@@ -329,7 +349,7 @@
     if (!canvas || typeof Chart === 'undefined') return;
     const months = _monthKeys(6);
     const byBrand = {};
-    AFF.all().forEach(r => {
+    _affAll().forEach(r => {
       const k = String(r.date || '').substring(0, 7);
       if (!months.some(m => m.key === k)) return;
       const b = r.brand || 'Outros';
@@ -371,7 +391,8 @@
     el.innerHTML = cards.map(c => {
       const contact = (STATE.crm.contacts || []).find(x => x.id === c.contact_id);
       const stage = (STATE.crm.stages || []).find(x => x.id === c.stage_id);
-      const scopeCol = c.scope === 'b2b' ? 'var(--blue)' : c.scope === 'rips' ? '#3d3fbd' : 'var(--theme)';
+      const _cp = (STATE.crm?.products || []).find(x => x.id === c.product_id);
+      const scopeCol = c.scope === 'b2b' ? 'var(--blue)' : c.scope === 'b2c' ? 'var(--theme)' : (_cp?.color || 'var(--theme)');
       const days = _daysSince(c.updated_at);
       return `<div class="dash-list-item" onclick="openMod('pipeline')">
         <span class="dash-list-dot" style="background:${scopeCol}"></span>
@@ -379,7 +400,7 @@
           <div class="dash-list-title">${_esc(c.title)}</div>
           <div class="dash-list-meta">${_esc(contact?.name || '—')} · ${days === 0 ? 'atualizado hoje' : `há ${days} dia${days === 1 ? '' : 's'}`}</div>
         </div>
-        <div class="dash-list-prob" style="color:${stage?.color || 'var(--text)'}">${_esc(stage?.name || '—')}</div>
+        <div class="dash-list-prob" style="--sc:${stage?.color || 'var(--text)'}">${_esc(stage?.name || '—')}</div>
       </div>`;
     }).join('');
   }

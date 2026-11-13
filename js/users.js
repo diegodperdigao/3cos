@@ -598,13 +598,13 @@ window.testEmailJS=()=>{
   emailjs.init(cfg.publicKey);
   emailjs.send(cfg.serviceId,cfg.templateId,{
     to_email:cfg.financeEmail,
-    subject:'3COS — Teste de Integração',
+    subject:'3C — Teste de Integração',
     affiliate_name:'Teste',
     brand:'Teste',
     month_ref:'Teste',
     commission:'R$ 0,00',
     ftds:'0',qftds:'0',deposits:'R$ 0,00',
-    message:'Este é um email de teste da integração EmailJS com o 3COS. Se você recebeu, a configuração está correta!'
+    message:'Este é um email de teste da integração EmailJS com o 3C. Se você recebeu, a configuração está correta!'
   }).then(()=>toast('Email de teste enviado com sucesso!'),
     (err)=>toast('Erro ao enviar: '+err.text,'e'));
 };
@@ -621,7 +621,7 @@ window.sendClosingEmail=(closing)=>{
   emailjs.init(cfg.publicKey);
   emailjs.send(cfg.serviceId,cfg.templateId,{
     to_email:cfg.financeEmail,
-    subject:`3COS — Fechamento ${a.name||closing.affiliateName} · ${closing.brand} · ${closing.monthLabel}`,
+    subject:`3C — Fechamento ${a.name||closing.affiliateName} · ${closing.brand} · ${closing.monthLabel}`,
     affiliate_name:a.name||closing.affiliateName,
     brand:closing.brand,
     month_ref:closing.monthLabel,

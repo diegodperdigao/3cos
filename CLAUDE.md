@@ -57,6 +57,23 @@ Estado global em `STATE` (`STATE.crm.*` para dados do CRM). Helpers globais:
 `openModal(titulo, corpo, rodapé, {wide})`, `closeModal()`, `toast(msg, 's'|'w'|'e'|'i')`,
 `modHdr()`, `heroHTML()`, `openMod(id)`.
 
+### Sidebar e universos por marca (`js/shell.js`)
+
+- A sidebar (`#app-side`) é só da 3C: **Início** e os módulos gerais. As marcas são
+  escolhidas pelos cartões do Início (macro resultados do mês); dentro de uma marca, o bloco
+  dela aparece no topo da sidebar. No celular: gaveta + barra inferior.
+- Entrar numa marca (`enterBrand(productId, mod)`) liga `html[data-brand="<slug>"]`.
+  **A base continua a da 3C** (fundo, texto, botões, tipografia). A marca entra só nos
+  detalhes: logo, fio de acento, ícone da capa, aba ativa e foco (seção "Universos" no fim
+  do `css/styles.css`). Cores conferidas nos sites oficiais; não usar a cor do cadastro.
+- Dentro da marca, Dashboard, Pipeline, Parceiros e Calendário ficam presos a ela
+  (`brandId()`, `brandProduct()`, `brandScope()`). `go3C(mod)` sai do universo.
+- Pipeline por produto: `scope` = slug do produto (`chute`, `rips`, `sortudao`); B2B e B2C
+  são os funis gerais da 3C. Produto novo ganha pipeline quando existirem etapas com o slug
+  dele (ver `supabase/migrations/005_pipeline_por_produto.sql`).
+- Produto novo com tema próprio: entrada em `BRANDS` (`js/shell.js`) + bloco de tokens CSS.
+- Logo da 3C: só o oficial do 3c.gg (`assets/brand/3c-logo-branco.png` / `-preto.png`).
+
 ### Mudanças no banco
 
 - Escreva um arquivo novo em `supabase/migrations/NNN_assunto.sql` (próximo número),
