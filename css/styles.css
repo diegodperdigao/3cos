@@ -7568,3 +7568,5 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
   .won-scope-row [data-f=kind]{grid-area:k;} .won-scope-row [data-f=platform]{grid-area:p;}
   .won-scope-row [data-f=qty]{grid-area:q;} .won-scope-row [data-f=notes]{grid-area:n;grid-row:auto;grid-column:auto;} .won-scope-row .hdr-icon-btn{grid-area:x;}
 }
+.won-note span{flex:1;}
+.kan-scope-miss{font-weight:700;}

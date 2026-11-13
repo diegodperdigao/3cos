@@ -119,6 +119,8 @@
       } else {
         _renderBoard(_scope); _renderTabCounts(); // mostra o que já temos enquanto atualiza
       }
+      // Parceiros (para "Ver parceiro", escopo sincronizado e "Completar escopo")
+      if (!STATE.crm.ptnLoaded && window.CRM?.loadPartners) CRM.loadPartners().catch(() => {});
       const ok = await CRM.loadAll();
       if (!ok) {
         if (!STATE.crm.loaded || !(STATE.crm.cards || []).length) {
@@ -286,6 +288,11 @@
       <i data-lucide="network" style="width:9px;height:9px"></i> ${AFF_LABEL[card.affiliate_role]}
     </div>` : '';
 
+    // Negócio Fixo ganho sem escopo: lembra de completar (vira o escopo do parceiro)
+    const _st = CRM.stageById(card.stage_id);
+    const needsScope = _st?.is_won && card.deal_type === 'fixo' && !(Array.isArray(card.fixed_scope) && card.fixed_scope.length);
+    const scopeChip = needsScope ? `<span class="kan-card-tag kan-card-tag-c kan-scope-miss" style="--tag-c:var(--amber)" title="Negócio fechado sem escopo: abra o card e clique em Completar escopo"><i data-lucide="list-plus" style="width:9px;height:9px"></i> Completar escopo</span>` : '';
+
     const tier = contact?.tier && window._ctcTierById ? _ctcTierById(contact.tier) : null;
     const tierChip = tier ? `<span class="kan-card-tier" style="--tier-c:${tier.color}" title="${tier.label} · ${tier.desc}">${tier.id}</span>` : '';
 
@@ -295,8 +302,9 @@
         ondragend="this.classList.remove('kan-card-drag')"
         onclick="window._pcrmOpenCard('${card.id}')">
       ${lostOverlay}
-      ${(showProduct || affChip || tierChip) ? `<div class="kan-card-tag-row">
+      ${(showProduct || affChip || tierChip || scopeChip) ? `<div class="kan-card-tag-row">
         ${showProduct ? `<span class="kan-card-prod" style="--pc:${prodColor(product)}">${prodMark(product, 14)}${_esc(product.name)}</span>` : ''}
+        ${scopeChip}
         ${affChip}
         ${tierChip}
       </div>` : ''}
@@ -402,6 +410,23 @@
       proposal_text: card.proposal_text || '',
     };
     _wonScope = Array.isArray(card.fixed_scope) ? card.fixed_scope.map(x => ({ ...x })) : [];
+    // Já virou parceiro: o formulário mostra o que está valendo em Parceiros
+    // (e ao salvar, grava lá também: ver _pcrmSyncPartner)
+    const partner = (STATE.crm.partners || []).find(x => x.card_id === card.id);
+    if (partner) {
+      if (partner.monthly_value != null) existing.fixed_monthly_value = partner.monthly_value;
+      if (partner.start_date) existing.fixed_start_date = partner.start_date;
+      if (partner.scope_mode) existing.fixed_scope_mode = partner.scope_mode;
+      if (partner.contract_url) existing.contract_url = partner.contract_url;
+      if (partner.contract_status) existing.contract_status = partner.contract_status;
+      if (partner.start_date && partner.end_date) {
+        const a = new Date(partner.start_date + 'T12:00:00'), b = new Date(partner.end_date + 'T12:00:00');
+        const m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+        if (m > 0) existing.fixed_contract_months = m;
+      }
+      const ps = (STATE.crm.partnerScope || []).filter(x => x.partner_id === partner.id).sort((a, b) => (a.position || 0) - (b.position || 0));
+      if (ps.length) _wonScope = ps.map(x => ({ kind: x.kind, platform: x.platform || '', qty: x.qty, notes: x.notes || '' }));
+    }
     const lbl = (t, req = false, opt = false) => `<label class="won-lbl">${t}${req ? ' <span class="won-req">*</span>' : ''}${opt ? ' <span class="won-opt">(opcional)</span>' : ''}</label>`;
     const body = `
       <div class="won-wrap">
@@ -409,7 +434,7 @@
           Fechando <strong>${_esc(card.title)}</strong> em <strong>${_esc(destStage.name)}</strong>.
           O que você registrar aqui vai para o histórico do card e, se for Fixo, o parceiro já nasce em Parceiros com o escopo pronto.
         </div>
-        ${(STATE.crm.partners || []).some(x => x.card_id === card.id) ? `<div class="won-note"><i data-lucide="info"></i> Este negócio já virou parceiro. Aqui você corrige o registro do card; o escopo e o contrato em uso são editados em Parceiros.</div>` : ''}
+        ${partner ? `<div class="won-note"><i data-lucide="refresh-cw"></i> Este negócio já é parceiro em Parceiros. O que você mudar aqui (valor, início, escopo e contrato) é salvo lá também, e o que mudar lá aparece aqui.</div>` : ''}
 
         <details class="won-ai" ${existing.proposal_text ? '' : 'open'}>
           <summary><i data-lucide="file-text"></i> Colar proposta e escopo <span class="won-opt">(o mesmo texto do jurídico)</span><i data-lucide="chevron-down" class="won-chev"></i></summary>
@@ -646,6 +671,52 @@
     }
     if (typeof window.__pcrmPendingWonConfirm === 'function') window.__pcrmPendingWonConfirm(terms);
   };
+
+  // Card fechado e editado → grava no parceiro: valor, datas, tipo de escopo,
+  // contrato e as linhas do escopo (atualiza as que já existem pelo formato +
+  // plataforma, cria as novas e remove as que saíram; entregas já lançadas ficam).
+  async function _pcrmSyncPartner(partner, terms) {
+    const db = window.sb.schema('crm');
+    const start = terms.fixed_start_date || partner.start_date;
+    let end = partner.end_date;
+    if (start && terms.fixed_contract_months) {
+      const d = new Date(start + 'T12:00:00'); d.setMonth(d.getMonth() + Number(terms.fixed_contract_months));
+      end = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    const brl = (v) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const patch = {
+      monthly_value: terms.fixed_monthly_value,
+      deal_summary: `Fixo R$ ${brl(terms.fixed_monthly_value)}/mês${terms.fixed_contract_months ? ` · ${terms.fixed_contract_months} meses` : ''}`,
+      start_date: start, end_date: end,
+      scope_mode: terms.fixed_scope_mode || 'monthly',
+      contract_url: terms.contract_url, contract_status: terms.contract_status,
+    };
+    const { data: upd, error } = await db.from('partners').update(patch).eq('id', partner.id).select().single();
+    if (error) throw error;
+    const i = (STATE.crm.partners || []).findIndex(x => x.id === partner.id);
+    if (i >= 0 && upd) STATE.crm.partners[i] = upd;
+
+    const cur = (STATE.crm.partnerScope || []).filter(x => x.partner_id === partner.id);
+    const key = (x) => `${x.kind}|${x.platform || ''}`;
+    const want = terms.fixed_scope || [];
+    const keep = new Set();
+    for (let pos = 0; pos < want.length; pos++) {
+      const w = want[pos];
+      const ex = cur.find(x => key(x) === key(w) && !keep.has(x.id));
+      if (ex) {
+        keep.add(ex.id);
+        const { error: e } = await db.from('partner_scope').update({ qty: w.qty, notes: w.notes || null, position: pos }).eq('id', ex.id);
+        if (e) throw e;
+      } else {
+        const { data: ins, error: e } = await db.from('partner_scope').insert({ partner_id: partner.id, kind: w.kind, platform: w.platform || null, qty: w.qty, notes: w.notes || null, position: pos }).select().single();
+        if (e) throw e;
+        if (ins) keep.add(ins.id);
+      }
+    }
+    const gone = cur.filter(x => !keep.has(x.id)).map(x => x.id);
+    if (gone.length) { const { error: e } = await db.from('partner_scope').delete().in('id', gone); if (e) throw e; }
+    if (window.CRM?.loadPartners) await CRM.loadPartners();
+  }
 
   // Card fechado → abre o parceiro dentro do universo da marca
   window._pcrmGoPartner = (partnerId) => {
@@ -1219,7 +1290,10 @@
             ${card.fixed_contract_months ? `<div><strong>Contrato:</strong> ${card.fixed_contract_months} mês${card.fixed_contract_months > 1 ? 'es' : ''}${startTxt ? ` a partir de ${startTxt}` : ''}</div>` : (startTxt ? `<div><strong>Início:</strong> ${startTxt}</div>` : '')}
             ${card.contract_status || card.contract_url ? `<div><strong>Contrato:</strong> ${_esc(CONTRACT_STATUS[card.contract_status] || 'link')}${card.contract_url ? ` · <a href="${_esc(card.contract_url)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:underline">abrir</a>` : ''}</div>` : ''}
             ${card.fixed_goals ? `<div style="margin-top:6px"><strong>Metas:</strong><div style="white-space:pre-wrap;color:var(--text2);font-size:12.5px;margin-top:2px">${_esc(card.fixed_goals)}</div></div>` : ''}
-            ${card.fixed_deliverables ? `<div style="margin-top:6px"><strong>Escopo:</strong><div style="white-space:pre-wrap;color:var(--text2);font-size:12.5px;margin-top:2px">${_esc(card.fixed_deliverables)}</div></div>` : ''}
+            ${Array.isArray(card.fixed_scope) && card.fixed_scope.length
+              ? `<div style="margin-top:6px"><strong>Escopo ${card.fixed_scope_mode === 'package' ? 'do pacote' : 'por mês'}:</strong><div style="white-space:pre-wrap;color:var(--text2);font-size:12.5px;margin-top:2px">${_esc(_scopeText(card.fixed_scope, card.fixed_scope_mode === 'package'))}</div></div>`
+              : `<div class="won-note" style="margin-top:10px"><i data-lucide="list-plus"></i><span>Escopo ainda não preenchido.${card.fixed_deliverables ? ` Anotado antes: ${_esc(card.fixed_deliverables)}` : ''}</span></div>
+                 <button class="btn btn-theme" style="margin-top:8px" onclick="window._pcrmEditWonDeal('${card.id}')"><i data-lucide="list-plus"></i> Completar escopo</button>`}
             ${partner ? `<button class="btn btn-outline" style="margin-top:10px" onclick="window._pcrmGoPartner('${partner.id}')"><i data-lucide="handshake"></i> Ver parceiro</button>` : ''}
           </div>
         `;
@@ -1480,9 +1554,11 @@
     closeModal();
     _pcrmOpenWonDealModal(card, stage, async (terms) => {
       try {
+        const partner = (STATE.crm.partners || []).find(x => x.card_id === cardId);
         await CRM.cards.update(cardId, { stage_id: card.stage_id, ...terms });
+        if (partner && terms.deal_type === 'fixo') await _pcrmSyncPartner(partner, terms);
         _renderBoard(card.scope || 'b2b');
-        toast('Termos atualizados', 's');
+        toast(partner && terms.deal_type === 'fixo' ? 'Termos atualizados aqui e em Parceiros' : 'Termos atualizados', 's');
       } catch (e) {
         toast('Erro ao salvar: ' + (e.message || 'desconhecido'), 'e');
       }
