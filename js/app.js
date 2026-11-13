@@ -1646,6 +1646,9 @@ function initMosaics(){
   });
 }
 
+// Atalho da busca: ⌘ K no Mac, Ctrl K no resto (mesma tecla que search.js escuta)
+window.kbdHint=()=>{const mac=/Mac|iPhone|iPad/i.test(navigator.platform||navigator.userAgent||'');
+  return `<kbd>${mac?'⌘':'Ctrl'}</kbd><kbd>K</kbd>`;};
 function modHdr(label){
   return `<div class="mod-hdr">
     <div class="mod-hdr-l">
@@ -1665,7 +1668,7 @@ function modHdr(label){
                onfocus="onSearchFocus(event)"
                onkeydown="onSearchKeydown(event)"
                autocomplete="off">
-        <span class="search-pill-hint">⌘K</span>
+        <span class="search-pill-hint">${window.kbdHint ? kbdHint() : ''}</span>
         <div class="search-panel"></div>
       </div>
     </div>
