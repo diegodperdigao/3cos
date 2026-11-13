@@ -4,7 +4,7 @@
 // A sidebar fica sempre à esquerda (no celular vira gaveta):
 //   · Início (hub)
 //   · Marcas: cada produto (Chute, Rips, Sortudão...) é um "universo", escolhido
-//     pelos cartões do Início (a sidebar mostra o bloco da marca só dentro dela).
+//     pelos cartões do Início ou na sidebar (discretas; a marca aberta mostra os módulos).
 //     Entrar numa marca troca a identidade da tela inteira (cores
 //     e logo oficiais, via html[data-brand]) e prende os módulos daquela
 //     marca nela: Dashboard, Pipeline, Parceiros e Calendário.
@@ -134,24 +134,23 @@
       `<button class="side-item${on ? ' on' : ''}" onclick="${onclick}" title="${label}"${on ? ' aria-current="page"' : ''}>
         <i data-lucide="${icon}"></i><span class="side-item-t">${label}${sub ? `<small>${sub}</small>` : ''}</span>${extra}</button>`;
 
-    // A sidebar é só da 3C. As marcas são escolhidas no Início (cartões); dentro de
-    // uma marca, o bloco dela aparece no topo com os módulos do universo.
-    let h = '';
-    const bp = window.brandProduct();
-    if (bp) {
-      const meta = brandMeta(bp);
-      const logo = meta.logo || bp.logo_url;
-      h += `<div class="side-universe" style="--pc:${meta.accent}">
-        <div class="side-universe-head">
-          <span class="side-universe-logo">${logo ? `<img src="${esc(logo)}" alt="${esc(bp.name)}">` : `<b>${esc(bp.name)}</b>`}</span>
-          <button class="side-universe-x" onclick="goBack()" title="Sair do universo ${esc(bp.name)} e voltar ao Início"><i data-lucide="x"></i></button>
-        </div>
-        ${BRAND_MODS.filter(m => canSee(m.id) && (!m.needsScope || scopeOf(bp)))
-          .map(m => `<button class="side-subitem${_active === m.id ? ' on' : ''}" title="${m.label}" onclick="enterBrand('${bp.id}','${m.id}')"${_active === m.id ? ' aria-current="page"' : ''}><i data-lucide="${m.icon}"></i>${m.label}</button>`).join('')}
-      </div>`;
+    // Início, depois as marcas (discretas: ícone pequeno + nome; a marca em que
+    // você está abre os módulos dela logo abaixo), depois os módulos gerais da 3C.
+    let h = item(_active === 'hub', 'goBack()', 'house', 'Início');
+    const list = products();
+    if (list.length) {
+      h += '<div class="side-lbl">Marcas</div>';
+      h += list.map(p => {
+        const on = _brand === p.id;
+        const meta = brandMeta(p);
+        const mark = p.logo_url ? `<img src="${esc(p.logo_url)}" alt="">` : `<span class="side-dot"></span>`;
+        const subs = on ? `<div class="side-sub">${BRAND_MODS.filter(m => canSee(m.id) && (!m.needsScope || scopeOf(p)))
+          .map(m => `<button class="side-subitem${_active === m.id ? ' on' : ''}" title="${m.label}" onclick="enterBrand('${p.id}','${m.id}')"${_active === m.id ? ' aria-current="page"' : ''}><i data-lucide="${m.icon}"></i>${m.label}</button>`).join('')}</div>` : '';
+        return `<div class="side-brand${on ? ' open' : ''}" style="--pc:${meta.accent}">
+          <button class="side-item side-brand-btn${on ? ' on' : ''}" onclick="enterBrand('${p.id}')" title="${esc(p.name)}">
+            <span class="side-mark">${mark}</span><span class="side-item-t">${esc(p.name)}</span></button>${subs}</div>`;
+      }).join('');
     }
-
-    h += item(_active === 'hub', 'goBack()', 'house', 'Início', products().length ? 'Marcas' : '');
     const gen = GENERAL_MODS.filter(m => canSee(m.id));
     if (gen.length) {
       h += '<div class="side-lbl">3C</div>';

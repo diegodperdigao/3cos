@@ -7713,3 +7713,30 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 @media (max-width:768px){ .hubr-kpi b{font-size:20px;} .hubr-kpi.big b{font-size:28px;} }
 /* Cartões das marcas ocupam a linha toda no desktop (sem buraco à direita em tela larga) */
 @media (min-width:769px){ .hubt-brands{grid-template-columns:repeat(auto-fit,minmax(320px,1fr)) !important;} }
+
+/* ── Busca do topo: lupa, texto e atalho alinhados; atalho como teclas ── */
+.search-pill{display:flex !important;align-items:center !important;gap:10px !important;height:38px !important;padding:0 8px 0 12px !important;
+  border:1px solid var(--gb2) !important;background:var(--bg2) !important;border-radius:var(--r-sm,4px) !important;box-sizing:border-box;}
+.search-pill:hover{border-color:var(--gb3) !important;}
+.search-pill:focus-within{border-color:var(--text3) !important;box-shadow:0 0 0 3px color-mix(in srgb,var(--text) 8%,transparent) !important;}
+.search-pill .search-pill-icon{width:16px !important;height:16px !important;flex-shrink:0;stroke:var(--text2) !important;display:block;margin:0 !important;position:static !important;transform:none !important;}
+.search-pill .search-pill-input{flex:1;min-width:0;height:100%;font:400 13.5px/1 var(--fb) !important;color:var(--text) !important;background:none !important;border:none !important;outline:none !important;padding:0 !important;margin:0 !important;}
+.search-pill .search-pill-input::placeholder{color:var(--text2) !important;opacity:1;}
+.search-pill .search-pill-hint{display:flex !important;align-items:center;gap:3px;flex-shrink:0;font-size:0 !important;letter-spacing:0 !important;margin:0 !important;position:static !important;}
+.search-pill .search-pill-hint kbd{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;
+  font:600 11px/1 var(--fb);color:var(--text2);background:var(--bg3);border:1px solid var(--gb2);border-bottom-width:2px;border-radius:4px;}
+@media (max-width:768px){ .search-pill .search-pill-hint{display:none !important;} }
+
+/* ── Marcas na sidebar, discretas ── */
+.side-brand-btn{font-weight:500 !important;color:var(--text2) !important;min-height:36px !important;padding:6px 10px !important;}
+.side-brand-btn:hover{color:var(--text) !important;}
+.side-brand-btn.on{background:transparent !important;color:var(--text) !important;font-weight:600 !important;box-shadow:inset 2px 0 0 var(--pc) !important;}
+.side-brand .side-mark{width:20px;height:20px;border-radius:4px;border:none;background:transparent;}
+.side-brand-btn.on .side-mark{border:none;}
+.side-sub{margin:0 0 6px 19px !important;padding-left:10px !important;border-left:1px solid var(--gb2) !important;}
+.side-sub .side-subitem{min-height:32px;font-size:12.5px;}
+.side-sub .side-subitem.on{background:var(--bg3);color:#fff;box-shadow:none;}
+@media (min-width:769px){
+  html.side-mini .side-brand-btn{justify-content:center;}
+  html.side-mini .side-sub{margin:0 0 6px 0 !important;padding-left:0 !important;border-left:none !important;}
+}
