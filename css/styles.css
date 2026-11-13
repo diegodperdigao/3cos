@@ -7346,7 +7346,7 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 #hub .hubt-sec-hdr{color:var(--text2) !important;}
 #hub .hubt-cols{padding-top:32px !important;gap:48px !important;}
 #hub .hubt-big strong{font-size:52px;}
-/* cartões de marca: cada um na identidade da própria marca */
+/* cartões de marca: base 3C, a marca entra no logo, no fio de cima e no "Entrar" */
 .hubt-brands{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
 .hubt-brand{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:18px;padding:20px;min-height:184px;border-radius:6px;
   --bb:#141414;--bf:#f4f4f4;--bf2:#cfcfcf;--ba:var(--pc);background:var(--bb);color:var(--bf);border:1px solid color-mix(in srgb,var(--ba) 40%,transparent);
@@ -7364,9 +7364,6 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 .hubt-brand-go{position:absolute;top:20px;right:20px;display:flex;align-items:center;gap:6px;font:700 11px 'Montserrat',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ba);}
 .hubt-brand-go svg{width:14px;height:14px;stroke:currentColor;transition:transform .15s;}
 .hubt-brand:hover .hubt-brand-go svg{transform:translateX(3px);}
-.hubt-brand[data-b="chute"]{--bb:#0E0E0D;--bf:#F7F6F2;--bf2:#d6d5cd;--ba:#F2FD41;--bl:#C996F9;box-shadow:inset 0 -4px 0 #C996F9;}
-.hubt-brand[data-b="rips"]{--bb:linear-gradient(160deg,#0E2D43 0%,#030E16 100%);--bf:#fff;--bf2:#D6E8EE;--ba:#5FF3E4;--bl:#FF8A76;background:linear-gradient(160deg,#0E2D43 0%,#030E16 100%);}
-.hubt-brand[data-b="sortudao"]{--bb:#046841;--bf:#fff;--bf2:#e3f2e7;--ba:#FFD301;--bl:#FFD301;background:linear-gradient(160deg,#0BA334 0%,#046841 70%);}
 @media (max-width:900px){
   #hub .hub-stage{padding:16px 16px calc(96px + env(safe-area-inset-bottom,0)) !important;}
   #hub .hub-stage .hub-hero{grid-template-columns:1fr;margin-bottom:18px !important;}
@@ -7382,69 +7379,38 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 }
 
 /* ══════════════════════════════════════════════════════════ */
-/* Universos: cores e logo oficiais de cada marca (fonte única 3C) */
-/* html[data-brand] é ligado ao entrar na marca (js/shell.js)  */
+/* Universos: base 3C + detalhes da marca                      */
+/* Fundo, texto, botões e tipografia continuam os da 3C. A marca */
+/* entra no logo, nos fios de acento, no ícone da capa e no foco. */
+/* Cores conferidas nos sites oficiais (13/11/2026):           */
+/*   Chute    chute.com.br     amarelo #F2FC40 · lilás #BDA4FF  */
+/*   Rips     rips.com.br      ciano #5FF3E4 · azul #4D7CFF · tinta #16114A */
+/*   Sortudão sortudao.com.br  verde #4FD554 / #01BC25 / #046841 · amarelo #FCDE66 */
+/* --brand-a: acento para fios e preenchimentos · --brand-ink: acento usado como texto */
 /* ══════════════════════════════════════════════════════════ */
+:root[data-brand="chute"]{--brand-a:#F2FC40;--brand-ink:#F2FC40;--brand-on:#141414;}
+:root[data-brand="chute"][data-theme="light"]{--brand-ink:#141414;}
+:root[data-brand="rips"]{--brand-a:#5FF3E4;--brand-ink:#5FF3E4;--brand-on:#051421;}
+:root[data-brand="rips"][data-theme="light"]{--brand-a:#4D7CFF;--brand-ink:#16114A;}
+:root[data-brand="sortudao"]{--brand-a:#4FD554;--brand-ink:#4FD554;--brand-on:#0b0b0b;}
+:root[data-brand="sortudao"][data-theme="light"]{--brand-a:#01BC25;--brand-ink:#046841;}
+:root[data-brand="custom"]{--brand-a:var(--brand-c);--brand-ink:var(--text);--brand-on:#fff;}
 
-/* Chute — volt #F2FD41, lilás #C996F9, tinta #0E0E0D */
-:root[data-brand="chute"]{
-  --bg:#0E0E0D;--bg0:#080807;--bg2:#1A1A18;--bg3:#24241F;--text:#F7F6F2;--text2:#d6d5cd;--text3:#a8a79f;
-  --gb:rgba(247,246,242,.09);--gb2:rgba(247,246,242,.15);--gb3:rgba(247,246,242,.26);
-  --theme:#F2FD41;--theme-dim:rgba(242,253,65,.12);--theme-b:rgba(242,253,65,.35);--theme-glow:rgba(242,253,65,.2);--pink:#C996F9;
-  --inv-bg:#F2FD41;--inv-fg:#0E0E0D;
-  --hdr-bg:#0E0E0D;--hero-bg:#F2FD41;--hero-fg:#0E0E0D;--hero-fg2:#2e2e2a;--hero-tile:rgba(14,14,13,.08);--hero-tile-line:rgba(14,14,13,.22);}
-:root[data-brand="chute"][data-theme="light"]{
-  --bg:#F7F6F2;--bg0:#eeede7;--bg2:#ffffff;--bg3:#efeee8;--text:#0E0E0D;--text2:#3a3a35;--text3:#5A5A52;
-  --gb:rgba(14,14,13,.1);--gb2:rgba(14,14,13,.16);--gb3:rgba(14,14,13,.28);
-  --theme:#0E0E0D;--theme-dim:rgba(201,150,249,.2);--theme-b:rgba(201,150,249,.6);--theme-glow:rgba(201,150,249,.25);--pink:#7d3fc4;
-  --inv-bg:#0E0E0D;--inv-fg:#F2FD41;}
-
-/* Rips — planos #030E16/#092030, ciano #5FF3E4, marinho #16114A, ouro #FFE14A */
-:root[data-brand="rips"]{
-  --bg:#030E16;--bg0:#020A10;--bg2:#092030;--bg3:#0E2D43;--text:#ffffff;--text2:#D6E8EE;--text3:#a4c2cf;
-  --gb:rgba(143,176,191,.16);--gb2:rgba(143,176,191,.26);--gb3:rgba(143,176,191,.4);
-  --theme:#5FF3E4;--theme-dim:rgba(95,243,228,.12);--theme-b:rgba(95,243,228,.35);--theme-glow:rgba(95,243,228,.2);--pink:#FF8A76;
-  --inv-bg:#5FF3E4;--inv-fg:#030E16;
-  --hdr-bg:#030E16;--hero-bg:#16114A;--hero-fg:#ffffff;--hero-fg2:#D6E8EE;--hero-tile:rgba(95,243,228,.12);--hero-tile-line:rgba(95,243,228,.35);}
-:root[data-brand="rips"][data-theme="light"]{
-  --bg:#F4F7FB;--bg0:#e9eff6;--bg2:#ffffff;--bg3:#eaf0f6;--text:#030E16;--text2:#1f3a4d;--text3:#4a6577;
-  --gb:rgba(3,14,22,.1);--gb2:rgba(3,14,22,.16);--gb3:rgba(3,14,22,.28);
-  --theme:#16114A;--theme-dim:rgba(77,124,255,.12);--theme-b:rgba(77,124,255,.4);--theme-glow:rgba(77,124,255,.2);--pink:#c4442f;
-  --inv-bg:#16114A;--inv-fg:#ffffff;}
-
-/* Sortudão — verde #0BA334/#046841/#023B24, amarelo #FFD301 */
-:root[data-brand="sortudao"]{
-  --bg:#023B24;--bg0:#012A19;--bg2:#04482C;--bg3:#065536;--text:#ffffff;--text2:#d8ecdd;--text3:#aed2b8;
-  --gb:rgba(255,255,255,.1);--gb2:rgba(255,255,255,.16);--gb3:rgba(255,255,255,.26);
-  --theme:#FFD301;--theme-dim:rgba(255,211,1,.12);--theme-b:rgba(255,211,1,.35);--theme-glow:rgba(255,211,1,.2);--pink:#FFD301;
-  --inv-bg:#FFD301;--inv-fg:#10261A;
-  --hdr-bg:#046841;--hero-bg:#FFD301;--hero-fg:#10261A;--hero-fg2:#2c4637;--hero-tile:rgba(16,38,26,.08);--hero-tile-line:rgba(16,38,26,.22);}
-:root[data-brand="sortudao"][data-theme="light"]{
-  --bg:#F4F8F3;--bg0:#e9f0e7;--bg2:#ffffff;--bg3:#eaf2e8;--text:#10261A;--text2:#2c4637;--text3:#5C6E63;
-  --gb:rgba(16,38,26,.1);--gb2:rgba(16,38,26,.16);--gb3:rgba(16,38,26,.28);
-  --theme:#046841;--theme-dim:rgba(11,163,52,.12);--theme-b:rgba(11,163,52,.4);--theme-glow:rgba(11,163,52,.2);--pink:#046841;
-  --inv-bg:#046841;--inv-fg:#ffffff;}
-
-/* Produto sem tema próprio: neutro 3C com a cor do cadastro como acento */
-:root[data-brand="custom"] .mod-hdr{box-shadow:inset 0 -3px 0 var(--brand-c) !important;}
-
-/* Aplicação comum aos universos */
-:root[data-brand]:not([data-brand="custom"]) .mod{background:var(--bg) !important;}
-:root[data-brand]:not([data-brand="custom"]) .mod-hdr{
-  --bg2:rgba(255,255,255,.08);--bg3:rgba(255,255,255,.12);--text:#ffffff;--text2:rgba(255,255,255,.86);--text3:rgba(255,255,255,.72);
-  --gb:rgba(255,255,255,.16);--gb2:rgba(255,255,255,.24);
-  background:var(--hdr-bg) !important;color:#fff;border-bottom:1px solid rgba(255,255,255,.12) !important;}
-:root[data-brand]:not([data-brand="custom"]) .mod-hdr :is(.hdr-icon-btn,.mob-hamburger){color:#fff;background:transparent;border-color:rgba(255,255,255,.2);}
-:root[data-brand]:not([data-brand="custom"]) .mod-hdr :is(.hdr-icon-btn,.mob-hamburger) svg{stroke:#fff;}
-:root[data-brand]:not([data-brand="custom"]) .mod-hdr .search-pill{background:rgba(255,255,255,.08) !important;border-color:rgba(255,255,255,.2) !important;}
-:root[data-brand]:not([data-brand="custom"]) .mod-hdr .search-pill-input{color:#fff !important;}
-:root[data-brand]:not([data-brand="custom"]) .mod-hdr .search-pill-input::placeholder{color:rgba(255,255,255,.7);}
-:root[data-brand]:not([data-brand="custom"]) .mod-hdr .search-pill-icon{stroke:rgba(255,255,255,.8) !important;color:rgba(255,255,255,.8);}
-:root[data-brand]:not([data-brand="custom"]) .mod-hdr .search-panel{--bg2:#161616;--text:#f4f4f4;}
-:root[data-brand]:not([data-brand="custom"]) .hero{border-bottom:none !important;}
-:root[data-brand="rips"] .hero{box-shadow:inset 0 -3px 0 #5FF3E4;}
-:root[data-brand="chute"] .hero{box-shadow:inset 0 -4px 0 #C996F9;}
-:root[data-brand="sortudao"] .hero{box-shadow:inset 0 -4px 0 #0BA334;}
+/* foco e destaques de texto no acento legível da marca */
+:root[data-brand][data-theme]:not([data-edition="mono"]){--theme:var(--brand-ink);
+  --theme-dim:color-mix(in srgb,var(--brand-a) 14%,transparent);--theme-b:color-mix(in srgb,var(--brand-a) 45%,transparent);--theme-glow:color-mix(in srgb,var(--brand-a) 22%,transparent);}
+/* cabeçalho: fio fino na cor da marca */
+:root[data-brand] .mod-hdr{box-shadow:inset 0 -2px 0 var(--brand-a) !important;}
+/* capa do módulo (barra preta da 3C): ícone e fio na cor da marca */
+:root[data-brand] .hero{box-shadow:inset 0 -3px 0 var(--brand-a) !important;border-bottom:none !important;}
+:root[data-brand]:not([data-edition="mono"]) .hero-icon{background:var(--brand-a) !important;border-color:var(--brand-a) !important;}
+:root[data-brand]:not([data-edition="mono"]) .hero-icon svg{stroke:var(--brand-on,#0b0b0b) !important;}
+/* aba/segmento ativo continua invertido (3C), com um traço da marca embaixo */
+:root[data-brand] :is(.pcrm-tab.on,.ptn-seg button.on){box-shadow:inset 0 -3px 0 var(--brand-a) !important;}
+/* logo da marca no cabeçalho: versão escura no tema claro quando existir */
+.mod-hdr-brand .brand-h-light{display:none;}
+:root[data-theme="light"] .mod-hdr-brand .brand-h-light{display:block;}
+:root[data-theme="light"] .mod-hdr-brand .brand-h-dark{display:none;}
 
 /* ── Login: motion da 3C em loop no lugar da arte parada (e sem intro no F5) ── */
 #lock,#reset-screen{background:#000 !important;}
@@ -7474,8 +7440,6 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 .ptn-today.on{opacity:1 !important;color:var(--text3) !important;border-color:var(--gb) !important;}
 /* Nome do contato no cartão do Pipeline: quebra linha em vez de cortar */
 .kan-card-contact-name{white-space:normal !important;overflow:visible !important;text-overflow:clip !important;overflow-wrap:anywhere;}
-/* Cartão do Sortudão no hub: verde mais fundo para o texto branco e o amarelo */
-.hubt-brand[data-b="sortudao"]{background:linear-gradient(160deg,#046841 0%,#023B24 85%) !important;}
 #hub .hubt-btn{white-space:nowrap;}
 /* Pipeline: selos coloridos legíveis nos dois temas */
 .kan-card-tag-c{color:color-mix(in srgb,var(--tag-c) 55%,var(--text)) !important;background:color-mix(in srgb,var(--tag-c) 13%,transparent) !important;border:1px solid color-mix(in srgb,var(--tag-c) 32%,transparent) !important;}
@@ -7497,7 +7461,56 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
   #hub .hubt-trio div+div{padding-left:10px;}
   #copilot-fab{bottom:calc(84px + env(safe-area-inset-bottom,0)) !important;}
 }
-/* Barra de título da marca vale nos dois temas (o tema claro da 3C não pode sobrescrever) */
-:root[data-brand="chute"][data-theme]{--hero-bg:#F2FD41;--hero-fg:#0E0E0D;--hero-fg2:#2e2e2a;--hero-tile:rgba(14,14,13,.08);--hero-tile-line:rgba(14,14,13,.22);}
-:root[data-brand="rips"][data-theme]{--hero-bg:#16114A;--hero-fg:#ffffff;--hero-fg2:#D6E8EE;--hero-tile:rgba(95,243,228,.12);--hero-tile-line:rgba(95,243,228,.35);}
-:root[data-brand="sortudao"][data-theme]{--hero-bg:#FFD301;--hero-fg:#10261A;--hero-fg2:#2c4637;--hero-tile:rgba(16,38,26,.08);--hero-tile-line:rgba(16,38,26,.22);}
+
+/* Hub: cartão da marca neutro (3C) com acento oficial da marca */
+.hubt-brand{background:var(--bg2) !important;border:1px solid var(--gb2) !important;border-top:3px solid var(--ba) !important;--bf:var(--text);--bf2:var(--text2);}
+.hubt-brand:hover{border-color:var(--gb3) !important;border-top-color:var(--ba) !important;}
+.hubt-brand-stats span.late b{color:#ff8fab;}
+/* Hub: logo da marca não encosta no "Entrar"; números do trio quebram em vez de invadir o vizinho */
+.hubt-brand-logo{padding-right:84px;min-width:0;}
+.hubt-brand-logo img{max-width:100% !important;}
+#hub .hubt-trio strong{white-space:normal !important;overflow-wrap:anywhere;font-size:clamp(17px,1.7vw,24px) !important;}
+#hub .hubt-trio div{min-width:0;}
+@media (min-width:769px){ #hub .hubt-trio strong{white-space:nowrap !important;font-size:clamp(16px,1.45vw,22px) !important;} }
+/* Cabeçalho: atalho da busca e separador da trilha legíveis */
+.search-pill-hint,.mod-hdr-sep{color:var(--text2) !important;opacity:1 !important;}
+
+/* ── Sidebar só da 3C; dentro de uma marca, o bloco do universo aparece no topo ── */
+.side-universe{margin:0 0 10px;padding:10px;border:1px solid var(--gb2);border-top:3px solid var(--pc);border-radius:4px;background:var(--bg2);display:flex;flex-direction:column;gap:2px;}
+.side-universe-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 2px 8px;}
+.side-universe-logo{height:26px;display:flex;align-items:center;min-width:0;}
+.side-universe-logo img{height:100%;width:auto;max-width:150px;object-fit:contain;}
+.side-universe-logo b{font:700 14px 'Montserrat',sans-serif;text-transform:uppercase;color:var(--text);}
+.side-universe-x{all:unset;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:2px;color:var(--text2);border:1px solid var(--gb2);flex-shrink:0;}
+.side-universe-x:hover{color:var(--text);border-color:var(--text3);}
+.side-universe-x:focus-visible{outline:2px solid #f4f4f4;outline-offset:2px;}
+.side-universe-x svg{width:14px;height:14px;}
+.side-universe .side-subitem.on{box-shadow:inset 3px 0 0 var(--pc);}
+
+/* ── Hub: só os cartões das marcas, com macro resultados do mês ── */
+#hub .hubt-sec-hdr{margin:0 0 14px !important;}
+.hubt-brands{grid-template-columns:repeat(auto-fit,minmax(300px,1fr)) !important;gap:16px !important;}
+.hubt-brand{min-height:0 !important;gap:0 !important;padding:0 !important;}
+.hubt-brand-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 16px;}
+.hubt-brand-logo{height:40px !important;padding-right:0 !important;flex:1;}
+.hubt-brand-go{position:static !important;flex-shrink:0;}
+.hubt-brand-sec{display:flex;flex-direction:column;gap:8px;padding:14px 20px;border-top:1px solid var(--gb2);}
+.hubt-brand-lbl{font:700 10.5px 'Montserrat',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--text2);}
+.hubt-brand-stats{margin-top:0 !important;gap:12px !important;}
+.hubt-brand-stats b{font-size:20px !important;white-space:nowrap;}
+@media (max-width:768px){
+  .hubt-brands{grid-template-columns:1fr !important;}
+  .hubt-brand-head{padding:14px 16px 12px;}
+  .hubt-brand-sec{padding:12px 16px;}
+  .hubt-brand-logo{height:32px !important;}
+  .hubt-brand-stats b{font-size:18px !important;}
+}
+@media (min-width:769px){ .hubt-brands{grid-template-columns:repeat(auto-fit,minmax(256px,1fr)) !important;} .hubt-brand-stats b{font-size:clamp(16px,1.35vw,20px) !important;} }
+/* Cartão da marca: 1ª coluna mais larga (valores em R$) */
+.hubt-brand-stats{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr) !important;}
+/* Celular: cabeçalho do módulo sem aperto (nome não quebra; tema e "voltar" ficam na gaveta) */
+@media (max-width:768px){
+  .mod-hdr-name{white-space:nowrap !important;overflow-wrap:normal !important;}
+  .mod-hdr-r .hdr-icon-btn[title="Alternar tema"],.mod-hdr-r .hdr-icon-btn[title="Voltar ao hub"]{display:none !important;}
+  .mod-hdr-brand img{height:20px;max-width:88px;}
+}

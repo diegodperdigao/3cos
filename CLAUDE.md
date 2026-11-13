@@ -59,11 +59,13 @@ Estado global em `STATE` (`STATE.crm.*` para dados do CRM). Helpers globais:
 
 ### Sidebar e universos por marca (`js/shell.js`)
 
-- A navegação é a sidebar (`#app-side`): **Início**, **Marcas** (um "universo" por produto)
-  e **3C** (módulos gerais). No celular ela vira gaveta + barra inferior.
-- Entrar numa marca (`enterBrand(productId, mod)`) liga `html[data-brand="<slug>"]`: cores e
-  logo oficiais da marca (tokens no fim do `css/styles.css`, seção "Universos"). A
-  **tipografia é sempre a da 3C** (decisão do Diego): marca entra só por cor e logo.
+- A sidebar (`#app-side`) é só da 3C: **Início** e os módulos gerais. As marcas são
+  escolhidas pelos cartões do Início (macro resultados do mês); dentro de uma marca, o bloco
+  dela aparece no topo da sidebar. No celular: gaveta + barra inferior.
+- Entrar numa marca (`enterBrand(productId, mod)`) liga `html[data-brand="<slug>"]`.
+  **A base continua a da 3C** (fundo, texto, botões, tipografia). A marca entra só nos
+  detalhes: logo, fio de acento, ícone da capa, aba ativa e foco (seção "Universos" no fim
+  do `css/styles.css`). Cores conferidas nos sites oficiais; não usar a cor do cadastro.
 - Dentro da marca, Dashboard, Pipeline, Parceiros e Calendário ficam presos a ela
   (`brandId()`, `brandProduct()`, `brandScope()`). `go3C(mod)` sai do universo.
 - Pipeline por produto: `scope` = slug do produto (`chute`, `rips`, `sortudao`); B2B e B2C

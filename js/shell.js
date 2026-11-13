@@ -3,7 +3,8 @@
 // ══════════════════════════════════════════════════════════
 // A sidebar fica sempre à esquerda (no celular vira gaveta):
 //   · Início (hub)
-//   · Marcas: cada produto (Chute, Rips, Sortudão...) é um "universo".
+//   · Marcas: cada produto (Chute, Rips, Sortudão...) é um "universo", escolhido
+//     pelos cartões do Início (a sidebar mostra o bloco da marca só dentro dela).
 //     Entrar numa marca troca a identidade da tela inteira (cores
 //     e logo oficiais, via html[data-brand]) e prende os módulos daquela
 //     marca nela: Dashboard, Pipeline, Parceiros e Calendário.
@@ -20,12 +21,15 @@
 
   // Marcas com tema oficial. Chave = nome do produto sem acento.
   // Produto novo sem entrada aqui ganha o tema "custom" (cor do cadastro).
+  // accent = cor de acento oficial (conferida no site da marca), usada em fios,
+  // marcadores e no "Entrar". logoDark = versão para fundo claro, quando o logo é branco.
   const BRANDS = {
-    chute: { slug: 'chute', logo: 'assets/brands/chute/logo.webp' },
-    rips: { slug: 'rips', logo: 'assets/brands/rips/logo.svg' },
-    sortudao: { slug: 'sortudao', logo: 'assets/brands/sortudao/logo.webp' },
+    chute: { slug: 'chute', logo: 'assets/brands/chute/logo.webp', accent: '#F2FC40' },
+    rips: { slug: 'rips', logo: 'assets/brands/rips/logo.svg', logoDark: 'assets/brands/rips/logo-tinta.svg', accent: '#5FF3E4' },
+    sortudao: { slug: 'sortudao', logo: 'assets/brands/sortudao/logo.webp', accent: '#4FD554' },
   };
-  const brandMeta = (p) => BRANDS[fold(p?.name)] || { slug: 'custom', logo: p?.logo_url || '' };
+  const brandMeta = (p) => BRANDS[fold(p?.name)] || { slug: 'custom', logo: p?.logo_url || '', accent: window.prodColor ? prodColor(p) : (p?.color || '#888') };
+  window.brandAccent = (p) => brandMeta(p).accent;
 
   // Módulos de cada lado. Permissão por usuário continua valendo (users.js).
   const BRAND_MODS = [
@@ -72,7 +76,7 @@
     if (_brand && !p && STATE.crm?.loaded) { _brand = ''; sessionStorage.removeItem('3c_brand'); }
     if (p) {
       root.setAttribute('data-brand', brandMeta(p).slug);
-      root.style.setProperty('--brand-c', window.prodColor ? prodColor(p) : (p.color || '#888'));
+      root.style.setProperty('--brand-c', brandMeta(p).accent);
     } else {
       root.removeAttribute('data-brand');
       root.style.removeProperty('--brand-c');
@@ -124,44 +128,31 @@
   window.go3C = (id) => { if (_brand) _setBrand(''); window.openMod(id); };
 
   // ── Sidebar ───────────────────────────────────────────────
-  function _lateByProduct() {
-    const today = new Date(); const t = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const P = STATE.crm?.partners || [], D = STATE.crm?.partnerDeliveries || [];
-    const byPartner = new Map(P.filter(p => p.status !== 'ended').map(p => [p.id, p.product_id]));
-    const late = new Set();
-    D.forEach(d => { if (d.status === 'planned' && d.due_date && d.due_date < t && byPartner.has(d.partner_id)) late.add(byPartner.get(d.partner_id)); });
-    return late;
-  }
-
   function renderSide() {
     const nav = document.getElementById('side-nav');
     if (!nav || !STATE.user) return;
-    const late = _lateByProduct();
     const item = (on, onclick, icon, label, sub, extra = '') =>
       `<button class="side-item${on ? ' on' : ''}" onclick="${onclick}"${on ? ' aria-current="page"' : ''}>
         <i data-lucide="${icon}"></i><span class="side-item-t">${label}${sub ? `<small>${sub}</small>` : ''}</span>${extra}</button>`;
 
-    let h = item(_active === 'hub', 'goBack()', 'house', 'Início');
-
-    const list = products();
-    if (list.length) {
-      h += '<div class="side-lbl">Marcas</div>';
-      h += list.map(p => {
-        const on = _brand === p.id;
-        const meta = brandMeta(p);
-        const mark = p.logo_url ? `<img src="${esc(p.logo_url)}" alt="">` : `<span class="side-dot"></span>`;
-        let sub = '';
-        if (on) {
-          sub = `<div class="side-sub">${BRAND_MODS
-            .filter(m => canSee(m.id) && (!m.needsScope || scopeOf(p)))
-            .map(m => `<button class="side-subitem${_active === m.id ? ' on' : ''}" onclick="enterBrand('${p.id}','${m.id}')"><i data-lucide="${m.icon}"></i>${m.label}</button>`).join('')}</div>`;
-        }
-        return `<div class="side-brand${on ? ' open' : ''}" style="--pc:${window.prodColor ? prodColor(p) : (p.color || '#888')}">
-          <button class="side-item side-brand-btn${on ? ' on' : ''}" onclick="enterBrand('${p.id}')" title="Entrar no universo ${esc(p.name)}">
-            <span class="side-mark">${mark}</span><span class="side-item-t">${esc(p.name)}</span>${late.has(p.id) ? '<em class="side-late" title="Entrega atrasada">atrasado</em>' : ''}</button>${sub}</div>`;
-      }).join('');
+    // A sidebar é só da 3C. As marcas são escolhidas no Início (cartões); dentro de
+    // uma marca, o bloco dela aparece no topo com os módulos do universo.
+    let h = '';
+    const bp = window.brandProduct();
+    if (bp) {
+      const meta = brandMeta(bp);
+      const logo = meta.logo || bp.logo_url;
+      h += `<div class="side-universe" style="--pc:${meta.accent}">
+        <div class="side-universe-head">
+          <span class="side-universe-logo">${logo ? `<img src="${esc(logo)}" alt="${esc(bp.name)}">` : `<b>${esc(bp.name)}</b>`}</span>
+          <button class="side-universe-x" onclick="goBack()" title="Sair do universo ${esc(bp.name)} e voltar ao Início"><i data-lucide="x"></i></button>
+        </div>
+        ${BRAND_MODS.filter(m => canSee(m.id) && (!m.needsScope || scopeOf(bp)))
+          .map(m => `<button class="side-subitem${_active === m.id ? ' on' : ''}" onclick="enterBrand('${bp.id}','${m.id}')"${_active === m.id ? ' aria-current="page"' : ''}><i data-lucide="${m.icon}"></i>${m.label}</button>`).join('')}
+      </div>`;
     }
 
+    h += item(_active === 'hub', 'goBack()', 'house', 'Início', products().length ? 'Marcas' : '');
     const gen = GENERAL_MODS.filter(m => canSee(m.id));
     if (gen.length) {
       h += '<div class="side-lbl">3C</div>';
@@ -189,7 +180,7 @@
 
   // Barra inferior do celular
   function _bottomNav() {
-    const k = _active === 'hub' ? 'hub' : (_brand ? 'brands' : _active);
+    const k = _brand ? 'menu' : _active;
     document.querySelectorAll('#mob-bottom-nav .mob-bnav-item').forEach(b => b.classList.toggle('active', b.dataset.k === k));
   }
   window.updateBottomNav = () => _bottomNav();
