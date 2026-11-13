@@ -93,7 +93,7 @@
   window.openMod = (id) => {
     if (GENERAL_ONLY.has(id) && _brand) _setBrand('');
     // Marca sem pipeline própria: a Pipeline aberta é a geral (B2B/B2C)
-    if (id === 'pipeline' && _brand && !window.brandScope()) _setBrand('');
+    if (id === 'pipeline' && _brand && STATE.crm?.loaded && !window.brandScope()) _setBrand('');
     _active = id;
     _openMod(id);
     renderSide();
@@ -206,10 +206,19 @@
     ['lock', 'reset-screen', 'hub'].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, { attributes: true, attributeFilter: ['style'] }); });
     _syncSignedIn();
     // Produtos chegam depois do login: redesenha a sidebar quando o CRM carregar
-    let tries = 0;
+    // F5 dentro de uma marca: o módulo abre antes de os produtos/etapas chegarem
+    // (sem logo e com a pipeline geral). Quando os dados chegam, reabre uma vez.
+    let tries = 0, reopened = false;
     const wait = setInterval(() => {
       tries++;
-      if (STATE.crm?.loaded) { applyBrand(); }
+      if (STATE.crm?.loaded) {
+        applyBrand();
+        if (!reopened && _brand && window.brandProduct() && _active !== 'hub' && BRAND_MODS.some(m => m.id === _active)) {
+          reopened = true;
+          const hdr = document.querySelector('.mod.active .mod-hdr');
+          if (hdr && !hdr.querySelector('.mod-hdr-brand')) window.openMod(_active);
+        }
+      }
       if ((STATE.crm?.loaded && STATE.crm?.ptnLoaded) || tries > 40) clearInterval(wait);
     }, 500);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMobSidebar(); });
