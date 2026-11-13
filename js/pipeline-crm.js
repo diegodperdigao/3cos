@@ -119,6 +119,8 @@
       } else {
         _renderBoard(_scope); _renderTabCounts(); // mostra o que já temos enquanto atualiza
       }
+      // Parceiros (para "Ver parceiro", escopo sincronizado e "Completar escopo")
+      if (!STATE.crm.ptnLoaded && window.CRM?.loadPartners) CRM.loadPartners().catch(() => {});
       const ok = await CRM.loadAll();
       if (!ok) {
         if (!STATE.crm.loaded || !(STATE.crm.cards || []).length) {
@@ -286,6 +288,11 @@
       <i data-lucide="network" style="width:9px;height:9px"></i> ${AFF_LABEL[card.affiliate_role]}
     </div>` : '';
 
+    // Negócio Fixo ganho sem escopo: lembra de completar (vira o escopo do parceiro)
+    const _st = CRM.stageById(card.stage_id);
+    const needsScope = _st?.is_won && card.deal_type === 'fixo' && !(Array.isArray(card.fixed_scope) && card.fixed_scope.length);
+    const scopeChip = needsScope ? `<span class="kan-card-tag kan-card-tag-c kan-scope-miss" style="--tag-c:var(--amber)" title="Negócio fechado sem escopo: abra o card e clique em Completar escopo"><i data-lucide="list-plus" style="width:9px;height:9px"></i> Completar escopo</span>` : '';
+
     const tier = contact?.tier && window._ctcTierById ? _ctcTierById(contact.tier) : null;
     const tierChip = tier ? `<span class="kan-card-tier" style="--tier-c:${tier.color}" title="${tier.label} · ${tier.desc}">${tier.id}</span>` : '';
 
@@ -295,8 +302,9 @@
         ondragend="this.classList.remove('kan-card-drag')"
         onclick="window._pcrmOpenCard('${card.id}')">
       ${lostOverlay}
-      ${(showProduct || affChip || tierChip) ? `<div class="kan-card-tag-row">
+      ${(showProduct || affChip || tierChip || scopeChip) ? `<div class="kan-card-tag-row">
         ${showProduct ? `<span class="kan-card-prod" style="--pc:${prodColor(product)}">${prodMark(product, 14)}${_esc(product.name)}</span>` : ''}
+        ${scopeChip}
         ${affChip}
         ${tierChip}
       </div>` : ''}
@@ -358,7 +366,7 @@
         try {
           await CRM.cards.update(cardId, { stage_id: stageId, ...terms });
           _renderBoard(scope);
-          toast('Negócio fechado! 🎉', 's');
+          toast(terms.deal_type === 'fixo' ? 'Negócio fechado. O parceiro já está em Parceiros com o escopo.' : 'Negócio fechado', 's');
         } catch (e) {
           toast('Erro ao fechar: ' + (e.message || 'desconhecido'), 'e');
         }
@@ -377,7 +385,16 @@
 
   // Modal pedindo os termos do negócio ao fechar. Dois tipos:
   // Revenue Share (percentual, com cálculo automático do master quando sub)
-  // ou Fixo (valor mensal + duração + metas / entregas opcionais).
+  // ou Fixo: valor mensal, duração, início, escopo estruturado (vira o escopo do
+  // parceiro em Parceiros, sem digitar de novo), contrato e metas.
+  // "Colar proposta": o mesmo texto que vai para o jurídico; a IA (/api/proposal)
+  // preenche os campos e a pessoa revisa antes de fechar.
+  const _todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const _KINDS = () => (window.PTN?.KINDS || [{ id: 'reel', label: 'Reel' }, { id: 'story', label: 'Stories' }, { id: 'post', label: 'Post no feed' }, { id: 'short', label: 'TikTok / Shorts' }, { id: 'video', label: 'Vídeo longo' }, { id: 'live', label: 'Live' }, { id: 'other', label: 'Outro' }]);
+  const _PLATFORMS = () => (window.PTN?.PLATFORMS || ['Instagram', 'TikTok', 'YouTube', 'Twitch', 'Kick', 'X', 'Discord', 'Outro']);
+  const CONTRACT_STATUS = { draft: 'Em elaboração', sent: 'Enviado para assinatura', signed: 'Assinado' };
+  let _wonScope = [];
+
   function _pcrmOpenWonDealModal(card, destStage, onConfirm) {
     const isSub = card.affiliate_role === 'sub';
     const existing = {
@@ -386,106 +403,115 @@
       fixed_monthly_value: card.fixed_monthly_value ?? '',
       fixed_contract_months: card.fixed_contract_months ?? '',
       fixed_goals: card.fixed_goals || '',
-      fixed_deliverables: card.fixed_deliverables || '',
+      fixed_start_date: card.fixed_start_date || _todayISO(),
+      fixed_scope_mode: card.fixed_scope_mode || 'monthly',
+      contract_url: card.contract_url || '',
+      contract_status: card.contract_status || '',
+      proposal_text: card.proposal_text || '',
     };
+    _wonScope = Array.isArray(card.fixed_scope) ? card.fixed_scope.map(x => ({ ...x })) : [];
+    // Já virou parceiro: o formulário mostra o que está valendo em Parceiros
+    // (e ao salvar, grava lá também: ver _pcrmSyncPartner)
+    const partner = (STATE.crm.partners || []).find(x => x.card_id === card.id);
+    if (partner) {
+      if (partner.monthly_value != null) existing.fixed_monthly_value = partner.monthly_value;
+      if (partner.start_date) existing.fixed_start_date = partner.start_date;
+      if (partner.scope_mode) existing.fixed_scope_mode = partner.scope_mode;
+      if (partner.contract_url) existing.contract_url = partner.contract_url;
+      if (partner.contract_status) existing.contract_status = partner.contract_status;
+      if (partner.start_date && partner.end_date) {
+        const a = new Date(partner.start_date + 'T12:00:00'), b = new Date(partner.end_date + 'T12:00:00');
+        const m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+        if (m > 0) existing.fixed_contract_months = m;
+      }
+      const ps = (STATE.crm.partnerScope || []).filter(x => x.partner_id === partner.id).sort((a, b) => (a.position || 0) - (b.position || 0));
+      if (ps.length) _wonScope = ps.map(x => ({ kind: x.kind, platform: x.platform || '', qty: x.qty, notes: x.notes || '' }));
+    }
+    const lbl = (t, req = false, opt = false) => `<label class="won-lbl">${t}${req ? ' <span class="won-req">*</span>' : ''}${opt ? ' <span class="won-opt">(opcional)</span>' : ''}</label>`;
     const body = `
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <div style="padding:12px 14px;background:color-mix(in srgb, var(--green) 10%, transparent);border:1px solid color-mix(in srgb, var(--green) 30%, transparent);border-radius:8px;font-size:12.5px;color:var(--text2);line-height:1.5">
-          Fechando <strong style="color:var(--text)">${_esc(card.title)}</strong> em
-          <strong style="color:var(--text)">${_esc(destStage.name)}</strong>. Registre as condições
-          — vai pro histórico do card e pro relatório financeiro.
+      <div class="won-wrap">
+        <div class="won-intro">
+          Fechando <strong>${_esc(card.title)}</strong> em <strong>${_esc(destStage.name)}</strong>.
+          O que você registrar aqui vai para o histórico do card e, se for Fixo, o parceiro já nasce em Parceiros com o escopo pronto.
         </div>
+        ${partner ? `<div class="won-note"><i data-lucide="refresh-cw"></i> Este negócio já é parceiro em Parceiros. O que você mudar aqui (valor, início, escopo e contrato) é salvo lá também, e o que mudar lá aparece aqui.</div>` : ''}
+
+        <details class="won-ai" ${existing.proposal_text ? '' : 'open'}>
+          <summary><i data-lucide="file-text"></i> Colar proposta e escopo <span class="won-opt">(o mesmo texto do jurídico)</span><i data-lucide="chevron-down" class="won-chev"></i></summary>
+          <textarea id="won-proposal" class="fi" rows="6" placeholder="Cole aqui a proposta e o escopo: valor, duração, início, entregas por plataforma, metas, link do contrato...">${_esc(existing.proposal_text)}</textarea>
+          <div class="won-ai-row">
+            <button class="btn btn-outline" id="won-ai-btn" onclick="window._pcrmWonAI()"><i data-lucide="wand-sparkles"></i> Preencher com IA</button>
+            <span class="won-ai-hint">A IA só preenche os campos abaixo. Confira antes de fechar.</span>
+          </div>
+          <div id="won-ai-msg" class="won-ai-msg" hidden></div>
+        </details>
 
         <div class="ff">
-          <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
-            Tipo de negócio <span style="color:var(--red)">*</span>
-          </label>
+          ${lbl('Tipo de negócio', true)}
           <div style="display:flex;gap:8px">
             <label class="pcrm-deal-type-opt">
-              <input type="radio" name="won-deal-type" value="revenue_share"
-                ${existing.deal_type === 'revenue_share' ? 'checked' : ''}
-                onchange="window._pcrmWonDealTypeChanged('revenue_share')">
+              <input type="radio" name="won-deal-type" value="revenue_share" ${existing.deal_type === 'revenue_share' ? 'checked' : ''} onchange="window._pcrmWonDealTypeChanged('revenue_share')">
               <span><i data-lucide="percent" style="width:14px;height:14px"></i> Revenue Share</span>
             </label>
             <label class="pcrm-deal-type-opt">
-              <input type="radio" name="won-deal-type" value="fixo"
-                ${existing.deal_type === 'fixo' ? 'checked' : ''}
-                onchange="window._pcrmWonDealTypeChanged('fixo')">
+              <input type="radio" name="won-deal-type" value="fixo" ${existing.deal_type === 'fixo' ? 'checked' : ''} onchange="window._pcrmWonDealTypeChanged('fixo')">
               <span><i data-lucide="banknote" style="width:14px;height:14px"></i> Fixo</span>
             </label>
           </div>
         </div>
 
-        <!-- Revenue Share block -->
+        <!-- Revenue Share -->
         <div id="won-rs-block" style="display:${existing.deal_type === 'revenue_share' ? 'block' : 'none'}">
           <div class="ff">
-            <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
-              Percentual do ${isSub ? 'sub' : 'parceiro'} <span style="color:var(--red)">*</span>
-            </label>
+            ${lbl(`Percentual do ${isSub ? 'sub' : 'parceiro'}`, true)}
             <div style="display:flex;align-items:center;gap:8px">
-              <input id="won-rs-pct" type="number" min="0" max="100" step="0.1"
-                value="${existing.rev_share_pct}"
-                class="fi" style="width:120px;text-align:right"
-                oninput="window._pcrmWonRsPctChanged(this.value)"
-                placeholder="40">
+              <input id="won-rs-pct" type="number" min="0" max="100" step="0.1" value="${existing.rev_share_pct}" class="fi" style="width:120px;text-align:right" oninput="window._pcrmWonRsPctChanged(this.value)" placeholder="40">
               <span style="font-size:16px;color:var(--text2);font-weight:600">%</span>
             </div>
             ${isSub ? `
-              <div id="won-rs-split" style="margin-top:10px;padding:10px 12px;background:var(--bg3);border:1px solid var(--gb);border-radius:6px;font-size:12px;line-height:1.6">
-                <div style="color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-bottom:4px">Divisão automática (50% total)</div>
-                <div><strong style="color:var(--text)">Sub:</strong> <span id="won-rs-sub-pct" style="color:var(--text)">—</span></div>
-                <div><strong style="color:var(--text)">Master:</strong> <span id="won-rs-master-pct" style="color:var(--text)">—</span></div>
-                <div id="won-rs-warning" style="color:var(--red);font-size:11px;margin-top:4px;display:none">
-                  <i data-lucide="alert-triangle" style="width:11px;height:11px;vertical-align:-2px"></i>
-                  Sub não pode ter mais que 50% — o pool total do time é 50%.
-                </div>
-              </div>
-            ` : ''}
+              <div id="won-rs-split" class="won-box">
+                <div class="won-box-ttl">Divisão automática (50% total)</div>
+                <div><strong>Sub:</strong> <span id="won-rs-sub-pct">—</span></div>
+                <div><strong>Master:</strong> <span id="won-rs-master-pct">—</span></div>
+                <div id="won-rs-warning" style="color:var(--red);font-size:12px;margin-top:4px;display:none">Sub não pode ter mais que 50%: o pool total do time é 50%.</div>
+              </div>` : ''}
           </div>
         </div>
 
-        <!-- Fixo block -->
+        <!-- Fixo -->
         <div id="won-fixo-block" style="display:${existing.deal_type === 'fixo' ? 'block' : 'none'}">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="ff">
-              <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
-                Valor mensal (R$) <span style="color:var(--red)">*</span>
-              </label>
-              <input id="won-fixo-value" type="number" min="0" step="0.01"
-                value="${existing.fixed_monthly_value}"
-                class="fi" placeholder="5000.00">
+          <div class="won-grid">
+            <div class="ff">${lbl('Valor mensal (R$)', true)}<input id="won-fixo-value" type="number" min="0" step="0.01" value="${existing.fixed_monthly_value}" class="fi" placeholder="5000"></div>
+            <div class="ff">${lbl('Duração (meses)')}<input id="won-fixo-months" type="number" min="1" step="1" value="${existing.fixed_contract_months}" class="fi" placeholder="3"></div>
+            <div class="ff">${lbl('Início')}<input id="won-fixo-start" type="date" value="${_esc(existing.fixed_start_date)}" class="fi"></div>
+            <div class="ff">${lbl('Tipo de escopo')}<select id="won-fixo-mode" class="fi" onchange="window._pcrmWonScopeRender()">
+              <option value="monthly" ${existing.fixed_scope_mode === 'monthly' ? 'selected' : ''}>Mensal (repete todo mês)</option>
+              <option value="package" ${existing.fixed_scope_mode === 'package' ? 'selected' : ''}>Pacote fechado</option></select></div>
+          </div>
+
+          <div class="won-sec">
+            <div class="won-sec-hdr"><span>Escopo combinado</span><small id="won-scope-unit"></small></div>
+            <div id="won-scope-rows"></div>
+            <button class="btn btn-ghost won-add" onclick="window._pcrmWonScopeAdd()"><i data-lucide="plus"></i> Adicionar entrega</button>
+          </div>
+
+          <div class="won-sec">
+            <div class="won-sec-hdr"><span>Contrato</span></div>
+            <div class="won-grid won-grid-2">
+              <div class="ff">${lbl('Link do contrato', false, true)}<input id="won-contract-url" type="url" class="fi" value="${_esc(existing.contract_url)}" placeholder="https://..."></div>
+              <div class="ff">${lbl('Situação')}<select id="won-contract-status" class="fi">
+                <option value="">—</option>${Object.entries(CONTRACT_STATUS).map(([k, v]) => `<option value="${k}" ${existing.contract_status === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
             </div>
-            <div class="ff">
-              <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
-                Tempo de contrato (meses)
-              </label>
-              <input id="won-fixo-months" type="number" min="1" step="1"
-                value="${existing.fixed_contract_months}"
-                class="fi" placeholder="12">
-            </div>
           </div>
-          <div class="ff" style="margin-top:12px">
-            <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
-              Metas <span style="font-weight:400;color:var(--text3);font-size:11px">(opcional)</span>
-            </label>
-            <textarea id="won-fixo-goals" class="fi" rows="3"
-              placeholder="Ex.: 20 posts/mês · atingir 100k impressões · engajamento 3%+">${_esc(existing.fixed_goals)}</textarea>
-          </div>
-          <div class="ff" style="margin-top:12px">
-            <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--text2);font-weight:500">
-              Entregas <span style="font-weight:400;color:var(--text3);font-size:11px">(opcional)</span>
-            </label>
-            <textarea id="won-fixo-deliverables" class="fi" rows="3"
-              placeholder="Ex.: 1 vídeo/semana no YouTube · 3 stories semanais · 1 live mensal">${_esc(existing.fixed_deliverables)}</textarea>
-          </div>
+
+          <div class="ff" style="margin-top:14px">${lbl('Metas', false, true)}
+            <textarea id="won-fixo-goals" class="fi" rows="2" placeholder="Ex.: 100 cadastros/mês · 30 FTDs · engajamento 3%+">${_esc(existing.fixed_goals)}</textarea></div>
         </div>
       </div>
     `;
     const footer = `
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-theme" id="won-confirm" onclick="window._pcrmConfirmWon()">
-        <i data-lucide="check-circle"></i> Fechar negócio
-      </button>
+      <button class="btn btn-theme" id="won-confirm" onclick="window._pcrmConfirmWon()"><i data-lucide="check-circle"></i> Fechar negócio</button>
     `;
     window.__pcrmPendingWonConfirm = (terms) => {
       closeModal();
@@ -493,13 +519,89 @@
       window.__pcrmPendingWonConfirm = null;
     };
     window.__pcrmWonCtx = { isSub };
-    openModal('Fechar negócio', body, footer);
+    openModal('Fechar negócio', body, footer, { wide: true });
+    window._pcrmWonScopeRender();
     lucide.createIcons();
-    // Pre-fill the split display if already in revenue_share with pct
-    if (existing.deal_type === 'revenue_share' && existing.rev_share_pct !== '') {
-      window._pcrmWonRsPctChanged(existing.rev_share_pct);
-    }
+    if (existing.deal_type === 'revenue_share' && existing.rev_share_pct !== '') window._pcrmWonRsPctChanged(existing.rev_share_pct);
   }
+
+  // ── Escopo estruturado (linhas: formato · plataforma · qtd · obs) ──
+  function _wonScopeSync() {
+    document.querySelectorAll('#won-scope-rows .won-scope-row').forEach((row, i) => {
+      if (!_wonScope[i]) return;
+      _wonScope[i].kind = row.querySelector('[data-f=kind]').value;
+      _wonScope[i].platform = row.querySelector('[data-f=platform]').value;
+      _wonScope[i].qty = Math.max(1, parseInt(row.querySelector('[data-f=qty]').value, 10) || 1);
+      _wonScope[i].notes = row.querySelector('[data-f=notes]').value.trim();
+    });
+  }
+  window._pcrmWonScopeRender = () => {
+    const box = document.getElementById('won-scope-rows');
+    if (!box) return;
+    const pkg = document.getElementById('won-fixo-mode')?.value === 'package';
+    const unit = document.getElementById('won-scope-unit');
+    if (unit) unit.textContent = pkg ? 'quantidade total do pacote' : 'quantidade por mês';
+    box.innerHTML = _wonScope.length ? _wonScope.map((x, i) => `
+      <div class="won-scope-row">
+        <select class="fi" data-f="kind" aria-label="Formato" onchange="window._pcrmWonScopeSync()">${_KINDS().map(k => `<option value="${k.id}" ${x.kind === k.id ? 'selected' : ''}>${_esc(k.label)}</option>`).join('')}</select>
+        <select class="fi" data-f="platform" aria-label="Plataforma" onchange="window._pcrmWonScopeSync()">${_PLATFORMS().map(pl => `<option ${x.platform === pl ? 'selected' : ''}>${_esc(pl)}</option>`).join('')}</select>
+        <input class="fi won-qty" data-f="qty" type="number" min="1" value="${Number(x.qty) || 1}" aria-label="Quantidade" oninput="window._pcrmWonScopeSync()">
+        <input class="fi" data-f="notes" type="text" value="${_esc(x.notes || '')}" placeholder="Obs. (ex.: com link na bio)" aria-label="Observação" oninput="window._pcrmWonScopeSync()">
+        <button class="hdr-icon-btn" title="Remover" aria-label="Remover entrega" onclick="window._pcrmWonScopeDel(${i})"><i data-lucide="x"></i></button>
+      </div>`).join('')
+      : `<div class="won-empty">Nenhuma entrega ainda. Adicione abaixo ou cole a proposta e use "Preencher com IA".</div>`;
+    if (window.lucide) lucide.createIcons();
+  };
+  window._pcrmWonScopeSync = _wonScopeSync;
+  window._pcrmWonScopeAdd = () => { _wonScopeSync(); _wonScope.push({ kind: 'reel', platform: 'Instagram', qty: 1, notes: '' }); window._pcrmWonScopeRender(); };
+  window._pcrmWonScopeDel = (i) => { _wonScopeSync(); _wonScope.splice(i, 1); window._pcrmWonScopeRender(); };
+
+  // ── Colar proposta → IA preenche ──
+  window._pcrmWonAI = async () => {
+    const text = (document.getElementById('won-proposal')?.value || '').trim();
+    const msg = document.getElementById('won-ai-msg');
+    const btn = document.getElementById('won-ai-btn');
+    const show = (html, kind = '') => { if (msg) { msg.hidden = false; msg.className = 'won-ai-msg ' + kind; msg.innerHTML = html; } };
+    if (text.length < 20) { show('Cole o texto da proposta e do escopo primeiro.', 'warn'); return; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader"></i> Lendo a proposta...'; lucide.createIcons(); }
+    try {
+      const { data: { session } } = await window.sb.auth.getSession();
+      const r = await fetch('/api/proposal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ text, today: _todayISO() }),
+      });
+      if (r.status === 404) throw new Error('A leitura por IA só funciona no link publicado (Vercel), não na cópia local.');
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || `Erro ${r.status}`);
+      _pcrmWonApply(data.fields || {});
+      const f = data.fields || {};
+      show(`<b>Campos preenchidos.</b> ${_esc(f.summary || '')}${(f.warnings || []).length ? `<ul>${f.warnings.map(w => `<li>${_esc(w)}</li>`).join('')}</ul>` : ''}<span>Confira tudo antes de fechar.</span>`, 'ok');
+    } catch (e) {
+      show(_esc(e.message || 'Não foi possível ler a proposta.'), 'err');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="wand-sparkles"></i> Preencher com IA'; lucide.createIcons(); }
+    }
+  };
+  function _pcrmWonApply(f) {
+    const set = (id, v) => { const el = document.getElementById(id); if (el && v !== null && v !== undefined && v !== '') el.value = v; };
+    if (f.deal_type) {
+      const r = document.querySelector(`input[name="won-deal-type"][value="${f.deal_type}"]`);
+      if (r) { r.checked = true; window._pcrmWonDealTypeChanged(f.deal_type); }
+    }
+    if (f.deal_type === 'revenue_share' && f.rev_share_pct != null) { set('won-rs-pct', f.rev_share_pct); window._pcrmWonRsPctChanged(f.rev_share_pct); }
+    set('won-fixo-value', f.monthly_value);
+    set('won-fixo-months', f.contract_months);
+    set('won-fixo-start', f.start_date);
+    set('won-fixo-mode', f.scope_mode);
+    set('won-contract-url', f.contract_url);
+    set('won-fixo-goals', f.goals);
+    if (Array.isArray(f.deliverables) && f.deliverables.length) {
+      _wonScope = f.deliverables.map(d => ({ kind: d.kind, platform: d.platform, qty: d.qty, notes: d.notes || '' }));
+    }
+    window._pcrmWonScopeRender();
+  }
+  window._pcrmWonApply = _pcrmWonApply;
 
   window._pcrmWonDealTypeChanged = (val) => {
     document.getElementById('won-rs-block').style.display = val === 'revenue_share' ? 'block' : 'none';
@@ -524,34 +626,105 @@
     if (warn) warn.style.display = pct > 50 ? 'block' : 'none';
   };
 
+  // Texto legível do escopo, guardado no card (histórico)
+  const _scopeText = (rows, pkg) => rows.map(x => {
+    const k = _KINDS().find(k => k.id === x.kind)?.label || x.kind;
+    return `${x.qty} ${k} · ${x.platform}${pkg ? '' : '/mês'}${x.notes ? ` (${x.notes})` : ''}`;
+  }).join('\n');
+
   window._pcrmConfirmWon = () => {
     const typeRadio = document.querySelector('input[name="won-deal-type"]:checked');
     const dealType = typeRadio?.value;
     if (!dealType) { toast('Escolha o tipo de negócio', 'w'); return; }
-    const terms = { deal_type: dealType };
+    const val = (id) => (document.getElementById(id)?.value || '').trim();
+    const terms = { deal_type: dealType, proposal_text: val('won-proposal') || null };
     if (dealType === 'revenue_share') {
-      const pct = parseFloat(document.getElementById('won-rs-pct')?.value);
+      const pct = parseFloat(val('won-rs-pct'));
       if (isNaN(pct) || pct <= 0 || pct > 100) { toast('Informe um percentual válido (0 a 100)', 'w'); return; }
       if (window.__pcrmWonCtx?.isSub && pct > 50) { toast('Sub não pode ter mais que 50% (pool total do time)', 'e'); return; }
-      terms.rev_share_pct = pct;
-      // Clear fixed fields so UPDATE doesn't carry stale values
-      terms.fixed_monthly_value = null;
-      terms.fixed_contract_months = null;
-      terms.fixed_goals = null;
-      terms.fixed_deliverables = null;
+      Object.assign(terms, {
+        rev_share_pct: pct, fixed_monthly_value: null, fixed_contract_months: null, fixed_goals: null, fixed_deliverables: null,
+        fixed_scope: null, fixed_scope_mode: null, fixed_start_date: null, contract_url: null, contract_status: null,
+      });
     } else {
-      const value = parseFloat(document.getElementById('won-fixo-value')?.value);
+      _wonScopeSync();
+      const value = parseFloat(val('won-fixo-value'));
       if (isNaN(value) || value <= 0) { toast('Informe o valor mensal', 'w'); return; }
-      terms.fixed_monthly_value = value;
-      const months = parseInt(document.getElementById('won-fixo-months')?.value, 10);
-      terms.fixed_contract_months = isNaN(months) ? null : months;
-      terms.fixed_goals = (document.getElementById('won-fixo-goals')?.value || '').trim() || null;
-      terms.fixed_deliverables = (document.getElementById('won-fixo-deliverables')?.value || '').trim() || null;
-      terms.rev_share_pct = null;
+      const months = parseInt(val('won-fixo-months'), 10);
+      const url = val('won-contract-url');
+      if (url && !/^https?:\/\//i.test(url)) { toast('O link do contrato precisa começar com https://', 'w'); return; }
+      const pkg = val('won-fixo-mode') === 'package';
+      const rows = _wonScope.filter(x => x.kind && Number(x.qty) > 0)
+        .map(x => ({ kind: x.kind, platform: x.platform || null, qty: Math.round(Number(x.qty)), notes: x.notes || null }));
+      Object.assign(terms, {
+        fixed_monthly_value: value,
+        fixed_contract_months: isNaN(months) ? null : months,
+        fixed_start_date: val('won-fixo-start') || null,
+        fixed_scope_mode: pkg ? 'package' : 'monthly',
+        fixed_scope: rows.length ? rows : null,
+        fixed_deliverables: rows.length ? _scopeText(rows, pkg) : null,
+        fixed_goals: val('won-fixo-goals') || null,
+        contract_url: url || null,
+        contract_status: val('won-contract-status') || null,
+        rev_share_pct: null,
+      });
     }
-    if (typeof window.__pcrmPendingWonConfirm === 'function') {
-      window.__pcrmPendingWonConfirm(terms);
+    if (typeof window.__pcrmPendingWonConfirm === 'function') window.__pcrmPendingWonConfirm(terms);
+  };
+
+  // Card fechado e editado → grava no parceiro: valor, datas, tipo de escopo,
+  // contrato e as linhas do escopo (atualiza as que já existem pelo formato +
+  // plataforma, cria as novas e remove as que saíram; entregas já lançadas ficam).
+  async function _pcrmSyncPartner(partner, terms) {
+    const db = window.sb.schema('crm');
+    const start = terms.fixed_start_date || partner.start_date;
+    let end = partner.end_date;
+    if (start && terms.fixed_contract_months) {
+      const d = new Date(start + 'T12:00:00'); d.setMonth(d.getMonth() + Number(terms.fixed_contract_months));
+      end = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
+    const brl = (v) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const patch = {
+      monthly_value: terms.fixed_monthly_value,
+      deal_summary: `Fixo R$ ${brl(terms.fixed_monthly_value)}/mês${terms.fixed_contract_months ? ` · ${terms.fixed_contract_months} meses` : ''}`,
+      start_date: start, end_date: end,
+      scope_mode: terms.fixed_scope_mode || 'monthly',
+      contract_url: terms.contract_url, contract_status: terms.contract_status,
+    };
+    const { data: upd, error } = await db.from('partners').update(patch).eq('id', partner.id).select().single();
+    if (error) throw error;
+    const i = (STATE.crm.partners || []).findIndex(x => x.id === partner.id);
+    if (i >= 0 && upd) STATE.crm.partners[i] = upd;
+
+    const cur = (STATE.crm.partnerScope || []).filter(x => x.partner_id === partner.id);
+    const key = (x) => `${x.kind}|${x.platform || ''}`;
+    const want = terms.fixed_scope || [];
+    const keep = new Set();
+    for (let pos = 0; pos < want.length; pos++) {
+      const w = want[pos];
+      const ex = cur.find(x => key(x) === key(w) && !keep.has(x.id));
+      if (ex) {
+        keep.add(ex.id);
+        const { error: e } = await db.from('partner_scope').update({ qty: w.qty, notes: w.notes || null, position: pos }).eq('id', ex.id);
+        if (e) throw e;
+      } else {
+        const { data: ins, error: e } = await db.from('partner_scope').insert({ partner_id: partner.id, kind: w.kind, platform: w.platform || null, qty: w.qty, notes: w.notes || null, position: pos }).select().single();
+        if (e) throw e;
+        if (ins) keep.add(ins.id);
+      }
+    }
+    const gone = cur.filter(x => !keep.has(x.id)).map(x => x.id);
+    if (gone.length) { const { error: e } = await db.from('partner_scope').delete().in('id', gone); if (e) throw e; }
+    if (window.CRM?.loadPartners) await CRM.loadPartners();
+  }
+
+  // Card fechado → abre o parceiro dentro do universo da marca
+  window._pcrmGoPartner = (partnerId) => {
+    const p = (STATE.crm.partners || []).find(x => x.id === partnerId);
+    if (!p) return;
+    closeModal();
+    if (window.enterBrand && p.product_id) enterBrand(p.product_id, 'partners'); else openMod('partners');
+    setTimeout(() => { window._ptnProduct && p.product_id && _ptnProduct(p.product_id); window._ptnOpen && _ptnOpen(p.id); }, 500);
   };
 
   function _pcrmOpenLostReasonModal(card, destStage, onConfirm) {
@@ -1108,13 +1281,20 @@
           </div>
         `;
       } else if (dealType === 'fixo') {
+        const partner = (STATE.crm.partners || []).find(x => x.card_id === card.id);
+        const startTxt = card.fixed_start_date ? new Date(card.fixed_start_date + 'T12:00:00').toLocaleDateString('pt-BR') : '';
         dealBody = `
           <div style="font-size:13px;color:var(--text);line-height:1.6">
-            <div><strong>Tipo:</strong> Fixo</div>
+            <div><strong>Tipo:</strong> Fixo${card.fixed_scope_mode === 'package' ? ' · pacote fechado' : ''}</div>
             <div><strong>Mensal:</strong> ${_fmtBRL(card.fixed_monthly_value)}</div>
-            ${card.fixed_contract_months ? `<div><strong>Contrato:</strong> ${card.fixed_contract_months} mês${card.fixed_contract_months > 1 ? 'es' : ''}</div>` : ''}
+            ${card.fixed_contract_months ? `<div><strong>Contrato:</strong> ${card.fixed_contract_months} mês${card.fixed_contract_months > 1 ? 'es' : ''}${startTxt ? ` a partir de ${startTxt}` : ''}</div>` : (startTxt ? `<div><strong>Início:</strong> ${startTxt}</div>` : '')}
+            ${card.contract_status || card.contract_url ? `<div><strong>Contrato:</strong> ${_esc(CONTRACT_STATUS[card.contract_status] || 'link')}${card.contract_url ? ` · <a href="${_esc(card.contract_url)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:underline">abrir</a>` : ''}</div>` : ''}
             ${card.fixed_goals ? `<div style="margin-top:6px"><strong>Metas:</strong><div style="white-space:pre-wrap;color:var(--text2);font-size:12.5px;margin-top:2px">${_esc(card.fixed_goals)}</div></div>` : ''}
-            ${card.fixed_deliverables ? `<div style="margin-top:6px"><strong>Entregas:</strong><div style="white-space:pre-wrap;color:var(--text2);font-size:12.5px;margin-top:2px">${_esc(card.fixed_deliverables)}</div></div>` : ''}
+            ${Array.isArray(card.fixed_scope) && card.fixed_scope.length
+              ? `<div style="margin-top:6px"><strong>Escopo ${card.fixed_scope_mode === 'package' ? 'do pacote' : 'por mês'}:</strong><div style="white-space:pre-wrap;color:var(--text2);font-size:12.5px;margin-top:2px">${_esc(_scopeText(card.fixed_scope, card.fixed_scope_mode === 'package'))}</div></div>`
+              : `<div class="won-note" style="margin-top:10px"><i data-lucide="list-plus"></i><span>Escopo ainda não preenchido.${card.fixed_deliverables ? ` Anotado antes: ${_esc(card.fixed_deliverables)}` : ''}</span></div>
+                 <button class="btn btn-theme" style="margin-top:8px" onclick="window._pcrmEditWonDeal('${card.id}')"><i data-lucide="list-plus"></i> Completar escopo</button>`}
+            ${partner ? `<button class="btn btn-outline" style="margin-top:10px" onclick="window._pcrmGoPartner('${partner.id}')"><i data-lucide="handshake"></i> Ver parceiro</button>` : ''}
           </div>
         `;
       } else {
@@ -1374,9 +1554,11 @@
     closeModal();
     _pcrmOpenWonDealModal(card, stage, async (terms) => {
       try {
+        const partner = (STATE.crm.partners || []).find(x => x.card_id === cardId);
         await CRM.cards.update(cardId, { stage_id: card.stage_id, ...terms });
+        if (partner && terms.deal_type === 'fixo') await _pcrmSyncPartner(partner, terms);
         _renderBoard(card.scope || 'b2b');
-        toast('Termos atualizados', 's');
+        toast(partner && terms.deal_type === 'fixo' ? 'Termos atualizados aqui e em Parceiros' : 'Termos atualizados', 's');
       } catch (e) {
         toast('Erro ao salvar: ' + (e.message || 'desconhecido'), 'e');
       }
@@ -1433,7 +1615,7 @@
         try {
           await CRM.cards.update(cardId, { stage_id: stageId, ...terms });
           _renderBoard(card.scope || 'b2b');
-          toast('Negócio fechado! 🎉', 's');
+          toast(terms.deal_type === 'fixo' ? 'Negócio fechado. O parceiro já está em Parceiros com o escopo.' : 'Negócio fechado', 's');
         } catch (e) {
           toast('Erro ao fechar: ' + (e.message || 'desconhecido'), 'e');
         }

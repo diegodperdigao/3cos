@@ -611,7 +611,8 @@
     const contractLine = [isPkg ? 'Pacote fechado' : 'Escopo mensal',
       Number(p.monthly_value) > 0 ? `${_brl(p.monthly_value)}/mês` : 'sem valor',
       p.start_date ? `desde ${_fmt(p.start_date)}` : '', p.end_date ? `até ${_fmt(p.end_date)}` : '',
-      owner ? owner.name.split(' ')[0] : ''].filter(Boolean).map(esc).join(' · ');
+      owner ? owner.name.split(' ')[0] : '',
+      p.contract_status === 'signed' ? 'contrato assinado' : p.contract_status === 'sent' ? 'contrato enviado' : p.contract_status === 'draft' ? 'contrato em elaboração' : ''].filter(Boolean).map(esc).join(' · ');
     const PRESETS = [['reel', 'Instagram', 4, 'Reels'], ['story', 'Instagram', 8, 'Stories'], ['short', 'TikTok', 4, 'TikToks'], ['live', 'Twitch', 2, 'Lives'], ['video', 'YouTube', 1, 'vídeo longo']];
     box.innerHTML = `
       <div class="ptn-d-head">
@@ -665,6 +666,8 @@
         <div class="ff"><label>Responsável</label><select class="fi" ${upd('owner')}>${opt(users, p.owner)}</select></div>
         <div class="ff"><label>Início</label><input type="date" class="fi" value="${esc(p.start_date || '')}" ${upd('start_date')}></div>
         <div class="ff"><label>${isPkg ? 'Prazo final' : 'Fim do contrato'}</label><input type="date" class="fi" value="${esc(p.end_date || '')}" ${upd('end_date')}></div>
+        <div class="ff"><label>Contrato</label><select class="fi" ${upd('contract_status')}>${opt([['', '—'], ['draft', 'Em elaboração'], ['sent', 'Enviado para assinatura'], ['signed', 'Assinado']], p.contract_status || '')}</select></div>
+        <div class="ff ptn-d-wide"><label>Link do contrato${p.contract_url ? ` · <a href="${esc(p.contract_url)}" target="_blank" rel="noopener">abrir</a>` : ''}</label><input type="url" class="fi" placeholder="https://..." value="${esc(p.contract_url || '')}" ${upd('contract_url')}></div>
       </div>
       </details>
       <div class="ff ptn-notes"><label>Observações</label><textarea class="fi" rows="${p.notes && p.notes.length > 120 ? 4 : 2}" placeholder="Combinados, contatos, briefing..." ${upd('notes')}>${esc(p.notes || '')}</textarea></div>`;
@@ -890,5 +893,5 @@
   };
 
   // Compartilhado com o módulo Calendário (js/calendar.js)
-  window.PTN = { KINDS, D_STATUS, CONTENT_FIELDS, kindOf, dStatus, isDone, products: _products, load: _load };
+  window.PTN = { KINDS, PLATFORMS, D_STATUS, CONTENT_FIELDS, kindOf, dStatus, isDone, products: _products, load: _load };
 })();
