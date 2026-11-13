@@ -556,7 +556,7 @@
     }).join('');
     const legend = ['planned', 'late', 'delivered', 'approved', 'rejected'].map(k => `<span><i style="background:${D_STATUS[k].color}"></i>${D_STATUS[k].label}</span>`).join('');
     const agenda = delivs.length ? delivs.map(_rowHTML.bind(null, true)).join('')
-      : `<div class="empty" style="padding:28px"><i data-lucide="calendar-x"></i><p>Nenhuma entrega prevista em ${_monthLabel(_month)}. Abra um parceiro e use "Gerar pauta do mês".</p></div>`;
+      : `<div class="empty" style="padding:28px"><i data-lucide="calendar-x"></i><p>Nenhuma entrega em ${_monthLabel(_month)}. Registre as entregas dentro de cada parceiro, quando forem publicadas.</p></div>`;
     return `<div class="ptn-cal">
         <div class="ptn-cal-head">${WEEKDAYS.map(w => `<div>${w}</div>`).join('')}</div>
         <div class="ptn-cal-grid">${grid}</div>
@@ -677,13 +677,12 @@
             <span>${_monthLabel(_detailMonth)}</span>
             <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(1)" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button></div>`}
         </div>
-        ${pr.target ? `<div class="ptn-scope-mini" style="margin-bottom:12px">${pr.rows.map(r => `<span class="${r.done >= r.s.qty ? 'ok' : ''}"><i data-lucide="${kindOf(r.s.kind).icon}"></i>${esc(kindOf(r.s.kind).label)}${r.s.platform ? ' · ' + esc(r.s.platform) : ''} <b>${r.done}/${r.s.qty}</b></span>`).join('')}<span class="ptn-mini-note">${pr.planned} na pauta</span></div>` : ''}
+        ${pr.target ? `<div class="ptn-scope-mini" style="margin-bottom:12px">${pr.rows.map(r => `<span class="${r.done >= r.s.qty ? 'ok' : ''}"><i data-lucide="${kindOf(r.s.kind).icon}"></i>${esc(kindOf(r.s.kind).label)}${r.s.platform ? ' · ' + esc(r.s.platform) : ''} <b>${r.done}/${r.s.qty}</b></span>`).join('')}${pr.planned ? `<span class="ptn-mini-note">${pr.planned} prevista${pr.planned > 1 ? 's' : ''}</span>` : ''}</div>` : ''}
         <div class="ptn-d-actions">
-          ${scope.length ? `<button class="btn ${delivs.length ? 'btn-outline' : 'btn-theme'}" onclick="window._ptnGenerate()"><i data-lucide="wand-sparkles"></i> Gerar pauta ${isPkg ? 'do pacote' : 'do mês'}</button>` : ''}
-          <button class="btn btn-outline" onclick="window._ptnNewDelivery({partner_id:'${p.id}'})"><i data-lucide="plus"></i> Entrega avulsa</button>
+          <button class="btn btn-theme" onclick="window._ptnNewDelivery({partner_id:'${p.id}'})"><i data-lucide="plus"></i> Registrar entrega</button>
         </div>
         <div class="ptn-rows">${delivs.length ? delivs.map(_rowHTML.bind(null, false)).join('')
-          : `<div class="ptn-hint">${scope.length ? '"Gerar pauta" cria as entregas do escopo com datas espalhadas no período. Depois é só ajustar.' : 'Defina o escopo acima para gerar a pauta.'}</div>`}</div>
+          : `<div class="ptn-hint">${scope.length ? `Nenhuma entrega registrada ${isPkg ? 'no pacote' : 'neste mês'}. Quando o parceiro publicar, clique em "Registrar entrega" e cole o link.` : 'Defina o escopo acima e registre as entregas quando forem publicadas.'}</div>`}</div>
       </div>
 
       <details class="ptn-d-sec ptn-contract" ${_contractOpen ? "open" : ""} ontoggle="window._ptnContract(this.open)">
@@ -747,45 +746,12 @@
     try { await _upd('partner_scope', id, { qty }); _afterChange(); } catch (e) { _err(e); }
   };
   window._ptnScopeDel = async (id) => {
-    if (!confirm('Remover este item do escopo? As entregas já criadas continuam na pauta.')) return;
+    if (!confirm('Remover este item do escopo? As entregas já registradas continuam.')) return;
     try { await _del('partner_scope', id); _afterChange(); } catch (e) { _err(e); }
   };
 
   // Cria as entregas que faltam para bater o escopo, com datas espalhadas
   // no período (mês ou prazo do pacote). Não duplica o que já existe.
-  window._ptnGenerate = async () => {
-    const p = partnerById(_detailId);
-    if (!p) return;
-    const isPkg = p.scope_mode === 'package';
-    let from, to;
-    if (isPkg) {
-      from = _parse(p.start_date) || new Date();
-      to = _parse(p.end_date) || _addDays(from, 30);
-    } else {
-      from = _detailMonth; to = _monthEnd(_detailMonth);
-      const st = _parse(p.start_date); if (st && st > from) from = st;
-      const en = _parse(p.end_date); if (en && en < to) to = en;
-    }
-    if (from > to) { toast('O período fica fora do contrato deste parceiro', 'w'); return; }
-    const span = Math.round((to - from) / 86400000) + 1;
-    const delivs = _periodDelivs(p, _detailMonth);
-    const rows = [];
-    scopeOf(p.id).forEach(s => {
-      const have = delivs.filter(d => d.scope_id ? d.scope_id === s.id : (d.kind === s.kind && (d.platform || '') === (s.platform || ''))).length;
-      const missing = s.qty - have;
-      for (let i = 0; i < missing; i++) {
-        const idx = have + i;
-        const due = _addDays(from, Math.min(span - 1, Math.floor((idx + 0.5) * span / s.qty)));
-        rows.push({
-          partner_id: p.id, scope_id: s.id, kind: s.kind, platform: s.platform, status: 'planned',
-          due_date: _iso(due), period: isPkg ? null : _iso(_detailMonth), created_by: STATE.user?.id || null,
-        });
-      }
-    });
-    if (!rows.length) { toast('A pauta já cobre todo o escopo deste período', 'i'); return; }
-    try { await _ins('partner_deliveries', rows); _afterChange(); toast(`${rows.length} entrega${rows.length > 1 ? 's' : ''} na pauta`, 's'); }
-    catch (e) { _err(e); }
-  };
 
   window._ptnDeletePartner = async (id) => {
     const p = partnerById(id);
