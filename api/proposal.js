@@ -19,7 +19,13 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABAS
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_pLaVyissnbo1jvOwfoG3pQ_ENDQZrpd';
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-const FALLBACK_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+// Ordem de tentativa. O Gemini às vezes fica sobrecarregado (503) ou sem cota
+// momentânea (429): troca de modelo e, se todos falharem, espera e tenta de novo.
+const FALLBACK_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+const ROUNDS = 3;                 // voltas pela lista de modelos
+const ROUND_WAIT_MS = [0, 2500, 6000];
+const ATTEMPT_TIMEOUT_MS = 12000; // por chamada
+const BUDGET_MS = 45000;          // tempo total (a função tem 60s na Vercel)
 const MAX_CHARS = 20000;
 
 // Mesmos formatos e plataformas do módulo Parceiros (js/partners.js)
@@ -141,32 +147,49 @@ module.exports = async function handler(req, res) {
   const today = /^\d{4}-\d{2}-\d{2}$/.test(body.today || '') ? body.today : new Date().toISOString().slice(0, 10);
 
   const attempts = [];
-  for (const modelId of [MODEL, ...FALLBACK_MODELS.filter(m => m !== MODEL)]) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: PROMPT(text, today) }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 2048, responseMimeType: 'application/json', responseSchema: SCHEMA },
-        }),
-      });
-      const data = await r.json();
-      if (!r.ok) {
-        const msg = data?.error?.message || `HTTP ${r.status}`;
-        attempts.push({ model: modelId, status: r.status, error: msg });
-        // Modelo fora, sem cota ou sobrecarregado: tenta o próximo
-        if ([404, 429, 500, 503].includes(r.status)) continue;
-        return res.status(502).json({ error: 'A leitura da proposta falhou: ' + msg });
+  const started = Date.now();
+  const models = [MODEL, ...FALLBACK_MODELS.filter(m => m !== MODEL)];
+  for (let round = 0; round < ROUNDS; round++) {
+    if (ROUND_WAIT_MS[round]) await new Promise(r => setTimeout(r, ROUND_WAIT_MS[round]));
+    for (const modelId of models) {
+      if (Date.now() - started > BUDGET_MS) break;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), ATTEMPT_TIMEOUT_MS);
+      try {
+        const r = await fetch(url, {
+          method: 'POST',
+          signal: ctrl.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: PROMPT(text, today) }] }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 4096, responseMimeType: 'application/json', responseSchema: SCHEMA },
+          }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const msg = data?.error?.message || `HTTP ${r.status}`;
+          attempts.push({ round, model: modelId, status: r.status, error: msg.slice(0, 200) });
+          // Modelo fora, sem cota ou sobrecarregado: tenta o próximo
+          if ([404, 408, 429, 500, 502, 503, 504].includes(r.status)) continue;
+          return res.status(502).json({ error: 'A leitura da proposta falhou: ' + msg, attempts });
+        }
+        const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+        let parsed;
+        try { parsed = JSON.parse(raw); } catch (_) {
+          attempts.push({ round, model: modelId, error: 'resposta fora do formato' });
+          continue; // resposta cortada ou fora do JSON: tenta outro modelo
+        }
+        return res.status(200).json({ fields: sanitize(parsed), model: modelId, attempts: attempts.length ? attempts : undefined });
+      } catch (e) {
+        attempts.push({ round, model: modelId, error: e.name === 'AbortError' ? 'tempo esgotado' : (e.message || String(e)) });
+      } finally {
+        clearTimeout(timer);
       }
-      const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '{}';
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch (_) { return res.status(502).json({ error: 'Resposta da IA veio em formato inesperado. Tente de novo.' }); }
-      return res.status(200).json({ fields: sanitize(parsed), model: modelId });
-    } catch (e) {
-      attempts.push({ model: modelId, error: e.message || String(e) });
     }
   }
-  return res.status(502).json({ error: 'Nenhum modelo disponível agora. Tente de novo em instantes.', attempts });
+  console.error('[api/proposal] todos os modelos falharam', attempts);
+  return res.status(503).json({ error: 'A IA está sobrecarregada agora. Tente de novo em 1 minuto ou preencha as linhas à mão.', attempts });
 };
+
+module.exports.config = { maxDuration: 60 };
