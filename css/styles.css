@@ -7576,3 +7576,9 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 .ptn-noscope{cursor:pointer;}
 .ptn-noscope:hover{border-color:var(--text3) !important;}
 .ptn-noscope:focus-visible{outline:2px solid var(--theme);outline-offset:2px;}
+/* Mínimo garantido na janela "Ganho" */
+.won-mg{gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;border:1px solid var(--gb2);border-radius:var(--r-sm,4px);background:var(--bg3);}
+.won-mg .ff{flex:0 0 auto;}
+.won-mg-hint{flex:1;min-width:220px;margin:0;font-size:12.5px;line-height:1.5;color:var(--text2);}
+.won-mg-hint strong{color:var(--text);}
+.pcrm-deal-type-opt{flex:1;}

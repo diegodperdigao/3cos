@@ -290,7 +290,7 @@
 
     // Negócio Fixo ganho sem escopo: lembra de completar (vira o escopo do parceiro)
     const _st = CRM.stageById(card.stage_id);
-    const needsScope = _st?.is_won && card.deal_type === 'fixo' && !(Array.isArray(card.fixed_scope) && card.fixed_scope.length);
+    const needsScope = _st?.is_won && _isFixedLike(card.deal_type) && !(Array.isArray(card.fixed_scope) && card.fixed_scope.length);
     const scopeChip = needsScope ? `<span class="kan-card-tag kan-card-tag-c kan-scope-miss" style="--tag-c:var(--amber)" title="Negócio fechado sem escopo: abra o card e clique em Completar escopo"><i data-lucide="list-plus" style="width:9px;height:9px"></i> Completar escopo</span>` : '';
 
     const tier = contact?.tier && window._ctcTierById ? _ctcTierById(contact.tier) : null;
@@ -366,7 +366,7 @@
         try {
           await CRM.cards.update(cardId, { stage_id: stageId, ...terms });
           _renderBoard(scope);
-          toast(terms.deal_type === 'fixo' ? 'Negócio fechado. O parceiro já está em Parceiros com o escopo.' : 'Negócio fechado', 's');
+          toast(_isFixedLike(terms.deal_type) ? 'Negócio fechado. O parceiro já está em Parceiros com o escopo.' : 'Negócio fechado', 's');
         } catch (e) {
           toast('Erro ao fechar: ' + (e.message || 'desconhecido'), 'e');
         }
@@ -389,6 +389,8 @@
   // parceiro em Parceiros, sem digitar de novo), contrato e metas.
   // "Colar proposta": o mesmo texto que vai para o jurídico; a IA (/api/proposal)
   // preenche os campos e a pessoa revisa antes de fechar.
+  // Fixo e Mínimo garantido têm valor fixo mensal e viram parceiro (com escopo)
+  const _isFixedLike = (t) => t === 'fixo' || t === 'minimo_garantido';
   const _todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const _KINDS = () => (window.PTN?.KINDS || [{ id: 'reel', label: 'Reel' }, { id: 'story', label: 'Stories' }, { id: 'post', label: 'Post no feed' }, { id: 'short', label: 'TikTok / Shorts' }, { id: 'video', label: 'Vídeo longo' }, { id: 'live', label: 'Live' }, { id: 'other', label: 'Outro' }]);
   const _PLATFORMS = () => (window.PTN?.PLATFORMS || ['Instagram', 'TikTok', 'YouTube', 'Twitch', 'Kick', 'X', 'Discord', 'Outro']);
@@ -415,6 +417,7 @@
     const partner = (STATE.crm.partners || []).find(x => x.card_id === card.id);
     if (partner) {
       if (partner.monthly_value != null) existing.fixed_monthly_value = partner.monthly_value;
+      if (partner.deal_type === 'minimo_garantido') { existing.deal_type = 'minimo_garantido'; existing.rev_share_pct = partner.rev_share_pct ?? existing.rev_share_pct; }
       if (partner.start_date) existing.fixed_start_date = partner.start_date;
       if (partner.scope_mode) existing.fixed_scope_mode = partner.scope_mode;
       if (partner.contract_url) existing.contract_url = partner.contract_url;
@@ -457,6 +460,10 @@
               <input type="radio" name="won-deal-type" value="fixo" ${existing.deal_type === 'fixo' ? 'checked' : ''} onchange="window._pcrmWonDealTypeChanged('fixo')">
               <span><i data-lucide="banknote" style="width:14px;height:14px"></i> Fixo</span>
             </label>
+            <label class="pcrm-deal-type-opt">
+              <input type="radio" name="won-deal-type" value="minimo_garantido" ${existing.deal_type === 'minimo_garantido' ? 'checked' : ''} onchange="window._pcrmWonDealTypeChanged('minimo_garantido')">
+              <span><i data-lucide="shield-check" style="width:14px;height:14px"></i> Mínimo garantido</span>
+            </label>
           </div>
         </div>
 
@@ -479,9 +486,15 @@
         </div>
 
         <!-- Fixo -->
-        <div id="won-fixo-block" style="display:${existing.deal_type === 'fixo' ? 'block' : 'none'}">
+        <div id="won-fixo-block" style="display:${_isFixedLike(existing.deal_type) ? 'block' : 'none'}">
+          <div id="won-mg-block" class="won-mg" style="display:${existing.deal_type === 'minimo_garantido' ? 'flex' : 'none'}">
+            <div class="ff">${lbl('RevShare', true)}<div style="display:flex;align-items:center;gap:8px">
+              <input id="won-mg-pct" type="number" min="0" max="100" step="0.1" value="${existing.deal_type === 'minimo_garantido' ? existing.rev_share_pct : ''}" class="fi" style="width:100px;text-align:right" placeholder="30">
+              <span style="font-size:15px;color:var(--text2);font-weight:600">%</span></div></div>
+            <p class="won-mg-hint">O parceiro recebe o <strong>maior</strong> valor do mês: o mínimo garantido ou o percentual da receita que ele gerou. Não soma os dois. Parceiros calcula o "a pagar" quando a receita do mês é lançada em Resultados.</p>
+          </div>
           <div class="won-grid">
-            <div class="ff">${lbl('Valor mensal (R$)', true)}<input id="won-fixo-value" type="number" min="0" step="0.01" value="${existing.fixed_monthly_value}" class="fi" placeholder="5000"></div>
+            <div class="ff"><label class="won-lbl" id="won-fixo-value-lbl">${existing.deal_type === 'minimo_garantido' ? 'Mínimo garantido por mês (R$)' : 'Valor mensal (R$)'} <span class="won-req">*</span></label><input id="won-fixo-value" type="number" min="0" step="0.01" value="${existing.fixed_monthly_value}" class="fi" placeholder="5000"></div>
             <div class="ff">${lbl('Duração (meses)')}<input id="won-fixo-months" type="number" min="1" step="1" value="${existing.fixed_contract_months}" class="fi" placeholder="3"></div>
             <div class="ff">${lbl('Início')}<input id="won-fixo-start" type="date" value="${_esc(existing.fixed_start_date)}" class="fi"></div>
             <div class="ff">${lbl('Tipo de escopo')}<select id="won-fixo-mode" class="fi" onchange="window._pcrmWonScopeRender()">
@@ -597,6 +610,7 @@
       if (r) { r.checked = true; window._pcrmWonDealTypeChanged(f.deal_type); }
     }
     if (f.deal_type === 'revenue_share' && f.rev_share_pct != null) { set('won-rs-pct', f.rev_share_pct); window._pcrmWonRsPctChanged(f.rev_share_pct); }
+    if (f.deal_type === 'minimo_garantido' && f.rev_share_pct != null) set('won-mg-pct', f.rev_share_pct);
     set('won-fixo-value', f.monthly_value);
     set('won-fixo-months', f.contract_months);
     set('won-fixo-start', f.start_date);
@@ -612,7 +626,10 @@
 
   window._pcrmWonDealTypeChanged = (val) => {
     document.getElementById('won-rs-block').style.display = val === 'revenue_share' ? 'block' : 'none';
-    document.getElementById('won-fixo-block').style.display = val === 'fixo' ? 'block' : 'none';
+    document.getElementById('won-fixo-block').style.display = _isFixedLike(val) ? 'block' : 'none';
+    const mg = document.getElementById('won-mg-block'); if (mg) mg.style.display = val === 'minimo_garantido' ? 'flex' : 'none';
+    const vl = document.getElementById('won-fixo-value-lbl');
+    if (vl) vl.innerHTML = (val === 'minimo_garantido' ? 'Mínimo garantido por mês (R$)' : 'Valor mensal (R$)') + ' <span class="won-req">*</span>';
   };
 
   window._pcrmWonRsPctChanged = (val) => {
@@ -655,8 +672,12 @@
       });
     } else {
       _wonScopeSync();
+      const isMG = dealType === 'minimo_garantido';
       const value = parseFloat(val('won-fixo-value'));
-      if (isNaN(value) || value <= 0) { toast('Informe o valor mensal', 'w'); return; }
+      if (isNaN(value) || value <= 0) { toast(isMG ? 'Informe o mínimo garantido mensal' : 'Informe o valor mensal', 'w'); return; }
+      const mgPct = parseFloat(val('won-mg-pct'));
+      if (isMG && (isNaN(mgPct) || mgPct <= 0 || mgPct > 100)) { toast('Informe o percentual de RevShare (0 a 100)', 'w'); return; }
+      if (isMG && window.__pcrmWonCtx?.isSub && mgPct > 50) { toast('Sub não pode ter mais que 50% (pool total do time)', 'e'); return; }
       const months = parseInt(val('won-fixo-months'), 10);
       const url = val('won-contract-url');
       if (url && !/^https?:\/\//i.test(url)) { toast('O link do contrato precisa começar com https://', 'w'); return; }
@@ -673,7 +694,7 @@
         fixed_goals: val('won-fixo-goals') || null,
         contract_url: url || null,
         contract_status: val('won-contract-status') || null,
-        rev_share_pct: null,
+        rev_share_pct: isMG ? mgPct : null,
       });
     }
     if (typeof window.__pcrmPendingWonConfirm === 'function') window.__pcrmPendingWonConfirm(terms);
@@ -693,7 +714,11 @@
     const brl = (v) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const patch = {
       monthly_value: terms.fixed_monthly_value,
-      deal_summary: `Fixo R$ ${brl(terms.fixed_monthly_value)}/mês${terms.fixed_contract_months ? ` · ${terms.fixed_contract_months} meses` : ''}`,
+      deal_type: terms.deal_type === 'minimo_garantido' ? 'minimo_garantido' : 'fixo',
+      rev_share_pct: terms.deal_type === 'minimo_garantido' ? terms.rev_share_pct : null,
+      deal_summary: (terms.deal_type === 'minimo_garantido'
+        ? `Mínimo garantido R$ ${brl(terms.fixed_monthly_value)}/mês ou ${String(terms.rev_share_pct).replace('.', ',')}% RevShare (o maior)`
+        : `Fixo R$ ${brl(terms.fixed_monthly_value)}/mês`) + (terms.fixed_contract_months ? ` · ${terms.fixed_contract_months} meses` : ''),
       start_date: start, end_date: end,
       scope_mode: terms.fixed_scope_mode || 'monthly',
       contract_url: terms.contract_url, contract_status: terms.contract_status,
@@ -1287,13 +1312,15 @@
             ${isSub ? `<div><strong>Master (automático):</strong> ${masterPct}% <span style="font-size:11px;color:var(--text3)">— pool total 50%</span></div>` : ''}
           </div>
         `;
-      } else if (dealType === 'fixo') {
+      } else if (_isFixedLike(dealType)) {
         const partner = (STATE.crm.partners || []).find(x => x.card_id === card.id);
         const startTxt = card.fixed_start_date ? new Date(card.fixed_start_date + 'T12:00:00').toLocaleDateString('pt-BR') : '';
         dealBody = `
           <div style="font-size:13px;color:var(--text);line-height:1.6">
-            <div><strong>Tipo:</strong> Fixo${card.fixed_scope_mode === 'package' ? ' · pacote fechado' : ''}</div>
-            <div><strong>Mensal:</strong> ${_fmtBRL(card.fixed_monthly_value)}</div>
+            <div><strong>Tipo:</strong> ${dealType === 'minimo_garantido' ? 'Mínimo garantido' : 'Fixo'}${card.fixed_scope_mode === 'package' ? ' · pacote fechado' : ''}</div>
+            ${dealType === 'minimo_garantido'
+              ? `<div><strong>Recebe o maior:</strong> ${_fmtBRL(card.fixed_monthly_value)}/mês ou ${Number(card.rev_share_pct) || 0}% da receita</div>`
+              : `<div><strong>Mensal:</strong> ${_fmtBRL(card.fixed_monthly_value)}</div>`}
             ${card.fixed_contract_months ? `<div><strong>Contrato:</strong> ${card.fixed_contract_months} mês${card.fixed_contract_months > 1 ? 'es' : ''}${startTxt ? ` a partir de ${startTxt}` : ''}</div>` : (startTxt ? `<div><strong>Início:</strong> ${startTxt}</div>` : '')}
             ${card.contract_status || card.contract_url ? `<div><strong>Contrato:</strong> ${_esc(CONTRACT_STATUS[card.contract_status] || 'link')}${card.contract_url ? ` · <a href="${_esc(card.contract_url)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:underline">abrir</a>` : ''}</div>` : ''}
             ${card.fixed_goals ? `<div style="margin-top:6px"><strong>Metas:</strong><div style="white-space:pre-wrap;color:var(--text2);font-size:12.5px;margin-top:2px">${_esc(card.fixed_goals)}</div></div>` : ''}
@@ -1570,10 +1597,10 @@
       try {
         const partner = (STATE.crm.partners || []).find(x => x.card_id === cardId);
         await CRM.cards.update(cardId, { stage_id: card.stage_id, ...terms });
-        if (partner && terms.deal_type === 'fixo') await _pcrmSyncPartner(partner, terms);
+        if (partner && _isFixedLike(terms.deal_type)) await _pcrmSyncPartner(partner, terms);
         if (document.querySelector('#mod-pipeline.active #pcrm-board')) _renderBoard(card.scope || 'b2b');
         if (window._ptnRefresh) window._ptnRefresh();
-        toast(fromPtn ? 'Escopo salvo em Parceiros e no Pipeline' : (partner && terms.deal_type === 'fixo' ? 'Termos atualizados aqui e em Parceiros' : 'Termos atualizados'), 's');
+        toast(fromPtn ? 'Escopo salvo em Parceiros e no Pipeline' : (partner && _isFixedLike(terms.deal_type) ? 'Termos atualizados aqui e em Parceiros' : 'Termos atualizados'), 's');
       } catch (e) {
         toast('Erro ao salvar: ' + (e.message || 'desconhecido'), 'e');
       }
@@ -1630,7 +1657,7 @@
         try {
           await CRM.cards.update(cardId, { stage_id: stageId, ...terms });
           _renderBoard(card.scope || 'b2b');
-          toast(terms.deal_type === 'fixo' ? 'Negócio fechado. O parceiro já está em Parceiros com o escopo.' : 'Negócio fechado', 's');
+          toast(_isFixedLike(terms.deal_type) ? 'Negócio fechado. O parceiro já está em Parceiros com o escopo.' : 'Negócio fechado', 's');
         } catch (e) {
           toast('Erro ao fechar: ' + (e.message || 'desconhecido'), 'e');
         }

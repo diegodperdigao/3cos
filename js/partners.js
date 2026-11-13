@@ -261,7 +261,7 @@
       const cpa = t.registrations ? t.invest / t.registrations : null;
       el.hidden = !t.invest && !t.registrations && !t.deposits && !t.views;
       el.innerHTML =
-        kpi('wallet', 'Investimento', _brl(t.invest), `valor fixo de ${t.paid} parceiro${t.paid === 1 ? '' : 's'} em ${MONTHS[_month.getMonth()]}`) +
+        kpi('wallet', 'Investimento', _brl(t.invest), `a pagar a ${t.paid} parceiro${t.paid === 1 ? '' : 's'} em ${MONTHS[_month.getMonth()]}`) +
         kpi('user-plus', 'Cadastros', _int(t.registrations), `${_int(t.ftd)} FTDs no mês`) +
         kpi('banknote', 'Depósitos', _brl(t.deposits), `receita ${_brl(t.net_rev)}`) +
         kpi('target', 'Custo por cadastro', cpa == null ? '—' : _brl(cpa), t.views ? `${_int(t.views)} views nas entregas` : 'investimento ÷ cadastros');
@@ -284,6 +284,20 @@
     const s = p.start_date || '0000-01-01', e = p.end_date || '9999-12-31';
     return s <= _iso(_monthEnd(month)) && e >= _iso(month) && p.status !== 'paused';
   }
+  // Quanto pagar no mês. Fixo: o valor mensal. Mínimo garantido: o MAIOR entre o
+  // mínimo e o % da receita (net_rev) lançada em Resultados naquele mês.
+  const _isMG = (p) => p?.deal_type === 'minimo_garantido';
+  const _pctTxt = (n) => `${String(Number(n) || 0).replace('.', ',')}%`;
+  function _payOf(p, month) {
+    const min = Number(p.monthly_value) || 0;
+    if (!_isMG(p)) return { value: min, by: 'fixo' };
+    const rev = Number(resultOf(p.id, month)?.net_rev) || 0;
+    const comm = rev * (Number(p.rev_share_pct) || 0) / 100;
+    return comm > min ? { value: comm, by: 'comissao', comm, min } : { value: min, by: 'minimo', comm, min };
+  }
+  const _dealTxt = (p) => _isMG(p)
+    ? `mín. ${_brl(p.monthly_value)}/mês ou ${_pctTxt(p.rev_share_pct)} (o maior)`
+    : (Number(p.monthly_value) > 0 ? `${_brl(p.monthly_value)}/mês` : '');
   function _contentOf(pid, month) {
     const t = { views: 0, likes: 0, comments: 0, shares: 0, clicks: 0, done: 0 };
     delivsOf(pid).filter(d => isDone(d) && inMonth(d.due_date, month)).forEach(d => {
@@ -294,7 +308,7 @@
   function _resultTotals(list, month) {
     const t = { invest: 0, paid: 0, registrations: 0, ftd: 0, deposits: 0, net_rev: 0, views: 0 };
     list.forEach(p => {
-      if (_activeIn(p, month) && Number(p.monthly_value) > 0) { t.invest += Number(p.monthly_value); t.paid++; }
+      if (_activeIn(p, month) && Number(p.monthly_value) > 0) { t.invest += _payOf(p, month).value; t.paid++; }
       const r = resultOf(p.id, month);
       RESULT_FIELDS.forEach(f => { t[f.id] += Number(r?.[f.id]) || 0; });
       t.views += _contentOf(p.id, month).views;
@@ -308,12 +322,15 @@
       const r = resultOf(p.id, _month);
       const c = _contentOf(p.id, _month);
       const pr = _progress(p, _month);
-      const inv = _activeIn(p, _month) ? Number(p.monthly_value) || 0 : 0;
+      const pay = _payOf(p, _month);
+      const inv = _activeIn(p, _month) ? pay.value : 0;
       const cpa = inv && r?.registrations ? _brl(inv / r.registrations) : '—';
       const eng = c.likes + c.comments + c.shares;
       return `<tr>
         <td><button class="ptn-link" onclick="window._ptnOpen('${p.id}')">${esc(p.name)}</button>
-          <div class="ptn-td-sub">${inv ? _brl(inv) + '/mês' : 'sem valor no mês'}${r?.source === 'import' ? ' · importado' : ''}</div></td>
+          <div class="ptn-td-sub">${!inv ? 'sem valor no mês'
+            : _isMG(p) ? `a pagar ${_brl(inv)} · ${pay.by === 'comissao' ? `${_pctTxt(p.rev_share_pct)} da receita passou o mínimo` : `mínimo (${_pctTxt(p.rev_share_pct)} da receita = ${_brl(pay.comm)})`}`
+            : _brl(inv) + '/mês'}${r?.source === 'import' ? ' · importado' : ''}</div></td>
         <td class="num">${pr.target ? `${pr.done}/${pr.target}` : c.done}</td>
         <td class="num">${c.views ? _int(c.views) : '—'}</td>
         <td class="num">${eng ? _int(eng) : '—'}</td>
@@ -324,7 +341,7 @@
       </tr>`;
     }).join('');
     const t = _resultTotals(list, _month);
-    return `<div class="ptn-hint" style="margin-bottom:10px">Resultados de ${_monthLabel(_month)}. Digite direto na tabela ou importe um CSV. Os números entram nos totais do Dashboard.</div>
+    return `<div class="ptn-hint" style="margin-bottom:10px">Resultados de ${_monthLabel(_month)}. Digite direto na tabela ou importe um CSV. Os números entram nos totais do Dashboard.${list.some(_isMG) ? ' Mínimo garantido: o "a pagar" usa a Receita do mês (o maior entre o mínimo e o percentual).' : ''}</div>
       <div class="tbl-wrap"><table class="ptn-table">
         <thead><tr><th>Parceiro</th><th class="num">Entregas</th><th class="num">Views</th><th class="num">Engaj.</th>
           ${RESULT_FIELDS.map(f => `<th class="num">${f.label}${f.money ? ' (R$)' : ''}</th>`).join('')}<th class="num">Custo/cad.</th></tr></thead>
@@ -481,7 +498,7 @@
     const next = all.filter(d => d.status === 'planned' && d.due_date >= _today()).sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
     const owner = userById(p.owner);
     const periodLbl = p.scope_mode === 'package' ? 'no pacote' : `em ${MONTHS[_month.getMonth()]}`;
-    const money = Number(p.monthly_value) > 0 ? `${_brl(p.monthly_value)}/mês` : '';
+    const money = _dealTxt(p);
     const meta = [p.scope_mode === 'package' ? 'Pacote fechado' : 'Escopo mensal', money, p.end_date ? `até ${_fmt(p.end_date)}` : '']
       .filter(Boolean).map(esc).join(' · ');
     const initials = owner ? owner.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() : '';
@@ -619,7 +636,7 @@
     const pct = pr.target ? Math.min(100, Math.round(pr.done / pr.target * 100)) : 0;
     const owner = userById(p.owner);
     const contractLine = [isPkg ? 'Pacote fechado' : 'Escopo mensal',
-      Number(p.monthly_value) > 0 ? `${_brl(p.monthly_value)}/mês` : 'sem valor',
+      _dealTxt(p) || 'sem valor',
       p.start_date ? `desde ${_fmt(p.start_date)}` : '', p.end_date ? `até ${_fmt(p.end_date)}` : '',
       owner ? owner.name.split(' ')[0] : '',
       p.contract_status === 'signed' ? 'contrato assinado' : p.contract_status === 'sent' ? 'contrato enviado' : p.contract_status === 'draft' ? 'contrato em elaboração' : ''].filter(Boolean).map(esc).join(' · ');
@@ -673,7 +690,9 @@
         <summary><span>Contrato e dados</span><i data-lucide="chevron-down"></i></summary>
       <div class="ptn-d-grid">
         <div class="ff"><label>Tipo de escopo</label><select class="fi" ${upd('scope_mode')}>${opt([['monthly', 'Mensal (repete todo mês)'], ['package', 'Pacote fechado']], p.scope_mode)}</select></div>
-        <div class="ff"><label>Valor mensal (R$)</label><input type="number" min="0" step="0.01" class="fi" value="${p.monthly_value ?? ''}" ${upd('monthly_value')}></div>
+        <div class="ff"><label>Tipo de negócio</label><select class="fi" ${upd('deal_type')}>${opt([['fixo', 'Fixo'], ['minimo_garantido', 'Mínimo garantido + RevShare']], p.deal_type || 'fixo')}</select></div>
+        <div class="ff"><label>${_isMG(p) ? 'Mínimo garantido (R$/mês)' : 'Valor mensal (R$)'}</label><input type="number" min="0" step="0.01" class="fi" value="${p.monthly_value ?? ''}" ${upd('monthly_value')}></div>
+        ${_isMG(p) ? `<div class="ff"><label>RevShare (%) · recebe o maior</label><input type="number" min="0" max="100" step="0.1" class="fi" value="${p.rev_share_pct ?? ''}" ${upd('rev_share_pct')}></div>` : ''}
         <div class="ff"><label>Responsável</label><select class="fi" ${upd('owner')}>${opt(users, p.owner)}</select></div>
         <div class="ff"><label>Início</label><input type="date" class="fi" value="${esc(p.start_date || '')}" ${upd('start_date')}></div>
         <div class="ff"><label>${isPkg ? 'Prazo final' : 'Fim do contrato'}</label><input type="date" class="fi" value="${esc(p.end_date || '')}" ${upd('end_date')}></div>
@@ -694,10 +713,18 @@
   window._ptnDetailMonth = (n) => { _detailMonth = _addMonths(_detailMonth, n); _renderDetail(); };
   window._ptnField = async (field, value) => {
     const patch = { [field]: value === '' ? null : value };
-    if (field === 'monthly_value') {
-      const v = Number(value);
+    if (['monthly_value', 'deal_type', 'rev_share_pct'].includes(field)) {
+      const cur = { ...partnerById(_detailId), ...patch };
+      if (field === 'deal_type' && value === 'minimo_garantido' && !(Number(cur.rev_share_pct) > 0)) {
+        toast('Informe o percentual de RevShare logo abaixo', 'i');
+      }
+      const v = Number(cur.monthly_value);
       const months = (partnerById(_detailId)?.deal_summary || '').match(/ · \d+ meses/)?.[0] || '';
-      patch.deal_summary = v > 0 ? `Fixo R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês${months}` : null;
+      const brl = v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      patch.deal_summary = !(v > 0) ? null : cur.deal_type === 'minimo_garantido'
+        ? `Mínimo garantido R$ ${brl}/mês ou ${String(Number(cur.rev_share_pct) || 0).replace('.', ',')}% RevShare (o maior)${months}`
+        : `Fixo R$ ${brl}/mês${months}`;
+      if (field === 'deal_type' && value === 'fixo') patch.rev_share_pct = null;
     }
     try { await _upd('partners', _detailId, patch); _afterChange(); _flashSaved(); }
     catch (e) { _err(e); _renderDetail(); }

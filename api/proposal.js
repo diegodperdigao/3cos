@@ -35,7 +35,7 @@ const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitch', 'Kick', 'X', 'Dis
 const SCHEMA = {
   type: 'OBJECT',
   properties: {
-    deal_type: { type: 'STRING', enum: ['fixo', 'revenue_share'], nullable: true },
+    deal_type: { type: 'STRING', enum: ['fixo', 'revenue_share', 'minimo_garantido'], nullable: true },
     monthly_value: { type: 'NUMBER', nullable: true },
     contract_months: { type: 'INTEGER', nullable: true },
     start_date: { type: 'STRING', nullable: true, description: 'YYYY-MM-DD' },
@@ -67,14 +67,20 @@ const PROMPT = (text, today) => `Você lê propostas comerciais e escopos de par
 Hoje é ${today}.
 
 Regras:
-- deal_type: "fixo" quando há valor fixo pago ao parceiro; "revenue_share" quando é percentual de receita. Se não der para saber, null.
-- monthly_value: valor MENSAL em reais (número, sem "R$"). Se a proposta só traz o valor total de um pacote/período, divida pelo número de meses e avise em warnings. Se não houver valor, null.
+- deal_type:
+  · "fixo" quando há só valor fixo pago ao parceiro;
+  · "revenue_share" quando é só percentual de receita (RevShare/REV/comissão);
+  · "minimo_garantido" quando há um valor fixo de MÍNIMO GARANTIDO junto com um percentual, e o parceiro recebe o que for MAIOR (ex.: "R$ 8000 de mínimo garantido + 30% de REV", "fixo de X ou Y% o que for maior"). Nesse caso monthly_value = o mínimo e rev_share_pct = o percentual.
+  · Se não der para saber, null.
+- monthly_value: valor MENSAL em reais (número, sem "R$"); no mínimo garantido, é o valor mínimo. Se a proposta só traz o valor total de um pacote/período, divida pelo número de meses e avise em warnings. Se não houver valor, null.
 - contract_months: duração em meses (ex.: "trimestral" = 3, "semestral" = 6, "anual" = 12). Se não houver, null.
 - start_date: data de início em YYYY-MM-DD. Datas relativas ("a partir de segunda", "início em dezembro") são calculadas a partir de hoje. Se não houver, null.
 - scope_mode: "monthly" quando as entregas se repetem todo mês; "package" quando é um pacote fechado com total de entregas. Na dúvida, "monthly".
 - deliverables: uma linha por tipo de entrega e plataforma. kind: reel (Reels), story (Stories), post (post no feed/carrossel), short (TikTok, YouTube Shorts, Kwai), video (vídeo longo no YouTube), live (live/stream), other (qualquer outra coisa: menção, link na bio, grupo, banner...). qty é sempre a quantidade POR MÊS quando scope_mode = "monthly" (converta: "1 por semana" = 4/mês, "3 stories por semana" = 12/mês) e o TOTAL quando scope_mode = "package". Use notes para detalhes curtos (ex.: "com link na bio", "collab", "fixado 7 dias").
 - goals: metas e KPIs combinados (views, cadastros, FTDs, engajamento), em uma frase curta. Se não houver, null.
-- rev_share_pct: só para revenue_share (número, ex.: 40).
+- rev_share_pct: para revenue_share e minimo_garantido (número, ex.: 30).
+- Entregas sem prazo dito: considere o escopo do mês (scope_mode "monthly") e avise em warnings que a periodicidade não estava explícita.
+- "Combo de stories" / "sequência de stories" = 1 story (kind story) por combo, com notes "combo/sequência". "Inserção em live" = kind live, com a duração em notes (ex.: "inserção de 15 min").
 - contract_url: só se houver um link de contrato no texto.
 - summary: 1 frase resumindo o acordo.
 - warnings: o que ficou ambíguo ou foi deduzido e precisa ser conferido (vazio se nada).
@@ -100,7 +106,7 @@ function sanitize(f) {
   const num = (v) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v));
   const int = (v) => { const n = num(v); return n === null ? null : Math.round(n); };
   const out = {
-    deal_type: ['fixo', 'revenue_share'].includes(f.deal_type) ? f.deal_type : null,
+    deal_type: ['fixo', 'revenue_share', 'minimo_garantido'].includes(f.deal_type) ? f.deal_type : null,
     monthly_value: num(f.monthly_value),
     contract_months: int(f.contract_months),
     start_date: /^\d{4}-\d{2}-\d{2}$/.test(f.start_date || '') ? f.start_date : null,
