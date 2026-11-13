@@ -359,10 +359,8 @@ CRM.cards = {
       owner: STATE.user?.id || null,
     };
     // Pipeline exclusiva de produto: o card já nasce com o produto.
-    if (scope === 'rips') {
-      const rips = (STATE.crm.products || []).find(p => (p.name || '').toLowerCase() === 'rips');
-      if (rips) payload.product_id = rips.id;
-    }
+    const prod = (STATE.crm.products || []).find(p => String(p.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_') === scope);
+    if (prod) payload.product_id = prod.id;
     const card = await CRM.cards.create(payload);
     // Atualiza status do contato pra in_pipeline
     await CRM.contacts.update(contactId, { status: 'in_pipeline' });

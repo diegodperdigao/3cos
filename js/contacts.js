@@ -1114,13 +1114,12 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
 
   // Menu "Negociação": um item por pipeline. Se já existe negociação com o
   // contato naquele pipeline, abre ela; senão cria uma nova com o contato.
-  const DEAL_SCOPES = [
-    { id: 'rips', label: 'Rips', sub: 'Influencers & afiliados' },
-    { id: 'b2c', label: 'B2C', sub: 'Influencers' },
-    { id: 'b2b', label: 'B2B', sub: 'Marcas' },
-  ];
+  // Um item por pipeline: uma por produto (Rips, Chute, Sortudão...) + B2C e B2B.
+  const DEAL_SCOPES = () => (window._pcrmProductScopes ? _pcrmProductScopes() : ['rips'])
+    .map(id => ({ id, label: (window.scopeLabel ? scopeLabel(id) : id), sub: 'Pipeline do produto' }))
+    .concat([{ id: 'b2c', label: 'B2C', sub: 'Influencers' }, { id: 'b2b', label: 'B2B', sub: 'Marcas' }]);
   function _dealMenuHTML(c) {
-    return DEAL_SCOPES.map(sc => {
+    return DEAL_SCOPES().map(sc => {
       const ex = (STATE.crm?.cards || []).find(x => x.scope === sc.id && x.contact_id === c.id);
       if (ex) {
         const st = CRM.stageById(ex.stage_id);
@@ -1162,8 +1161,7 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
   };
   window._ctcGoToDeal = (cardId, scope) => {
     closeModal();
-    openMod('pipeline');
-    setTimeout(() => { window._pcrmSwitchTab && _pcrmSwitchTab(scope); window._pcrmOpenCard && _pcrmOpenCard(cardId); }, 450);
+    window.openPipeline(scope, () => { window._pcrmOpenCard && _pcrmOpenCard(cardId); });
   };
   window._ctcRefreshList = () => { if (document.querySelector('#mod-contacts.active #ctc-list') && STATE.crm.loaded) _renderList(); };
 
@@ -1198,8 +1196,8 @@ No final, me diga quantos foram salvos, quantos não encontrados e se houve algu
     const rows = cards.map(x => {
       const st = CRM.stageById(x.stage_id);
       const owner = (STATE.users || []).find(u => u.id === x.owner);
-      return `<a class="soc-deal" onclick="closeModal();openMod('pipeline');setTimeout(()=>{window._pcrmSwitchTab&&_pcrmSwitchTab('${x.scope}');window._pcrmOpenCard&&_pcrmOpenCard('${x.id}')},350)">
-        <span class="soc-deal-scope">${SCOPE_LABEL[x.scope] || x.scope}</span>
+      return `<a class="soc-deal" onclick="closeModal();openPipeline('${x.scope}',()=>{window._pcrmOpenCard&&_pcrmOpenCard('${x.id}')})">
+        <span class="soc-deal-scope">${window.scopeLabel ? scopeLabel(x.scope) : (SCOPE_LABEL[x.scope] || x.scope)}</span>
         <span class="soc-deal-stage">${_esc(st?.name || '—')}</span>
         <span class="soc-deal-owner">${owner ? _esc(owner.name.split(' ')[0]) : 'sem responsável'}</span>
       </a>`;

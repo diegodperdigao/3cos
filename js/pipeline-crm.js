@@ -9,8 +9,9 @@
 
 (function () {
   // Scope ativo (persistido na sessão)
-  let _scope = sessionStorage.getItem('pcrm_scope') || 'rips';
-  if (!['b2b', 'b2c', 'rips'].includes(_scope)) _scope = 'rips';
+  // Scope = funil: 'b2b' e 'b2c' (gerais da 3C) + um por produto ('rips', 'chute',
+  // 'sortudao'...), criado sozinho quando existem etapas com o slug do produto.
+  let _scope = sessionStorage.getItem('pcrm_scope') || 'b2c';
 
   // Filtros independentes por scope
   const F = {
@@ -22,7 +23,7 @@
   const SCOPE_META = {
     b2b: { label: 'B2B', title: 'B2B — Marcas', sub: 'Negociações com marcas e empresas', icon: 'briefcase', color: 'var(--blue)' },
     b2c: { label: 'B2C', title: 'B2C — Influencers', sub: 'Negociações com influencers e afiliados', icon: 'megaphone', color: 'var(--theme)' },
-    rips: { label: 'Rips', title: 'Rips — Influencers & Afiliados', sub: 'Aquisição do Rips', icon: 'rocket', color: '#3d3fbd', product: 'Rips' },
+    rips: { label: 'Rips', title: 'Rips', sub: 'Aquisição do Rips', icon: 'rocket', color: '#3d3fbd', product: 'Rips' },
   };
   const SCOPE_ORDER = ['rips', 'b2c', 'b2b'];
   // Pipeline exclusiva de produto (ex.: Rips) → id do produto fixo.
@@ -38,17 +39,43 @@
   }
 
   // ── MOUNT ─────────────────────────────────────────────────
+  const _slug = (n) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  // Registra a pipeline de cada produto que já tem etapas no banco
+  function _syncProductScopes() {
+    const stages = STATE.crm?.stages || [];
+    (STATE.crm?.products || []).forEach(p => {
+      const sc = _slug(p.name);
+      if (!sc || sc === 'b2b' || sc === 'b2c' || !stages.some(s => s.scope === sc)) return;
+      if (!SCOPE_META[sc]) SCOPE_META[sc] = { label: p.name, title: p.name, sub: `Aquisição do ${p.name}`, icon: 'rocket', color: p.color || 'var(--theme)', product: p.name };
+      if (!F[sc]) F[sc] = { search: '', owner: 'all' };
+      if (!SCOPE_ORDER.includes(sc)) SCOPE_ORDER.splice(Math.max(0, SCOPE_ORDER.indexOf('b2c')), 0, sc);
+    });
+    if (!SCOPE_META[_scope]) _scope = 'b2c';
+  }
+  window._pcrmProductScopes = () => { _syncProductScopes(); return SCOPE_ORDER.filter(sc => SCOPE_META[sc].product); };
+
+  // Abas visíveis: no universo da marca, só a pipeline dela; no 3C, as gerais (B2B/B2C)
+  function _visibleScopes() {
+    _syncProductScopes();
+    const bs = window.brandScope ? brandScope() : null;
+    if (bs && SCOPE_META[bs]) return [bs];
+    if (window.brandId) return SCOPE_ORDER.filter(sc => !SCOPE_META[sc].product);
+    return SCOPE_ORDER;
+  }
+
   async function bPipelineCRM(el) {
+    const _vis = _visibleScopes();
+    if (!_vis.includes(_scope)) _setScope(_vis[0]);
     const ownerOpts = (STATE.users || []).map(u =>
       `<option value="${u.id}">${_esc(u.name)}</option>`
     ).join('');
 
     el.innerHTML = modHdr('Pipeline') + `<div class="mod-body">
-      ${heroHTML('pipeline-crm', 'CRM Comercial', 'Pipeline', 'Funil de negociações por produto e canal')}
+      ${heroHTML('pipeline-crm', 'CRM Comercial', 'Pipeline', window.brandProduct && brandProduct() ? `Funil de negociações do ${_esc(brandProduct().name)}` : 'Funis gerais da 3C: B2C (influencers) e B2B (marcas)')}
       <div class="mod-main">
         <!-- Abas de scope -->
-        <div class="pcrm-tabs">
-          ${SCOPE_ORDER.map(sc => { const pp = SCOPE_META[sc].product && window.prodByName ? prodByName(SCOPE_META[sc].product) : null;
+        <div class="pcrm-tabs${_vis.length < 2 ? ' pcrm-tabs-solo' : ''}">
+          ${_vis.map(sc => { const pp = SCOPE_META[sc].product && window.prodByName ? prodByName(SCOPE_META[sc].product) : null;
             return `<button class="pcrm-tab ${pp ? 'prod-tab ' : ''}${_scope === sc ? 'on' : ''}" data-scope="${sc}" ${pp ? `style="--pc:${prodColor(pp)}"` : ''} onclick="window._pcrmSwitchTab('${sc}')">
             ${pp ? prodMark(pp, 16) : `<i data-lucide="${SCOPE_META[sc].icon}"></i>`}
             <span>${SCOPE_META[sc].title}</span>
@@ -112,7 +139,7 @@
     if (!document.querySelector('#mod-pipeline.active #pcrm-board')) return;
     _renderBoard(_scope); _renderTabCounts(); lucide.createIcons();
   };
-  window._pcrmGetScope = () => _scope;
+  window._pcrmGetScope = () => (_visibleScopes().includes(_scope) ? _scope : _visibleScopes()[0]);
 
   // Troca de aba B2B ⇄ B2C
   window._pcrmSwitchTab = (scope) => {
@@ -255,7 +282,7 @@
     const AFF_LABEL = { master: 'Master', direto: 'Direto', sub: 'Sub' };
     const AFF_COLOR = { master: '#a855f7', direto: '#3b82f6', sub: '#14b8a6' };
     const AFF_TITLE = { master: 'Master — indica outros', direto: 'Afiliado Direto', sub: 'Subafiliado' };
-    const affChip = card.affiliate_role ? `<div class="kan-card-tag" style="background:${AFF_COLOR[card.affiliate_role]}22;color:${AFF_COLOR[card.affiliate_role]};border:1px solid ${AFF_COLOR[card.affiliate_role]}44" title="${AFF_TITLE[card.affiliate_role]}">
+    const affChip = card.affiliate_role ? `<div class="kan-card-tag kan-card-tag-c" style="--tag-c:${AFF_COLOR[card.affiliate_role]}" title="${AFF_TITLE[card.affiliate_role]}">
       <i data-lucide="network" style="width:9px;height:9px"></i> ${AFF_LABEL[card.affiliate_role]}
     </div>` : '';
 
@@ -582,6 +609,8 @@
   // `draft` restaura o que já estava preenchido (usado ao voltar da criação
   // inline de contato).
   window._pcrmOpenNewCard = (scope, draft = null) => {
+    _syncProductScopes();
+    if (!SCOPE_META[scope]) scope = 'b2c';
     const meta = SCOPE_META[scope];
     const stages = CRM.stagesForScope(scope);
     const products = STATE.crm.products || [];

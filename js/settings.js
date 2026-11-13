@@ -493,14 +493,6 @@ function _renderGeneralSettings(el){
         <div class="st-card">
           <div class="st-row">
             <div>
-              <div class="st-label">Vídeo de introdução</div>
-              <div class="st-hint">Exibir a animação de boas-vindas ao fazer login</div>
-            </div>
-            ${switchHTML('setting-intro', s.showIntroVideo, "toggleSetting('showIntroVideo')")}
-          </div>
-          <div class="st-divider"></div>
-          <div class="st-row">
-            <div>
               <div class="st-label">Reduzir animações</div>
               <div class="st-hint">Remove transições para um sistema mais direto</div>
             </div>
@@ -1324,7 +1316,7 @@ window.renderAutomationsSection = () => {
     <button class="btn btn-outline" onclick="openAddAutomation()" style="font-size:11px;padding:6px 12px"><i data-lucide="plus" style="width:12px;height:12px"></i> Nova Automação</button>
   </div>
   <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.5">
-    Configure webhooks para integrar agentes de IA externos. Quando o trigger é disparado, o 3COS envia um POST com os dados do evento para a URL configurada.
+    Configure webhooks para integrar agentes de IA externos. Quando o trigger é disparado, o 3C envia um POST com os dados do evento para a URL configurada.
   </div>
   <div class="auto-list">${rows}</div>
   ${_renderWeeklyDigestSection()}`;
@@ -1444,7 +1436,7 @@ window.sendWeeklyDigest = () => {
   emailjs.init(cfg.publicKey);
   emailjs.send(cfg.serviceId, templateId, {
     to_email: cfg.financeEmail,
-    subject: `3COS Weekly Digest — ${new Date().toLocaleDateString('pt-BR')}`,
+    subject: `3C · Resumo semanal — ${new Date().toLocaleDateString('pt-BR')}`,
     message: html,
   }).then(() => {
     toast('Digest enviado com sucesso!', 's');

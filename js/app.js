@@ -1650,8 +1650,10 @@ function modHdr(label){
   return `<div class="mod-hdr">
     <div class="mod-hdr-l">
       <button class="mob-hamburger" onclick="openMobSidebar('${label}')"><i data-lucide="menu"></i></button>
-      <a class="mod-hdr-logo" href="#" onclick="event.preventDefault();goBack()" title="Voltar ao hub"><span class="brand-h" style="--brand-h:22px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span></a>
+      <a class="mod-hdr-logo" href="#" onclick="event.preventDefault();goBack()" title="Voltar ao hub"><span class="brand-h" style="--brand-h:22px"><img class="brand-h-light" src="assets/brand/3c-logo-preto.png" alt="3C"><img class="brand-h-dark" src="assets/brand/3c-logo-branco.png" alt="3C"></span></a>
       <span class="mod-hdr-sep" aria-hidden="true">/</span>
+      ${(()=>{const bp=window.brandProduct&&brandProduct();if(!bp)return'';const bm=brandMeta(bp);const lg=bm.logo||bp.logo_url;
+        return `<button class="mod-hdr-brand" onclick="enterBrand('${bp.id}')" title="Universo ${bp.name}">${lg?`<img src="${lg}" alt="${bp.name}">`:`<b>${bp.name}</b>`}</button><span class="mod-hdr-sep" aria-hidden="true">/</span>`;})()}
       <span class="mod-hdr-name">${String(label||"").split(" — ")[0]}</span>
     </div>
     <div class="mod-hdr-c">

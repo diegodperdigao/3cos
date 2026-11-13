@@ -221,6 +221,9 @@
   function _render() {
     if (window._calRefresh) window._calRefresh();
     const products = _products();
+    // Dentro do universo de uma marca, Parceiros fica preso nela (js/shell.js)
+    const _bid = window.brandId ? brandId() : '';
+    if (_bid && products.some(pr => pr.id === _bid)) _product = _bid;
     if (!products.some(pr => pr.id === _product)) _product = products[0]?.id || '';
     const pEl = document.getElementById('ptn-products');
     if (pEl) pEl.innerHTML = products.map(pr => {

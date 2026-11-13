@@ -57,6 +57,21 @@ Estado global em `STATE` (`STATE.crm.*` para dados do CRM). Helpers globais:
 `openModal(titulo, corpo, rodapé, {wide})`, `closeModal()`, `toast(msg, 's'|'w'|'e'|'i')`,
 `modHdr()`, `heroHTML()`, `openMod(id)`.
 
+### Sidebar e universos por marca (`js/shell.js`)
+
+- A navegação é a sidebar (`#app-side`): **Início**, **Marcas** (um "universo" por produto)
+  e **3C** (módulos gerais). No celular ela vira gaveta + barra inferior.
+- Entrar numa marca (`enterBrand(productId, mod)`) liga `html[data-brand="<slug>"]`: cores e
+  logo oficiais da marca (tokens no fim do `css/styles.css`, seção "Universos"). A
+  **tipografia é sempre a da 3C** (decisão do Diego): marca entra só por cor e logo.
+- Dentro da marca, Dashboard, Pipeline, Parceiros e Calendário ficam presos a ela
+  (`brandId()`, `brandProduct()`, `brandScope()`). `go3C(mod)` sai do universo.
+- Pipeline por produto: `scope` = slug do produto (`chute`, `rips`, `sortudao`); B2B e B2C
+  são os funis gerais da 3C. Produto novo ganha pipeline quando existirem etapas com o slug
+  dele (ver `supabase/migrations/005_pipeline_por_produto.sql`).
+- Produto novo com tema próprio: entrada em `BRANDS` (`js/shell.js`) + bloco de tokens CSS.
+- Logo da 3C: só o oficial do 3c.gg (`assets/brand/3c-logo-branco.png` / `-preto.png`).
+
 ### Mudanças no banco
 
 - Escreva um arquivo novo em `supabase/migrations/NNN_assunto.sql` (próximo número),

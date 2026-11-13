@@ -104,6 +104,10 @@
   function _render() {
     if (!P()) return;
     const list = products();
+    // Universo de marca: calendário só da marca; no 3C, volta para "todos"
+    const _bid = window.brandId ? brandId() : '';
+    if (_bid && list.some(x => x.id === _bid)) _product = _bid;
+    else if (window.brandId) _product = sessionStorage.getItem('cal_product') || 'all';
     if (_product !== 'all' && !list.some(x => x.id === _product)) _product = 'all';
     const tabs = document.getElementById('cal-products');
     if (tabs) tabs.innerHTML = [`<button class="pcrm-tab ${_product === 'all' ? 'on' : ''}" onclick="window._calProduct('all')"><span>Todos os produtos</span></button>`]

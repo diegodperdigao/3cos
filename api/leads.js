@@ -118,16 +118,41 @@ async function tagContactLP(sb, contactId) {
 
 // Cria o card da pipeline para o lead recebido. Nunca derruba a requisição:
 // o contato já foi gravado; se o card falhar, devolve null e loga.
-async function createLeadCard(sb, contact, { profile, origem, landingUrl, testFlag }) {
-  const scope = 'b2c';
+// Slug do produto, igual ao crm.product_slug do banco ("Sortudão" → "sortudao")
+const productSlug = (n) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+
+// Lead de LP de produto ("LP Chute Parceiros", "LP Sortudão Afiliados") vai para a
+// pipeline do produto (scope = slug). Sem produto reconhecido, cai no B2C geral.
+async function resolveLeadScope(sb, origem) {
   try {
-    const { data: stages, error: stErr } = await sb
+    const o = productSlug(origem);
+    if (!o) return { scope: 'b2c', productId: null };
+    const { data: products } = await sb.schema('crm').from('products').select('id, name');
+    const hit = (products || []).find(p => { const s = productSlug(p.name); return s && ('_' + o + '_').includes('_' + s + '_'); });
+    if (hit) return { scope: productSlug(hit.name), productId: hit.id };
+  } catch (e) {
+    console.error('[leads] product lookup failed:', e);
+  }
+  return { scope: 'b2c', productId: null };
+}
+
+async function createLeadCard(sb, contact, { profile, origem, landingUrl, testFlag }) {
+  let { scope, productId } = await resolveLeadScope(sb, origem);
+  try {
+    const loadStages = (sc) => sb
       .schema('crm')
       .from('pipeline_stages')
       .select('id, name, position')
-      .eq('scope', scope)
+      .eq('scope', sc)
       .order('position', { ascending: true });
+    let { data: stages, error: stErr } = await loadStages(scope);
     if (stErr) throw stErr;
+    // Produto ainda sem pipeline própria: usa o B2C, mas mantém o produto no card
+    if ((!stages || !stages.length) && scope !== 'b2c') {
+      scope = 'b2c';
+      ({ data: stages, error: stErr } = await loadStages(scope));
+      if (stErr) throw stErr;
+    }
     if (!stages || !stages.length) {
       console.error('[leads] no stages for scope', scope);
       return null;
@@ -147,6 +172,7 @@ async function createLeadCard(sb, contact, { profile, origem, landingUrl, testFl
         scope,
         stage_id: stage.id,
         contact_id: contact.id,
+        product_id: productId,
         title: title.slice(0, 200),
         notes: noteParts.join(' · '),
         position: 0,

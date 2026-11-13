@@ -7,13 +7,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f4f5f7">
-<title>3C OS Pro</title>
+<title>3C</title>
 <link rel="icon" href="assets/brand/3cos-favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="assets/brand/favicon.ico">
 <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=252">
+<link rel="stylesheet" href="css/styles.css?v=262">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -22,91 +22,13 @@
 </head>
 <body>
 
-<!-- SPLASH / INTRO — only rendered if user preference allows it -->
-<script>
-(function(){
-  try{
-    // Skip video entirely on mobile/tablet — autoplay is unreliable
-    if(/Mobi|Android|iPad|iPhone|iPod/i.test(navigator.userAgent))return;
-    var pref=localStorage.getItem('3cos_show_intro');
-    if(pref==='0') return;
-    var raw=localStorage.getItem('3C_OS_DATA');
-    if(raw){
-      var s=JSON.parse(raw);
-      if(s&&s.settings&&s.settings.showIntroVideo===false) return;
-    }
-    // Rate limit: só mostra splash se faz MAIS de 6h desde a última visita.
-    // Evita que a intro fique aparecendo em cada F5 / cada aba nova.
-    var last=parseInt(localStorage.getItem('3cos_last_splash')||'0',10);
-    var SIX_HOURS=6*60*60*1000;
-    if(last && (Date.now()-last)<SIX_HOURS) return;
-  }catch(e){}
-  // Marca essa exibição ANTES de montar o splash — assim mesmo se o user
-  // recarregar durante a intro, a próxima vez conta como "recente"
-  try{localStorage.setItem('3cos_last_splash', String(Date.now()));}catch(e){}
-  // Splash markup with a tap-to-play overlay shown only when autoplay fails.
-  // Overlay has a play icon + hint. Tapping the splash does: first tap →
-  // attempt play; second tap (or video end) → skip.
-  document.write(
-    '<div id="splash" style="position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.6s" onclick="tapSplash(event)">'+
-    '<video id="splash-video" autoplay muted playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture style="width:100%;height:100%;object-fit:cover"><source src="assets/intro.mp4" type="video/mp4"></video>'+
-    '<div id="splash-tap" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.82);flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font-family:system-ui,-apple-system,sans-serif">'+
-      '<div style="width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center">'+
-        '<svg width="32" height="32" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>'+
-      '</div>'+
-      '<div style="font-size:14px;font-weight:500;letter-spacing:0.02em;opacity:0.9">Toque para assistir à introdução</div>'+
-      '<div style="font-size:11px;opacity:0.5">ou aguarde 2 segundos para pular</div>'+
-    '</div>'+
-    '</div>'
-  );
-})();
-let _splashTapped = false;
-let _splashPlaying = false;
-function skipIntro(){
-  const s=document.getElementById('splash');if(!s||s.style.opacity==='0')return;
-  s.style.opacity='0';setTimeout(()=>s.remove(),600);
-}
-// Handles clicks on the splash: first tap triggers play (for mobile where
-// autoplay is blocked), subsequent taps skip. Uses capture so it intercepts
-// taps on the overlay children.
-function tapSplash(e){
-  const v=document.getElementById('splash-video');
-  if(!v)return skipIntro();
-  if(_splashPlaying){return skipIntro();}
-  if(!_splashTapped){
-    _splashTapped=true;
-    const overlay=document.getElementById('splash-tap');
-    if(overlay)overlay.style.display='none';
-    v.play().then(()=>{_splashPlaying=true;}).catch(()=>skipIntro());
-  }
-}
-document.addEventListener('DOMContentLoaded',()=>{
-  const v=document.getElementById('splash-video');
-  if(!v)return;
-  v.addEventListener('ended',skipIntro);
-  v.addEventListener('playing',()=>{_splashPlaying=true;});
-  // Force muted before play (iOS requirement) + try play explicitly
-  v.muted=true;v.playsInline=true;
-  var playPromise=v.play();
-  if(playPromise&&playPromise.catch){
-    playPromise.catch(function(){
-      // Autoplay blocked (Low Power Mode, iOS Safari, etc) — show tap overlay
-      const overlay=document.getElementById('splash-tap');
-      if(overlay)overlay.style.display='flex';
-      // If user doesn't tap within 2s, skip automatically so they're not stuck
-      setTimeout(()=>{if(!_splashTapped)skipIntro();},2000);
-    });
-  }
-  // Hard ceiling: 10s no matter what
-  setTimeout(skipIntro,10000);
-});
-</script>
+<!-- A intro em vídeo saiu do F5: o motion da 3C agora roda em loop na tela de login (#lock) -->
 
 <!-- MOBILE SIDEBAR -->
 <div id="mob-sidebar-overlay" onclick="closeMobSidebar()"></div>
 <div id="mob-sidebar">
   <div class="mob-sb-hdr">
-    <span class="mob-sb-brand brand-h" style="--brand-h:26px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span>
+    <span class="mob-sb-brand brand-h" style="--brand-h:26px"><img class="brand-h-light" src="assets/brand/3c-logo-preto.png" alt="3C"><img class="brand-h-dark" src="assets/brand/3c-logo-branco.png" alt="3C"></span>
     <button class="mob-sb-close" onclick="closeMobSidebar()"><i data-lucide="x" style="width:18px;height:18px"></i></button>
   </div>
   <div class="mob-sb-user" id="mob-sb-user"></div>
@@ -120,10 +42,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <!-- LOCK -->
 <div id="lock" style="display:none">
+  <div class="lock-motion" aria-hidden="true"><video src="assets/intro.mp4" autoplay muted loop playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture></video></div>
   <div class="mosaic-wrapper"><div class="mosaic-container"><div class="mosaic-pattern" id="lock-mosaic"></div></div></div>
   <div class="lock-box">
-    <span class="lock-brand brand-h" style="--brand-h:44px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span>
-    <div class="lock-sub">Sistema Operacional — Pro</div>
+    <span class="lock-brand brand-h" style="--brand-h:44px"><img class="brand-h-light" src="assets/brand/3c-logo-preto.png" alt="3C"><img class="brand-h-dark" src="assets/brand/3c-logo-branco.png" alt="3C"></span>
+    <div class="lock-sub">CRM</div>
     <input type="email" id="le" class="lock-field" placeholder="nome@3c.gg" autocomplete="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter') doLogin()">
     <input type="password" id="lp" class="lock-field" placeholder="••••••••" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doLogin()">
     <button class="lock-btn" id="lbtn" onclick="doLogin()">Acessar o sistema</button>
@@ -144,9 +67,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <!-- RESET PASSWORD (shown when user arrives via recovery email) -->
 <div id="reset-screen" style="display:none">
+  <div class="lock-motion" aria-hidden="true"><video src="assets/intro.mp4" autoplay muted loop playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture></video></div>
   <div class="mosaic-wrapper"><div class="mosaic-container"><div class="mosaic-pattern" id="reset-mosaic"></div></div></div>
   <div class="lock-box">
-    <span class="lock-brand brand-h" style="--brand-h:44px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span>
+    <span class="lock-brand brand-h" style="--brand-h:44px"><img class="brand-h-light" src="assets/brand/3c-logo-preto.png" alt="3C"><img class="brand-h-dark" src="assets/brand/3c-logo-branco.png" alt="3C"></span>
     <div class="lock-sub">Definir nova senha</div>
     <input type="password" id="rp-new" class="lock-field" placeholder="Nova senha (mín. 8)" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doResetPassword()">
     <input type="password" id="rp-confirm" class="lock-field" placeholder="Confirmar nova senha" autocomplete="new-password" spellcheck="false" onkeydown="if(event.key==='Enter') doResetPassword()">
@@ -156,6 +80,17 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="lock-reset" onclick="doCancelReset()">Voltar ao login</div>
   </div>
 </div>
+
+<!-- SIDEBAR 3C: Início, marcas (universos) e módulos gerais — js/shell.js -->
+<div id="side-overlay" onclick="closeMobSidebar()"></div>
+<aside id="app-side" aria-label="Navegação">
+  <div class="side-top">
+    <a class="side-logo" href="#" onclick="event.preventDefault();goBack()" title="Início"><img src="assets/brand/3c-logo-branco.png" alt="3C"><span>CRM</span></a>
+    <button class="side-close" onclick="closeMobSidebar()" aria-label="Fechar menu"><i data-lucide="x"></i></button>
+  </div>
+  <nav class="side-nav" id="side-nav"></nav>
+  <div class="side-foot" id="side-foot"></div>
+</aside>
 
 <!-- HUB -->
 <div id="hub" style="display:none;flex-direction:column">
@@ -167,7 +102,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="hub-bar-l">
       <button class="hub-hamburger" onclick="openMobSidebar()"><i data-lucide="menu"></i></button>
       <div class="hub-logo-row">
-        <span class="hub-wordmark brand-h" style="--brand-h:30px"><img class="brand-h-light" src="assets/brand/3cos-logo-horizontal.svg" alt="3COS"><img class="brand-h-dark" src="assets/brand/3cos-logo-horizontal-negativo.svg" alt="3COS"></span>
+        <span class="hub-wordmark brand-h" style="--brand-h:30px"><img class="brand-h-light" src="assets/brand/3c-logo-preto.png" alt="3C"><img class="brand-h-dark" src="assets/brand/3c-logo-branco.png" alt="3C"></span>
       </div>
     </div>
     <div class="hub-bar-c">
@@ -303,34 +238,36 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <!-- MOBILE BOTTOM NAV -->
 <div class="mob-bottom-nav" id="mob-bottom-nav">
-  <div class="mob-bnav-item" onclick="goBack()"><i data-lucide="grid"></i><span>Hub</span></div>
-  <div class="mob-bnav-item" onclick="openMod('dashboard')"><i data-lucide="chart-column"></i><span>Dash</span></div>
-  <div class="mob-bnav-item" onclick="openMod('affiliates')"><i data-lucide="users"></i><span>Afiliados</span></div>
-  <div class="mob-bnav-item" onclick="openMod('pipeline')"><i data-lucide="git-branch"></i><span>Pipeline</span></div>
-  <div class="mob-bnav-item" onclick="openMod('payments')"><i data-lucide="banknote"></i><span>Financ.</span></div>
+  <button class="mob-bnav-item" data-k="hub" onclick="goBack()"><i data-lucide="house"></i><span>Início</span></button>
+  <button class="mob-bnav-item" data-k="brands" onclick="openMobSidebar()"><i data-lucide="layers"></i><span>Marcas</span></button>
+  <button class="mob-bnav-item" data-k="contacts" onclick="go3C('contacts')"><i data-lucide="contact-round"></i><span>Contatos</span></button>
+  <button class="mob-bnav-item" data-k="pipeline" onclick="go3C('pipeline')"><i data-lucide="git-branch"></i><span>Pipeline</span></button>
+  <button class="mob-bnav-item" data-k="tasks" onclick="go3C('tasks')"><i data-lucide="check-square"></i><span>Tarefas</span></button>
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=252"></script>
+<script src="js/app.js?v=262"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=252"></script>
-<script src="js/data.js?v=252"></script>
-<script src="js/widgets.js?v=252"></script>
-<script src="js/hub-today.js?v=252"></script>
+<script src="js/supabase-client.js?v=262"></script>
+<script src="js/data.js?v=262"></script>
+<script src="js/widgets.js?v=262"></script>
+<script src="js/hub-today.js?v=262"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=252"></script>
+<script src="js/search.js?v=262"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=252"></script>
-<script src="js/tasks.js?v=252"></script>
-<script src="js/audit.js?v=252"></script>
-<script src="js/users.js?v=252"></script>
-<script src="js/settings.js?v=252"></script>
+<script src="js/dashboard.js?v=262"></script>
+<script src="js/tasks.js?v=262"></script>
+<script src="js/audit.js?v=262"></script>
+<script src="js/users.js?v=262"></script>
+<script src="js/settings.js?v=262"></script>
 <!-- CRM (frente comercial — schema crm) -->
-<script src="js/crm-data.js?v=252"></script>
-<script src="js/contacts.js?v=252"></script>
-<script src="js/pipeline-crm.js?v=252"></script>
-<script src="js/partners.js?v=252"></script>
-<script src="js/calendar.js?v=252"></script>
-<script src="js/copilot.js?v=252"></script>
+<script src="js/crm-data.js?v=262"></script>
+<script src="js/contacts.js?v=262"></script>
+<script src="js/pipeline-crm.js?v=262"></script>
+<script src="js/partners.js?v=262"></script>
+<script src="js/calendar.js?v=262"></script>
+<script src="js/copilot.js?v=262"></script>
+<!-- Shell 3C: sidebar + universos por marca -->
+<script src="js/shell.js?v=262"></script>
 </body>
 </html>

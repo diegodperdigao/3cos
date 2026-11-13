@@ -23,17 +23,35 @@
   const fmtInt = (v) => Math.round(Number(v) || 0).toLocaleString('pt-BR');
   const fmtBRL = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: Math.abs(Number(v) || 0) >= 1000 ? 0 : 2 });
 
-  // ── Projetos: só logo + nome ──────────────────────────────
+  // ── Marcas: um cartão por universo, com a identidade da marca ──
+  // Clicar entra no universo (js/shell.js). Números: parceiros em operação,
+  // entregas do mês (feitas/previstas) e atrasadas.
   function _projects(today) {
     const list = products();
     if (!list.length) return '';
     const P = STATE.crm?.partners || [], D = STATE.crm?.partnerDeliveries || [];
-    return `<nav class="hubt-projs">${list.map(pr => {
-      const ids = new Set(P.filter(p => p.product_id === pr.id && p.status !== 'ended').map(p => p.id));
-      const late = D.some(d => ids.has(d.partner_id) && d.status === 'planned' && d.due_date && d.due_date < today);
-      const mark = pr.logo_url ? `<img src="${esc(pr.logo_url)}" alt="">` : '<i></i>';
-      return `<button class="hubt-pj${late ? ' late' : ''}" style="--pc:${prodColor(pr)}" onclick="window._hubOpenProduct('${pr.id}')" title="Abrir ${esc(pr.name)}">${mark}<b>${esc(pr.name)}</b>${late ? '<em>atrasado</em>' : ''}</button>`;
-    }).join('')}</nav>`;
+    const ym = today.slice(0, 7);
+    const done = (d) => d.status === 'delivered' || d.status === 'approved';
+    return `<section class="hubt-brands" aria-label="Marcas">${list.map(pr => {
+      const live = P.filter(p => p.product_id === pr.id && p.status !== 'ended');
+      const ids = new Set(live.map(p => p.id));
+      const mine = D.filter(d => ids.has(d.partner_id) && d.status !== 'rejected');
+      const month = mine.filter(d => (d.due_date || '').slice(0, 7) === ym);
+      const late = mine.filter(d => d.status === 'planned' && d.due_date && d.due_date < today).length;
+      const meta = window.brandMeta ? brandMeta(pr) : { slug: 'custom', logo: pr.logo_url };
+      const logo = meta.logo || pr.logo_url;
+      const mark = logo ? `<img src="${esc(logo)}" alt="${esc(pr.name)}">` : `<b>${esc(pr.name)}</b>`;
+      const loading = !STATE.crm?.ptnLoaded;
+      return `<button class="hubt-brand" data-b="${esc(meta.slug)}" style="--pc:${prodColor(pr)}" onclick="enterBrand('${pr.id}')" title="Entrar no universo ${esc(pr.name)}">
+        <span class="hubt-brand-logo">${mark}</span>
+        <span class="hubt-brand-stats">
+          <span><b>${loading ? '–' : live.length}</b><small>parceiros</small></span>
+          <span><b>${loading ? '–' : `${month.filter(done).length}/${month.length}`}</b><small>entregas no mês</small></span>
+          <span class="${late ? 'late' : ''}"><b>${loading ? '–' : late}</b><small>${late === 1 ? 'atrasada' : 'atrasadas'}</small></span>
+        </span>
+        <span class="hubt-brand-go">Entrar <i data-lucide="arrow-right"></i></span>
+      </button>`;
+    }).join('')}</section>`;
   }
 
   // ── Conteúdos do dia (Calendário) ─────────────────────────
@@ -135,7 +153,6 @@
     const sub = document.getElementById('hub-hero-sub');
     if (sub) sub.innerHTML = `<span class="hubt-date">${WEEK[now.getDay()]}, ${now.getDate()} de ${MONTHS[now.getMonth()]}</span>`;
     const cta = document.getElementById('hub-hero-cta');
-    if (cta) cta.innerHTML = '';
 
     let el = document.getElementById('hub-today');
     if (!el) {
@@ -143,23 +160,24 @@
       el.id = 'hub-today';
       stage.insertBefore(el, strip);
     }
-    el.innerHTML = `<div class="hubt-bar">${_projects(today)}<div class="hubt-cta">
-        <button class="hubt-btn" onclick="window._hubNew('contact')">Novo contato</button>
-        <button class="hubt-btn p" onclick="window._hubNew('deal')">Nova negociação</button></div></div>
+    if (cta) cta.innerHTML = `<button class="hubt-btn" onclick="window._hubNew('contact')"><i data-lucide="user-plus"></i>Novo contato</button>
+        <button class="hubt-btn p" onclick="window._hubNew('deal')"><i data-lucide="plus"></i>Nova negociação</button>`;
+    el.innerHTML = `${_projects(today)}
       <div class="hubt-cols">${_contents(today)}${_results(now)}</div>`;
+    if (window.renderSide) renderSide();
     if (window.lucide) lucide.createIcons();
   };
 
   // ── Ações ─────────────────────────────────────────────────
   window._hubNew = (kind) => {
     if (kind === 'contact') { openMod('contacts'); setTimeout(() => window._ctcOpenNew && _ctcOpenNew(), 450); return; }
-    openMod('pipeline');
-    setTimeout(() => window._pcrmOpenNewCard && _pcrmOpenNewCard(window._pcrmGetScope ? _pcrmGetScope() : 'rips'), 450);
+    if (window.go3C) go3C('pipeline'); else openMod('pipeline');
+    setTimeout(() => window._pcrmOpenNewCard && _pcrmOpenNewCard(window._pcrmGetScope ? _pcrmGetScope() : 'b2c'), 450);
   };
-  window._hubOpenProduct = (id) => { openMod('partners'); setTimeout(() => window._ptnProduct && _ptnProduct(id), 350); };
+  window._hubOpenProduct = (id) => window.enterBrand ? enterBrand(id) : openMod('partners');
   window._hubOpenPartner = (id) => {
     const p = (STATE.crm?.partners || []).find(x => x.id === id);
-    openMod('partners');
+    if (p && window.enterBrand) enterBrand(p.product_id, 'partners'); else openMod('partners');
     setTimeout(() => { if (p && window._ptnProduct) _ptnProduct(p.product_id); window._ptnOpen && _ptnOpen(id); }, 450);
   };
 })();
