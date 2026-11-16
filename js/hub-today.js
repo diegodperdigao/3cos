@@ -134,7 +134,7 @@
         ${kpi('FTDs', fmtInt(cur.ftd), delta(cur.ftd, prev.ftd))}
         ${kpi('Cadastros', fmtInt(cur.registrations), delta(cur.registrations, prev.registrations))}
         ${kpi('NGR', brl(cur.ngr), delta(cur.ngr, prev.ngr), cur.ngr < 0 ? 'neg' : '')}
-        ${kpi('Investimento em parceiros', brl(invest), `<em>a pagar em ${MONTHS[now.getMonth()]} a ${P.length} parceiro${P.length === 1 ? '' : 's'}</em>`)}
+        ${kpi('Investimento', brl(invest), `<em>${P.length} parceiro${P.length === 1 ? '' : 's'} · a pagar em ${MONTHS[now.getMonth()]}</em>`)}
       </div>
     </section>`;
   }

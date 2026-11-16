@@ -7824,3 +7824,36 @@ html.boot-mod #hub{display:none !important;}
 #cmdk .search-panel{position:absolute !important;top:calc(100% + 8px) !important;left:0 !important;right:auto !important;width:100% !important;
   max-width:none !important;max-height:min(60vh,520px) !important;transform:none !important;}
 @media (max-width:768px){ #cmdk .cmdk-box{top:12px;} #cmdk .search-panel{max-height:calc(100vh - 100px) !important;} }
+
+/* Resultados do Início: rótulo, valor e comparação na mesma linha em todas as colunas */
+.hubr-kpi{display:flex !important;flex-direction:column;gap:8px;}
+.hubr-kpi small{white-space:nowrap;line-height:1.2;}
+/* linha do valor com a mesma altura em todas as colunas: números alinhados pela base */
+.hubr-kpi b{white-space:nowrap;height:44px;display:flex;align-items:flex-end;}
+.hubr-kpi em{line-height:1.4;}
+/* valor sempre cabe na coluna (diminui um pouco em vez de cortar) */
+.hubr{container-type:inline-size;container-name:hubr;}
+.hubr-kpi{container-type:inline-size;}
+.hubr-kpi b{font-size:min(28px,16cqi) !important;}
+.hubr-kpi.big b{font-size:min(40px,15cqi) !important;}
+/* o layout da faixa segue a largura dela (não a da tela): desfaz as regras antigas por tela */
+@media (max-width:1100px){
+  .hubr-grid{grid-template-columns:1.5fr repeat(4,minmax(0,1fr));}
+  .hubr-kpi.big{grid-column:auto;}
+  .hubr-kpi,.hubr-kpi:nth-child(-n+1){border-top:none;}
+  .hubr-kpi:nth-child(even){border-left:1px solid var(--gb2);}
+}
+/* faixa estreita: Depósitos na linha de cima, os outros 4 embaixo */
+@container hubr (max-width:980px){
+  .hubr-kpi b{height:auto;}
+  .hubr-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .hubr-kpi.big{grid-column:1/-1;}
+  .hubr-kpi:nth-child(n+2){border-top:1px solid var(--gb2) !important;}
+  .hubr-kpi:nth-child(2){border-left:none !important;}
+}
+/* celular: 2 por linha */
+@container hubr (max-width:560px){
+  .hubr-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .hubr-kpi:nth-child(even){border-left:none !important;}
+  .hubr-kpi:nth-child(odd):not(.big){border-left:1px solid var(--gb2) !important;}
+}
