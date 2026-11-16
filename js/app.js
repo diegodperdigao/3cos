@@ -1676,19 +1676,9 @@ function modHdr(label){
         return `<button class="mod-hdr-brand" onclick="enterBrand('${bp.id}')" title="Universo ${bp.name}">${lg?`<img class="brand-h-dark" src="${lg}" alt="${bp.name}"><img class="brand-h-light" src="${lgd}" alt="${bp.name}">`:`<b>${bp.name}</b>`}</button><span class="mod-hdr-sep" aria-hidden="true">/</span>`;})()}
       <span class="mod-hdr-name">${String(label||"").split(" — ")[0]}</span>
     </div>
-    <div class="mod-hdr-c">
-      <div class="search-pill search-pill-sm" onclick="focusSearchInput(this)">
-        <i data-lucide="search" class="search-pill-icon"></i>
-        <input type="text" class="search-pill-input" placeholder="Buscar..."
-               oninput="onSearchInput(event)"
-               onfocus="onSearchFocus(event)"
-               onkeydown="onSearchKeydown(event)"
-               autocomplete="off">
-        <span class="search-pill-hint">${window.kbdHint ? kbdHint() : ''}</span>
-        <div class="search-panel"></div>
-      </div>
-    </div>
+    <div class="mod-hdr-c"></div>
     <div class="mod-hdr-r">
+      <button class="search-trigger" onclick="openSearch()" title="Buscar em tudo" aria-label="Buscar em tudo"><i data-lucide="search"></i><span class="search-trigger-kbd">${window.kbdHint ? kbdHint() : ''}</span></button>
       <span class="hdr-sync-icon" title="Sincronizado com a nuvem" style="display:none"><i data-lucide="cloud"></i></span>
       <button class="hdr-icon-btn" onclick="toggleActionCenter()" title="Alertas"><i data-lucide="bell"></i></button>
       <button class="hdr-icon-btn" onclick="toggleTheme()" title="Alternar tema"><i data-lucide="sun"></i></button>

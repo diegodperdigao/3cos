@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=297">
+<link rel="stylesheet" href="css/styles.css?v=299">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -99,6 +99,19 @@ if(m&&s&&s.user&&s.exp>Date.now())document.documentElement.classList.add('boot-m
   <div class="side-foot" id="side-foot"></div>
 </aside>
 
+<!-- BUSCA GLOBAL (⌘K ou lupa do cabeçalho) — js/search.js -->
+<div id="cmdk" role="dialog" aria-modal="true" aria-label="Buscar">
+  <div class="cmdk-box">
+    <div class="search-pill" id="cmdk-pill">
+      <i data-lucide="search" class="search-pill-icon"></i>
+      <input type="text" class="search-pill-input" placeholder="Buscar contatos, negociações, parceiros, módulos..."
+             oninput="onSearchInput(event)" onfocus="onSearchFocus(event)" onkeydown="onSearchKeydown(event)" autocomplete="off">
+      <span class="cmdk-esc">Esc</span>
+      <div class="search-panel"></div>
+    </div>
+  </div>
+</div>
+
 <!-- HUB -->
 <div id="hub" style="display:none;flex-direction:column">
   <div class="hub-bg">
@@ -112,19 +125,9 @@ if(m&&s&&s.user&&s.exp>Date.now())document.documentElement.classList.add('boot-m
         <span class="hub-wordmark brand-h" style="--brand-h:30px"><img class="brand-h-light" src="assets/brand/3c-logo-preto.png" alt="3C"><img class="brand-h-dark" src="assets/brand/3c-logo-branco.png" alt="3C"></span>
       </div>
     </div>
-    <div class="hub-bar-c">
-      <div class="search-pill" onclick="focusSearchInput(this)">
-        <i data-lucide="search" class="search-pill-icon"></i>
-        <input type="text" class="search-pill-input" placeholder="Buscar em tudo..."
-               oninput="onSearchInput(event)"
-               onfocus="onSearchFocus(event)"
-               onkeydown="onSearchKeydown(event)"
-               autocomplete="off">
-        <span class="search-pill-hint" id="hub-kbd"></span>
-        <div class="search-panel"></div>
-      </div>
-    </div>
+    <div class="hub-bar-c"></div>
     <div class="hub-bar-r">
+      <button class="search-trigger" onclick="openSearch()" title="Buscar em tudo" aria-label="Buscar em tudo"><i data-lucide="search"></i><span class="search-trigger-kbd"></span></button>
       <button class="hub-icon-btn" onclick="toggleActionCenter()" id="hub-notif-btn" title="Alertas">
         <i data-lucide="bell"></i>
         <div class="hub-notif-badge" id="hub-notif-count" style="display:none">0</div>
@@ -146,6 +149,8 @@ if(m&&s&&s.user&&s.exp>Date.now())document.documentElement.classList.add('boot-m
   </div>
   
   <div class="hub-main">
+    <!-- Busca: lupa fixa à direita no desktop (a barra do topo some) -->
+    <button class="search-trigger hub-search-trigger" onclick="openSearch()" title="Buscar em tudo" aria-label="Buscar em tudo"><i data-lucide="search"></i><span class="search-trigger-kbd"></span></button>
     <!-- Holiday post-it (positioned absolutely) -->
     <div class="holiday-postit" id="holiday-postit" style="display:none"></div>
     <!-- Hub customization (+) button -->
@@ -253,29 +258,29 @@ if(m&&s&&s.user&&s.exp>Date.now())document.documentElement.classList.add('boot-m
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=297"></script>
+<script src="js/app.js?v=299"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=297"></script>
-<script src="js/data.js?v=297"></script>
-<script src="js/widgets.js?v=297"></script>
-<script src="js/hub-today.js?v=297"></script>
+<script src="js/supabase-client.js?v=299"></script>
+<script src="js/data.js?v=299"></script>
+<script src="js/widgets.js?v=299"></script>
+<script src="js/hub-today.js?v=299"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=297"></script>
+<script src="js/search.js?v=299"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=297"></script>
-<script src="js/tasks.js?v=297"></script>
-<script src="js/audit.js?v=297"></script>
-<script src="js/users.js?v=297"></script>
-<script src="js/settings.js?v=297"></script>
+<script src="js/dashboard.js?v=299"></script>
+<script src="js/tasks.js?v=299"></script>
+<script src="js/audit.js?v=299"></script>
+<script src="js/users.js?v=299"></script>
+<script src="js/settings.js?v=299"></script>
 <!-- CRM (frente comercial — schema crm) -->
-<script src="js/crm-data.js?v=297"></script>
-<script src="js/contacts.js?v=297"></script>
-<script src="js/pipeline-crm.js?v=297"></script>
-<script src="js/partners.js?v=297"></script>
-<script src="js/calendar.js?v=297"></script>
-<script src="js/copilot.js?v=297"></script>
+<script src="js/crm-data.js?v=299"></script>
+<script src="js/contacts.js?v=299"></script>
+<script src="js/pipeline-crm.js?v=299"></script>
+<script src="js/partners.js?v=299"></script>
+<script src="js/calendar.js?v=299"></script>
+<script src="js/copilot.js?v=299"></script>
 <!-- Shell 3C: sidebar + universos por marca -->
-<script>(function(){var el=document.getElementById('hub-kbd');if(el&&window.kbdHint)el.innerHTML=kbdHint();})();</script>
-<script src="js/shell.js?v=297"></script>
+<script>(function(){if(window.kbdHint)document.querySelectorAll('.search-trigger-kbd').forEach(function(el){el.innerHTML=kbdHint();});})();</script>
+<script src="js/shell.js?v=299"></script>
 </body>
 </html>
