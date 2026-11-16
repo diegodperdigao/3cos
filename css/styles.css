@@ -7863,3 +7863,37 @@ html.boot-mod #hub{display:none !important;}
 /* dentro da marca, o fio da cor dela volta para o cabeçalho */
 :root[data-brand] .mod-hdr{box-shadow:inset 0 -2px 0 var(--brand-a) !important;}
 .mod-hdr-name{font-weight:700 !important;color:var(--text) !important;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* Polimento: menos neon, abas com sublinhado                  */
+/* A cor da marca fica só no logo, na aba ativa e no menu.     */
+/* ══════════════════════════════════════════════════════════ */
+/* abas (Pipeline, Parceiros): sem caixa preta — texto forte + sublinhado */
+:root{--tab-line:var(--text);}
+:root[data-brand]{--tab-line:var(--brand-a);}
+:root[data-brand][data-theme="light"]{--tab-line:color-mix(in srgb,var(--brand-a) 78%,#000);}
+:root:not([data-edition="mono"]) :is(.pcrm-tabs,.ptn-seg){background:transparent !important;border:none !important;border-bottom:1px solid var(--gb2) !important;
+  border-radius:0 !important;padding:0 !important;gap:6px !important;height:auto !important;box-shadow:none !important;}
+:root:not([data-edition="mono"]) :is(.pcrm-tab,.ptn-seg button){background:transparent !important;border-radius:0 !important;padding:9px 6px 10px !important;
+  margin-bottom:-1px;color:var(--text2) !important;font-weight:500 !important;box-shadow:none !important;}
+:root:not([data-edition="mono"]) :is(.pcrm-tab,.ptn-seg button):hover{color:var(--text) !important;}
+:root:not([data-edition="mono"]) :is(.pcrm-tab,.ptn-seg button) svg{stroke:currentColor !important;}
+:root:not([data-edition="mono"]) :is(.pcrm-tab.on,.ptn-seg button.on){background:transparent !important;color:var(--text) !important;font-weight:600 !important;
+  box-shadow:inset 0 -2px 0 var(--tab-line) !important;}
+:root:not([data-edition="mono"]) :is(.pcrm-tab.on,.ptn-seg button.on) svg{stroke:currentColor !important;}
+:root:not([data-edition="mono"]) .pcrm-tab.on .pcrm-tab-count{background:var(--bg3) !important;color:var(--text) !important;}
+:root:not([data-edition="mono"]) .pcrm-tab + .pcrm-tab,:root:not([data-edition="mono"]) .ptn-seg button + button{margin-left:10px;}
+
+/* dentro da marca: tira véus e fios extras (cabeçalho, faixas, painéis) */
+:root[data-brand] .mod-hdr{box-shadow:none !important;}
+:root[data-brand] :is(.kpi-row,.dash-kpi-row):not([hidden]){background:transparent !important;border:none !important;
+  border-bottom:1px solid var(--gb) !important;border-radius:0 !important;padding:4px 0 18px !important;}
+:root[data-brand] .pipe-filters{border-top:1px solid var(--gb) !important;background:var(--bg2) !important;}
+:root[data-brand] :is(.dash-chart-card,.dash-list-card,.ptn-cal){border-top:1px solid var(--gb) !important;}
+
+/* números dos KPIs na mesma fonte do Início (Montserrat), não monoespaçada */
+.kpi-val,.kpi-val.sm,.dash-kpi-val{font-family:'Montserrat',sans-serif !important;font-weight:700 !important;letter-spacing:-0.02em !important;}
+/* botão do Copilot neutro (3C) também dentro da marca */
+:root[data-brand]:not([data-edition="mono"]) #copilot-fab{background:var(--inv-bg) !important;}
+:root[data-brand]:not([data-edition="mono"]) #copilot-fab:hover{opacity:.88;}
+:root[data-brand]:not([data-edition="mono"]) #copilot-fab svg{stroke:var(--inv-fg) !important;}
