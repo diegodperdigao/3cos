@@ -7897,3 +7897,13 @@ html.boot-mod #hub{display:none !important;}
 :root[data-brand]:not([data-edition="mono"]) #copilot-fab{background:var(--inv-bg) !important;}
 :root[data-brand]:not([data-edition="mono"]) #copilot-fab:hover{opacity:.88;}
 :root[data-brand]:not([data-edition="mono"]) #copilot-fab svg{stroke:var(--inv-fg) !important;}
+
+/* Cabeçalho do módulo: logo da marca com mais presença (é o único título da página) */
+@media (min-width:769px){
+  .mod-hdr{height:58px !important;}
+  .mod-hdr-brand{height:40px;}
+  .mod-hdr-brand img{height:32px !important;max-width:170px !important;}
+  .mod-hdr-name{font-size:15px !important;}
+  .mod-hdr-sep{margin:0 4px;}
+}
+@media (max-width:768px){ .mod-hdr-brand img{height:24px !important;max-width:100px !important;} }
