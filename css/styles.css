@@ -7857,3 +7857,9 @@ html.boot-mod #hub{display:none !important;}
   .hubr-kpi:nth-child(even){border-left:none !important;}
   .hubr-kpi:nth-child(odd):not(.big){border-left:1px solid var(--gb2) !important;}
 }
+
+/* ── Módulos: só o cabeçalho (trilha 3C / marca / módulo). A capa repetia logo e título. ── */
+.mod .hero{display:none !important;}
+/* dentro da marca, o fio da cor dela volta para o cabeçalho */
+:root[data-brand] .mod-hdr{box-shadow:inset 0 -2px 0 var(--brand-a) !important;}
+.mod-hdr-name{font-weight:700 !important;color:var(--text) !important;}

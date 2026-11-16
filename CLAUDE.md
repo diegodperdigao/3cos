@@ -64,7 +64,8 @@ Estado global em `STATE` (`STATE.crm.*` para dados do CRM). Helpers globais:
   dela aparece no topo da sidebar. No celular: gaveta + barra inferior.
 - Entrar numa marca (`enterBrand(productId, mod)`) liga `html[data-brand="<slug>"]`.
   **A base continua a da 3C** (fundo, texto, botões, tipografia). A marca entra só nos
-  detalhes: logo, fio de acento, ícone da capa, aba ativa e foco (seção "Universos" no fim
+  detalhes: logo no cabeçalho, fio de acento, aba ativa e foco. Módulos não têm mais capa
+  (`.hero` fica oculta): o cabeçalho com a trilha 3C / marca / módulo é o único título (seção "Universos" no fim
   do `css/styles.css`). Cores conferidas nos sites oficiais; não usar a cor do cadastro.
 - Dentro da marca, Dashboard, Pipeline, Parceiros e Calendário ficam presos a ela
   (`brandId()`, `brandProduct()`, `brandScope()`). `go3C(mod)` sai do universo.
