@@ -7784,3 +7784,43 @@ html.boot-mod #hub{display:none !important;}
 :root[data-brand] .ptn-card:hover{border-color:color-mix(in srgb,var(--brand-a) 45%,var(--gb2)) !important;}
 /* o fio da marca agora fica no topo da capa: tira o do cabeçalho para não dobrar */
 :root[data-brand] .mod-hdr{box-shadow:none !important;}
+
+/* ══════════════════════════════════════════════════════════ */
+/* Busca: lupa discreta à direita do cabeçalho + paleta (⌘K)   */
+/* ══════════════════════════════════════════════════════════ */
+.search-trigger{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 8px;
+  border-radius:6px;border:1px solid transparent;color:var(--text2);flex-shrink:0;transition:background .15s,color .15s,border-color .15s;}
+.search-trigger svg{width:17px;height:17px;stroke:currentColor;}
+.search-trigger:hover{background:var(--bg3);border-color:var(--gb2);color:var(--text);}
+.search-trigger:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+.search-trigger-kbd{display:inline-flex;gap:3px;}
+.search-trigger-kbd kbd{font:600 10.5px/1 'Inter',system-ui,sans-serif;color:var(--text2);min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;
+  display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--gb2);border-bottom-width:2px;border-radius:4px;background:var(--bg2);}
+.mod-hdr-r .search-trigger{display:inline-flex !important;}
+.hub-search-trigger{display:none;}
+@media (max-width:768px){
+  .search-trigger-kbd{display:none;}
+  .search-trigger{width:40px;height:40px;justify-content:center;padding:0;}
+}
+@media (min-width:769px){
+  /* Hub: sem barra no topo — o conteúdo sobe; a lupa fica no canto direito */
+  #hub .hub-bar{display:none !important;}
+  #hub .hub-main{position:relative;}
+  #hub .hub-search-trigger{display:inline-flex;position:absolute;top:22px;right:40px;z-index:5;}
+  #hub .hub-stage{padding-top:24px !important;}
+}
+
+/* paleta de busca */
+#cmdk{position:fixed;inset:0;z-index:950;display:none;background:rgba(0,0,0,.5);}
+#cmdk.open{display:block;animation:cmdkIn .14s ease-out;}
+@keyframes cmdkIn{from{opacity:0}to{opacity:1}}
+#cmdk .cmdk-box{position:absolute;top:12vh;left:50%;transform:translateX(-50%);width:min(640px,calc(100vw - 32px));}
+#cmdk .search-pill{display:flex !important;width:100% !important;max-width:none !important;height:54px !important;padding:0 16px 0 18px !important;gap:12px;
+  background:var(--bg2) !important;border:1px solid var(--gb2) !important;border-radius:10px !important;box-shadow:0 24px 60px rgba(0,0,0,.45) !important;}
+#cmdk .search-pill-icon{width:18px;height:18px;stroke:var(--text2) !important;}
+#cmdk .search-pill-input{font-size:15px !important;color:var(--text) !important;}
+#cmdk .search-pill-input::placeholder{color:var(--text3);}
+.cmdk-esc{font:600 10.5px/1 'Inter',system-ui,sans-serif;color:var(--text2);padding:4px 6px;border:1px solid var(--gb2);border-bottom-width:2px;border-radius:4px;flex-shrink:0;}
+#cmdk .search-panel{position:absolute !important;top:calc(100% + 8px) !important;left:0 !important;right:auto !important;width:100% !important;
+  max-width:none !important;max-height:min(60vh,520px) !important;transform:none !important;}
+@media (max-width:768px){ #cmdk .cmdk-box{top:12px;} #cmdk .search-panel{max-height:calc(100vh - 100px) !important;} }

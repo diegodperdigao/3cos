@@ -10,6 +10,9 @@
 // ══════════════════════════════════════════════════════════
 
 const GS_GROUPS = [
+  { key: 'contacts',   name: 'Contatos',    icon: 'contact',     color: 'var(--text3)' },
+  { key: 'deals',      name: 'Negociações', icon: 'kanban',      color: 'var(--text3)' },
+  { key: 'partners',   name: 'Parceiros',   icon: 'handshake',   color: 'var(--text3)' },
   { key: 'affiliates', name: 'Afiliados',   icon: 'users',       color: 'var(--text3)' },
   { key: 'brands',     name: 'Marcas',      icon: 'tag',         color: 'var(--text3)' },
   { key: 'contracts',  name: 'Contratos',   icon: 'file-text',   color: 'var(--text3)' },
@@ -34,6 +37,46 @@ window.performGlobalSearch = (query) => {
 
   const results = {};
   GS_GROUPS.forEach(g => { results[g.key] = []; });
+
+  // ── CRM: contatos, negociações e parceiros (abrem a ficha direto) ──
+  const crm = STATE.crm || {};
+  const _esc = (s) => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const _prodName = (id) => (crm.products || []).find(p => p.id === id)?.name || '';
+  const _contact = (id) => (crm.contacts || []).find(c => c.id === id);
+  const _stage = (id) => (crm.stages || []).find(s => s.id === id);
+  (crm.contacts || []).forEach(c => {
+    const social = c.social_links ? Object.values(c.social_links).join(' ') : '';
+    if (matches(c.name, c.email, c.phone, c.company, c.profile, c.tier, social)) {
+      results.contacts.push({
+        title: _esc(c.name),
+        subtitle: _esc([c.company, c.email, c.phone].filter(Boolean).join(' · ')),
+        action: `closeSearchPanel();_ctcOpenDetail('${c.id}')`,
+      });
+    }
+  });
+  (crm.cards || []).forEach(k => {
+    const ct = _contact(k.contact_id);
+    const st = _stage(k.stage_id);
+    const prod = _prodName(k.product_id) || (window.scopeLabel ? scopeLabel(k.scope) : k.scope);
+    if (matches(k.title, ct?.name, ct?.company, prod, st?.name, k.notes)) {
+      results.deals.push({
+        title: _esc(k.title || ct?.name || 'Negociação'),
+        subtitle: _esc([prod, st?.name, ct?.name && ct.name !== k.title ? ct.name : ''].filter(Boolean).join(' · ')),
+        meta: k.value ? fc(k.value) : '',
+        action: `closeSearchPanel();_pcrmOpenCard('${k.id}')`,
+      });
+    }
+  });
+  (crm.partners || []).forEach(p => {
+    const prod = _prodName(p.product_id);
+    if (matches(p.name, prod, p.deal_summary, p.owner, p.notes)) {
+      results.partners.push({
+        title: _esc(p.name),
+        subtitle: _esc([prod, p.deal_summary].filter(Boolean).join(' · ')),
+        action: `closeSearchPanel();_ptnOpen('${p.id}')`,
+      });
+    }
+  });
 
   // AFFILIATES
   (STATE.affiliates || []).forEach(a => {
@@ -164,7 +207,7 @@ function renderSearchResults(query) {
     <div class="search-footer">
       <div class="search-footer-hint"><kbd>↵</kbd> abrir</div>
       <div class="search-footer-hint"><kbd>esc</kbd> fechar</div>
-      <div class="search-footer-brand">Busca · 3C OS</div>
+      <div class="search-footer-brand">Busca · 3C</div>
     </div>`;
 
   if (!query.trim()) {
@@ -172,13 +215,7 @@ function renderSearchResults(query) {
       <div class="search-panel-body">
         <div class="search-hint">
           <div class="search-hint-title">Comece a digitar</div>
-          <div class="search-hint-desc">Busca em afiliados, marcas, pagamentos, fechamentos, contratos, tarefas e lançamentos.</div>
-          <div class="search-hint-examples">
-            <span>fmg</span>
-            <span>fechamento vupi</span>
-            <span>pendente</span>
-            <span>março</span>
-          </div>
+          <div class="search-hint-desc">Busca em contatos, negociações, parceiros, afiliados, tarefas e pagamentos.</div>
         </div>
       </div>${footer}`;
   }
@@ -232,6 +269,8 @@ function renderSearchResults(query) {
 
 // ── Find the active/visible search pill ──
 function getVisibleSearchPill() {
+  const cmdk = document.getElementById('cmdk-pill');
+  if (cmdk) return cmdk;
   // Prefer the pill inside the currently active module header
   const activeMod = document.querySelector('.mod.active .search-pill');
   if (activeMod) return activeMod;
@@ -261,7 +300,17 @@ function showSearchPanel(pillEl, query) {
 }
 
 // ── Close all open panels ──
+// ── Abre a busca global (lupa do cabeçalho ou ⌘K) ──
+window.openSearch = () => {
+  const box = document.getElementById('cmdk');
+  if (!box || !document.documentElement.classList.contains('signed-in')) return;
+  box.classList.add('open');
+  const input = box.querySelector('.search-pill-input');
+  if (input) { input.value = ''; input.focus(); }
+};
+
 window.closeSearchPanel = () => {
+  document.getElementById('cmdk')?.classList.remove('open');
   document.querySelectorAll('.search-pill').forEach(pill => {
     pill.classList.remove('active');
     const panel = pill.querySelector('.search-panel');
@@ -309,7 +358,7 @@ window.onSearchKeydown = (event) => {
 
 // ── Click outside closes any open panel ──
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.search-pill')) {
+  if (!e.target.closest('.search-pill') && !e.target.closest('.search-trigger')) {
     closeSearchPanel();
   }
 });
@@ -318,7 +367,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault();
-    const pill = getVisibleSearchPill();
-    if (pill) focusSearchInput(pill);
+    if (document.getElementById('cmdk')?.classList.contains('open')) closeSearchPanel();
+    else openSearch();
   }
 });
