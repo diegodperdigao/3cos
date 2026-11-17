@@ -7941,3 +7941,52 @@ html.boot-mod #hub{display:none !important;}
   .hubt-today-row .ptn-chip{grid-column:2;grid-row:1 / 4;align-self:center;}
   .hubt-today-empty{padding:16px;}
 }
+
+/* ── Início responsivo: o layout segue o espaço real (sidebar incluída), não a janela ── */
+#hub-today{container-type:inline-size;container-name:hubt;}
+.hubt-brand-stats small .ls{display:none;}
+/* Marcas: até 4 lado a lado quando cabem (sem cartão sozinho na 2ª linha) */
+@container hubt (min-width:760px){
+  .hubt-brands[data-n="2"]{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+  .hubt-brands[data-n="3"]{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
+}
+@container hubt (min-width:1080px){
+  .hubt-brands[data-n="4"]{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}
+}
+@container hubt (min-width:760px) and (max-width:1079px){
+  .hubt-brands[data-n="4"]{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+}
+/* Cartão da marca se ajusta à própria largura */
+.hubt-brand{container-type:inline-size;container-name:hcard;}
+.hubt-brand-stats b,.hubt-brand-stats.s4 b{white-space:nowrap !important;overflow-wrap:normal !important;}
+.hubt-brand-stats small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@container hcard (max-width:420px){
+  .hubt-brand-stats.s4{grid-template-columns:repeat(2,minmax(0,1fr)) !important;row-gap:10px !important;}
+  .hubt-brand-stats small .lf{display:none;}
+  .hubt-brand-stats small .ls{display:inline;}
+  .hubt-brand-stats b,.hubt-brand-stats.s4 b{font-size:18px !important;}
+  .hubt-brand-stats{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
+}
+@container hcard (max-width:300px){
+  .hubt-brand-head{padding:14px 16px 12px;}
+  .hubt-brand-sec{padding:12px 16px;}
+  .hubt-brand-logo{height:30px !important;}
+  .hubt-brand-go{font-size:10px;}
+  .hubt-brand-stats b,.hubt-brand-stats.s4 b{font-size:16px !important;}
+  .hubt-brand-stats small{font-size:11px;}
+}
+/* Resultados em notebook: Depósitos à esquerda, os outros 4 em 2x2 ao lado */
+@container hubr (min-width:561px) and (max-width:980px){
+  .hubr-grid{grid-template-columns:minmax(0,1.25fr) repeat(2,minmax(0,1fr)) !important;}
+  .hubr-kpi.big{grid-column:1 !important;grid-row:1 / 3;justify-content:center;}
+  .hubr-kpi:nth-child(n+2){border-left:1px solid var(--gb2) !important;border-top:none !important;}
+  .hubr-kpi:nth-child(n+4){border-top:1px solid var(--gb2) !important;}
+  .hubr-kpi{padding:16px 20px;}
+}
+/* Celular: atalhos do Início lado a lado, rótulo curto */
+@media (max-width:600px){
+  #hub .hub-stage .hub-hero-cta{flex-direction:row !important;flex-wrap:nowrap !important;}
+  #hub .hub-stage .hub-hero-cta .hubt-btn{flex:1 1 0;min-width:0;padding:0 10px;}
+  .hubt-btn-v{display:none;}
+  .hubt-btn > span::first-letter{text-transform:uppercase;}
+}

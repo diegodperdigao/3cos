@@ -81,15 +81,16 @@
     const vc = (x) => (ldCrm ? '–' : x);
     const s = _stats(pr, today);
     const v = (x) => (ld ? '–' : x);
-    const stat = (val, label, cls = '') => `<span class="${cls}"><b>${val}</b><small>${label}</small></span>`;
+    // Rótulo curto (cartão estreito, ex.: notebook) e completo; o CSS escolhe pelo tamanho do cartão
+    const stat = (val, label, cls = '', short = '') => `<span class="${cls}"><b>${val}</b><small>${short ? `<span class="lf">${label}</span><span class="ls">${short}</span>` : label}</small></span>`;
     return `<button class="hubt-brand" data-b="${esc(meta.slug)}" style="--pc:${esc(meta.accent || prodColor(pr))}" onclick="enterBrand('${pr.id}')" title="Entrar no universo ${esc(pr.name)}">
       <span class="hubt-brand-head"><span class="hubt-brand-logo">${mark}</span><span class="hubt-brand-go">Entrar <i data-lucide="arrow-right"></i></span></span>
       <span class="hubt-brand-sec hubt-brand-res"><span class="hubt-brand-lbl">Resultado do mês</span><span class="hubt-brand-stats s4">
         ${stat(v(s.invest ? fmtBRL(s.invest) : '—'), 'a pagar')}${stat(v(s.hasResults ? fmtInt(s.registrations) : '—'), 'cadastros')}${stat(v(s.hasResults ? fmtInt(s.ftd) : '—'), 'FTDs')}${stat(v(s.hasResults ? fmtBRL(s.deposits) : '—'), 'depósitos')}</span></span>
       <span class="hubt-brand-sec"><span class="hubt-brand-lbl">Pipeline</span><span class="hubt-brand-stats">
-        ${stat(vc(fmtInt(s.open)), 'em aberto')}${stat(vc(fmtInt(s.newLeads)), 'novos no mês')}${stat(vc(fmtInt(s.won)), 'fechados no mês')}</span></span>
+        ${stat(vc(fmtInt(s.open)), 'em aberto')}${stat(vc(fmtInt(s.newLeads)), 'novos no mês', '', 'novos')}${stat(vc(fmtInt(s.won)), 'fechados no mês', '', 'fechados')}</span></span>
       <span class="hubt-brand-sec"><span class="hubt-brand-lbl">Parceiros</span><span class="hubt-brand-stats">
-        ${stat(v(fmtInt(s.partners)), 'em operação')}${stat(v(`${s.delivDone}/${s.delivAll}`), 'entregas no mês')}${stat(v(fmtInt(s.late)), s.late === 1 ? 'atrasada' : 'atrasadas', s.late && !ld ? 'late' : '')}</span></span>
+        ${stat(v(fmtInt(s.partners)), 'em operação')}${stat(v(`${s.delivDone}/${s.delivAll}`), 'entregas no mês', '', 'entregas')}${stat(v(fmtInt(s.late)), s.late === 1 ? 'atrasada' : 'atrasadas', s.late && !ld ? 'late' : '')}</span></span>
     </button>`;
   }
 
@@ -168,8 +169,8 @@
     const sub = document.getElementById('hub-hero-sub');
     if (sub) sub.innerHTML = `<span class="hubt-date">${WEEK[now.getDay()]}, ${now.getDate()} de ${MONTHS[now.getMonth()]}</span>`;
     const cta = document.getElementById('hub-hero-cta');
-    if (cta) cta.innerHTML = `<button class="hubt-btn" onclick="window._hubNew('contact')"><i data-lucide="user-plus"></i>Novo contato</button>
-        <button class="hubt-btn p" onclick="window._hubNew('deal')"><i data-lucide="plus"></i>Nova negociação</button>`;
+    if (cta) cta.innerHTML = `<button class="hubt-btn" onclick="window._hubNew('contact')"><i data-lucide="user-plus"></i><span><span class="hubt-btn-v">Novo </span>contato</span></button>
+        <button class="hubt-btn p" onclick="window._hubNew('deal')"><i data-lucide="plus"></i><span><span class="hubt-btn-v">Nova </span>negociação</span></button>`;
 
     let el = document.getElementById('hub-today');
     if (!el) {
@@ -180,7 +181,7 @@
     const list = products();
     el.innerHTML = _results(now) + (list.length
       ? `<div class="hubt-sec-hdr hubt-brands-hdr"><span>Marcas</span><i>${MONTHS[now.getMonth()]} até hoje · clique para entrar</i></div>
-         <section class="hubt-brands" aria-label="Marcas">${list.map(pr => _card(pr, today)).join('')}</section>
+         <section class="hubt-brands" data-n="${list.length}" aria-label="Marcas">${list.map(pr => _card(pr, today)).join('')}</section>
          ${_todayDeliveries(today)}`
       : `<div class="hubt-empty">Nenhuma marca cadastrada. Cadastre em Configurações › Produtos.</div>`);
     if (window.renderSide) renderSide();
