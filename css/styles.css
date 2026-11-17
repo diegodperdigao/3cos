@@ -7907,3 +7907,37 @@ html.boot-mod #hub{display:none !important;}
   .mod-hdr-sep{margin:0 4px;}
 }
 @media (max-width:768px){ .mod-hdr-brand img{height:24px !important;max-width:100px !important;} }
+
+/* ── Hub: Hoje no calendário (entregas marcadas para hoje) ── */
+#hub .hubt-today-hdr{margin-top:36px !important;}
+.hubt-today-all{all:unset;cursor:pointer;margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:600 12px 'Montserrat',sans-serif;letter-spacing:0;text-transform:none;color:var(--text2);}
+.hubt-today-all:hover{color:var(--text);}
+.hubt-today-all:focus-visible{outline:2px solid var(--text);outline-offset:3px;border-radius:2px;}
+.hubt-today-all svg{width:14px;height:14px;stroke:currentColor;transition:transform .15s;}
+.hubt-today-all:hover svg{transform:translateX(3px);}
+.hubt-today{background:var(--bg2);border:1px solid var(--gb2);border-radius:6px;overflow:hidden;}
+.hubt-today-row{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:120px minmax(0,1.1fr) minmax(0,2fr) auto;align-items:center;gap:16px;padding:12px 20px;border-top:1px solid var(--gb2);transition:background .12s;}
+.hubt-today-row:first-child{border-top:0;}
+.hubt-today-row:hover{background:var(--gb1,rgba(127,127,127,.06));}
+.hubt-today-row:focus-visible{outline:2px solid var(--text);outline-offset:-2px;}
+.hubt-today-brand{display:flex;align-items:center;gap:8px;min-width:0;font:700 10.5px 'Montserrat',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hubt-today-brand i{width:8px;height:8px;border-radius:50%;background:var(--pc);flex-shrink:0;}
+.hubt-today-name{font:600 14px 'Montserrat',sans-serif;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hubt-today-kind{font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hubt-today-row .ptn-chip{justify-self:end;white-space:nowrap;}
+.hubt-today-row.done .hubt-today-name{color:var(--text2);}
+.hubt-today-empty{display:flex;align-items:center;gap:10px;padding:18px 20px;font-size:13px;color:var(--text2);}
+.hubt-today-empty b{color:var(--text);font-weight:600;}
+.hubt-today-empty svg{width:16px;height:16px;stroke:currentColor;flex-shrink:0;}
+@media (max-width:768px){
+  #hub .hubt-today-hdr{margin-top:28px !important;}
+  #hub .hubt-today-hdr{flex-wrap:nowrap !important;}
+  #hub .hubt-today-hdr > i,.hubt-today-all-v{display:none;}
+  .hubt-today-all{text-transform:capitalize;}
+  .hubt-today-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 16px;}
+  .hubt-today-brand{grid-column:1;grid-row:1;}
+  .hubt-today-name{grid-column:1;grid-row:2;}
+  .hubt-today-kind{grid-column:1;grid-row:3;}
+  .hubt-today-row .ptn-chip{grid-column:2;grid-row:1 / 4;align-self:center;}
+  .hubt-today-empty{padding:16px;}
+}
