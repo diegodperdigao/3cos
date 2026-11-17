@@ -6,6 +6,7 @@
 //   2. Resultados do mês em destaque (mesma fonte do Dashboard)
 //   3. Um cartão por marca (Chute, Rips, Sortudão...) com os macro resultados
 //      do mês. Clicar entra no universo da marca (js/shell.js).
+//   4. Hoje no calendário: entregas marcadas para hoje (abaixo das marcas)
 // Números do cartão (mês corrente):
 //   · Pipeline: negociações em aberto, leads novos no mês, negócios fechados no mês
 //   · Parceiros: em operação, entregas feitas/previstas no mês, atrasadas
@@ -179,11 +180,49 @@
     const list = products();
     el.innerHTML = _results(now) + (list.length
       ? `<div class="hubt-sec-hdr hubt-brands-hdr"><span>Marcas</span><i>${MONTHS[now.getMonth()]} até hoje · clique para entrar</i></div>
-         <section class="hubt-brands" aria-label="Marcas">${list.map(pr => _card(pr, today)).join('')}</section>`
+         <section class="hubt-brands" aria-label="Marcas">${list.map(pr => _card(pr, today)).join('')}</section>
+         ${_todayDeliveries(today)}`
       : `<div class="hubt-empty">Nenhuma marca cadastrada. Cadastre em Configurações › Produtos.</div>`);
     if (window.renderSide) renderSide();
     if (window.lucide) lucide.createIcons();
   };
+
+  // ── Hoje no calendário: entregas marcadas (previstas) para hoje ──
+  // Mesma fonte do Calendário (STATE.crm.partnerDeliveries). Clicar abre a entrega.
+  function _todayDeliveries(today) {
+    const partners = new Map((STATE.crm?.partners || []).map(p => [p.id, p]));
+    const prods = new Map(products().map(pr => [pr.id, pr]));
+    const P = window.PTN;
+    const its = (STATE.crm?.partnerDeliveries || [])
+      .filter(d => d.due_date === today && d.status !== 'rejected')
+      .map(d => ({ d, p: partners.get(d.partner_id) }))
+      .filter(x => x.p && prods.has(x.p.product_id))
+      .sort((a, b) => products().findIndex(pr => pr.id === a.p.product_id) - products().findIndex(pr => pr.id === b.p.product_id) || a.p.name.localeCompare(b.p.name, 'pt-BR'));
+    const isDone = (d) => P ? P.isDone(d) : (d.status === 'delivered' || d.status === 'approved');
+    const nDone = its.filter(x => isDone(x.d)).length;
+    const hdr = `<div class="hubt-sec-hdr hubt-today-hdr"><span>Hoje no calendário</span><i>${its.length ? `${its.length} entrega${its.length === 1 ? '' : 's'} · ${nDone} feita${nDone === 1 ? '' : 's'}` : 'nenhuma entrega marcada'}</i>
+      <button class="hubt-today-all" onclick="(window.go3C||openMod)('calendar')"><span class="hubt-today-all-v">Abrir </span>calendário <i data-lucide="arrow-right"></i></button></div>`;
+    if (!STATE.crm?.ptnLoaded && !its.length) return hdr + `<section class="hubt-today"><div class="hubt-today-empty">Carregando entregas...</div></section>`;
+    if (!its.length) {
+      const next = (STATE.crm?.partnerDeliveries || []).filter(d => d.due_date > today && d.status === 'planned' && partners.has(d.partner_id)).map(d => d.due_date).sort()[0];
+      const nx = next ? (() => { const [y, m, dd] = next.split('-').map(Number); const dt = new Date(y, m - 1, dd); return `${WEEK[dt.getDay()]}, ${dd} de ${MONTHS[m - 1]}`; })() : '';
+      return hdr + `<section class="hubt-today"><div class="hubt-today-empty"><i data-lucide="calendar-check"></i><span>Nenhuma entrega prevista para hoje.${nx ? ` Próxima: <b>${nx}</b>.` : ''}</span></div></section>`;
+    }
+    const row = ({ d, p }) => {
+      const pr = prods.get(p.product_id);
+      const m = window.brandMeta ? brandMeta(pr) : { accent: prodColor(pr) };
+      const k = P ? P.kindOf(d.kind) : { label: d.kind || 'Entrega' };
+      const st = P ? P.D_STATUS[P.dStatus(d)] : { label: d.status, color: 'var(--text3)' };
+      const detail = [k.label, d.platform, d.title].filter(Boolean).map(esc).join(' · ');
+      return `<button class="hubt-today-row ${isDone(d) ? 'done' : ''}" style="--pc:${esc(m.accent)}" onclick="window._ptnOpenDelivery&&_ptnOpenDelivery('${d.id}')" title="Abrir entrega">
+        <span class="hubt-today-brand"><i></i>${esc(pr.name)}</span>
+        <b class="hubt-today-name">${esc(p.name)}</b>
+        <span class="hubt-today-kind" title="${detail}">${detail}</span>
+        <span class="ptn-chip" style="--c:${st.color}">${esc(st.label)}</span>
+      </button>`;
+    };
+    return hdr + `<section class="hubt-today" aria-label="Entregas de hoje">${its.map(row).join('')}</section>`;
+  }
 
   // ── Ações ─────────────────────────────────────────────────
   window._hubNew = (kind) => {
