@@ -93,6 +93,12 @@ Estado global em `STATE` (`STATE.crm.*` para dados do CRM). Helpers globais:
   **Uma aba por produto** (Rips, Chute, CAP, Fortuna), nunca misturar.
 - Resultados de parceiros somam no Dashboard via `AFF.all()` (`js/widgets.js`).
 - Campos numéricos em R$ no formato brasileiro (`toLocaleString('pt-BR')`).
+- Resultado diário dos parceiros (`crm.partner_daily`, migration 009): vem do backoffice da
+  casa por uma rotina agendada no Mac do Diego (Claude in Chrome, só lê a Visão geral com o
+  filtro no endereço). Link (`utm_content`) e cupom (`ref_code`) ficam separados, porque quem
+  veio pelo link e usou o cupom aparece nos dois. O código fica em `js/partner-sync.js`
+  (`ptnSyncPlan`, `ptnReadSnippet`, `ptnIngest`, `ptnSyncLog`). Para trazer um parceiro novo,
+  basta preencher Cupom e Link na ficha dele.
 
 ## Testar localmente
 
