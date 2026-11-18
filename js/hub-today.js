@@ -53,7 +53,9 @@
     const D = (STATE.crm?.partnerDeliveries || []).filter(d => ids.has(d.partner_id) && d.status !== 'rejected');
     const month = D.filter(d => (d.due_date || '').slice(0, 7) === ym);
     const done = (d) => d.status === 'delivered' || d.status === 'approved';
-    const R = (STATE.crm?.partnerResults || []).filter(r => ids.has(r.partner_id) && String(r.period || '').slice(0, 7) === ym);
+    // Resultado dos parceiros pela mesma fonte do Dashboard (AFF): backoffice diário
+    // (link + cupom) e, nos meses sem ele, o lançado à mão
+    const R = window.AFF ? AFF.all().filter(r => r.partner && ids.has(String(r.affiliateId).slice(4)) && String(r.date).slice(0, 7) === ym) : [];
     const sum = (k) => R.reduce((t, r) => t + (Number(r[k]) || 0), 0);
     const m0 = new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)) - 1, 1);
     const live = P.filter(p => !window.PTN?.activeIn || PTN.activeIn(p, m0));
