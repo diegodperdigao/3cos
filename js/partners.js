@@ -279,7 +279,18 @@
   // ── RESULTADOS ──
   const _int = (n) => Math.round(Number(n) || 0).toLocaleString('pt-BR');
   const _brl = (n) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: Math.abs(Number(n) || 0) >= 1000 ? 0 : 2 });
-  const resultOf = (pid, month) => L('partnerResults').find(r => r.partner_id === pid && String(r.period).slice(0, 10) === _iso(month));
+  // Resultado do mês do parceiro. Com dado diário do backoffice (partner_daily) no mês,
+  // vale a soma dele (link + cupom; Receita = NGR) e o lançamento manual é ignorado,
+  // igual ao Dashboard (AFF.all em widgets.js). Sem dado diário, vale o manual.
+  const _dailyOf = (pid, month) => {
+    const ym = _iso(month).slice(0, 7);
+    const rows = L('partnerDaily').filter(r => r.partner_id === pid && String(r.day).slice(0, 7) === ym);
+    if (!rows.length) return null;
+    const t = { registrations: 0, ftd: 0, deposits: 0, net_rev: 0, source: 'backoffice' };
+    rows.forEach(r => { t.registrations += Number(r.registrations) || 0; t.ftd += Number(r.ftd) || 0; t.deposits += Number(r.deposits) || 0; t.net_rev += Number(r.ngr) || 0; });
+    return t;
+  };
+  const resultOf = (pid, month) => _dailyOf(pid, month) || L('partnerResults').find(r => r.partner_id === pid && String(r.period).slice(0, 10) === _iso(month));
   // Parceiro conta investimento no mês se o contrato estava valendo nele.
   function _activeIn(p, month) {
     const s = p.start_date || '0000-01-01', e = p.end_date || '9999-12-31';
@@ -331,18 +342,18 @@
         <td><button class="ptn-link" onclick="window._ptnOpen('${p.id}')">${esc(p.name)}</button>
           <div class="ptn-td-sub">${!inv ? 'sem valor no mês'
             : _isMG(p) ? `a pagar ${_brl(inv)} · ${pay.by === 'comissao' ? `${_pctTxt(p.rev_share_pct)} da receita passou o mínimo` : `mínimo (${_pctTxt(p.rev_share_pct)} da receita = ${_brl(pay.comm)})`}`
-            : _brl(inv) + '/mês'}${r?.source === 'import' ? ' · importado' : ''}</div></td>
+            : _brl(inv) + '/mês'}${r?.source === 'import' ? ' · importado' : r?.source === 'backoffice' ? ' · backoffice (link + cupom)' : ''}</div></td>
         <td class="num">${pr.target ? `${pr.done}/${pr.target}` : c.done}</td>
         <td class="num">${c.views ? _int(c.views) : '—'}</td>
         <td class="num">${eng ? _int(eng) : '—'}</td>
-        ${RESULT_FIELDS.map(f => `<td class="num"><input class="ptn-cell" type="number" min="0" step="${f.money ? '0.01' : '1'}"
+        ${r?.source === 'backoffice' ? RESULT_FIELDS.map(f => `<td class="num" title="Vem do backoffice; atualiza sozinho todo dia">${f.money ? _brl(r[f.id]) : _int(r[f.id])}</td>`).join('') : RESULT_FIELDS.map(f => `<td class="num"><input class="ptn-cell" type="number" min="0" step="${f.money ? '0.01' : '1'}"
           value="${r && Number(r[f.id]) ? r[f.id] : ''}" placeholder="0"
           onchange="window._ptnResultSet('${p.id}', '${f.id}', this.value)" aria-label="${f.label} de ${esc(p.name)}"></td>`).join('')}
         <td class="num">${cpa}</td>
       </tr>`;
     }).join('');
     const t = _resultTotals(list, _month);
-    return `<div class="ptn-hint" style="margin-bottom:10px">Resultados de ${_monthLabel(_month)}. Digite direto na tabela ou importe um CSV. Os números entram nos totais do Dashboard.${list.some(_isMG) ? ' Mínimo garantido: o "a pagar" usa a Receita do mês (o maior entre o mínimo e o percentual).' : ''}</div>
+    return `<div class="ptn-hint" style="margin-bottom:10px">Resultados de ${_monthLabel(_month)}. Digite direto na tabela ou importe um CSV. Os números entram nos totais do Dashboard.${list.some(p => _dailyOf(p.id, _month)) ? ' Parceiros com dado do backoffice mostram link + cupom somados (Receita = NGR) e atualizam sozinhos.' : ''}${list.some(_isMG) ? ' Mínimo garantido: o "a pagar" usa a Receita do mês (o maior entre o mínimo e o percentual).' : ''}</div>
       <div class="tbl-wrap"><table class="ptn-table">
         <thead><tr><th>Parceiro</th><th class="num">Entregas</th><th class="num">Views</th><th class="num">Engaj.</th>
           ${RESULT_FIELDS.map(f => `<th class="num">${f.label}${f.money ? ' (R$)' : ''}</th>`).join('')}<th class="num">Custo/cad.</th></tr></thead>
