@@ -34,7 +34,7 @@
     approved: { label: 'Aprovada', color: 'var(--green)' },
     rejected: { label: 'Refazer', color: 'var(--red)' },
   };
-  const TABLE_KEY = { partners: 'partners', partner_scope: 'partnerScope', partner_deliveries: 'partnerDeliveries', partner_results: 'partnerResults' };
+  const TABLE_KEY = { partners: 'partners', partner_scope: 'partnerScope', partner_deliveries: 'partnerDeliveries', partner_results: 'partnerResults', partner_daily: 'partnerDaily' };
   // Métricas de negócio por mês (somam no Dashboard, mesmos nomes dos relatórios)
   const RESULT_FIELDS = [
     { id: 'registrations', label: 'Cadastros', money: false },
@@ -653,6 +653,7 @@
 
       <div class="ptn-dtabs" role="tablist" aria-label="Seções do parceiro">
         <button role="tab" aria-selected="${_detailTab === 'entregas'}" class="${_detailTab === 'entregas' ? 'on' : ''}" onclick="window._ptnDetailTab('entregas')"><i data-lucide="send"></i> Entregas${pr.target ? ` <b>${pr.done}/${pr.target}</b>` : ''}</button>
+        <button role="tab" aria-selected="${_detailTab === 'resultados'}" class="${_detailTab === 'resultados' ? 'on' : ''}" onclick="window._ptnDetailTab('resultados')"><i data-lucide="trending-up"></i> Resultados</button>
         <button role="tab" aria-selected="${_detailTab === 'escopo'}" class="${_detailTab === 'escopo' ? 'on' : ''}" onclick="window._ptnDetailTab('escopo')"><i data-lucide="list-checks"></i> Escopo e contrato${scope.length ? '' : ' <em>definir</em>'}</button>
       </div>
       <div class="ptn-dpanel" role="tabpanel" ${_detailTab === 'entregas' ? '' : 'hidden'}>
@@ -673,6 +674,7 @@
       </div>
 
       </div>
+      <div class="ptn-dpanel" role="tabpanel" ${_detailTab === 'resultados' ? '' : 'hidden'}>${_detailTab === 'resultados' ? _dailyHTML(p) : ''}</div>
       <div class="ptn-dpanel" role="tabpanel" ${_detailTab === 'escopo' ? '' : 'hidden'}>
       <div class="ptn-d-sec first">
         <div class="ptn-d-sec-hdr"><span>Escopo ${isPkg ? 'do pacote' : 'por mês'}</span>
@@ -705,12 +707,49 @@
         <div class="ff"><label>Início</label><input type="date" class="fi" value="${esc(p.start_date || '')}" ${upd('start_date')}></div>
         <div class="ff"><label>${isPkg ? 'Prazo final' : 'Fim do contrato'}</label><input type="date" class="fi" value="${esc(p.end_date || '')}" ${upd('end_date')}></div>
         <div class="ff"><label>Contrato</label><select class="fi" ${upd('contract_status')}>${opt([['', '—'], ['draft', 'Em elaboração'], ['sent', 'Enviado para assinatura'], ['signed', 'Assinado']], p.contract_status || '')}</select></div>
+        <div class="ff"><label>Cupom (código de indicação)</label><input class="fi" placeholder="ex.: CRIS" value="${esc(p.ref_code || '')}" onchange="window._ptnField('ref_code', this.value.trim().toUpperCase())"></div>
+        <div class="ff"><label>Link (utm_content)</label><input class="fi" placeholder="ex.: fontinnele" value="${esc(p.utm_content || '')}" onchange="window._ptnField('utm_content', this.value.trim())"></div>
         <div class="ff ptn-d-wide"><label>Link do contrato${p.contract_url ? ` · <a href="${esc(p.contract_url)}" target="_blank" rel="noopener">abrir</a>` : ''}</label><input type="url" class="fi" placeholder="https://..." value="${esc(p.contract_url || '')}" ${upd('contract_url')}></div>
       </div>
       </div>
       <div class="ff ptn-notes"><label>Observações</label><textarea class="fi" rows="${p.notes && p.notes.length > 120 ? 4 : 2}" placeholder="Combinados, contatos, briefing..." ${upd('notes')}>${esc(p.notes || '')}</textarea></div>
       </div>`;
     lucide.createIcons();
+  }
+
+  // ── Resultados do backoffice (crm.partner_daily): link × cupom no mês ──
+  function _dailyHTML(p) {
+    const m = _detailMonth;
+    const a = _iso(m), b = _iso(_monthEnd(m));
+    const rows = L('partnerDaily').filter(r => r.partner_id === p.id && r.day >= a && r.day <= b);
+    const nav = `<div class="ptn-month sm">
+      <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(-1)" aria-label="Mês anterior"><i data-lucide="chevron-left"></i></button>
+      <span>${_monthLabel(m)}</span>
+      <button class="hdr-icon-btn" onclick="window._ptnDetailMonth(1)" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button></div>`;
+    const int = (v) => Math.round(Number(v) || 0).toLocaleString('pt-BR');
+    const brl = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const sum = (ch, k) => rows.filter(r => r.channel === ch).reduce((t, r) => t + (Number(r[k]) || 0), 0);
+    const KP = [['registrations', 'Cadastros', int], ['ftd', 'FTDs', int], ['deposits', 'Depósitos', brl], ['ngr', 'NGR', brl]];
+    const has = { link: !!p.utm_content, cupom: !!p.ref_code };
+    const col = (ch, lbl, icon, val) => `<div class="ptn-dly-col">
+        <div class="ptn-dly-h"><i data-lucide="${icon}"></i>${lbl}${val ? `<code>${esc(val)}</code>` : ''}</div>
+        ${has[ch] ? `<div class="ptn-dly-kpis">${KP.map(([k, l, f]) => `<div><small>${l}</small><b>${f(sum(ch, k))}</b></div>`).join('')}</div>`
+          : `<div class="ptn-hint">Sem ${ch === 'link' ? 'link' : 'cupom'} cadastrado. Preencha em Escopo e contrato › Contrato e dados.</div>`}
+      </div>`;
+    const days = [...new Set(rows.map(r => r.day))].sort().reverse();
+    const cell = (d, ch, k, f) => { const r = rows.find(x => x.day === d && x.channel === ch); return `<td>${r ? f(r[k]) : '–'}</td>`; };
+    const last = rows.reduce((t, r) => (r.synced_at > t ? r.synced_at : t), '');
+    const prod = productById(p.product_id)?.name || 'casa';
+    return `<div class="ptn-d-sec first">
+      <div class="ptn-d-sec-hdr"><span>Resultado na ${esc(prod)}</span>${nav}</div>
+      <div class="ptn-dly">${col('link', 'Link', 'link', p.utm_content)}${col('cupom', 'Cupom', 'ticket', p.ref_code)}</div>
+      <p class="ptn-dly-note"><i data-lucide="info"></i>Link e cupom são contados separados no backoffice: quem chegou pelo link e usou o cupom aparece nos dois. ${last ? `Atualizado em ${new Date(last).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.` : 'Ainda sem dados neste mês.'}</p>
+      ${days.length ? `<div class="ptn-dly-tbl-wrap"><table class="ptn-dly-tbl">
+        <thead><tr><th rowspan="2">Dia</th><th colspan="3">Link</th><th colspan="3">Cupom</th></tr>
+          <tr><th>Cad.</th><th>FTD</th><th>Depósitos</th><th>Cad.</th><th>FTD</th><th>Depósitos</th></tr></thead>
+        <tbody>${days.map(d => `<tr><td>${d.slice(8, 10)}/${d.slice(5, 7)}</td>${cell(d, 'link', 'registrations', int)}${cell(d, 'link', 'ftd', int)}${cell(d, 'link', 'deposits', brl)}${cell(d, 'cupom', 'registrations', int)}${cell(d, 'cupom', 'ftd', int)}${cell(d, 'cupom', 'deposits', brl)}</tr>`).join('')}</tbody>
+      </table></div>` : ''}
+    </div>`;
   }
 
   function _flashSaved() {
