@@ -106,31 +106,17 @@
   // Faz as conferências e a conversão ali mesmo e devolve um JSON curto:
   //   { url_ok, filters, period, header_ok, n, rows: [[dia, ...KEEP]] }  (só dias com movimento)
   const KEEP = COLS.filter(c => c[0] !== '_');
-  window.ptnReadSnippet = (url) => `(() => {
-  const HEADER = ${JSON.stringify(HEADER)};
-  const COLS = ${JSON.stringify(COLS)};
-  const num = (x) => (x === '—' || x === '-' || x === '') ? 0 : Number(String(x).replace(/\\./g, '').replace(',', '.').replace('%', ''));
-  const t = (document.querySelector('main') || document.body).innerText.split('\\n').map(s => s.trim());
-  const fi = t.indexOf('Filtros');
-  const hi = t.findIndex(l => /^DIA\\s/.test(l));
-  const out = { url_ok: location.href === ${JSON.stringify(url)}, filters: fi >= 0 ? t[fi + 1] : '',
-    period: (t.find(l => /^\\d{2}\\/\\d{2}\\/\\d{4} a \\d{2}\\/\\d{2}\\/\\d{4}/.test(l)) || '').slice(0, 23),
-    header_ok: hi >= 0 && t[hi].replace(/\\s+/g, ' ') === HEADER, n: 0, bad: 0, rows: [] };
-  if (hi >= 0) for (let i = hi + 1; i < t.length; i++) {
-    const l = t[i];
-    if (/^Total/.test(l)) break;
-    if (!/^\\d{2}\\/\\d{2}\\/\\d{4}\\s/.test(l)) continue;
-    const tok = l.replace(/-\\s?R\\$\\s?/g, '-').replace(/R\\$\\s?/g, '').split(/\\s+/);
-    const [dd, mm, yy] = tok.shift().split('/');
-    out.n++;
-    if (tok.length !== COLS.length) { out.bad++; continue; }
-    const r = {}; COLS.forEach((c, k) => { r[c] = num(tok[k]); });
-    const vals = ${JSON.stringify(KEEP)}.map(c => r[c]);
-    if (vals.some(v => !Number.isFinite(v))) { out.bad++; continue; }
-    if (vals.some(v => v !== 0)) out.rows.push([yy + '-' + mm + '-' + dd, ...vals]);
-  }
-  return JSON.stringify(out);
-})()`;
+  // Validado no backoffice em 18/11/2026. Espera a tabela carregar (até 20 s).
+  // Rodar com await: o resultado é uma Promise que resolve no JSON.
+  window.ptnReadSnippet = (url) => 'await (async U=>{for(let i=0;i<40&&!/Total do per/.test(document.body.innerText);i++)await new Promise(r=>setTimeout(r,500));'
+    + `const H=${JSON.stringify(HEADER)},K=${JSON.stringify(KEEP.map(c => COLS.indexOf(c)))},`
+    + "n=x=>x==='—'||x===''?0:Number(x.replace(/\\./g,'').replace(',','.').replace('%','')),"
+    + "t=(document.querySelector('main')||document.body).innerText.split('\\n').map(s=>s.trim()),fi=t.indexOf('Filtros'),hi=t.findIndex(l=>/^DIA\\s/.test(l)),"
+    + "o={url_ok:location.href===U,filters:fi>=0?t[fi+1]:'',period:(t.find(l=>/^\\d\\d\\/\\d\\d\\/\\d{4} a /.test(l))||'').slice(0,23),header_ok:hi>=0&&t[hi].replace(/\\s+/g,' ')===H,n:0,bad:0,rows:[]};"
+    + "if(hi>=0)for(const l of t.slice(hi+1)){if(/^Total/.test(l))break;if(!/^\\d\\d\\/\\d\\d\\/\\d{4}\\s/.test(l))continue;"
+    + "const k=l.replace(/-\\s?R\\$\\s?/g,'-').replace(/R\\$\\s?/g,'').split(/\\s+/),[d,m,y]=k.shift().split('/');o.n++;"
+    + `if(k.length!==${COLS.length}){o.bad++;continue}const v=K.map(i=>n(k[i]));if(v.some(x=>!isFinite(x))){o.bad++;continue}if(v.some(x=>x))o.rows.push([y+'-'+m+'-'+d,...v])}`
+    + `return JSON.stringify(o)})(${JSON.stringify(url)})`;
 
   // Leitura curta (JSON do ptnReadSnippet) → linhas para gravar, com as mesmas conferências
   function fromSnippet(json, item) {
