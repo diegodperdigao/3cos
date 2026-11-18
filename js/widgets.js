@@ -442,18 +442,36 @@ function _wStalledLeads() {
 // Agregador compartilhado com o dashboard. Datas em 'YYYY-MM-DD'.
 window.AFF = {
   // Relatórios das casas + resultados dos parceiros fixos (módulo Parceiros),
-  // no mesmo formato. Resultado de parceiro é mensal: cai no dia 1 do mês.
+  // no mesmo formato. Duas fontes de parceiro:
+  //   · partner_daily (backoffice, por dia): link + cupom SOMADOS (decisão do Diego,
+  //     sabendo que quem veio pelo link e usou o cupom conta nos dois);
+  //   · partner_results (lançado à mão, mensal, cai no dia 1 do mês) — só entra nos
+  //     meses em que o parceiro NÃO tem dado diário, para não contar duas vezes.
   all() {
     const products = STATE.crm?.products || [];
     const partners = new Map((STATE.crm?.partners || []).map(p => [p.id, p]));
-    const extra = (STATE.crm?.partnerResults || []).map(r => {
-      const p = partners.get(r.partner_id);
-      return {
-        date: String(r.period || '').substring(0, 10), brand: products.find(x => x.id === p?.product_id)?.name || 'Parceiros',
+    const brandOf = (pid) => products.find(x => x.id === partners.get(pid)?.product_id)?.name || 'Parceiros';
+    const daily = new Map();   // partner|dia → linha somada (link + cupom)
+    const hasDaily = new Set(); // partner|mês
+    (STATE.crm?.partnerDaily || []).forEach(r => {
+      const day = String(r.day || '').substring(0, 10);
+      if (!day) return;
+      const k = r.partner_id + '|' + day;
+      const t = daily.get(k) || { date: day, brand: brandOf(r.partner_id), affiliateId: 'ptn:' + r.partner_id,
+        deposits: 0, registrations: 0, ftd: 0, qftd: 0, netRev: 0, partner: true, daily: true };
+      t.deposits += Number(r.deposits) || 0; t.registrations += Number(r.registrations) || 0;
+      t.ftd += Number(r.ftd) || 0; t.netRev += Number(r.ngr) || 0;
+      daily.set(k, t);
+      hasDaily.add(r.partner_id + '|' + day.slice(0, 7));
+    });
+    const monthly = (STATE.crm?.partnerResults || [])
+      .filter(r => !hasDaily.has(r.partner_id + '|' + String(r.period || '').slice(0, 7)))
+      .map(r => ({
+        date: String(r.period || '').substring(0, 10), brand: brandOf(r.partner_id),
         affiliateId: 'ptn:' + r.partner_id, deposits: Number(r.deposits) || 0, registrations: Number(r.registrations) || 0,
         ftd: Number(r.ftd) || 0, qftd: 0, netRev: Number(r.net_rev) || 0, partner: true,
-      };
-    });
+      }));
+    const extra = monthly.concat([...daily.values()]);
     return extra.length ? (STATE.reports || []).concat(extra) : (STATE.reports || []);
   },
   rows(startKey, endKey) {

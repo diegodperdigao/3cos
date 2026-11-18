@@ -97,7 +97,9 @@ Estado global em `STATE` (`STATE.crm.*` para dados do CRM). Helpers globais:
   casa por uma rotina agendada no Mac do Diego (Claude in Chrome, só lê a Visão geral com o
   filtro no endereço). Link (`utm_content`) e cupom (`ref_code`) ficam separados, porque quem
   veio pelo link e usou o cupom aparece nos dois. O código fica em `js/partner-sync.js`
-  (`ptnSyncPlan`, `ptnReadSnippet`, `ptnIngest`, `ptnSyncLog`). Para trazer um parceiro novo,
+  (`ptnSyncPlan`, `ptnReadSnippet`, `ptnIngest`, `ptnSyncLog`). No Dashboard e no Início entram
+  link + cupom somados (`AFF.all()`); nos meses com dado diário, o lançamento manual do
+  parceiro é ignorado para não contar duas vezes. Para trazer um parceiro novo,
   basta preencher Cupom e Link na ficha dele.
 
 ## Testar localmente
