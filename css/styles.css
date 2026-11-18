@@ -7990,3 +7990,27 @@ html.boot-mod #hub{display:none !important;}
   .hubt-btn-v{display:none;}
   .hubt-btn > span::first-letter{text-transform:uppercase;}
 }
+
+/* ── Parceiro › Resultados (backoffice: link × cupom) ── */
+.ptn-dly{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--gb2);border-radius:6px;background:var(--bg2);overflow:hidden;}
+.ptn-dly-col{padding:16px 18px;min-width:0;}
+.ptn-dly-col + .ptn-dly-col{border-left:1px solid var(--gb2);}
+.ptn-dly-h{display:flex;align-items:center;gap:8px;margin-bottom:12px;font:700 11px 'Montserrat',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);}
+.ptn-dly-h svg{width:14px;height:14px;stroke:currentColor;}
+.ptn-dly-h code{margin-left:auto;font:500 11px var(--fmono);letter-spacing:0;text-transform:none;color:var(--text);padding:2px 6px;border-radius:2px;background:var(--bg3);}
+.ptn-dly-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;}
+.ptn-dly-kpis small{display:block;font-size:12px;color:var(--text2);margin-bottom:2px;}
+.ptn-dly-kpis b{font:700 18px 'Montserrat',sans-serif;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.ptn-dly-note{display:flex;gap:8px;align-items:flex-start;margin:10px 0 14px;font-size:12px;line-height:1.45;color:var(--text2);}
+.ptn-dly-note svg{width:14px;height:14px;flex-shrink:0;margin-top:2px;stroke:currentColor;}
+.ptn-dly-tbl-wrap{overflow-x:auto;border:1px solid var(--gb2);border-radius:6px;}
+.ptn-dly-tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;}
+.ptn-dly-tbl th{font:700 10.5px 'Montserrat',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);padding:8px 12px;text-align:right;border-bottom:1px solid var(--gb2);background:var(--bg2);white-space:nowrap;}
+.ptn-dly-tbl th[colspan]{text-align:center;}
+.ptn-dly-tbl td{padding:7px 12px;text-align:right;border-top:1px solid var(--gb2);color:var(--text);white-space:nowrap;}
+.ptn-dly-tbl th:first-child,.ptn-dly-tbl td:first-child{text-align:left;color:var(--text2);}
+.ptn-dly-tbl tr > *:nth-child(5),.ptn-dly-tbl thead tr:last-child > *:nth-child(4){border-left:1px solid var(--gb2);}
+@media (max-width:640px){
+  .ptn-dly{grid-template-columns:1fr;}
+  .ptn-dly-col + .ptn-dly-col{border-left:none;border-top:1px solid var(--gb2);}
+}

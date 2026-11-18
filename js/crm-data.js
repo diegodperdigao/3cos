@@ -76,6 +76,7 @@ const RT_TABLES = {
   partner_scope: { key: 'partnerScope', pk: ['id'] },
   partner_deliveries: { key: 'partnerDeliveries', pk: ['id'] },
   partner_results: { key: 'partnerResults', pk: ['id'] },
+  partner_daily: { key: 'partnerDaily', pk: ['id'] },
 };
 let _rtChannel = null, _rtTimer = null, _hiddenAt = 0;
 function _rtApply(table, p) {
@@ -160,6 +161,9 @@ CRM.loadPartners = async () => {
     STATE.crm.partnerScope = s.data || [];
     STATE.crm.partnerDeliveries = d.data || [];
     STATE.crm.partnerResults = r.data || [];
+    // Resultado diário do backoffice (migration 009). Sem a tabela, segue sem ele.
+    const dly = await sb.from('partner_daily').select('*').range(0, 19999);
+    STATE.crm.partnerDaily = dly.error ? [] : (dly.data || []);
     STATE.crm.ptnLoaded = true;
     return true;
   } catch (e) {
