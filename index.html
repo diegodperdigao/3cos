@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=312">
+<link rel="stylesheet" href="css/styles.css?v=313">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -48,7 +48,7 @@ if(m&&s&&s.user&&s.exp>Date.now())document.documentElement.classList.add('boot-m
 
 <!-- LOCK -->
 <div id="lock" style="display:none">
-  <div class="lock-motion" aria-hidden="true"><video src="assets/intro.mp4" autoplay muted loop playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture></video></div>
+  <div class="lock-motion" aria-hidden="true"><video src="assets/intro.mp4" autoplay muted playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture></video></div>
   <div class="mosaic-wrapper"><div class="mosaic-container"><div class="mosaic-pattern" id="lock-mosaic"></div></div></div>
   <div class="lock-box">
     <span class="lock-brand brand-h" style="--brand-h:44px"><img class="brand-h-light" src="assets/brand/3c-logo-preto.png" alt="3C"><img class="brand-h-dark" src="assets/brand/3c-logo-branco.png" alt="3C"></span>
@@ -73,7 +73,7 @@ if(m&&s&&s.user&&s.exp>Date.now())document.documentElement.classList.add('boot-m
 
 <!-- RESET PASSWORD (shown when user arrives via recovery email) -->
 <div id="reset-screen" style="display:none">
-  <div class="lock-motion" aria-hidden="true"><video src="assets/intro.mp4" autoplay muted loop playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture></video></div>
+  <div class="lock-motion" aria-hidden="true"><video src="assets/intro.mp4" autoplay muted playsinline webkit-playsinline="true" preload="auto" disablePictureInPicture></video></div>
   <div class="mosaic-wrapper"><div class="mosaic-container"><div class="mosaic-pattern" id="reset-mosaic"></div></div></div>
   <div class="lock-box">
     <span class="lock-brand brand-h" style="--brand-h:44px"><img class="brand-h-light" src="assets/brand/3c-logo-preto.png" alt="3C"><img class="brand-h-dark" src="assets/brand/3c-logo-branco.png" alt="3C"></span>
@@ -258,30 +258,55 @@ if(m&&s&&s.user&&s.exp>Date.now())document.documentElement.classList.add('boot-m
 </div>
 
 <!-- Core: State, Utils, Navigation -->
-<script src="js/app.js?v=312"></script>
+<script src="js/app.js?v=313"></script>
 <!-- Supabase client + data layer (Phase 1 — additive, becomes primary in Phase 2) -->
-<script src="js/supabase-client.js?v=312"></script>
-<script src="js/data.js?v=312"></script>
-<script src="js/widgets.js?v=312"></script>
-<script src="js/hub-today.js?v=312"></script>
+<script src="js/supabase-client.js?v=313"></script>
+<script src="js/data.js?v=313"></script>
+<script src="js/widgets.js?v=313"></script>
+<script src="js/hub-today.js?v=313"></script>
 <!-- Global Search (unified search engine) -->
-<script src="js/search.js?v=312"></script>
+<script src="js/search.js?v=313"></script>
 <!-- Modules -->
-<script src="js/dashboard.js?v=312"></script>
-<script src="js/tasks.js?v=312"></script>
-<script src="js/audit.js?v=312"></script>
-<script src="js/users.js?v=312"></script>
-<script src="js/settings.js?v=312"></script>
+<script src="js/dashboard.js?v=313"></script>
+<script src="js/tasks.js?v=313"></script>
+<script src="js/audit.js?v=313"></script>
+<script src="js/users.js?v=313"></script>
+<script src="js/settings.js?v=313"></script>
 <!-- CRM (frente comercial — schema crm) -->
-<script src="js/crm-data.js?v=312"></script>
-<script src="js/contacts.js?v=312"></script>
-<script src="js/pipeline-crm.js?v=312"></script>
-<script src="js/partners.js?v=312"></script>
-<script src="js/partner-sync.js?v=312"></script>
-<script src="js/calendar.js?v=312"></script>
-<script src="js/copilot.js?v=312"></script>
+<script src="js/crm-data.js?v=313"></script>
+<script src="js/contacts.js?v=313"></script>
+<script src="js/pipeline-crm.js?v=313"></script>
+<script src="js/partners.js?v=313"></script>
+<script src="js/partner-sync.js?v=313"></script>
+<script src="js/calendar.js?v=313"></script>
+<script src="js/copilot.js?v=313"></script>
 <!-- Shell 3C: sidebar + universos por marca -->
 <script>(function(){if(window.kbdHint)document.querySelectorAll('.search-trigger-kbd').forEach(function(el){el.innerHTML=kbdHint();});})();</script>
-<script src="js/shell.js?v=312"></script>
+<script>
+/* Motion do login.
+   Computador: o showreel do site 3c.gg (mesmo arquivo, servido pelo Cloudflare do
+   site, carrega aos poucos), em tela cheia, repetindo em velocidade normal.
+   Celular, economia de dados, "reduzir movimento" ou se o site falhar: a vinheta
+   intro.mp4 parada no quadro da arte com o "3" (HOLD s), sem baixar o showreel (55 MB). */
+(function(){
+  var REEL = 'https://3c.gg/wp-content/uploads/2024/02/3C-Gaming-Showreel-2023.mp4';
+  var HOLD = 0.4;
+  var mq = function(q){ return window.matchMedia && matchMedia(q).matches; };
+  var useReel = mq('(min-width: 821px)') && !mq('(prefers-reduced-motion: reduce)') && !(navigator.connection && navigator.connection.saveData);
+  function still(v){
+    v.loop = false; v.removeAttribute('autoplay');
+    var hold = function(){ v.pause(); v.currentTime = HOLD; };
+    if (!/intro\.mp4$/.test(v.currentSrc || v.src)) { v.src = 'assets/intro.mp4'; v.load(); }
+    if (v.readyState >= 1) hold(); else v.addEventListener('loadedmetadata', hold, { once: true });
+  }
+  document.querySelectorAll('.lock-motion video').forEach(function(v){
+    if (!useReel) { still(v); return; }
+    v.loop = true; v.src = REEL; v.load();
+    var p = v.play(); if (p && p.catch) p.catch(function(){});
+    v.addEventListener('error', function(){ still(v); }, { once: true });
+  });
+})();
+</script>
+<script src="js/shell.js?v=313"></script>
 </body>
 </html>

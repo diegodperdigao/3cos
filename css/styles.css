@@ -8014,3 +8014,13 @@ html.boot-mod #hub{display:none !important;}
   .ptn-dly{grid-template-columns:1fr;}
   .ptn-dly-col + .ptn-dly-col{border-left:none;border-top:1px solid var(--gb2);}
 }
+
+/* ── Login: motion em tela cheia (sem tarjas), formulário sobre degradê à esquerda ── */
+#lock .lock-motion,#reset-screen .lock-motion{inset:0 !important;left:0 !important;height:auto !important;bottom:0 !important;}
+.lock-motion video{object-fit:cover !important;object-position:68% center !important;}
+.lock-motion::after{background:linear-gradient(90deg,#000 0%,rgba(0,0,0,.92) 24%,rgba(0,0,0,.55) 40%,rgba(0,0,0,0) 58%) !important;}
+@media (max-width:820px){
+  #lock .lock-motion,#reset-screen .lock-motion{bottom:auto !important;height:52vh !important;}
+  .lock-motion video{object-position:center !important;}
+  .lock-motion::after{background:linear-gradient(180deg,rgba(0,0,0,0) 55%,#000 100%) !important;}
+}
