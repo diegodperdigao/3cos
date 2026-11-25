@@ -69,7 +69,7 @@ Estado global em `STATE` (`STATE.crm.*` para dados do CRM). Helpers globais:
   do `css/styles.css`). Cores conferidas nos sites oficiais; não usar a cor do cadastro.
 - Dentro da marca, Dashboard, Pipeline, Parceiros e Calendário ficam presos a ela
   (`brandId()`, `brandProduct()`, `brandScope()`). `go3C(mod)` sai do universo.
-- Pipeline por produto: `scope` = slug do produto (`chute`, `rips`, `sortudao`); B2B e B2C
+- Pipeline por produto: `scope` = slug do produto (`chute`, `rips`, `sortudao`, `naipe`); B2B e B2C
   são os funis gerais da 3C. Produto novo ganha pipeline quando existirem etapas com o slug
   dele (ver `supabase/migrations/005_pipeline_por_produto.sql`).
 - Produto novo com tema próprio: entrada em `BRANDS` (`js/shell.js`) + bloco de tokens CSS.
