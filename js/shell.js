@@ -27,6 +27,7 @@
     chute: { slug: 'chute', logo: 'assets/brands/chute/logo.webp', accent: '#F2FC40' },
     rips: { slug: 'rips', logo: 'assets/brands/rips/logo.svg', logoDark: 'assets/brands/rips/logo-tinta.svg', accent: '#5FF3E4' },
     sortudao: { slug: 'sortudao', logo: 'assets/brands/sortudao/logo.webp', accent: '#0BA334' },
+    naipe: { slug: 'naipe', logo: 'assets/brands/naipe/logo.svg', logoDark: 'assets/brands/naipe/logo-tinta.svg', accent: '#F2B33D' },
   };
   const brandMeta = (p) => BRANDS[fold(p?.name)] || { slug: 'custom', logo: p?.logo_url || '', accent: window.prodColor ? prodColor(p) : (p?.color || '#888') };
   window.brandAccent = (p) => brandMeta(p).accent;
@@ -58,8 +59,8 @@
     if (!STATE.crm?.loaded || !STATE.crm.products?.length) return;
     try { localStorage.setItem(_cacheKey, JSON.stringify({ products: STATE.crm.products, stages: STATE.crm.stages || [] })); } catch (_) {}
   }
-  // Ordem das marcas: Rips, Chute, Sortudão; as outras depois, em ordem alfabética
-  const ORDER = ['rips', 'chute', 'sortudao'];
+  // Ordem das marcas: Rips, Chute, Sortudão, Naipe; as outras depois, em ordem alfabética
+  const ORDER = ['rips', 'chute', 'sortudao', 'naipe'];
   window.sortProducts = (list) => [...list].sort((a, b) => {
     const ra = ORDER.indexOf(fold(a.name)), rb = ORDER.indexOf(fold(b.name));
     return ((ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb)) || String(a.name).localeCompare(String(b.name), 'pt-BR');

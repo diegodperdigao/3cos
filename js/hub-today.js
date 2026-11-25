@@ -27,7 +27,7 @@
     const src = window.crmProducts ? crmProducts() : (STATE.crm?.products?.length ? STATE.crm.products : _cachedProducts());
     const list = src.filter(p => p.status !== 'inactive');
     if (window.sortProducts) return sortProducts(list);
-    const ORDER = ['rips', 'chute', 'sortudao'], rk = (p) => { const i = ORDER.indexOf(slug(p.name)); return i < 0 ? 99 : i; };
+    const ORDER = ['rips', 'chute', 'sortudao', 'naipe'], rk = (p) => { const i = ORDER.indexOf(slug(p.name)); return i < 0 ? 99 : i; };
     return [...list].sort((a, b) => (rk(a) - rk(b)) || String(a.name).localeCompare(String(b.name), 'pt-BR'));
   };
   const slug = (n) => String(n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_');

@@ -7386,6 +7386,7 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 /*   Chute    chute.com.br     amarelo #F2FC40 · lilás #BDA4FF  */
 /*   Rips     rips.com.br      ciano #5FF3E4 · azul #4D7CFF · tinta #16114A */
 /*   Sortudão sortudao.com.br  verde #4FD554 / #01BC25 / #046841 · amarelo #FCDE66 */
+/*   Naipe    naipe.com.br     azul #0A2F86 · creme #F3E3C6 · mostarda #F2B33D (25/11/2026) */
 /* --brand-a: acento para fios e preenchimentos · --brand-ink: acento usado como texto */
 /* ══════════════════════════════════════════════════════════ */
 :root[data-brand="chute"]{--brand-a:#F2FC40;--brand-ink:#F2FC40;--brand-on:#141414;}
@@ -7394,6 +7395,8 @@ button.mob-bnav-item{background:none;border:none;font:inherit;color:var(--text2)
 :root[data-brand="rips"][data-theme="light"]{--brand-ink:#16114A;}
 :root[data-brand="sortudao"]{--brand-a:#0BA334;--brand-ink:#4FD554;--brand-on:#ffffff;}
 :root[data-brand="sortudao"][data-theme="light"]{--brand-ink:#046841;}
+:root[data-brand="naipe"]{--brand-a:#F2B33D;--brand-ink:#F3E3C6;--brand-on:#0B1D4A;}
+:root[data-brand="naipe"][data-theme="light"]{--brand-ink:#0A2F86;}
 :root[data-brand="custom"]{--brand-a:var(--brand-c);--brand-ink:var(--text);--brand-on:#fff;}
 
 /* foco e destaques de texto no acento legível da marca */
