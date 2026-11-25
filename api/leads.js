@@ -4,12 +4,11 @@
 // POST /api/leads
 // Auth: `x-api-key: <LEAD_INTAKE_API_KEY>` header
 // Body (JSON): see FIELD MAPPING below
-// Returns: { ok: true, lead: { id, name, email, phone, created_at },
-//            card: { id, scope, stage } | null }
+// Returns: { ok: true, lead: { id, name, email, phone, created_at }, card: null }
 //
-// Além do contato, cria a negociação na etapa "Lead LP" da pipeline B2C.
-// Se a etapa não existir, usa a primeira etapa. O contato fica com status
-// in_pipeline.
+// O lead entra só em Contatos (status wishlist, tag "LP"). Não cria mais
+// negociação na pipeline: quem decide levar o contato para o funil é a equipe.
+// `card` continua na resposta (sempre null) para não quebrar quem lê o campo.
 //
 // Env vars (Vercel → Settings → Environment Variables):
 //   SUPABASE_URL / SUPABASE_SERVICE_KEY  (shared helper picks these up)
@@ -112,86 +111,6 @@ async function tagContactLP(sb, contactId) {
     return tag.id;
   } catch (e) {
     console.error('[leads] LP tag failed:', e);
-    return null;
-  }
-}
-
-// Cria o card da pipeline para o lead recebido. Nunca derruba a requisição:
-// o contato já foi gravado; se o card falhar, devolve null e loga.
-// Slug do produto, igual ao crm.product_slug do banco ("Sortudão" → "sortudao")
-const productSlug = (n) => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
-
-// Lead de LP de produto ("LP Chute Parceiros", "LP Sortudão Afiliados") vai para a
-// pipeline do produto (scope = slug). Sem produto reconhecido, cai no B2C geral.
-async function resolveLeadScope(sb, origem) {
-  try {
-    const o = productSlug(origem);
-    if (!o) return { scope: 'b2c', productId: null };
-    const { data: products } = await sb.schema('crm').from('products').select('id, name');
-    const hit = (products || []).find(p => { const s = productSlug(p.name); return s && ('_' + o + '_').includes('_' + s + '_'); });
-    if (hit) return { scope: productSlug(hit.name), productId: hit.id };
-  } catch (e) {
-    console.error('[leads] product lookup failed:', e);
-  }
-  return { scope: 'b2c', productId: null };
-}
-
-async function createLeadCard(sb, contact, { profile, origem, landingUrl, testFlag }) {
-  let { scope, productId } = await resolveLeadScope(sb, origem);
-  try {
-    const loadStages = (sc) => sb
-      .schema('crm')
-      .from('pipeline_stages')
-      .select('id, name, position')
-      .eq('scope', sc)
-      .order('position', { ascending: true });
-    let { data: stages, error: stErr } = await loadStages(scope);
-    if (stErr) throw stErr;
-    // Produto ainda sem pipeline própria: usa o B2C, mas mantém o produto no card
-    if ((!stages || !stages.length) && scope !== 'b2c') {
-      scope = 'b2c';
-      ({ data: stages, error: stErr } = await loadStages(scope));
-      if (stErr) throw stErr;
-    }
-    if (!stages || !stages.length) {
-      console.error('[leads] no stages for scope', scope);
-      return null;
-    }
-    const stage = stages.find(s => /lead\s*lp/i.test(s.name || '')) || stages[0];
-
-    const titleBase = contact.name + (profile ? ' · ' + profile : '');
-    const title = (testFlag ? '[TESTE] ' : '') + titleBase;
-    const noteParts = ['Lead recebido via landing page'];
-    if (origem) noteParts.push('origem: ' + origem);
-    if (landingUrl) noteParts.push(landingUrl);
-
-    const { data: card, error: cardErr } = await sb
-      .schema('crm')
-      .from('pipeline_cards')
-      .insert({
-        scope,
-        stage_id: stage.id,
-        contact_id: contact.id,
-        product_id: productId,
-        title: title.slice(0, 200),
-        notes: noteParts.join(' · '),
-        position: 0,
-      })
-      .select('id, scope, stage_id')
-      .single();
-    if (cardErr) throw cardErr;
-
-    // Mesmo comportamento do app ao promover um contato para a pipeline
-    const { error: upErr } = await sb
-      .schema('crm')
-      .from('contacts')
-      .update({ status: 'in_pipeline' })
-      .eq('id', contact.id);
-    if (upErr) console.error('[leads] contact status update failed:', upErr);
-
-    return { id: card.id, scope: card.scope, stage: stage.name };
-  } catch (e) {
-    console.error('[leads] card creation failed:', e);
     return null;
   }
 }
@@ -315,11 +234,10 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ── Tag "LP" + negociação na etapa "Lead LP" ──────────────
+    // ── Tag "LP" (o lead fica só em Contatos, fora da pipeline) ──
     await tagContactLP(sb, data.id);
-    const card = await createLeadCard(sb, data, { profile, origem, landingUrl, testFlag });
 
-    res.status(201).json({ ok: true, lead: data, card });
+    res.status(201).json({ ok: true, lead: data, card: null });
   } catch (e) {
     console.error('[leads]', e);
     res.status(500).json({ error: e.message || 'Erro interno.' });
